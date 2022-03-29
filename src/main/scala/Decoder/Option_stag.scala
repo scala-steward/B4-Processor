@@ -7,7 +7,7 @@ import firrtl.Utils.True
 
 
 class Option_stag extends Module {
-  val io = IO(new Bundle{
+  val io = IO(new Bundle {
     val before_dtag = DecoupledIO(UInt(TAG_WIDTH.W))
     val reorder_buffer_dtag = DecoupledIO(UInt(TAG_WIDTH.W))
     val r_value = Output(Bool()) // value選択用回路に用いるRビット
@@ -17,7 +17,7 @@ class Option_stag extends Module {
   /**
    * MuxCaseでstagが見つからない -> 値がレジスタファイルに存在している -> Rbit = 0
    * (otherwise =（before_dtag or reorder_dtagにstagが存在している）-> Rbit = 1)
-    */
+   */
 
   io.r_value := Wire(MuxCase(1.U, Seq(
     (io.before_dtag.valid === 0.U && io.reorder_buffer_dtag.valid === 0.U) -> 0.U)))
