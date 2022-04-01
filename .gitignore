@@ -10,6 +10,7 @@ project/plugins/project/
 .lib/
 
 /.idea
+/.bsp
 
 /test_run_dir
 /*.fir
