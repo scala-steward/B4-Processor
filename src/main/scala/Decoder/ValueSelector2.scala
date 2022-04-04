@@ -2,8 +2,8 @@ package Decoder
 
 import chisel3._
 import chisel3.util._
+import common.OpcodeFormat
 import common.OpcodeFormat.{I, J, U}
-import common.{OpcodeFormat, OpcodeFormatChecker}
 import consts.Constants.TAG_WIDTH
 
 class ValueSelector2(number_of_alus: Int) extends Module {

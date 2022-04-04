@@ -1,9 +1,8 @@
 package Decoder
 
-import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
-import chisel3.util._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
 
 class ValueSelector1Wrapper(number_of_alus: Int) extends ValueSelector1(number_of_alus) {
   /**

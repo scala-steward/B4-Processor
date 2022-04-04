@@ -1,11 +1,10 @@
 package Decoder
 
-import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
-import chisel3.util._
 import chiseltest._
 import common.OpcodeFormat
 import common.OpcodeFormat._
+import org.scalatest.flatspec.AnyFlatSpec
 
 class ValueSelector2Wrapper(number_of_alus: Int) extends ValueSelector2(number_of_alus) {
   /**

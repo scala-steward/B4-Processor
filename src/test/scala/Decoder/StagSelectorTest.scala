@@ -1,9 +1,8 @@
 package Decoder
 
-import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
-import chisel3.util._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
 
 class StagSelectorWrapper(instruction_offset: Int) extends StagSelector(instruction_offset) {
   def initialize(dtags: Seq[Option[Int]], reorderBufferValue: Option[Int]): Unit = {

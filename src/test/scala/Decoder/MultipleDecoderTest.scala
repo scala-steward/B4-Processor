@@ -1,9 +1,7 @@
 package Decoder
 
-import org.scalatest.flatspec.AnyFlatSpec
-import chisel3._
-import chisel3.util._
 import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
 
 class MultipleDecoderWrapper(number_of_decoders: Int, number_of_alus: Int) extends MultipleDecoder(number_of_decoders, number_of_alus) {
 

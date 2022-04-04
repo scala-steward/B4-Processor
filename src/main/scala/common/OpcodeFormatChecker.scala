@@ -1,11 +1,11 @@
 package common
 
-import chisel3.experimental.ChiselEnum
 import chisel3._
+import chisel3.experimental.ChiselEnum
 import chisel3.util._
 
 object OpcodeFormat extends ChiselEnum {
-  val R, I, J, S, U, B = Value
+  val R, I, J, S, U, B, Unknown = Value
 }
 
 class OpcodeFormatChecker extends Module {
@@ -14,8 +14,25 @@ class OpcodeFormatChecker extends Module {
     val format = Output(OpcodeFormat())
   })
 
-  // TODO: しっかりした確認
-  io.format := MuxCase(OpcodeFormat.R, Seq(
-    (io.opcode === BitPat("b00??011") || io.opcode === "b0001111".U) -> OpcodeFormat.I
+  // RV32I対応
+  io.format := MuxLookup(io.opcode, OpcodeFormat.Unknown, Seq(
+    // I
+    "b0000011".U -> OpcodeFormat.I, // load
+    "b0001111".U -> OpcodeFormat.I, // fence
+    "b1110011".U -> OpcodeFormat.I, // csr
+    "b0010011".U -> OpcodeFormat.I, // 演算
+    "b0011011".U -> OpcodeFormat.I, // 演算(64I)
+    // J
+    "b1101111".U -> OpcodeFormat.J, // jal,jalr
+    // U
+    "b0110111".U -> OpcodeFormat.U, // lui
+    "b0010111".U -> OpcodeFormat.U, // aupic
+    // B
+    "b1100011".U -> OpcodeFormat.B, // 分岐
+    // S
+    "b0100011".U -> OpcodeFormat.S, // store
+    // R
+    "b0110011".U -> OpcodeFormat.R, // 演算
+    "b0011011".U -> OpcodeFormat.R, // 演算(64I)
   ))
 }
