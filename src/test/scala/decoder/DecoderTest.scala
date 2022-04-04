@@ -9,6 +9,7 @@ import org.scalatest.flatspec.AnyFlatSpec
  * デコーダをテストしやすくするためにラップしたもの
  *
  * @param instruction_offset 同時に扱う命令のうちいくつ目の命令を担当するか
+ * @param number_of_alus     ALUの数
  */
 class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) extends Decoder(instruction_offset, number_of_alus) {
   def initialize(instruction: UInt): Unit = {
@@ -44,7 +45,16 @@ class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) exten
     this.io.registerFile.value2.poke(value2.U)
   }
 
-  def expectReorderBuffer(rd: Option[Int], rs1: Option[Int], rs2: Option[Int]): Unit = {
+  def setALU(bypassedValues: Seq[Option[(Int, Int)]]) = {
+    for (i <- bypassedValues.indices) {
+      this.io.alu(i).valid.poke(bypassedValues(i).isDefined.B)
+      this.io.alu(i).bits.destinationTag.poke(bypassedValues(i).getOrElse((0, 0))._1.U)
+      this.io.alu(i).bits.value.poke(bypassedValues(i).getOrElse((0, 0))._2.U)
+    }
+  }
+
+
+  def expectReorderBuffer(rd: Option[Int], rs1: Option[Int] = None, rs2: Option[Int] = None): Unit = {
     // check rd
     this.io.reorderBuffer.destination.destinationRegister.valid.expect(rd.isDefined.B, "rdが間違っています")
     if (rd.isDefined)
@@ -62,7 +72,8 @@ class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) exten
                                sourceTag1: Option[Int] = None,
                                sourceTag2: Option[Int] = None,
                                value1: Option[Int] = Some(0),
-                               value2: Option[Int] = Some(0)): Unit = {
+                               value2: Option[Int] = Some(0),
+                               immediateOrFunction7: Option[Int] = None): Unit = {
     if (destinationTag.isDefined)
       this.io.reservationStation.bits.destinationTag.expect(destinationTag.get.U)
     if (sourceTag1.isDefined)
@@ -73,6 +84,8 @@ class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) exten
       this.io.reservationStation.bits.value1.expect(value1.get.U)
     if (value2.isDefined)
       this.io.reservationStation.bits.value2.expect(value2.get.U)
+    if (immediateOrFunction7.isDefined)
+      this.io.reservationStation.bits.immediateOrFunction7.expect(immediateOrFunction7.get.U)
   }
 }
 
@@ -125,14 +138,14 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  // TODO: これも確認
-  //  it should "understand sd" in {
-  //    test(new DecoderWrapper(0)) { c =>
-  //      // sd x1,10(x2)
-  //      c.initialize(0x00113523.U)
-  //      c.expect_reorder_buffer(None, 1, Some(2))
-  //    }
-  //  }
+  it should "understand sd" in {
+    test(new DecoderWrapper(0)) { c =>
+      // sd x1,10(x2)
+      c.initialize(0x00113523.U)
+      c.expectReorderBuffer(rd = None, rs1 = Some(2), rs2 = Some(1))
+      c.expectReservationStation(immediateOrFunction7 = Some(10))
+    }
+  }
 
   it should "understand immediate" in {
     test(new DecoderWrapper(0)) { c =>
@@ -142,6 +155,18 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectReorderBuffer(rd = Some(1), rs1 = Some(2), rs2 = None)
       c.expectReservationStation(destinationTag = Some(5), sourceTag1 = Some(6), value2 = Some(20))
+    }
+  }
+
+  it should "do register bypass" in {
+    test(new DecoderWrapper(0, 2)) { c =>
+      // add x1,x2,x3
+      c.initialize(0x003100b3.U)
+      c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
+      c.setALU(Seq(Some((6, 20)), Some((7, 21))))
+
+      c.expectReorderBuffer(rd = Some(1))
+      c.expectReservationStation(destinationTag = Some(5), value1 = Some(20), value2 = Some(21))
     }
   }
 }

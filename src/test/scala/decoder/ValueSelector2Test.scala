@@ -13,7 +13,7 @@ class ValueSelector2Wrapper(number_of_alus: Int) extends ValueSelector2(number_o
    * @param sourceTag          ソースタグ
    * @param registerFileValue  レジスタファイルから渡される値
    * @param reorderBufferValue リオーダバッファからの値
-   * @param aluBypassValue     ALUからバイパスされてきた値。タプルの1つめの値がdtag、2つめがvalue。
+   * @param aluBypassValue     ALUからバイパスされてきた値。タプルの1つめの値がdestination tag、2つめがvalue。
    */
   def initalize(sourceTag: Option[Int] = None, registerFileValue: Int = 0, reorderBufferValue: Option[Int] = None, aluBypassValue: Seq[Option[(Int, Int)]] = Seq.fill(number_of_alus)(None), opcodeFormat: OpcodeFormat.Type = R, immediate: Int = 0): Unit = {
     for (i <- aluBypassValue.indices) {

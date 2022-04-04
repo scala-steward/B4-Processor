@@ -2,6 +2,9 @@ package connections
 
 import chisel3._
 
+/**
+ * デコーダとレジスタファイルをつなぐ
+ */
 class Decoder2RegisterFile extends Bundle {
   val sourceRegister1 = Output(UInt(5.W))
   val sourceRegister2 = Output(UInt(5.W))

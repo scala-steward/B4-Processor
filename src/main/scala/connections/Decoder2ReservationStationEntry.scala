@@ -3,6 +3,9 @@ package connections
 import chisel3._
 import consts.Constants.TAG_WIDTH
 
+/**
+ * デコーダとリザベーションステーションをつなぐ
+ */
 class Decoder2ReservationStationEntry extends Bundle {
   val op_code = UInt(7.W)
   val function3 = UInt(3.W)

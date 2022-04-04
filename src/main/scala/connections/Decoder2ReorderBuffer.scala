@@ -4,6 +4,9 @@ import chisel3._
 import chisel3.util._
 import consts.Constants.TAG_WIDTH
 
+/**
+ * デコーダとリオーダバッファをつなぐ
+ */
 class Decoder2ReorderBuffer extends Bundle {
   val source1 = new SourceRegister()
   val source2 = new SourceRegister()

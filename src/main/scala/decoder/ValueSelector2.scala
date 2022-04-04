@@ -6,6 +6,12 @@ import common.OpcodeFormat
 import common.OpcodeFormat.{I, J, U}
 import consts.Constants.TAG_WIDTH
 
+/**
+ * ソースタグ2の値を選択する回路
+ * 基本的にValueSelector1と同じだが、即値の入力を持っている。
+ *
+ * @param number_of_alus ALUの数
+ */
 class ValueSelector2(number_of_alus: Int) extends Module {
   val io = IO(new Bundle {
     val reorderBufferValue = Flipped(DecoupledIO(UInt(64.W)))
@@ -32,7 +38,7 @@ class ValueSelector2(number_of_alus: Int) extends Module {
 
   io.value.valid := MuxCase(false.B,
     Seq(
-      // I形式である
+      // I形式である(即値優先)
       (io.opcodeFormat === I || io.opcodeFormat === U || io.opcodeFormat === J) -> true.B,
       (io.sourceTag.valid && io.reorderBufferValue.valid) -> true.B,
       (io.sourceTag.valid && aluMatchingTagExists) -> true.B,
@@ -40,7 +46,7 @@ class ValueSelector2(number_of_alus: Int) extends Module {
     ))
   io.value.bits := MuxCase(0.U,
     Seq(
-      // I形式である
+      // I形式である(即値優先)
       (io.opcodeFormat === I || io.opcodeFormat === U || io.opcodeFormat === J) -> io.immediateValue,
       (io.sourceTag.valid && io.reorderBufferValue.valid) -> io.reorderBufferValue.bits,
       (io.sourceTag.valid && aluMatchingTagExists) -> MuxCase(0.U,
