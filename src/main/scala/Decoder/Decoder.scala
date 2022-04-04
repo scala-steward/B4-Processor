@@ -36,11 +36,14 @@ class Decoder(instruction_offset: Int) extends Module {
 
   // リオーダバッファから一致するタグを取得する
   val stag_selector1 = Module(new StagSelector(instruction_offset))
+  stag_selector1.io.stag.ready := true.B
   stag_selector1.io.reorderBufferDtag <> io.reorderBuffer.source1.matchingTag
   stag_selector1.io.beforeDtag <> io.decodersBefore
   val stag1 = stag_selector1.io.stag
   val stag_selector2 = Module(new StagSelector(instruction_offset))
+  stag_selector2.io.stag.ready := true.B
   stag_selector2.io.reorderBufferDtag <> io.reorderBuffer.source2.matchingTag
+  stag_selector2.io.beforeDtag <> io.decodersBefore
   val stag2 = stag_selector1.io.stag
 
   // 前のデコーダから次のデコーダへ

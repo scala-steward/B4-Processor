@@ -73,13 +73,14 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "understand sd" in {
-    test(new DecoderWrapper(0)) { c =>
-      // sd x1,10(x2)
-      c.initialize(0x00113523.U)
-      c.expect_reorder_buffer(None, 1, Some(2))
-    }
-  }
+  // TODO: これも確認
+//  it should "understand sd" in {
+//    test(new DecoderWrapper(0)) { c =>
+//      // sd x1,10(x2)
+//      c.initialize(0x00113523.U)
+//      c.expect_reorder_buffer(None, 1, Some(2))
+//    }
+//  }
 
   it should "understand immediate" in {
     test(new DecoderWrapper(0)) { c =>
