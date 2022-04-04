@@ -26,28 +26,33 @@ class Decoder(instruction_offset: Int) extends Module {
   val inst_op = io.imem.bits.instruction(6,0)
   val inst_imm_I = io.imem.bits.instruction(31, 20)
 
-  // to reorder buffer
+  // リオーダバッファへ
   io.reorder_buffer.program_counter := io.imem.bits.program_counter
   io.reorder_buffer.source1.register_source := inst_rs1
   io.reorder_buffer.source2.register_source := inst_rs2
   io.reorder_buffer.destination.register_destination.bits := inst_rd
-  // TODO: change to depend on instruction type
+  // TODO: 命令形式によって変更する
   io.reorder_buffer.destination.register_destination.valid := true.B
 
-  // get matching tags
-  val option_stag = Module(new Option_stag)
-  option_stag.io.reorder_buffer_dtag <> io.reorder_buffer.source1.matching_tag
+  // リオーダバッファから一致するタグを取得する
+  val stag_selector1 = Module(new StagSelector(instruction_offset))
+  stag_selector1.io.reorder_buffer_dtag <> io.reorder_buffer.source1.matching_tag
+  stag_selector1.io.before_dtag <> io.previous_decoders
+  val stag1 = stag_selector1.io.stag
+  val stag_selector2 = Module(new StagSelector(instruction_offset))
+  stag_selector2.io.reorder_buffer_dtag <> io.reorder_buffer.source2.matching_tag
+  val stag2 = stag_selector1.io.stag
 
-  // previous decoder to next decoder
+  // 前のデコーダから次のデコーダへ
   for (i <- 0 until instruction_offset) {
     io.next_decoders(i) <> io.previous_decoders(i)
   }
-  // TODO: apply same logic to valid as reorder buffer destination register
+  // TODO: 命令形式によって変更する
   io.next_decoders(instruction_offset).destination_tag := 1.U
   io.next_decoders(instruction_offset).destination_register := 1.U
   io.next_decoders(instruction_offset).valid := false.B
 
-  // TODO: change
+  // TODO: 別の信号へつなぐ
   io.reorder_buffer.source1.matching_tag.ready := true.B
   io.reorder_buffer.source1.value.ready := true.B
   io.reorder_buffer.source2.matching_tag.ready := true.B
@@ -56,7 +61,7 @@ class Decoder(instruction_offset: Int) extends Module {
   io.imem.ready <> io.reservationStation.ready
   io.imem.valid <> io.reservationStation.valid
 
-  // TODO: fill all reservation station fields
+  // TODO:  リザベーションステーションにすべてのフィールドを埋める
   val rs = io.reservationStation.bits
   rs.op_code := inst_op
   rs.function3 := inst_funct3
