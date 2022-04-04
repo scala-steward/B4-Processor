@@ -1,4 +1,4 @@
-package Decoder
+package decoder
 
 import chisel3._
 import chiseltest._
@@ -80,7 +80,7 @@ class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) exten
  * デコーダのテスト
  */
 class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "Decoder"
+  behavior of "decoder"
 
   it should "pass rs1 rs2 rd to reorder buffer" in {
     test(new DecoderWrapper(0)) { c =>

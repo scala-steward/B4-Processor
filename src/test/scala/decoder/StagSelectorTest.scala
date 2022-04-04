@@ -1,4 +1,4 @@
-package Decoder
+package decoder
 
 import chisel3._
 import chiseltest._

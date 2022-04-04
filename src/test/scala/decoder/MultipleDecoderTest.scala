@@ -1,4 +1,4 @@
-package Decoder
+package decoder
 
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
