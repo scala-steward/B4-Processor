@@ -4,6 +4,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
 import chisel3.util._
 import chiseltest._
+import common.OpcodeFormat
+import common.OpcodeFormat._
 
 class ValueSelector2Wrapper(number_of_alus: Int) extends ValueSelector2(number_of_alus) {
   /**
@@ -14,7 +16,7 @@ class ValueSelector2Wrapper(number_of_alus: Int) extends ValueSelector2(number_o
    * @param reorderBufferValue リオーダバッファからの値
    * @param aluBypassValue     ALUからバイパスされてきた値。タプルの1つめの値がdtag、2つめがvalue。
    */
-  def initalize(sourceTag: Option[Int] = None, registerFileValue: Int = 0, reorderBufferValue: Option[Int] = None, aluBypassValue: Seq[Option[(Int, Int)]] = Seq.fill(number_of_alus)(None), opcode: UInt = 0.U, immediate: Int = 0): Unit = {
+  def initalize(sourceTag: Option[Int] = None, registerFileValue: Int = 0, reorderBufferValue: Option[Int] = None, aluBypassValue: Seq[Option[(Int, Int)]] = Seq.fill(number_of_alus)(None), opcodeFormat: OpcodeFormat.Type = R, immediate: Int = 0): Unit = {
     for (i <- aluBypassValue.indices) {
       this.io.aluBypassValue(i).valid.poke(aluBypassValue(i).isDefined.B)
       this.io.aluBypassValue(i).bits.destinationTag.poke(aluBypassValue(i).getOrElse((0, 0))._1.U)
@@ -26,7 +28,7 @@ class ValueSelector2Wrapper(number_of_alus: Int) extends ValueSelector2(number_o
     this.io.sourceTag.valid.poke(sourceTag.isDefined.B)
     this.io.sourceTag.bits.poke(sourceTag.getOrElse(0).U)
     this.io.immediateValue.poke(immediate.U)
-    this.io.opcode.poke(opcode)
+    this.io.opcodeFormat.poke(opcodeFormat)
   }
 
   def expectValue(value: Option[Int]): Unit = {
@@ -77,14 +79,14 @@ class ValueSelector2Test extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "use immediate" in {
     test(new ValueSelector2Wrapper(0)) { c =>
-      c.initalize(immediate = 9, opcode = "b0000011".U)
+      c.initalize(immediate = 9, opcodeFormat = I)
       c.expectValue(Some(9))
     }
   }
 
   it should "not use immediate" in {
     test(new ValueSelector2Wrapper(0)) { c =>
-      c.initalize(registerFileValue = 5, immediate = 9, opcode = "b0000000".U)
+      c.initalize(registerFileValue = 5, immediate = 9, opcodeFormat = R)
       c.expectValue(Some(5))
     }
   }

@@ -11,20 +11,21 @@ import chiseltest._
  *
  * @param instruction_offset 同時に扱う命令のうちいくつ目の命令を担当するか
  */
-class DecoderWrapper(instruction_offset: Int) extends Decoder(instruction_offset) {
+class DecoderWrapper(instruction_offset: Int, number_of_alus: Int = 0) extends Decoder(instruction_offset, number_of_alus) {
   def initialize(instruction: UInt): Unit = {
     this.io.imem.bits.program_counter.poke(0.U)
     this.io.imem.bits.instruction.poke(instruction)
     this.io.imem.valid.poke(true.B)
     this.io.reorderBuffer.destination.destinationTag.poke(0.U)
     this.io.reorderBuffer.source1.matchingTag.valid.poke(true.B)
-    this.io.reorderBuffer.source1.matchingTag.bits.poke(0.U)
+    this.io.reorderBuffer.source1.matchingTag.bits.poke(4.U)
     this.io.reorderBuffer.source1.value.valid.poke(false.B)
     this.io.reorderBuffer.source1.value.bits.poke(0.B)
     this.io.reorderBuffer.source2.matchingTag.valid.poke(true.B)
-    this.io.reorderBuffer.source2.matchingTag.bits.poke(0.U)
+    this.io.reorderBuffer.source2.matchingTag.bits.poke(5.U)
     this.io.reorderBuffer.source2.value.valid.poke(false.B)
     this.io.reorderBuffer.source2.value.bits.poke(0.B)
+    this.io.registerFile.value1
   }
 
   def expect_reorder_buffer(rd: Option[Int], rs1: Int, rs2: Option[Int]): Unit = {
@@ -48,7 +49,12 @@ class DecoderWrapper(instruction_offset: Int) extends Decoder(instruction_offset
     }
   }
 
-  def expect_reservation_station(): Unit = {
+  def expect_reservation_station(sourceTag1: Int, sourceTag2: Option[Int]): Unit = {
+    this.io.reservationStation.bits.sourceTag1.expect(sourceTag1.U)
+    if (sourceTag2.isDefined) {
+      this.io.reservationStation.bits.sourceTag2.expect(sourceTag2.get.U)
+    }
+    // TODO: 他のフィールドも確認
   }
 }
 
@@ -70,23 +76,25 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       // add x1,x2,x3
       c.initialize(0x003100b3.U)
       c.expect_reorder_buffer(Some(1), 2, Some(3))
+      c.expect_reservation_station(4, Some(5))
     }
   }
 
   // TODO: これも確認
-//  it should "understand sd" in {
-//    test(new DecoderWrapper(0)) { c =>
-//      // sd x1,10(x2)
-//      c.initialize(0x00113523.U)
-//      c.expect_reorder_buffer(None, 1, Some(2))
-//    }
-//  }
+  //  it should "understand sd" in {
+  //    test(new DecoderWrapper(0)) { c =>
+  //      // sd x1,10(x2)
+  //      c.initialize(0x00113523.U)
+  //      c.expect_reorder_buffer(None, 1, Some(2))
+  //    }
+  //  }
 
   it should "understand immediate" in {
     test(new DecoderWrapper(0)) { c =>
       // addi x1,x2,20
       c.initialize(0x01410093.U)
       c.expect_reorder_buffer(Some(1), 2, None)
+      c.expect_reservation_station(4, None)
     }
   }
 }
