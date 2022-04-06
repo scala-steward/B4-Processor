@@ -1,7 +1,7 @@
-package decoder
+package b4processor.modules.decoder
 
+import b4processor.connections.IMem2Decoder
 import chisel3._
-import connections.IMem2Decoder
 
 /**
  * 複数のデコーダをつなげるモジュール

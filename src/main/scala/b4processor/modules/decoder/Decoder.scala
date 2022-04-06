@@ -1,10 +1,10 @@
-package decoder
+package b4processor.modules.decoder
 
+import b4processor.common.OpcodeFormat._
+import b4processor.common.OpcodeFormatChecker
+import b4processor.connections._
 import chisel3._
 import chisel3.util._
-import common.OpcodeFormat._
-import common.OpcodeFormatChecker
-import connections._
 
 /**
  * デコーダ

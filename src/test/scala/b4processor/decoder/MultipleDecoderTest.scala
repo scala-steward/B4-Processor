@@ -1,5 +1,6 @@
-package decoder
+package b4processor.decoder
 
+import b4processor.modules.decoder.MultipleDecoder
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 

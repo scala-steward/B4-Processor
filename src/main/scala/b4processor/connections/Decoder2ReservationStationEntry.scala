@@ -1,7 +1,7 @@
-package connections
+package b4processor.connections
 
+import b4processor.Constants.TAG_WIDTH
 import chisel3._
-import consts.Constants.TAG_WIDTH
 
 /**
  * デコーダとリザベーションステーションをつなぐ

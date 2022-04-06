@@ -1,4 +1,4 @@
-package common
+package b4processor.common
 
 import chisel3._
 import chisel3.experimental.ChiselEnum
@@ -19,11 +19,12 @@ class OpcodeFormatChecker extends Module {
     // I
     "b0000011".U -> OpcodeFormat.I, // load
     "b0001111".U -> OpcodeFormat.I, // fence
-    "b1110011".U -> OpcodeFormat.I, // csr
+    "b1110011".U -> OpcodeFormat.I, // csr, ecall, ebreak
     "b0010011".U -> OpcodeFormat.I, // 演算
     "b0011011".U -> OpcodeFormat.I, // 演算(64I)
+    "b1100111".U -> OpcodeFormat.I, // jalr
     // J
-    "b1101111".U -> OpcodeFormat.J, // jal,jalr
+    "b1101111".U -> OpcodeFormat.J, // jal
     // U
     "b0110111".U -> OpcodeFormat.U, // lui
     "b0010111".U -> OpcodeFormat.U, // aupic
@@ -33,6 +34,6 @@ class OpcodeFormatChecker extends Module {
     "b0100011".U -> OpcodeFormat.S, // store
     // R
     "b0110011".U -> OpcodeFormat.R, // 演算
-    "b0011011".U -> OpcodeFormat.R, // 演算(64I)
+    "b0111011".U -> OpcodeFormat.R, // 演算(64I)
   ))
 }

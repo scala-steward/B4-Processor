@@ -1,9 +1,10 @@
-package decoder
+package b4processor.decoder
 
+import b4processor.common.OpcodeFormat
+import b4processor.common.OpcodeFormat._
+import b4processor.modules.decoder.ValueSelector2
 import chisel3._
 import chiseltest._
-import common.OpcodeFormat
-import common.OpcodeFormat._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ValueSelector2Wrapper(number_of_alus: Int) extends ValueSelector2(number_of_alus) {

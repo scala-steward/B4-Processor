@@ -1,4 +1,4 @@
-package riscv
+package b4processor.riscv
 
 import Chisel.BitPat
 

@@ -1,4 +1,4 @@
-package connections
+package b4processor.connections
 
 import chisel3._
 

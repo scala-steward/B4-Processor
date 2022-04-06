@@ -1,5 +1,6 @@
-package decoder
+package b4processor.decoder
 
+import b4processor.modules.decoder.SourceTagSelector
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
