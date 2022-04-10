@@ -17,6 +17,7 @@ class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) exten
     this.setImem(instruction)
     this.setReorderBuffer()
     this.setRegisterFile()
+    this.setALU()
   }
 
   def setImem(instruction: UInt): Unit = {
@@ -30,15 +31,15 @@ class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) exten
                        value1: Option[Int] = None,
                        sourceTag2: Option[Int] = None,
                        value2: Option[Int] = None): Unit = {
-    this.io.reorderBuffer.bits.destination.destinationTag.poke(destinationTag.U)
-    this.io.reorderBuffer.bits.source1.matchingTag.valid.poke(sourceTag1.isDefined.B)
-    this.io.reorderBuffer.bits.source1.matchingTag.bits.poke(sourceTag1.getOrElse(0).U)
-    this.io.reorderBuffer.bits.source1.value.valid.poke(value1.isDefined.B)
-    this.io.reorderBuffer.bits.source1.value.bits.poke(value1.getOrElse(0).U)
-    this.io.reorderBuffer.bits.source2.matchingTag.valid.poke(sourceTag2.isDefined.B)
-    this.io.reorderBuffer.bits.source2.matchingTag.bits.poke(sourceTag2.getOrElse(0).U)
-    this.io.reorderBuffer.bits.source2.value.valid.poke(value2.isDefined.B)
-    this.io.reorderBuffer.bits.source2.value.bits.poke(value2.getOrElse(0).U)
+    this.io.reorderBuffer.destination.destinationTag.poke(destinationTag.U)
+    this.io.reorderBuffer.source1.matchingTag.valid.poke(sourceTag1.isDefined.B)
+    this.io.reorderBuffer.source1.matchingTag.bits.poke(sourceTag1.getOrElse(0).U)
+    this.io.reorderBuffer.source1.value.valid.poke(value1.isDefined.B)
+    this.io.reorderBuffer.source1.value.bits.poke(value1.getOrElse(0).U)
+    this.io.reorderBuffer.source2.matchingTag.valid.poke(sourceTag2.isDefined.B)
+    this.io.reorderBuffer.source2.matchingTag.bits.poke(sourceTag2.getOrElse(0).U)
+    this.io.reorderBuffer.source2.value.valid.poke(value2.isDefined.B)
+    this.io.reorderBuffer.source2.value.bits.poke(value2.getOrElse(0).U)
     this.io.reorderBuffer.ready.poke(true.B)
   }
 
@@ -47,7 +48,7 @@ class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) exten
     this.io.registerFile.value2.poke(value2.U)
   }
 
-  def setALU(bypassedValues: Seq[Option[(Int, Int)]]) = {
+  def setALU(bypassedValues: Seq[Option[(Int, Int)]] = Seq.fill(number_of_alus)(None)) = {
     for (i <- bypassedValues.indices) {
       this.io.alu(i).valid.poke(bypassedValues(i).isDefined.B)
       this.io.alu(i).bits.destinationTag.poke(bypassedValues(i).getOrElse((0, 0))._1.U)
@@ -58,16 +59,16 @@ class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) exten
 
   def expectReorderBuffer(rd: Option[Int], rs1: Option[Int] = None, rs2: Option[Int] = None): Unit = {
     // check rd
-    this.io.reorderBuffer.bits.destination.destinationRegister.valid.expect(rd.isDefined.B, "rdが間違っています")
+    this.io.reorderBuffer.destination.destinationRegister.valid.expect(rd.isDefined.B, "rdが間違っています")
     if (rd.isDefined)
-      this.io.reorderBuffer.bits.destination.destinationRegister.bits.expect(rd.get.U, "rdの値が間違っています")
+      this.io.reorderBuffer.destination.destinationRegister.bits.expect(rd.get.U, "rdの値が間違っています")
 
     // check rs1
     if (rs1.isDefined)
-      this.io.reorderBuffer.bits.source1.sourceRegister.expect(rs1.get.U, "rs1 doesn't match")
+      this.io.reorderBuffer.source1.sourceRegister.expect(rs1.get.U, "rs1 doesn't match")
     // check rs2
     if (rs2.isDefined)
-      this.io.reorderBuffer.bits.source2.sourceRegister.expect(rs2.get.U, "rs2 doesn't match")
+      this.io.reorderBuffer.source2.sourceRegister.expect(rs2.get.U, "rs2 doesn't match")
   }
 
   def expectReservationStation(destinationTag: Option[Int] = None,
@@ -169,6 +170,26 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectReorderBuffer(rd = Some(1))
       c.expectReservationStation(destinationTag = Some(5), value1 = Some(20), value2 = Some(21))
+    }
+  }
+
+  it should "say the data is valid" in {
+    test(new DecoderWrapper(0, 2)) { c =>
+      // add x1,x2,x3
+      c.initialize(0x003100b3.U)
+
+      c.io.reorderBuffer.valid.expect(true.B)
+      c.io.reservationStation.valid.expect(true.B)
+    }
+  }
+
+  it should "say the data is invalid" in {
+    test(new DecoderWrapper(0, 2)) { c =>
+      c.initialize(0.U)
+      c.io.imem.valid.poke(false.B)
+
+      c.io.reorderBuffer.valid.expect(false.B)
+      c.io.reservationStation.valid.expect(false.B)
     }
   }
 }

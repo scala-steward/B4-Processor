@@ -29,7 +29,7 @@ class SourceTagSelector(instruction_offset: Int) extends Module {
   // 読み方
   // beforeのdestinationTagのそれぞれの値のvalidを取り出し、一つずつORをかけていく
   // できれば.asUInt.orRが使いたいが、うまく使う方法がわからなかったのでゴリ押し
-  val beforeDestinationRegisterValid = io.beforeDestinationTag.map { d => d.valid }.fold(false.B) { (a, b) => a | b }.asBool
+  val beforeDestinationRegisterValid = io.beforeDestinationTag.map { d => d.valid }.fold(false.B) { (a, b) => a || b }
 
   // MuxCaseでソースタグが見つからない -> 値がレジスタファイルに存在している -> valid = 0
   // (otherwise =（beforeDestinationRegisterValid or reorderBufferValidにsource tagが存在している）-> valid = 1)

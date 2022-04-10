@@ -2,7 +2,7 @@ package b4processor.modules.decoder
 
 import b4processor.common.OpcodeFormat._
 import b4processor.common.OpcodeFormatChecker
-import b4processor.connections.{ExecutionRegisterBypass, _}
+import b4processor.connections._
 import b4processor.modules.reservationstation.ReservationStationEntry
 import chisel3._
 import chisel3.util._
@@ -17,11 +17,11 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
   val io = IO(new Bundle {
     val imem = Flipped(new IMem2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer()
-    val alu = Vec(numberOfAlus, Flipped(new ExecutionRegisterBypass))
-    val registerFile = new Decoder2RegisterFile
+    val alu = Vec(numberOfAlus, Flipped(new ExecutionRegisterBypass()))
+    val registerFile = new Decoder2RegisterFile()
 
-    val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder))
-    val decodersAfter = Output(Vec(instructionOffset + 1, new Decoder2NextDecoder))
+    val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder()))
+    val decodersAfter = Output(Vec(instructionOffset + 1, new Decoder2NextDecoder()))
 
     val reservationStation = DecoupledIO(new ReservationStationEntry)
   })
@@ -55,11 +55,11 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
     opcodeFormatChecker.io.format === J
 
   // リオーダバッファへの入力
-  io.reorderBuffer.bits.programCounter := io.imem.bits.program_counter
-  io.reorderBuffer.bits.source1.sourceRegister := instRs1
-  io.reorderBuffer.bits.source2.sourceRegister := instRs2
-  io.reorderBuffer.bits.destination.destinationRegister.bits := instRd
-  io.reorderBuffer.bits.destination.destinationRegister.valid := destinationIsValid
+  io.reorderBuffer.programCounter := io.imem.bits.program_counter
+  io.reorderBuffer.source1.sourceRegister := instRs1
+  io.reorderBuffer.source2.sourceRegister := instRs2
+  io.reorderBuffer.destination.destinationRegister.bits := instRd
+  io.reorderBuffer.destination.destinationRegister.valid := destinationIsValid
 
   // レジスタファイルへの入力
   io.registerFile.sourceRegister1 := instRs1
@@ -69,7 +69,7 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
   // セレクタ1
   val sourceTagSelector1 = Module(new SourceTagSelector(instructionOffset))
   sourceTagSelector1.io.sourceTag.ready := true.B
-  sourceTagSelector1.io.reorderBufferDestinationTag <> io.reorderBuffer.bits.source1.matchingTag
+  sourceTagSelector1.io.reorderBufferDestinationTag <> io.reorderBuffer.source1.matchingTag
   for (i <- 0 until instructionOffset) {
     // 前のデコーダから流れてきたdestination tag
     sourceTagSelector1.io.beforeDestinationTag(i).bits := io.decodersBefore(i).destinationTag
@@ -81,7 +81,7 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
   // セレクタ2
   val sourceTagSelector2 = Module(new SourceTagSelector(instructionOffset))
   sourceTagSelector2.io.sourceTag.ready := true.B
-  sourceTagSelector2.io.reorderBufferDestinationTag <> io.reorderBuffer.bits.source2.matchingTag
+  sourceTagSelector2.io.reorderBufferDestinationTag <> io.reorderBuffer.source2.matchingTag
   for (i <- 0 until instructionOffset) {
     sourceTagSelector2.io.beforeDestinationTag(i).bits := io.decodersBefore(i).destinationTag
     sourceTagSelector2.io.beforeDestinationTag(i).valid := io.decodersBefore(i).destinationRegister === instRs2
@@ -93,7 +93,7 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
   val valueSelector1 = Module(new ValueSelector1(numberOfAlus))
   valueSelector1.io.value.ready := true.B
   valueSelector1.io.sourceTag <> sourceTag1
-  valueSelector1.io.reorderBufferValue <> io.reorderBuffer.bits.source1.value
+  valueSelector1.io.reorderBufferValue <> io.reorderBuffer.source1.value
   valueSelector1.io.registerFileValue := io.registerFile.value1
   for (i <- 0 until numberOfAlus) {
     valueSelector1.io.aluBypassValue(i) <> io.alu(i)
@@ -102,7 +102,7 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
   val valueSelector2 = Module(new ValueSelector2(numberOfAlus))
   valueSelector2.io.value.ready := true.B
   valueSelector2.io.sourceTag <> sourceTag2
-  valueSelector2.io.reorderBufferValue <> io.reorderBuffer.bits.source2.value
+  valueSelector2.io.reorderBufferValue <> io.reorderBuffer.source2.value
   valueSelector2.io.registerFileValue := io.registerFile.value2
   valueSelector2.io.immediateValue := MuxLookup(opcodeFormatChecker.io.format.asUInt, 0.U, Seq(
     I.asUInt -> immIExtended,
@@ -120,7 +120,7 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
   }
   // 次のデコーダへ伝える情報
   when(destinationIsValid) {
-    io.decodersAfter(instructionOffset).destinationTag := io.reorderBuffer.bits.destination.destinationTag
+    io.decodersAfter(instructionOffset).destinationTag := io.reorderBuffer.destination.destinationTag
     io.decodersAfter(instructionOffset).destinationRegister := instRd
     io.decodersAfter(instructionOffset).valid := true.B
   } otherwise {
@@ -130,10 +130,10 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
   }
 
   // リオーダバッファからの情報は常に受け取ることにする
-  io.reorderBuffer.bits.source1.matchingTag.ready := true.B
-  io.reorderBuffer.bits.source1.value.ready := true.B
-  io.reorderBuffer.bits.source2.matchingTag.ready := true.B
-  io.reorderBuffer.bits.source2.value.ready := true.B
+  io.reorderBuffer.source1.matchingTag.ready := true.B
+  io.reorderBuffer.source1.value.ready := true.B
+  io.reorderBuffer.source2.matchingTag.ready := true.B
+  io.reorderBuffer.source2.value.ready := true.B
 
   // 命令をデコードするのはリオーダバッファにエントリの空きがあり、リザベーションステーションにも空きがあるとき
   io.imem.ready := io.reservationStation.ready && io.reorderBuffer.ready
@@ -150,7 +150,7 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
     S.asUInt -> instImmS,
     B.asUInt -> instImmB,
   ))
-  rs.destinationTag := io.reorderBuffer.bits.destination.destinationTag
+  rs.destinationTag := io.reorderBuffer.destination.destinationTag
   rs.sourceTag1 := sourceTag1.bits
   rs.sourceTag2 := sourceTag2.bits
   rs.ready1 := valueSelector1.io.value.valid

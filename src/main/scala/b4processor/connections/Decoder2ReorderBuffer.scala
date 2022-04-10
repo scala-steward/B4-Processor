@@ -7,11 +7,14 @@ import chisel3.util._
 /**
  * デコーダとリオーダバッファをつなぐ
  */
-class Decoder2ReorderBuffer extends ReadyValidIO(new Bundle {
+class Decoder2ReorderBuffer extends Bundle {
   val source1 = new SourceRegister()
   val source2 = new SourceRegister()
   val destination = new DestinationRegister()
   val programCounter = Output(UInt(64.W))
+  // 全体をDecoupledにするとsource1などがすべてOutputにってしまって、間違っているのでこちらに書く
+  val ready = Input(Bool())
+  val valid = Output(Bool())
 
   class SourceRegister extends Bundle {
     val sourceRegister = Output(UInt(5.W))
@@ -23,4 +26,4 @@ class Decoder2ReorderBuffer extends ReadyValidIO(new Bundle {
     val destinationRegister = DecoupledIO(UInt(5.W))
     val destinationTag = Input(UInt(TAG_WIDTH.W))
   }
-})
+}
