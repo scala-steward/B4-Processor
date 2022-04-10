@@ -1,4 +1,4 @@
-package b4processor.connections
+package b4processor.modules.reservationstation
 
 import b4processor.Constants.TAG_WIDTH
 import chisel3._
@@ -6,7 +6,7 @@ import chisel3._
 /**
  * デコーダとリザベーションステーションをつなぐ
  */
-class Decoder2ReservationStationEntry extends Bundle {
+class ReservationStationEntry extends Bundle {
   val op_code = UInt(7.W)
   val function3 = UInt(3.W)
   val immediateOrFunction7 = UInt(12.W)

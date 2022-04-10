@@ -7,7 +7,7 @@ import chisel3.util._
 /**
  * デコーダとリオーダバッファをつなぐ
  */
-class Decoder2ReorderBuffer extends Bundle {
+class Decoder2ReorderBuffer extends ReadyValidIO(new Bundle {
   val source1 = new SourceRegister()
   val source2 = new SourceRegister()
   val destination = new DestinationRegister()
@@ -23,4 +23,4 @@ class Decoder2ReorderBuffer extends Bundle {
     val destinationRegister = DecoupledIO(UInt(5.W))
     val destinationTag = Input(UInt(TAG_WIDTH.W))
   }
-}
+})

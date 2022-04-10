@@ -30,15 +30,16 @@ class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) exten
                        value1: Option[Int] = None,
                        sourceTag2: Option[Int] = None,
                        value2: Option[Int] = None): Unit = {
-    this.io.reorderBuffer.destination.destinationTag.poke(destinationTag.U)
-    this.io.reorderBuffer.source1.matchingTag.valid.poke(sourceTag1.isDefined.B)
-    this.io.reorderBuffer.source1.matchingTag.bits.poke(sourceTag1.getOrElse(0).U)
-    this.io.reorderBuffer.source1.value.valid.poke(value1.isDefined.B)
-    this.io.reorderBuffer.source1.value.bits.poke(value1.getOrElse(0).U)
-    this.io.reorderBuffer.source2.matchingTag.valid.poke(sourceTag2.isDefined.B)
-    this.io.reorderBuffer.source2.matchingTag.bits.poke(sourceTag2.getOrElse(0).U)
-    this.io.reorderBuffer.source2.value.valid.poke(value2.isDefined.B)
-    this.io.reorderBuffer.source2.value.bits.poke(value2.getOrElse(0).U)
+    this.io.reorderBuffer.bits.destination.destinationTag.poke(destinationTag.U)
+    this.io.reorderBuffer.bits.source1.matchingTag.valid.poke(sourceTag1.isDefined.B)
+    this.io.reorderBuffer.bits.source1.matchingTag.bits.poke(sourceTag1.getOrElse(0).U)
+    this.io.reorderBuffer.bits.source1.value.valid.poke(value1.isDefined.B)
+    this.io.reorderBuffer.bits.source1.value.bits.poke(value1.getOrElse(0).U)
+    this.io.reorderBuffer.bits.source2.matchingTag.valid.poke(sourceTag2.isDefined.B)
+    this.io.reorderBuffer.bits.source2.matchingTag.bits.poke(sourceTag2.getOrElse(0).U)
+    this.io.reorderBuffer.bits.source2.value.valid.poke(value2.isDefined.B)
+    this.io.reorderBuffer.bits.source2.value.bits.poke(value2.getOrElse(0).U)
+    this.io.reorderBuffer.ready.poke(true.B)
   }
 
   def setRegisterFile(value1: Int = 0, value2: Int = 0): Unit = {
@@ -57,16 +58,16 @@ class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) exten
 
   def expectReorderBuffer(rd: Option[Int], rs1: Option[Int] = None, rs2: Option[Int] = None): Unit = {
     // check rd
-    this.io.reorderBuffer.destination.destinationRegister.valid.expect(rd.isDefined.B, "rdが間違っています")
+    this.io.reorderBuffer.bits.destination.destinationRegister.valid.expect(rd.isDefined.B, "rdが間違っています")
     if (rd.isDefined)
-      this.io.reorderBuffer.destination.destinationRegister.bits.expect(rd.get.U, "rdの値が間違っています")
+      this.io.reorderBuffer.bits.destination.destinationRegister.bits.expect(rd.get.U, "rdの値が間違っています")
 
     // check rs1
     if (rs1.isDefined)
-      this.io.reorderBuffer.source1.sourceRegister.expect(rs1.get.U, "rs1 doesn't match")
+      this.io.reorderBuffer.bits.source1.sourceRegister.expect(rs1.get.U, "rs1 doesn't match")
     // check rs2
     if (rs2.isDefined)
-      this.io.reorderBuffer.source2.sourceRegister.expect(rs2.get.U, "rs2 doesn't match")
+      this.io.reorderBuffer.bits.source2.sourceRegister.expect(rs2.get.U, "rs2 doesn't match")
   }
 
   def expectReservationStation(destinationTag: Option[Int] = None,
