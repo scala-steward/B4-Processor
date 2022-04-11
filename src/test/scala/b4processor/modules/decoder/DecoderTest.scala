@@ -1,6 +1,5 @@
 package b4processor.modules.decoder
 
-import b4processor.Parameters
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -10,10 +9,10 @@ class ALUValue(val destinationTag: Int = 0, val value: Int = 0)
 /**
  * デコーダをテストしやすくするためにラップしたもの
  *
- * @param instructionOffset 同時に扱う命令のうちいくつ目の命令を担当するか
- * @param params             パラメータ
+ * @param instruction_offset 同時に扱う命令のうちいくつ目の命令を担当するか
+ * @param number_of_alus     ALUの数
  */
-class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) extends Decoder(instructionOffset)(params) {
+class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) extends Decoder(instruction_offset, number_of_alus) {
   def initialize(instruction: UInt): Unit = {
     this.setImem(instruction)
     this.setReorderBuffer()
@@ -49,7 +48,7 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
     this.io.registerFile.value2.poke(value2)
   }
 
-  def setALU(bypassedValues: Seq[Option[ALUValue]] = Seq.fill(params.numberOfALUs)(None)) = {
+  def setALU(bypassedValues: Seq[Option[ALUValue]] = Seq.fill(number_of_alus)(None)) = {
     for (i <- bypassedValues.indices) {
       this.io.alu(i).valid.poke(bypassedValues(i).isDefined)
       this.io.alu(i).bits.destinationTag.poke(bypassedValues(i).getOrElse(new ALUValue).destinationTag)
@@ -87,7 +86,6 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
  */
 class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "decoder"
-  implicit val testParams = Parameters()
 
   it should "pass rs1 rs2 rd to reorder buffer" in {
     test(new DecoderWrapper(0)) { c =>
@@ -120,26 +118,24 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "get source tags and values from reorder buffer" in {
-    test(new DecoderWrapper(0)) {
-      c =>
-        // add x1,x2,x3
-        c.initialize("x003100b3".U)
-        c.setReorderBuffer(
-          destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7), value1 = Some(20), value2 = Some(21))
+    test(new DecoderWrapper(0)) { c =>
+      // add x1,x2,x3
+      c.initialize("x003100b3".U)
+      c.setReorderBuffer(
+        destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7), value1 = Some(20), value2 = Some(21))
 
-        c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
-        c.expectReservationStation(
-          destinationTag = 5, value1 = 20, value2 = 21)
+      c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
+      c.expectReservationStation(
+        destinationTag = 5, value1 = 20, value2 = 21)
     }
   }
 
   it should "understand sd" in {
-    test(new DecoderWrapper(0)) {
-      c =>
-        // sd x1,10(x2)
-        c.initialize("x00113523".U)
-        c.expectReorderBuffer(sourceRegister1 = 2, sourceRegister2 = 1)
-        c.expectReservationStation(immediateOrFunction7 = 10)
+    test(new DecoderWrapper(0)) { c =>
+      // sd x1,10(x2)
+      c.initialize("x00113523".U)
+      c.expectReorderBuffer(sourceRegister1 = 2, sourceRegister2 = 1)
+      c.expectReservationStation(immediateOrFunction7 = 10)
     }
   }
 
@@ -155,20 +151,19 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "do register bypass" in {
-    test(new DecoderWrapper(0)) {
-      c =>
-        // add x1,x2,x3
-        c.initialize("x003100b3".U)
-        c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
-        c.setALU(Seq(Some(new ALUValue(6, 20)), Some(new ALUValue(7, 21))))
+    test(new DecoderWrapper(0, 2)) { c =>
+      // add x1,x2,x3
+      c.initialize("x003100b3".U)
+      c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
+      c.setALU(Seq(Some(new ALUValue(6, 20)), Some(new ALUValue(7, 21))))
 
-        c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
-        c.expectReservationStation(destinationTag = 5, value1 = 20, value2 = 21)
+      c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
+      c.expectReservationStation(destinationTag = 5, value1 = 20, value2 = 21)
     }
   }
 
   it should "say the data is valid" in {
-    test(new DecoderWrapper(0)) { c =>
+    test(new DecoderWrapper(0, 2)) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
 
@@ -178,18 +173,17 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "say the data is invalid" in {
-    test(new DecoderWrapper(0)) {
-      c =>
-        c.initialize(0.U)
-        c.io.imem.valid.poke(false.B)
+    test(new DecoderWrapper(0, 2)) { c =>
+      c.initialize(0.U)
+      c.io.imem.valid.poke(false.B)
 
-        c.io.reorderBuffer.valid.expect(false.B)
-        c.io.reservationStation.valid.expect(false.B)
+      c.io.reorderBuffer.valid.expect(false.B)
+      c.io.reservationStation.valid.expect(false.B)
     }
   }
 
   it should "understand U format" in {
-    test(new DecoderWrapper(0)(testParams)) { c =>
+    test(new DecoderWrapper(0, 0)) { c =>
       // lui x3, 123
       c.initialize("x0007b1b7".U)
       c.setReorderBuffer(destinationTag = 5)
@@ -200,7 +194,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "understand J format" in {
-    test(new DecoderWrapper(0)(testParams)) { c =>
+    test(new DecoderWrapper()) { c =>
       // jal x10,LABEL
       // LABEL:
       c.initialize("x0040056f".U)
