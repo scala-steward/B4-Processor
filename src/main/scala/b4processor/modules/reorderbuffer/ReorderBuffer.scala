@@ -45,14 +45,13 @@ class ReorderBuffer(numberOfDecoders: Int, numberOfALus: Int, maxRegisterFileCom
     }
     val decoder = io.decoders(i)
     decoder.ready := lastReady && head + i.U =/= tail
-    decoder.destination.destinationRegister.ready := true.B
     buffer(head + i.U) := Mux(decoder.valid,
       {
         val entry = Wire(new ReorderBufferEntry)
         entry.value := 0.U
         entry.ready := false.B
         entry.programCounter := decoder.programCounter
-        entry.destinationRegister := Mux(decoder.destination.destinationRegister.valid, decoder.destination.destinationRegister.bits, 0.U)
+        entry.destinationRegister := decoder.destination.destinationRegister
         entry
       },
       nopEntry)
