@@ -5,6 +5,7 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
+class ALUValue(val destinationTag: Int = 0, val value: Int = 0)
 
 /**
  * デコーダをテストしやすくするためにラップしたもの
@@ -21,9 +22,9 @@ class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) exten
   }
 
   def setImem(instruction: UInt): Unit = {
-    this.io.imem.bits.program_counter.poke(0.U)
+    this.io.imem.bits.program_counter.poke(0)
     this.io.imem.bits.instruction.poke(instruction)
-    this.io.imem.valid.poke(true.B)
+    this.io.imem.valid.poke(true)
   }
 
   def setReorderBuffer(destinationTag: Int = 0,
@@ -31,64 +32,53 @@ class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) exten
                        value1: Option[Int] = None,
                        sourceTag2: Option[Int] = None,
                        value2: Option[Int] = None): Unit = {
-    this.io.reorderBuffer.destination.destinationTag.poke(destinationTag.U)
-    this.io.reorderBuffer.source1.matchingTag.valid.poke(sourceTag1.isDefined.B)
-    this.io.reorderBuffer.source1.matchingTag.bits.poke(sourceTag1.getOrElse(0).U)
-    this.io.reorderBuffer.source1.value.valid.poke(value1.isDefined.B)
-    this.io.reorderBuffer.source1.value.bits.poke(value1.getOrElse(0).U)
-    this.io.reorderBuffer.source2.matchingTag.valid.poke(sourceTag2.isDefined.B)
-    this.io.reorderBuffer.source2.matchingTag.bits.poke(sourceTag2.getOrElse(0).U)
-    this.io.reorderBuffer.source2.value.valid.poke(value2.isDefined.B)
-    this.io.reorderBuffer.source2.value.bits.poke(value2.getOrElse(0).U)
-    this.io.reorderBuffer.ready.poke(true.B)
+    this.io.reorderBuffer.destination.destinationTag.poke(destinationTag)
+    this.io.reorderBuffer.source1.matchingTag.valid.poke(sourceTag1.isDefined)
+    this.io.reorderBuffer.source1.matchingTag.bits.poke(sourceTag1.getOrElse(0))
+    this.io.reorderBuffer.source1.value.valid.poke(value1.isDefined)
+    this.io.reorderBuffer.source1.value.bits.poke(value1.getOrElse(0))
+    this.io.reorderBuffer.source2.matchingTag.valid.poke(sourceTag2.isDefined)
+    this.io.reorderBuffer.source2.matchingTag.bits.poke(sourceTag2.getOrElse(0))
+    this.io.reorderBuffer.source2.value.valid.poke(value2.isDefined)
+    this.io.reorderBuffer.source2.value.bits.poke(value2.getOrElse(0))
+    this.io.reorderBuffer.ready.poke(true)
   }
 
   def setRegisterFile(value1: Int = 0, value2: Int = 0): Unit = {
-    this.io.registerFile.value1.poke(value1.U)
-    this.io.registerFile.value2.poke(value2.U)
+    this.io.registerFile.value1.poke(value1)
+    this.io.registerFile.value2.poke(value2)
   }
 
-  def setALU(bypassedValues: Seq[Option[(Int, Int)]] = Seq.fill(number_of_alus)(None)) = {
+  def setALU(bypassedValues: Seq[Option[ALUValue]] = Seq.fill(number_of_alus)(None)) = {
     for (i <- bypassedValues.indices) {
-      this.io.alu(i).valid.poke(bypassedValues(i).isDefined.B)
-      this.io.alu(i).bits.destinationTag.poke(bypassedValues(i).getOrElse((0, 0))._1.U)
-      this.io.alu(i).bits.value.poke(bypassedValues(i).getOrElse((0, 0))._2.U)
+      this.io.alu(i).valid.poke(bypassedValues(i).isDefined)
+      this.io.alu(i).bits.destinationTag.poke(bypassedValues(i).getOrElse(new ALUValue).destinationTag)
+      this.io.alu(i).bits.value.poke(bypassedValues(i).getOrElse(new ALUValue).value)
     }
   }
 
 
-  def expectReorderBuffer(rd: Option[Int], rs1: Option[Int] = None, rs2: Option[Int] = None): Unit = {
+  def expectReorderBuffer(destinationRegister: Int = 0, sourceRegister1: Int = 0, sourceRegister2: Int = 0): Unit = {
     // check rd
-    this.io.reorderBuffer.destination.destinationRegister.valid.expect(rd.isDefined.B, "rdが間違っています")
-    if (rd.isDefined)
-      this.io.reorderBuffer.destination.destinationRegister.bits.expect(rd.get.U, "rdの値が間違っています")
-
+    this.io.reorderBuffer.destination.destinationRegister.expect(destinationRegister, "rdの値が間違っています")
     // check rs1
-    if (rs1.isDefined)
-      this.io.reorderBuffer.source1.sourceRegister.expect(rs1.get.U, "rs1 doesn't match")
+    this.io.reorderBuffer.source1.sourceRegister.expect(sourceRegister1, "rs1 doesn't match")
     // check rs2
-    if (rs2.isDefined)
-      this.io.reorderBuffer.source2.sourceRegister.expect(rs2.get.U, "rs2 doesn't match")
+    this.io.reorderBuffer.source2.sourceRegister.expect(sourceRegister2, "rs2 doesn't match")
   }
 
-  def expectReservationStation(destinationTag: Option[Int] = None,
-                               sourceTag1: Option[Int] = None,
-                               sourceTag2: Option[Int] = None,
-                               value1: Option[Int] = Some(0),
-                               value2: Option[Int] = Some(0),
-                               immediateOrFunction7: Option[Int] = None): Unit = {
-    if (destinationTag.isDefined)
-      this.io.reservationStation.bits.destinationTag.expect(destinationTag.get.U)
-    if (sourceTag1.isDefined)
-      this.io.reservationStation.bits.sourceTag1.expect(sourceTag1.get.U)
-    if (sourceTag2.isDefined)
-      this.io.reservationStation.bits.sourceTag2.expect(sourceTag2.get.U)
-    if (value1.isDefined)
-      this.io.reservationStation.bits.value1.expect(value1.get.U)
-    if (value2.isDefined)
-      this.io.reservationStation.bits.value2.expect(value2.get.U)
-    if (immediateOrFunction7.isDefined)
-      this.io.reservationStation.bits.immediateOrFunction7.expect(immediateOrFunction7.get.U)
+  def expectReservationStation(destinationTag: Int = 0,
+                               sourceTag1: Int = 0,
+                               sourceTag2: Int = 0,
+                               value1: Int = 0,
+                               value2: Int = 0,
+                               immediateOrFunction7: Int = 0): Unit = {
+    this.io.reservationStation.bits.destinationTag.expect(destinationTag)
+    this.io.reservationStation.bits.sourceTag1.expect(sourceTag1)
+    this.io.reservationStation.bits.sourceTag2.expect(sourceTag2)
+    this.io.reservationStation.bits.value1.expect(value1)
+    this.io.reservationStation.bits.value2.expect(value2)
+    this.io.reservationStation.bits.immediateOrFunction7.expect(immediateOrFunction7)
   }
 }
 
@@ -102,7 +92,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new DecoderWrapper(0)) { c =>
       // add x1,x2,x3
       c.initialize(0x003100b3.U)
-      c.expectReorderBuffer(rd = Some(1), rs1 = Some(2), rs2 = Some(3))
+      c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
     }
   }
 
@@ -112,8 +102,8 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize(0x003100b3.U)
       c.setRegisterFile(value1 = 10, value2 = 20)
 
-      c.expectReorderBuffer(rd = Some(1), rs1 = Some(2), rs2 = Some(3))
-      c.expectReservationStation(value1 = Some(10), value2 = Some(20))
+      c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
+      c.expectReservationStation(value1 = 10, value2 = 20)
     }
   }
 
@@ -123,8 +113,8 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize(0x003100b3.U)
       c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
 
-      c.expectReorderBuffer(rd = Some(1), rs1 = Some(2), rs2 = Some(3))
-      c.expectReservationStation(destinationTag = Some(5), sourceTag1 = Some(6), sourceTag2 = Some(7))
+      c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
+      c.expectReservationStation(destinationTag = 5, sourceTag1 = 6, sourceTag2 = 7)
     }
   }
 
@@ -135,9 +125,9 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setReorderBuffer(
         destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7), value1 = Some(20), value2 = Some(21))
 
-      c.expectReorderBuffer(rd = Some(1), rs1 = Some(2), rs2 = Some(3))
+      c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
       c.expectReservationStation(
-        destinationTag = Some(5), sourceTag1 = Some(6), sourceTag2 = Some(7), value1 = Some(20), value2 = Some(21))
+        destinationTag = 5, value1 = 20, value2 = 21)
     }
   }
 
@@ -145,8 +135,8 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new DecoderWrapper(0)) { c =>
       // sd x1,10(x2)
       c.initialize(0x00113523.U)
-      c.expectReorderBuffer(rd = None, rs1 = Some(2), rs2 = Some(1))
-      c.expectReservationStation(immediateOrFunction7 = Some(10))
+      c.expectReorderBuffer(sourceRegister1 = 2, sourceRegister2 = 1)
+      c.expectReservationStation(immediateOrFunction7 = 10)
     }
   }
 
@@ -156,8 +146,8 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize(0x01410093.U)
       c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
 
-      c.expectReorderBuffer(rd = Some(1), rs1 = Some(2), rs2 = None)
-      c.expectReservationStation(destinationTag = Some(5), sourceTag1 = Some(6), value2 = Some(20))
+      c.expectReorderBuffer(1, sourceRegister1 = 2)
+      c.expectReservationStation(destinationTag = 5, sourceTag1 = 6, value2 = 20)
     }
   }
 
@@ -166,10 +156,10 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       // add x1,x2,x3
       c.initialize(0x003100b3.U)
       c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
-      c.setALU(Seq(Some((6, 20)), Some((7, 21))))
+      c.setALU(Seq(Some(new ALUValue(6, 20)), Some(new ALUValue(7, 21))))
 
-      c.expectReorderBuffer(rd = Some(1))
-      c.expectReservationStation(destinationTag = Some(5), value1 = Some(20), value2 = Some(21))
+      c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
+      c.expectReservationStation(destinationTag = 5, value1 = 20, value2 = 21)
     }
   }
 
@@ -190,6 +180,29 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.io.reorderBuffer.valid.expect(false.B)
       c.io.reservationStation.valid.expect(false.B)
+    }
+  }
+
+  it should "understand U format" in {
+    test(new DecoderWrapper(0, 0)) { c =>
+      // lui x3, 123
+      c.initialize("x0007b1b7".U)
+      c.setReorderBuffer(destinationTag = 5)
+
+      c.expectReorderBuffer(destinationRegister = 3)
+      c.expectReservationStation(destinationTag = 5, value2 = 123 << 12)
+    }
+  }
+
+  it should "understand J format" in {
+    test(new DecoderWrapper()) { c =>
+      // jal x10,LABEL
+      // LABEL:
+      c.initialize("x0040056f".U)
+      c.setReorderBuffer(destinationTag = 5)
+
+      c.expectReorderBuffer(destinationRegister = 10)
+      c.expectReservationStation(destinationTag = 5, value2 = 4)
     }
   }
 }

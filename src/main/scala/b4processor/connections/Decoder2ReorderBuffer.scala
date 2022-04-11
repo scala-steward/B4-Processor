@@ -23,7 +23,7 @@ class Decoder2ReorderBuffer extends Bundle {
   }
 
   class DestinationRegister extends Bundle {
-    val destinationRegister = DecoupledIO(UInt(5.W))
+    val destinationRegister = Output(UInt(5.W))
     val destinationTag = Input(UInt(TAG_WIDTH.W))
   }
 }

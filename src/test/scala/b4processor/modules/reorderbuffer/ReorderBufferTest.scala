@@ -6,7 +6,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 class DecoderValue(val valid: Boolean = false,
                    val source1: Int = 0,
                    val source2: Int = 0,
-                   val destination: Option[Int] = None)
+                   val destination: Int = 0)
 
 class RegisterFileValue(val destinationTag: Int = 0,
                         val value: Int = 0)
@@ -39,8 +39,7 @@ class ReorderBufferWrapper(numberOfDecoders: Int, numberOfAlus: Int, maxRegister
       decoder.valid.poke(values.valid)
       decoder.source1.sourceRegister.poke(values.source1)
       decoder.source2.sourceRegister.poke(values.source2)
-      decoder.destination.destinationRegister.valid.poke(values.destination.isDefined)
-      decoder.destination.destinationRegister.bits.poke(values.destination.getOrElse(0))
+      decoder.destination.destinationRegister.poke(values.destination)
     }
   }
 
