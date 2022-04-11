@@ -1,6 +1,5 @@
-package b4processor.decoder
+package b4processor.modules.decoder
 
-import b4processor.modules.decoder.Decoder
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -91,7 +90,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "pass rs1 rs2 rd to reorder buffer" in {
     test(new DecoderWrapper(0)) { c =>
       // add x1,x2,x3
-      c.initialize(0x003100b3.U)
+      c.initialize("x003100b3".U)
       c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
     }
   }
@@ -99,7 +98,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "get values from register file" in {
     test(new DecoderWrapper(0)) { c =>
       // add x1,x2,x3
-      c.initialize(0x003100b3.U)
+      c.initialize("x003100b3".U)
       c.setRegisterFile(value1 = 10, value2 = 20)
 
       c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
@@ -110,7 +109,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "get source tags from reorder buffer" in {
     test(new DecoderWrapper(0)) { c =>
       // add x1,x2,x3
-      c.initialize(0x003100b3.U)
+      c.initialize("x003100b3".U)
       c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
 
       c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
@@ -121,7 +120,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "get source tags and values from reorder buffer" in {
     test(new DecoderWrapper(0)) { c =>
       // add x1,x2,x3
-      c.initialize(0x003100b3.U)
+      c.initialize("x003100b3".U)
       c.setReorderBuffer(
         destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7), value1 = Some(20), value2 = Some(21))
 
@@ -134,7 +133,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand sd" in {
     test(new DecoderWrapper(0)) { c =>
       // sd x1,10(x2)
-      c.initialize(0x00113523.U)
+      c.initialize("x00113523".U)
       c.expectReorderBuffer(sourceRegister1 = 2, sourceRegister2 = 1)
       c.expectReservationStation(immediateOrFunction7 = 10)
     }
@@ -143,7 +142,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand immediate" in {
     test(new DecoderWrapper(0)) { c =>
       // addi x1,x2,20
-      c.initialize(0x01410093.U)
+      c.initialize("x01410093".U)
       c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
 
       c.expectReorderBuffer(1, sourceRegister1 = 2)
@@ -154,7 +153,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "do register bypass" in {
     test(new DecoderWrapper(0, 2)) { c =>
       // add x1,x2,x3
-      c.initialize(0x003100b3.U)
+      c.initialize("x003100b3".U)
       c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
       c.setALU(Seq(Some(new ALUValue(6, 20)), Some(new ALUValue(7, 21))))
 
@@ -166,7 +165,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "say the data is valid" in {
     test(new DecoderWrapper(0, 2)) { c =>
       // add x1,x2,x3
-      c.initialize(0x003100b3.U)
+      c.initialize("x003100b3".U)
 
       c.io.reorderBuffer.valid.expect(true.B)
       c.io.reservationStation.valid.expect(true.B)

@@ -1,4 +1,4 @@
-package b4processor.decoder
+package b4processor.modules.decoder
 
 import b4processor.modules.decoder.SourceTagSelector
 import chisel3._
