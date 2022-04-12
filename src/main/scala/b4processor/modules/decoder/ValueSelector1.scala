@@ -9,7 +9,7 @@ import chisel3.util._
  *
  * @param params パラメータ
  */
-class ValueSelector1(params: Parameters) extends Module {
+class ValueSelector1(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reorderBufferValue = Flipped(DecoupledIO(UInt(64.W)))
     val registerFileValue = Input(UInt(64.W))

@@ -5,7 +5,7 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class ValueSelector1Wrapper(params: Parameters = new Parameters()) extends ValueSelector1(params) {
+class ValueSelector1Wrapper(implicit params: Parameters) extends ValueSelector1 {
   /**
    * 初期化
    *
@@ -38,36 +38,38 @@ class ValueSelector1Wrapper(params: Parameters = new Parameters()) extends Value
 class ValueSelector1Test extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "ValueSelector1"
 
+  implicit val defaultParams = Parameters(numberOfALUs = 0)
+
   it should "use the register file" in {
-    test(new ValueSelector1Wrapper(new Parameters(numberOfALUs = 0))) { c =>
+    test(new ValueSelector1Wrapper) { c =>
       c.initalize(registerFileValue = 5)
       c.expectValue(Some(5))
     }
   }
 
   it should "use the reorder buffer" in {
-    test(new ValueSelector1Wrapper(new Parameters(numberOfALUs = 0))) { c =>
+    test(new ValueSelector1Wrapper) { c =>
       c.initalize(sourceTag = Some(3), registerFileValue = 5, reorderBufferValue = Some(6))
       c.expectValue(Some(6))
     }
   }
 
   it should "use the alu bypass" in {
-    test(new ValueSelector1Wrapper(new Parameters(numberOfALUs = 1))) { c =>
+    test(new ValueSelector1Wrapper()(defaultParams.copy(numberOfALUs = 1))) { c =>
       c.initalize(sourceTag = Some(3), registerFileValue = 5, aluBypassValue = Seq(Some((3, 12))))
       c.expectValue(Some(12))
     }
   }
 
   it should "use multiple alu bypasses" in {
-    test(new ValueSelector1Wrapper(new Parameters(numberOfALUs = 4))) { c =>
+    test(new ValueSelector1Wrapper()(defaultParams.copy(numberOfALUs = 4))) { c =>
       c.initalize(sourceTag = Some(3), registerFileValue = 5, aluBypassValue = Seq(Some((1, 10)), Some(2, 11), Some(3, 12), Some(4, 13)))
       c.expectValue(Some(12))
     }
   }
 
   it should "not have any value" in {
-    test(new ValueSelector1Wrapper(new Parameters(numberOfALUs = 0))) { c =>
+    test(new ValueSelector1Wrapper) { c =>
       c.initalize(sourceTag = Some(3), registerFileValue = 5)
       c.expectValue(None)
     }

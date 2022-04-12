@@ -11,10 +11,10 @@ import chisel3.util._
  *
  * @param params パラメータ
  */
-class ReorderBuffer(params: Parameters) extends Module {
+class ReorderBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val decoders = Vec(params.numberOfDecoders, Flipped(new Decoder2ReorderBuffer(params)))
-    val alus = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass(params)))
+    val decoders = Vec(params.numberOfDecoders, Flipped(new Decoder2ReorderBuffer))
+    val alus = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
     val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
     val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
@@ -28,15 +28,6 @@ class ReorderBuffer(params: Parameters) extends Module {
     entry.destinationRegister := 0.U
     entry
   }
-
-  //  val nopEntry = {
-  //    val entry = Wire(new ReorderBufferEntry)
-  //    entry.value := 0.U
-  //    entry.ready := true.B
-  //    entry.programCounter := 0.U
-  //    entry.destinationRegister := 0.U
-  //    entry
-  //  }
 
   val head = RegInit(0.U(params.tagWidth.W))
   val tail = RegInit(0.U(params.tagWidth.W))
@@ -106,5 +97,6 @@ class ReorderBuffer(params: Parameters) extends Module {
 }
 
 object ReorderBuffer extends App {
-  (new ChiselStage).emitVerilog(new ReorderBuffer(new Parameters(numberOfALUs = 4, numberOfDecoders = 2, maxRegisterFileCommitCount = 2, tagWidth = 7)), args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
+  implicit val params = Parameters()
+  (new ChiselStage).emitVerilog(new ReorderBuffer, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

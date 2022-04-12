@@ -5,7 +5,7 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class SourceTagSelectorWrapper(instruction_offset: Int, params: Parameters = new Parameters) extends SourceTagSelector(instruction_offset, params) {
+class SourceTagSelectorWrapper(instruction_offset: Int)(implicit params: Parameters) extends SourceTagSelector(instruction_offset) {
   def initialize(destinationTags: Seq[Option[Int]], reorderBufferValue: Option[Int]): Unit = {
     this.io.sourceTag.ready.poke(true.B)
     initializeBeforeDestinationTag(destinationTags)
@@ -34,6 +34,8 @@ class SourceTagSelectorWrapper(instruction_offset: Int, params: Parameters = new
 
 class SourceTagSelectorTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "SourceTagSelector"
+
+  implicit val defaultParams = Parameters()
 
   it should "select the destination tag from previous instructions (with input from reorder buffer)" in {
     test(new SourceTagSelectorWrapper(1)) { c =>
