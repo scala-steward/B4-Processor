@@ -1,6 +1,6 @@
 package b4processor.modules.reorderbuffer
 
-import b4processor.Constants.TAG_WIDTH
+import b4processor.Parameters
 import b4processor.connections.{Decoder2ReorderBuffer, ExecutionRegisterBypass, ReorderBuffer2RegisterFile}
 import chisel3._
 import chisel3.stage.ChiselStage
@@ -8,14 +8,16 @@ import chisel3.util._
 
 /**
  * リオーダバッファ
+ *
+ * @param params パラメータ
  */
-class ReorderBuffer(numberOfALUs: Int, numberOfDecoders: Int, maxRegisterFileCommitCount: Int, debug: Boolean = false) extends Module {
+class ReorderBuffer(params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val decoders = Vec(numberOfDecoders, Flipped(new Decoder2ReorderBuffer))
-    val alus = Vec(numberOfALUs, Flipped(new ExecutionRegisterBypass))
-    val registerFile = Vec(maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
-    val head = if (debug) Some(Output(UInt(TAG_WIDTH.W))) else None
-    val tail = if (debug) Some(Output(UInt(TAG_WIDTH.W))) else None
+    val decoders = Vec(params.numberOfDecoders, Flipped(new Decoder2ReorderBuffer(params)))
+    val alus = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass(params)))
+    val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
+    val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
+    val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
   })
 
   val defaultEntry = {
@@ -36,14 +38,14 @@ class ReorderBuffer(numberOfALUs: Int, numberOfDecoders: Int, maxRegisterFileCom
   //    entry
   //  }
 
-  val head = RegInit(0.U(TAG_WIDTH.W))
-  val tail = RegInit(0.U(TAG_WIDTH.W))
-  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, TAG_WIDTH).toInt)(defaultEntry)))
+  val head = RegInit(0.U(params.tagWidth.W))
+  val tail = RegInit(0.U(params.tagWidth.W))
+  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt)(defaultEntry)))
 
   // デコーダからの読み取りと書き込み
   var insertIndex = head
   var lastReady = true.B
-  for (i <- 0 until numberOfDecoders) {
+  for (i <- 0 until params.numberOfDecoders) {
     val decoder = io.decoders(i)
     decoder.ready := lastReady && (insertIndex + 1.U) =/= tail
     when(decoder.valid && decoder.ready) {
@@ -73,11 +75,11 @@ class ReorderBuffer(numberOfALUs: Int, numberOfDecoders: Int, maxRegisterFileCom
     lastReady = decoder.ready
   }
   head := insertIndex
-  if (debug)
+  if (params.debug)
     io.head.get := head
 
   // レジスタファイルへの書き込み
-  for (i <- 0 until maxRegisterFileCommitCount) {
+  for (i <- 0 until params.maxRegisterFileCommitCount) {
     val lastValid = if (i == 0) {
       true.B
     } else {
@@ -89,8 +91,8 @@ class ReorderBuffer(numberOfALUs: Int, numberOfDecoders: Int, maxRegisterFileCom
     io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
     buffer(index) := defaultEntry
   }
-  tail := tail + MuxCase(maxRegisterFileCommitCount.U, io.registerFile.zipWithIndex.map { case (entry, index) => !entry.valid -> index.U })
-  if (debug)
+  tail := tail + MuxCase(params.maxRegisterFileCommitCount.U, io.registerFile.zipWithIndex.map { case (entry, index) => !entry.valid -> index.U })
+  if (params.debug)
     io.tail.get := tail
 
   // ALUの読み込み
@@ -104,5 +106,5 @@ class ReorderBuffer(numberOfALUs: Int, numberOfDecoders: Int, maxRegisterFileCom
 }
 
 object ReorderBuffer extends App {
-  (new ChiselStage).emitVerilog(new ReorderBuffer(numberOfALUs = 4, numberOfDecoders = 2, maxRegisterFileCommitCount = 2), args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
+  (new ChiselStage).emitVerilog(new ReorderBuffer(new Parameters(numberOfALUs = 4, numberOfDecoders = 2, maxRegisterFileCommitCount = 2, tagWidth = 7)), args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

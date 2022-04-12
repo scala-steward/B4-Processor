@@ -1,5 +1,6 @@
 package b4processor.modules.decoder
 
+import b4processor.Parameters
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -10,9 +11,9 @@ class ALUValue(val destinationTag: Int = 0, val value: Int = 0)
  * デコーダをテストしやすくするためにラップしたもの
  *
  * @param instruction_offset 同時に扱う命令のうちいくつ目の命令を担当するか
- * @param number_of_alus     ALUの数
+ * @param params             パラメータ
  */
-class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) extends Decoder(instruction_offset, number_of_alus) {
+class DecoderWrapper(instruction_offset: Int = 0, params: Parameters = new Parameters(numberOfALUs = 1, numberOfDecoders = 1, debug = true)) extends Decoder(instruction_offset, params) {
   def initialize(instruction: UInt): Unit = {
     this.setImem(instruction)
     this.setReorderBuffer()
@@ -48,7 +49,7 @@ class DecoderWrapper(instruction_offset: Int = 0, number_of_alus: Int = 0) exten
     this.io.registerFile.value2.poke(value2)
   }
 
-  def setALU(bypassedValues: Seq[Option[ALUValue]] = Seq.fill(number_of_alus)(None)) = {
+  def setALU(bypassedValues: Seq[Option[ALUValue]] = Seq.fill(params.numberOfALUs)(None)) = {
     for (i <- bypassedValues.indices) {
       this.io.alu(i).valid.poke(bypassedValues(i).isDefined)
       this.io.alu(i).bits.destinationTag.poke(bypassedValues(i).getOrElse(new ALUValue).destinationTag)
@@ -151,7 +152,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "do register bypass" in {
-    test(new DecoderWrapper(0, 2)) { c =>
+    test(new DecoderWrapper(0, new Parameters(numberOfALUs = 2))) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
       c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
@@ -163,7 +164,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "say the data is valid" in {
-    test(new DecoderWrapper(0, 2)) { c =>
+    test(new DecoderWrapper(0, new Parameters(numberOfALUs = 2))) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
 
@@ -173,7 +174,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "say the data is invalid" in {
-    test(new DecoderWrapper(0, 2)) { c =>
+    test(new DecoderWrapper(0, new Parameters(numberOfALUs = 2))) { c =>
       c.initialize(0.U)
       c.io.imem.valid.poke(false.B)
 
@@ -183,7 +184,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "understand U format" in {
-    test(new DecoderWrapper(0, 0)) { c =>
+    test(new DecoderWrapper(0, new Parameters(numberOfALUs = 0))) { c =>
       // lui x3, 123
       c.initialize("x0007b1b7".U)
       c.setReorderBuffer(destinationTag = 5)

@@ -1,13 +1,15 @@
 package b4processor.connections
 
-import b4processor.Constants.TAG_WIDTH
+import b4processor.Parameters
 import chisel3._
 import chisel3.util._
 
 /**
  * デコーダとリオーダバッファをつなぐ
+ *
+ * @param params パラメータ
  */
-class Decoder2ReorderBuffer extends Bundle {
+class Decoder2ReorderBuffer(params: Parameters) extends Bundle {
   val source1 = new SourceRegister()
   val source2 = new SourceRegister()
   val destination = new DestinationRegister()
@@ -18,12 +20,12 @@ class Decoder2ReorderBuffer extends Bundle {
 
   class SourceRegister extends Bundle {
     val sourceRegister = Output(UInt(5.W))
-    val matchingTag = Flipped(DecoupledIO(UInt(TAG_WIDTH.W)))
+    val matchingTag = Flipped(DecoupledIO(UInt(params.tagWidth.W)))
     val value = Flipped(DecoupledIO(UInt(64.W)))
   }
 
   class DestinationRegister extends Bundle {
     val destinationRegister = Output(UInt(5.W))
-    val destinationTag = Input(UInt(TAG_WIDTH.W))
+    val destinationTag = Input(UInt(params.tagWidth.W))
   }
 }

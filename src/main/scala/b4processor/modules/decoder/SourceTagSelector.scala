@@ -10,7 +10,7 @@ import chisel3.util._
  * @param instruction_offset 基準から何個目の敬礼を処理しているか
  * @param params             パラメータ
  */
-class SourceTagSelector(instruction_offset: Int)(implicit params: Parameters) extends Module {
+class SourceTagSelector(instruction_offset: Int, params: Parameters) extends Module {
   val io = IO(new Bundle {
     val beforeDestinationTag = Vec(instruction_offset, Flipped(DecoupledIO(UInt(params.tagWidth.W))))
     val reorderBufferDestinationTag = Flipped(DecoupledIO(UInt(params.tagWidth.W)))

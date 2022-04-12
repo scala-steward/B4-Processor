@@ -4,7 +4,7 @@ import b4processor.Parameters
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class MultipleDecoderWrapper(implicit params: Parameters) extends MultipleDecoder {
+class MultipleDecoderWrapper(params: Parameters = new Parameters) extends MultipleDecoder(params) {
 
 }
 

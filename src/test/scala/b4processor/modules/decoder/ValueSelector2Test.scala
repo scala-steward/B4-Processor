@@ -7,7 +7,7 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class ValueSelector2Wrapper(implicit params: Parameters) extends ValueSelector2 {
+class ValueSelector2Wrapper(params: Parameters = new Parameters(debug = true)) extends ValueSelector2(params) {
   /**
    * 初期化
    *
@@ -41,52 +41,51 @@ class ValueSelector2Wrapper(implicit params: Parameters) extends ValueSelector2 
 
 class ValueSelector2Test extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "ValueSelector1"
-  implicit val defaultParams = Parameters(numberOfALUs = 0)
 
   it should "use the register file" in {
-    test(new ValueSelector2Wrapper) { c =>
+    test(new ValueSelector2Wrapper(new Parameters(numberOfALUs = 0))) { c =>
       c.initalize(registerFileValue = 5)
       c.expectValue(Some(5))
     }
   }
 
   it should "use the reorder buffer" in {
-    test(new ValueSelector2Wrapper) { c =>
+    test(new ValueSelector2Wrapper(new Parameters(numberOfALUs = 0))) { c =>
       c.initalize(sourceTag = Some(3), registerFileValue = 5, reorderBufferValue = Some(6))
       c.expectValue(Some(6))
     }
   }
 
   it should "use the alu bypass" in {
-    test(new ValueSelector2Wrapper()(defaultParams.copy(numberOfALUs = 1))) { c =>
+    test(new ValueSelector2Wrapper(new Parameters(numberOfALUs = 1))) { c =>
       c.initalize(sourceTag = Some(3), registerFileValue = 5, aluBypassValue = Seq(Some((3, 12))))
       c.expectValue(Some(12))
     }
   }
 
   it should "use multiple alu bypasses" in {
-    test(new ValueSelector2Wrapper()(defaultParams.copy(numberOfALUs = 4))) { c =>
+    test(new ValueSelector2Wrapper(new Parameters(numberOfALUs = 4))) { c =>
       c.initalize(sourceTag = Some(3), registerFileValue = 5, aluBypassValue = Seq(Some((1, 10)), Some(2, 11), Some(3, 12), Some(4, 13)))
       c.expectValue(Some(12))
     }
   }
 
   it should "not have any value" in {
-    test(new ValueSelector2Wrapper) { c =>
+    test(new ValueSelector2Wrapper(new Parameters(numberOfALUs = 0))) { c =>
       c.initalize(sourceTag = Some(3), registerFileValue = 5)
       c.expectValue(None)
     }
   }
 
   it should "use immediate" in {
-    test(new ValueSelector2Wrapper) { c =>
+    test(new ValueSelector2Wrapper(new Parameters(numberOfALUs = 0))) { c =>
       c.initalize(immediate = 9, opcodeFormat = I)
       c.expectValue(Some(9))
     }
   }
 
   it should "not use immediate" in {
-    test(new ValueSelector2Wrapper) { c =>
+    test(new ValueSelector2Wrapper(new Parameters(numberOfALUs = 0))) { c =>
       c.initalize(registerFileValue = 5, immediate = 9, opcodeFormat = R)
       c.expectValue(Some(5))
     }

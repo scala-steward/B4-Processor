@@ -1,5 +1,6 @@
 package b4processor.modules.decoder
 
+import b4processor.Parameters
 import b4processor.common.OpcodeFormat._
 import b4processor.common.OpcodeFormatChecker
 import b4processor.connections._
@@ -12,19 +13,19 @@ import chisel3.util._
  * デコーダ
  *
  * @param instructionOffset 同時に扱う命令のうちいくつ目の命令を担当するか
- * @param numberOfAlus      ALUの数
+ * @param params            パラメータ
  */
-class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
+class Decoder(instructionOffset: Int, params: Parameters) extends Module {
   val io = IO(new Bundle {
     val imem = Flipped(new IMem2Decoder())
-    val reorderBuffer = new Decoder2ReorderBuffer()
-    val alu = Vec(numberOfAlus, Flipped(new ExecutionRegisterBypass()))
+    val reorderBuffer = new Decoder2ReorderBuffer(params)
+    val alu = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass(params)))
     val registerFile = new Decoder2RegisterFile()
 
-    val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder()))
-    val decodersAfter = Output(Vec(instructionOffset + 1, new Decoder2NextDecoder()))
+    val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder(params)))
+    val decodersAfter = Output(Vec(instructionOffset + 1, new Decoder2NextDecoder(params)))
 
-    val reservationStation = DecoupledIO(new ReservationStationEntry)
+    val reservationStation = DecoupledIO(new ReservationStationEntry(params))
   })
 
   // 命令からそれぞれの昨日のブロックを取り出す
@@ -82,7 +83,7 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
 
   // リオーダバッファから一致するタグを取得する
   // セレクタ1
-  val sourceTagSelector1 = Module(new SourceTagSelector(instructionOffset))
+  val sourceTagSelector1 = Module(new SourceTagSelector(instructionOffset, params))
   sourceTagSelector1.io.sourceTag.ready := true.B
   sourceTagSelector1.io.reorderBufferDestinationTag <> io.reorderBuffer.source1.matchingTag
   for (i <- 0 until instructionOffset) {
@@ -94,7 +95,7 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
   }
   val sourceTag1 = sourceTagSelector1.io.sourceTag
   // セレクタ2
-  val sourceTagSelector2 = Module(new SourceTagSelector(instructionOffset))
+  val sourceTagSelector2 = Module(new SourceTagSelector(instructionOffset, params))
   sourceTagSelector2.io.sourceTag.ready := true.B
   sourceTagSelector2.io.reorderBufferDestinationTag <> io.reorderBuffer.source2.matchingTag
   for (i <- 0 until instructionOffset) {
@@ -105,16 +106,16 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
 
   // Valueの選択
   // value1
-  val valueSelector1 = Module(new ValueSelector1(numberOfAlus))
+  val valueSelector1 = Module(new ValueSelector1(params))
   valueSelector1.io.value.ready := true.B
   valueSelector1.io.sourceTag <> sourceTag1
   valueSelector1.io.reorderBufferValue <> io.reorderBuffer.source1.value
   valueSelector1.io.registerFileValue := io.registerFile.value1
-  for (i <- 0 until numberOfAlus) {
+  for (i <- 0 until params.numberOfALUs) {
     valueSelector1.io.aluBypassValue(i) <> io.alu(i)
   }
   // value2
-  val valueSelector2 = Module(new ValueSelector2(numberOfAlus))
+  val valueSelector2 = Module(new ValueSelector2(params))
   valueSelector2.io.value.ready := true.B
   valueSelector2.io.sourceTag <> sourceTag2
   valueSelector2.io.reorderBufferValue <> io.reorderBuffer.source2.value
@@ -125,7 +126,7 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
     J.asUInt -> immJExtended
   ))
   valueSelector2.io.opcodeFormat := opcodeFormatChecker.io.format
-  for (i <- 0 until numberOfAlus) {
+  for (i <- 0 until params.numberOfALUs) {
     valueSelector2.io.aluBypassValue(i) <> io.alu(i)
   }
 
@@ -175,5 +176,5 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
 }
 
 object Decoder extends App {
-  (new ChiselStage).emitVerilog(new Decoder(2, 2))
+  (new ChiselStage).emitVerilog(new Decoder(0, new Parameters()))
 }

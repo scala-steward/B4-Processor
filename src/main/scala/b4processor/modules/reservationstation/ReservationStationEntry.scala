@@ -8,7 +8,7 @@ import chisel3._
  *
  * @param params パラメータ
  */
-class ReservationStationEntry(implicit params: Parameters) extends Bundle {
+class ReservationStationEntry(params: Parameters) extends Bundle {
   val op_code = UInt(7.W)
   val function3 = UInt(3.W)
   val immediateOrFunction7 = UInt(12.W)
