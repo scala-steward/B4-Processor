@@ -9,7 +9,7 @@ import chisel3.util._
  *
  * @param params パラメータ
  */
-class Decoder2ReorderBuffer(params: Parameters) extends Bundle {
+class Decoder2ReorderBuffer(implicit params: Parameters) extends Bundle {
   val source1 = new SourceRegister()
   val source2 = new SourceRegister()
   val destination = new DestinationRegister()

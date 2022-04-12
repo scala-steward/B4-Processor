@@ -9,8 +9,8 @@ package b4processor
  * @param maxRegisterFileCommitCount リオーダバッファからレジスタファイルに1クロックでコミットする命令の数(Max)
  * @param debug                      デバッグ機能を使う
  */
-class Parameters(val tagWidth: Int = 7,
-                 val numberOfDecoders: Int = 2,
-                 val numberOfALUs: Int = 2,
-                 val maxRegisterFileCommitCount: Int = 4,
-                 val debug: Boolean = false)
+case class Parameters(tagWidth: Int = 7,
+                      numberOfDecoders: Int = 2,
+                      numberOfALUs: Int = 2,
+                      maxRegisterFileCommitCount: Int = 4,
+                      debug: Boolean = false)

@@ -15,17 +15,17 @@ import chisel3.util._
  * @param instructionOffset 同時に扱う命令のうちいくつ目の命令を担当するか
  * @param params            パラメータ
  */
-class Decoder(instructionOffset: Int, params: Parameters) extends Module {
+class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val imem = Flipped(new IMem2Decoder())
-    val reorderBuffer = new Decoder2ReorderBuffer(params)
-    val alu = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass(params)))
+    val reorderBuffer = new Decoder2ReorderBuffer
+    val alu = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
     val registerFile = new Decoder2RegisterFile()
 
-    val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder(params)))
-    val decodersAfter = Output(Vec(instructionOffset + 1, new Decoder2NextDecoder(params)))
+    val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder))
+    val decodersAfter = Output(Vec(instructionOffset + 1, new Decoder2NextDecoder))
 
-    val reservationStation = DecoupledIO(new ReservationStationEntry(params))
+    val reservationStation = DecoupledIO(new ReservationStationEntry)
   })
 
   // 命令からそれぞれの昨日のブロックを取り出す
@@ -83,7 +83,7 @@ class Decoder(instructionOffset: Int, params: Parameters) extends Module {
 
   // リオーダバッファから一致するタグを取得する
   // セレクタ1
-  val sourceTagSelector1 = Module(new SourceTagSelector(instructionOffset, params))
+  val sourceTagSelector1 = Module(new SourceTagSelector(instructionOffset))
   sourceTagSelector1.io.sourceTag.ready := true.B
   sourceTagSelector1.io.reorderBufferDestinationTag <> io.reorderBuffer.source1.matchingTag
   for (i <- 0 until instructionOffset) {
@@ -95,7 +95,7 @@ class Decoder(instructionOffset: Int, params: Parameters) extends Module {
   }
   val sourceTag1 = sourceTagSelector1.io.sourceTag
   // セレクタ2
-  val sourceTagSelector2 = Module(new SourceTagSelector(instructionOffset, params))
+  val sourceTagSelector2 = Module(new SourceTagSelector(instructionOffset))
   sourceTagSelector2.io.sourceTag.ready := true.B
   sourceTagSelector2.io.reorderBufferDestinationTag <> io.reorderBuffer.source2.matchingTag
   for (i <- 0 until instructionOffset) {
@@ -106,7 +106,7 @@ class Decoder(instructionOffset: Int, params: Parameters) extends Module {
 
   // Valueの選択
   // value1
-  val valueSelector1 = Module(new ValueSelector1(params))
+  val valueSelector1 = Module(new ValueSelector1)
   valueSelector1.io.value.ready := true.B
   valueSelector1.io.sourceTag <> sourceTag1
   valueSelector1.io.reorderBufferValue <> io.reorderBuffer.source1.value
@@ -115,7 +115,7 @@ class Decoder(instructionOffset: Int, params: Parameters) extends Module {
     valueSelector1.io.aluBypassValue(i) <> io.alu(i)
   }
   // value2
-  val valueSelector2 = Module(new ValueSelector2(params))
+  val valueSelector2 = Module(new ValueSelector2)
   valueSelector2.io.value.ready := true.B
   valueSelector2.io.sourceTag <> sourceTag2
   valueSelector2.io.reorderBufferValue <> io.reorderBuffer.source2.value
@@ -176,5 +176,6 @@ class Decoder(instructionOffset: Int, params: Parameters) extends Module {
 }
 
 object Decoder extends App {
-  (new ChiselStage).emitVerilog(new Decoder(0, new Parameters()))
+  implicit val params = Parameters()
+  (new ChiselStage).emitVerilog(new Decoder(0))
 }

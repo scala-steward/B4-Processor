@@ -9,12 +9,12 @@ import chisel3._
  *
  * @param params パラメータ
  */
-class MultipleDecoder(params: Parameters) extends Module {
+class MultipleDecoder(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val instructions = Vec(params.numberOfDecoders, new IMem2Decoder)
   })
 
-  val decoders = (0 until params.numberOfDecoders).map(i => Module(new Decoder(i, params)))
+  val decoders = (0 until params.numberOfDecoders).map(i => Module(new Decoder(i)))
 
   for (i <- 1 until params.numberOfDecoders) {
     decoders(i).io.decodersBefore <> decoders(i - 1).io.decodersAfter
