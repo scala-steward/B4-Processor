@@ -1,6 +1,6 @@
 package b4processor.modules.decoder
 
-import b4processor.Constants.TAG_WIDTH
+import b4processor.Parameters
 import chisel3._
 import chisel3.util._
 
@@ -8,11 +8,12 @@ import chisel3.util._
  * sourceTag選択回路
  *
  * @param instruction_offset 基準から何個目の敬礼を処理しているか
+ * @param params             パラメータ
  */
-class SourceTagSelector(instruction_offset: Int) extends Module {
+class SourceTagSelector(instruction_offset: Int, params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val beforeDestinationTag = Vec(instruction_offset, Flipped(DecoupledIO(UInt(TAG_WIDTH.W))))
-    val reorderBufferDestinationTag = Flipped(DecoupledIO(UInt(TAG_WIDTH.W)))
+    val beforeDestinationTag = Vec(instruction_offset, Flipped(DecoupledIO(UInt(params.tagWidth.W))))
+    val reorderBufferDestinationTag = Flipped(DecoupledIO(UInt(params.tagWidth.W)))
     val sourceTag = DecoupledIO(UInt(8.W)) // 選択したsource tagを格納
   })
 

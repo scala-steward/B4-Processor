@@ -1,20 +1,20 @@
 package b4processor.modules.reorderbuffer
 
+import b4processor.Parameters
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.util.Random
 
-class ReorderBufferWrapper(debug: Boolean = true, numberOfALUs: Int = 1, numberOfDecoders: Int = 1, maxRegisterFileCommitCount: Int = 1)
-  extends ReorderBuffer(numberOfDecoders = numberOfDecoders, numberOfALUs = numberOfALUs, maxRegisterFileCommitCount = maxRegisterFileCommitCount, debug = debug) {
+class ReorderBufferWrapper(params: Parameters = new Parameters(debug = true)) extends ReorderBuffer(params) {
   def initialize(): Unit = {
     setALU()
     setDecoder()
   }
 
 
-  def setALU(values: Seq[Option[ALUValue]] = Seq.fill(numberOfALUs)(None)): Unit = {
-    for (i <- 0 until numberOfALUs) {
+  def setALU(values: Seq[Option[ALUValue]] = Seq.fill(params.numberOfALUs)(None)): Unit = {
+    for (i <- 0 until params.numberOfALUs) {
       val alu = this.io.alus(i)
       val v = values(i)
       this.io.alus(i).valid.poke(v.isDefined)
@@ -26,8 +26,8 @@ class ReorderBufferWrapper(debug: Boolean = true, numberOfALUs: Int = 1, numberO
   }
 
 
-  def setDecoder(decoderValues: Seq[DecoderValue] = Seq.fill(numberOfDecoders)(new DecoderValue())): Unit = {
-    for (i <- 0 until numberOfDecoders) {
+  def setDecoder(decoderValues: Seq[DecoderValue] = Seq.fill(params.numberOfDecoders)(new DecoderValue())): Unit = {
+    for (i <- 0 until params.numberOfDecoders) {
       val decoder = this.io.decoders(i)
       val values = decoderValues(i)
       decoder.valid.poke(values.valid)
@@ -44,7 +44,7 @@ class ReorderBufferWrapper(debug: Boolean = true, numberOfALUs: Int = 1, numberO
 
 
   def expectRegisterFile(outputs: Seq[Option[RegisterFileValue]]): Unit = {
-    for (i <- 0 until maxRegisterFileCommitCount) {
+    for (i <- 0 until params.maxRegisterFileCommitCount) {
       this.io.registerFile(i).valid.expect(outputs(i).isDefined)
       if (outputs(i).isDefined) {
         this.io.registerFile(i).bits.destinationRegister.expect(outputs(i).get.destinationTag)
@@ -74,15 +74,14 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Reorder Buffer"
 
   it should "output nothing to register file on first clock" in {
-    test(new ReorderBufferWrapper(debug = true, numberOfALUs = 1, numberOfDecoders = 1, maxRegisterFileCommitCount = 1)) { c =>
+    test(new ReorderBufferWrapper(new Parameters(debug = true, numberOfALUs = 1, numberOfDecoders = 1, maxRegisterFileCommitCount = 1))) { c =>
       c.initialize()
       c.expectRegisterFile(Seq(None))
     }
   }
 
   it should "set ready to 0 when full" in {
-    test(new ReorderBufferWrapper(debug = true, numberOfALUs = 1, numberOfDecoders = 1, maxRegisterFileCommitCount = 1) {
-      c =>
+    test(new ReorderBufferWrapper(new Parameters(debug = true, numberOfALUs = 1, numberOfDecoders = 1, maxRegisterFileCommitCount = 1, tagWidth = 5))) { c =>
       c.initialize()
       var loop = 0
       c.io.decoders(0).ready.expect(true)
@@ -93,11 +92,11 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
         loop += 1
       }
       c.io.decoders(0).ready.expect(false)
-    })
+    }
   }
 
-  it should "set ready to 0 when full with 4 decoders" in {
-    test(new ReorderBufferWrapper(debug = true, numberOfALUs = 1, numberOfDecoders = 4, maxRegisterFileCommitCount = 1)) { c =>
+  it should "set ready to 0 when full with 4 decoders (reduced tag width to 5 for speed)" in {
+    test(new ReorderBufferWrapper(new Parameters(debug = true, numberOfALUs = 1, numberOfDecoders = 4, maxRegisterFileCommitCount = 1, tagWidth = 5))) { c =>
       c.initialize()
       var loop = 0
       c.io.decoders(0).ready.expect(true)
@@ -117,12 +116,12 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "set ready to 0 when full with 4 decoders but 2 decoder inputs" in {
-    test(new ReorderBufferWrapper(debug = true, numberOfALUs = 1, numberOfDecoders = 4, maxRegisterFileCommitCount = 1)) { c =>
+  it should "set ready to 0 when full with 4 decoders but 2 decoder inputs (reduced tag width to 5 for speed)" in {
+    test(new ReorderBufferWrapper(new Parameters(debug = true, numberOfALUs = 1, numberOfDecoders = 4, maxRegisterFileCommitCount = 1, tagWidth = 5))) { c =>
       c.initialize()
       var loop = 0
       c.io.decoders(0).ready.expect(true)
-      while (loop < 80 && c.io.decoders(0).ready.peek().litToBoolean) {
+      while (loop < 40 && c.io.decoders(0).ready.peek().litToBoolean) {
         println(loop, c.io.head.get.peek().litValue, c.io.tail.get.peek().litValue)
         c.setDecoder(Seq(
           new DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32)),
@@ -139,7 +138,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "make the tail follow head" in {
-    test(new ReorderBufferWrapper(debug = true, numberOfALUs = 1, numberOfDecoders = 1, maxRegisterFileCommitCount = 1)) { c =>
+    test(new ReorderBufferWrapper(new Parameters(debug = true, numberOfALUs = 1, numberOfDecoders = 1, maxRegisterFileCommitCount = 1, tagWidth = 5))) { c =>
       c.initialize()
       c.io.decoders(0).ready.expect(true)
       c.io.tail.get.expect(0)

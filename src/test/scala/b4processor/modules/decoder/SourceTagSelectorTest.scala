@@ -1,11 +1,11 @@
 package b4processor.modules.decoder
 
-import b4processor.modules.decoder.SourceTagSelector
+import b4processor.Parameters
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class SourceTagSelectorWrapper(instruction_offset: Int) extends SourceTagSelector(instruction_offset) {
+class SourceTagSelectorWrapper(instruction_offset: Int, params: Parameters = new Parameters) extends SourceTagSelector(instruction_offset, params) {
   def initialize(destinationTags: Seq[Option[Int]], reorderBufferValue: Option[Int]): Unit = {
     this.io.sourceTag.ready.poke(true.B)
     initializeBeforeDestinationTag(destinationTags)

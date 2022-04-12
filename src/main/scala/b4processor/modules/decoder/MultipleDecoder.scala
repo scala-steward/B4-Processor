@@ -1,26 +1,26 @@
 package b4processor.modules.decoder
 
+import b4processor.Parameters
 import b4processor.connections.IMem2Decoder
 import chisel3._
 
 /**
  * 複数のデコーダをつなげるモジュール
  *
- * @param number_of_decoders デコーダの数
- * @param number_of_alus     ALUの数
+ * @param params パラメータ
  */
-class MultipleDecoder(number_of_decoders: Int, number_of_alus: Int) extends Module {
+class MultipleDecoder(params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val instructions = Vec(number_of_decoders, new IMem2Decoder)
+    val instructions = Vec(params.numberOfDecoders, new IMem2Decoder)
   })
 
-  val decoders = (0 until number_of_decoders).map(i => Module(new Decoder(i, number_of_alus)))
+  val decoders = (0 until params.numberOfDecoders).map(i => Module(new Decoder(i, params)))
 
-  for (i <- 1 until number_of_decoders) {
+  for (i <- 1 until params.numberOfDecoders) {
     decoders(i).io.decodersBefore <> decoders(i - 1).io.decodersAfter
   }
 
-  for (i <- 0 until number_of_decoders) {
+  for (i <- 0 until params.numberOfDecoders) {
     decoders(i).io.imem <> io.instructions(i)
   }
 }
