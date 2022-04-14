@@ -18,6 +18,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
     val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
+    val bufferIndex0 = if (params.debug) Some(Output(new ReorderBufferEntry)) else None
   })
 
   val defaultEntry = {
@@ -40,6 +41,8 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val decoder = io.decoders(i)
     decoder.ready := lastReady && (insertIndex + 1.U) =/= tail
     when(decoder.valid && decoder.ready) {
+      //      if (params.debug)
+      //        printf(p"reorder buffer new entry pc = ${decoder.programCounter} destinationRegister=${decoder.destination.destinationRegister} in ${insertIndex}\n")
       buffer(insertIndex) := {
         val entry = Wire(new ReorderBufferEntry)
         entry.value := 0.U
@@ -66,25 +69,20 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     lastReady = decoder.ready
   }
   head := insertIndex
-  if (params.debug)
-    io.head.get := head
 
   // レジスタファイルへの書き込み
+  var lastValid = true.B
   for (i <- 0 until params.maxRegisterFileCommitCount) {
-    val lastValid = if (i == 0) {
-      true.B
-    } else {
-      io.registerFile(i - 1).valid
-    }
     val index = tail + i.U
     io.registerFile(i).valid := lastValid && index =/= head && buffer(tail + i.U).ready
     io.registerFile(i).bits.value := buffer(index).value
     io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
-    buffer(index) := defaultEntry
+    when(io.registerFile(i).valid) {
+      buffer(index) := defaultEntry
+    }
+    lastValid = io.registerFile(i).valid
   }
   tail := tail + MuxCase(params.maxRegisterFileCommitCount.U, io.registerFile.zipWithIndex.map { case (entry, index) => !entry.valid -> index.U })
-  if (params.debug)
-    io.tail.get := tail
 
   // ALUの読み込み
   for (alu <- io.alus) {
@@ -93,6 +91,14 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       buffer(alu.bits.destinationTag).value := alu.bits.value
       buffer(alu.bits.destinationTag).ready := true.B
     }
+  }
+
+  // デバッグ
+  if (params.debug) {
+    io.head.get := head
+    io.tail.get := tail
+    io.bufferIndex0.get := buffer(0)
+    //    printf(p"reorder buffer pc=${buffer(0).programCounter} value=${buffer(0).value} ready=${buffer(0).ready} rd=${buffer(0).destinationRegister}\n")
   }
 }
 

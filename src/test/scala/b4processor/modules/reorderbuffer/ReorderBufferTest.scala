@@ -34,12 +34,8 @@ class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
       decoder.source1.sourceRegister.poke(values.source1)
       decoder.source2.sourceRegister.poke(values.source2)
       decoder.destination.destinationRegister.poke(values.destination)
+      decoder.programCounter.poke(values.programCounter)
     }
-  }
-
-
-  def expectDecoder(values: Seq[Option[DecoderExpect]]): Unit = {
-
   }
 
 
@@ -47,7 +43,7 @@ class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
     for (i <- 0 until params.maxRegisterFileCommitCount) {
       this.io.registerFile(i).valid.expect(outputs(i).isDefined)
       if (outputs(i).isDefined) {
-        this.io.registerFile(i).bits.destinationRegister.expect(outputs(i).get.destinationTag)
+        this.io.registerFile(i).bits.destinationRegister.expect(outputs(i).get.destinationRegister)
         this.io.registerFile(i).bits.value.expect(outputs(i).get.value)
       }
     }
@@ -59,7 +55,8 @@ class ALUValue(val destinationTag: Int = 0, val value: Int = 0)
 class DecoderValue(val valid: Boolean = false,
                    val source1: Int = 0,
                    val source2: Int = 0,
-                   val destination: Int = 0)
+                   val destination: Int = 0,
+                   val programCounter: Int = 0)
 
 class DecoderExpect(val destinationTag: Int,
                     val sourceTag1: Option[Int],
@@ -67,8 +64,8 @@ class DecoderExpect(val destinationTag: Int,
                     val value1: Option[Int],
                     val value2: Option[Int])
 
-class RegisterFileValue(val destinationTag: Int = 0,
-                        val value: Int = 0)
+class RegisterFileValue(val destinationRegister: Int,
+                        val value: Int)
 
 class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Reorder Buffer"
@@ -153,6 +150,40 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
 
       //      println(c.io.head.get.peek().litValue, c.io.tail.get.peek().litValue)
       c.io.tail.get.expect(1)
+    }
+  }
+
+  it should "have an output in register file" in {
+    test(new ReorderBufferWrapper).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize()
+      c.clock.setTimeout(10)
+
+      // 値の確認
+      c.io.head.get.expect(0)
+      c.io.tail.get.expect(0)
+      c.expectRegisterFile(Seq(None))
+
+      // 値のセット
+      c.setDecoder(Seq(new DecoderValue(valid = true, destination = 1, source1 = 2, source2 = 3, programCounter = 500)))
+
+      c.clock.step()
+      // 値の確認
+      c.expectRegisterFile(Seq(None))
+      c.io.head.get.expect(1)
+
+      // 値のセット
+      c.setDecoder(Seq(new DecoderValue(valid = false)))
+      c.setALU(Seq(Some(new ALUValue(destinationTag = 0, value = 10))))
+
+      c.clock.step()
+      c.setALU(Seq(None))
+      while (!c.io.registerFile(0).valid.peek().litToBoolean) {
+        c.clock.step()
+      }
+      // 値の確認
+      c.expectRegisterFile(Seq(Some(new RegisterFileValue(destinationRegister = 1, value = 10))))
+
+      c.clock.step(5)
     }
   }
 }
