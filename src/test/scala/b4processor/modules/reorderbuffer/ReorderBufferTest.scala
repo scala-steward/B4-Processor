@@ -17,16 +17,16 @@ class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
     for (i <- 0 until params.numberOfALUs) {
       val alu = this.io.alus(i)
       val v = values(i)
-      this.io.alus(i).valid.poke(v.isDefined)
+      alu.valid.poke(v.isDefined)
       if (v.isDefined) {
-        this.io.alus(i).bits.destinationTag.poke(v.get.destinationTag)
-        this.io.alus(i).bits.value.poke(v.get.value)
+        alu.bits.destinationTag.poke(v.get.destinationTag)
+        alu.bits.value.poke(v.get.value)
       }
     }
   }
 
 
-  def setDecoder(decoderValues: Seq[DecoderValue] = Seq.fill(params.numberOfDecoders)(new DecoderValue())): Unit = {
+  def setDecoder(decoderValues: Seq[DecoderValue] = Seq.fill(params.numberOfDecoders)(DecoderValue())): Unit = {
     for (i <- 0 until params.numberOfDecoders) {
       val decoder = this.io.decoders(i)
       val values = decoderValues(i)
@@ -48,24 +48,29 @@ class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
       }
     }
   }
+
+  def printRF(): Unit = {
+    for (i <- 0 until params.maxRegisterFileCommitCount)
+      println(s"rf valid=${this.io.registerFile(i).valid.peek()} rd=${this.io.registerFile(i).bits.destinationRegister.peek()}, value=${this.io.registerFile(i).bits.value.peek()}")
+  }
 }
 
-class ALUValue(val destinationTag: Int = 0, val value: Int = 0)
+case class ALUValue(destinationTag: Int, value: Int)
 
-class DecoderValue(val valid: Boolean = false,
-                   val source1: Int = 0,
-                   val source2: Int = 0,
-                   val destination: Int = 0,
-                   val programCounter: Int = 0)
+case class DecoderValue(valid: Boolean = false,
+                        source1: Int = 0,
+                        source2: Int = 0,
+                        destination: Int = 0,
+                        programCounter: Int = 0)
 
-class DecoderExpect(val destinationTag: Int,
-                    val sourceTag1: Option[Int],
-                    val sourceTag2: Option[Int],
-                    val value1: Option[Int],
-                    val value2: Option[Int])
+case class DecoderExpect(destinationTag: Int,
+                         sourceTag1: Option[Int],
+                         sourceTag2: Option[Int],
+                         value1: Option[Int],
+                         value2: Option[Int])
 
-class RegisterFileValue(val destinationRegister: Int,
-                        val value: Int)
+case class RegisterFileValue(destinationRegister: Int,
+                             value: Int)
 
 class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Reorder Buffer"
@@ -86,7 +91,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.decoders(0).ready.expect(true)
       while (loop < 40 && c.io.decoders(0).ready.peek().litToBoolean) {
         //        println(loop, c.io.head.get.peek().litValue, c.io.tail.get.peek().litValue)
-        c.setDecoder(Seq(new DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32))))
+        c.setDecoder(Seq(DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32))))
         c.clock.step()
         loop += 1
       }
@@ -102,10 +107,10 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
       while (loop < 40 && c.io.decoders(0).ready.peek().litToBoolean) {
         //        println(loop, c.io.head.get.peek().litValue, c.io.tail.get.peek().litValue)
         c.setDecoder(Seq(
-          new DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32)),
-          new DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32)),
-          new DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32)),
-          new DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32)),
+          DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32)),
+          DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32)),
+          DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32)),
+          DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32)),
         ))
         c.clock.step()
         loop += 1
@@ -123,10 +128,10 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
       while (loop < 40 && c.io.decoders(0).ready.peek().litToBoolean) {
         //        println(loop, c.io.head.get.peek().litValue, c.io.tail.get.peek().litValue)
         c.setDecoder(Seq(
-          new DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32)),
-          new DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32)),
-          new DecoderValue(valid = false, source1 = 0, source2 = 0, destination = 0),
-          new DecoderValue(valid = false, source1 = 0, source2 = 0, destination = 0),
+          DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32)),
+          DecoderValue(valid = true, source1 = Random.nextInt(32), source2 = Random.nextInt(32), destination = Random.nextInt(32)),
+          DecoderValue(),
+          DecoderValue(),
         ))
         c.clock.step()
         loop += 1
@@ -143,9 +148,9 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.tail.get.expect(0)
       //      println(c.io.head.get.peek().litValue, c.io.tail.get.peek().litValue)
       c.setDecoder(Seq(
-        new DecoderValue(valid = true, destination = 1, source1 = 2, source2 = 3),
+        DecoderValue(valid = true, destination = 1, source1 = 2, source2 = 3),
       ))
-      c.setALU(Seq(Some(new ALUValue(destinationTag = 0, value = 3))))
+      c.setALU(Seq(Some(ALUValue(destinationTag = 0, value = 3))))
       c.clock.step(2)
 
       //      println(c.io.head.get.peek().litValue, c.io.tail.get.peek().litValue)
@@ -164,7 +169,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectRegisterFile(Seq(None))
 
       // 値のセット
-      c.setDecoder(Seq(new DecoderValue(valid = true, destination = 1, source1 = 2, source2 = 3, programCounter = 500)))
+      c.setDecoder(Seq(DecoderValue(valid = true, destination = 1, source1 = 2, source2 = 3, programCounter = 500)))
 
       c.clock.step()
       // 値の確認
@@ -172,16 +177,258 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.head.get.expect(1)
 
       // 値のセット
-      c.setDecoder(Seq(new DecoderValue(valid = false)))
-      c.setALU(Seq(Some(new ALUValue(destinationTag = 0, value = 10))))
+      c.setDecoder(Seq(DecoderValue()))
+      c.setALU(Seq(Some(ALUValue(destinationTag = 0, value = 10))))
 
       c.clock.step()
       c.setALU(Seq(None))
-      while (!c.io.registerFile(0).valid.peek().litToBoolean) {
-        c.clock.step()
-      }
       // 値の確認
-      c.expectRegisterFile(Seq(Some(new RegisterFileValue(destinationRegister = 1, value = 10))))
+      c.expectRegisterFile(Seq(Some(RegisterFileValue(destinationRegister = 1, value = 10))))
+
+      c.clock.step(5)
+    }
+  }
+
+  it should "have an output in register file with 4 of each component" in {
+    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize()
+      c.clock.setTimeout(10)
+
+      // 値の確認
+      c.expectRegisterFile(Seq(None, None, None, None))
+
+      // 値のセット
+      c.setDecoder(Seq(
+        DecoderValue(valid = true, destination = 1, source1 = 2, source2 = 3, programCounter = 500),
+        DecoderValue(valid = true, destination = 2, source1 = 2, source2 = 3, programCounter = 500),
+        DecoderValue(valid = true, destination = 3, source1 = 2, source2 = 3, programCounter = 500),
+        DecoderValue(valid = true, destination = 4, source1 = 2, source2 = 3, programCounter = 500)
+      ))
+
+      c.clock.step()
+      // 値の確認
+      c.expectRegisterFile(Seq(None, None, None, None))
+
+      // 値のセット
+      c.setDecoder(Seq.fill(4)(DecoderValue()))
+      c.setALU(Seq(
+        Some(ALUValue(destinationTag = 0, value = 10)),
+        Some(ALUValue(destinationTag = 1, value = 20)),
+        Some(ALUValue(destinationTag = 2, value = 30)),
+        Some(ALUValue(destinationTag = 3, value = 40))
+      ))
+
+      c.clock.step()
+      c.setALU(Seq(None, None, None, None))
+      c.io.registerFile(0).valid.expect(true)
+      // 値の確認
+      c.expectRegisterFile(Seq(
+        Some(RegisterFileValue(destinationRegister = 1, value = 10)),
+        Some(RegisterFileValue(destinationRegister = 2, value = 20)),
+        Some(RegisterFileValue(destinationRegister = 3, value = 30)),
+        Some(RegisterFileValue(destinationRegister = 4, value = 40))
+      ))
+
+      c.clock.step(5)
+    }
+  }
+
+  it should "have an output in register file with 4 of each component out of order simple" in {
+    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize()
+      c.clock.setTimeout(10)
+
+      // 値の確認
+      c.expectRegisterFile(Seq(None, None, None, None))
+
+      // 値のセット
+      c.setDecoder(Seq(
+        DecoderValue(valid = true, destination = 1, source1 = 2, source2 = 3, programCounter = 500),
+        DecoderValue(valid = true, destination = 2, source1 = 2, source2 = 3, programCounter = 504),
+        DecoderValue(valid = true, destination = 3, source1 = 2, source2 = 3, programCounter = 508),
+        DecoderValue(valid = true, destination = 4, source1 = 2, source2 = 3, programCounter = 512)
+      ))
+
+      c.clock.step()
+
+
+      // 値のセット
+      c.setDecoder(Seq(
+        DecoderValue(valid = true, destination = 5, source1 = 2, source2 = 3, programCounter = 516),
+        DecoderValue(valid = true, destination = 6, source1 = 2, source2 = 3, programCounter = 520),
+        DecoderValue(valid = true, destination = 7, source1 = 2, source2 = 3, programCounter = 524),
+        DecoderValue(valid = true, destination = 8, source1 = 2, source2 = 3, programCounter = 528)
+      ))
+      c.setALU(Seq(
+        Some(ALUValue(destinationTag = 4, value = 50)),
+        Some(ALUValue(destinationTag = 5, value = 60)),
+        Some(ALUValue(destinationTag = 6, value = 70)),
+        Some(ALUValue(destinationTag = 7, value = 80))
+      ))
+
+      c.clock.step()
+      c.setDecoder()
+      c.setALU(Seq(
+        Some(ALUValue(destinationTag = 0, value = 10)),
+        Some(ALUValue(destinationTag = 1, value = 20)),
+        Some(ALUValue(destinationTag = 2, value = 30)),
+        Some(ALUValue(destinationTag = 3, value = 40))
+      ))
+
+      c.clock.step()
+      c.setALU(Seq(None, None, None, None))
+      // 値の確認
+      c.expectRegisterFile(Seq(
+        Some(RegisterFileValue(destinationRegister = 1, value = 10)),
+        Some(RegisterFileValue(destinationRegister = 2, value = 20)),
+        Some(RegisterFileValue(destinationRegister = 3, value = 30)),
+        Some(RegisterFileValue(destinationRegister = 4, value = 40))
+      ))
+
+      c.clock.step()
+      c.expectRegisterFile(Seq(
+        Some(RegisterFileValue(destinationRegister = 5, value = 50)),
+        Some(RegisterFileValue(destinationRegister = 6, value = 60)),
+        Some(RegisterFileValue(destinationRegister = 7, value = 70)),
+        Some(RegisterFileValue(destinationRegister = 8, value = 80))
+      ))
+
+      c.clock.step(5)
+    }
+  }
+
+  it should "have an output in register file with 4 of each component out of order complex" in {
+    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize()
+      c.clock.setTimeout(10)
+
+      // 値の確認
+      c.expectRegisterFile(Seq(None, None, None, None))
+
+      // 値のセット
+      c.setDecoder(Seq(
+        DecoderValue(valid = true, destination = 1, source1 = 2, source2 = 3, programCounter = 500),
+        DecoderValue(valid = true, destination = 2, source1 = 2, source2 = 3, programCounter = 504),
+        DecoderValue(valid = true, destination = 3, source1 = 2, source2 = 3, programCounter = 508),
+        DecoderValue(valid = true, destination = 4, source1 = 2, source2 = 3, programCounter = 512)
+      ))
+
+      c.clock.step()
+
+
+      // 値のセット
+      c.setDecoder(Seq(
+        DecoderValue(valid = true, destination = 5, source1 = 2, source2 = 3, programCounter = 516),
+        DecoderValue(valid = true, destination = 6, source1 = 2, source2 = 3, programCounter = 520),
+        DecoderValue(valid = true, destination = 7, source1 = 2, source2 = 3, programCounter = 524),
+        DecoderValue(valid = true, destination = 8, source1 = 2, source2 = 3, programCounter = 528)
+      ))
+      c.setALU(Seq(
+        Some(ALUValue(destinationTag = 1, value = 20)),
+        Some(ALUValue(destinationTag = 5, value = 60)),
+        Some(ALUValue(destinationTag = 7, value = 80)),
+        Some(ALUValue(destinationTag = 2, value = 30)),
+
+      ))
+
+      c.clock.step()
+      c.setDecoder()
+      c.setALU(Seq(
+        Some(ALUValue(destinationTag = 0, value = 10)),
+        Some(ALUValue(destinationTag = 6, value = 70)),
+        Some(ALUValue(destinationTag = 4, value = 50)),
+        Some(ALUValue(destinationTag = 3, value = 40)),
+      ))
+
+      c.clock.step()
+      c.setALU(Seq(None, None, None, None))
+      // 値の確認
+      c.expectRegisterFile(Seq(
+        Some(RegisterFileValue(destinationRegister = 1, value = 10)),
+        Some(RegisterFileValue(destinationRegister = 2, value = 20)),
+        Some(RegisterFileValue(destinationRegister = 3, value = 30)),
+        Some(RegisterFileValue(destinationRegister = 4, value = 40))
+      ))
+
+      c.clock.step()
+      c.expectRegisterFile(Seq(
+        Some(RegisterFileValue(destinationRegister = 5, value = 50)),
+        Some(RegisterFileValue(destinationRegister = 6, value = 60)),
+        Some(RegisterFileValue(destinationRegister = 7, value = 70)),
+        Some(RegisterFileValue(destinationRegister = 8, value = 80))
+      ))
+
+      c.clock.step(5)
+    }
+  }
+
+  it should "have an output in register file with 4 of each component out of order complex not aligned" in {
+    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize()
+      c.clock.setTimeout(10)
+
+      // 値の確認
+      c.expectRegisterFile(Seq(None, None, None, None))
+      // 値のセット
+      c.setDecoder(Seq(
+        DecoderValue(valid = true, destination = 11, source1 = 2, source2 = 3, programCounter = 500),
+        DecoderValue(valid = true, destination = 12, source1 = 2, source2 = 3, programCounter = 504),
+        DecoderValue(valid = true, destination = 13, source1 = 2, source2 = 3, programCounter = 508),
+        DecoderValue(valid = true, destination = 14, source1 = 2, source2 = 3, programCounter = 512)
+      ))
+
+      c.clock.step()
+
+      // 値のセット
+      c.setDecoder(Seq(
+        DecoderValue(valid = true, destination = 15, source1 = 2, source2 = 3, programCounter = 516),
+        DecoderValue(valid = true, destination = 16, source1 = 2, source2 = 3, programCounter = 520),
+        DecoderValue(valid = true, destination = 17, source1 = 2, source2 = 3, programCounter = 524),
+        DecoderValue(valid = true, destination = 18, source1 = 2, source2 = 3, programCounter = 528)
+      ))
+      c.setALU(Seq(
+        Some(ALUValue(destinationTag = 0, value = 10)),
+        Some(ALUValue(destinationTag = 1, value = 20)),
+        Some(ALUValue(destinationTag = 5, value = 60)),
+        Some(ALUValue(destinationTag = 4, value = 50)),
+      ))
+
+      c.printRF()
+      c.clock.step()
+      c.printRF()
+
+      c.setDecoder()
+      c.expectRegisterFile(Seq(
+        Some(RegisterFileValue(destinationRegister = 11, value = 10)),
+        Some(RegisterFileValue(destinationRegister = 12, value = 20)),
+        None,
+        None,
+      ))
+
+      c.setALU(Seq(
+        Some(ALUValue(destinationTag = 6, value = 70)),
+        Some(ALUValue(destinationTag = 3, value = 40)),
+        Some(ALUValue(destinationTag = 7, value = 80)),
+        Some(ALUValue(destinationTag = 2, value = 30)),
+      ))
+
+      c.clock.step()
+      c.setALU(Seq(None, None, None, None))
+      // 値の確認
+      c.expectRegisterFile(Seq(
+        Some(RegisterFileValue(destinationRegister = 13, value = 30)),
+        Some(RegisterFileValue(destinationRegister = 14, value = 40)),
+        Some(RegisterFileValue(destinationRegister = 15, value = 50)),
+        Some(RegisterFileValue(destinationRegister = 16, value = 60))
+      ))
+
+      c.clock.step()
+      c.expectRegisterFile(Seq(
+        Some(RegisterFileValue(destinationRegister = 17, value = 70)),
+        Some(RegisterFileValue(destinationRegister = 18, value = 80)),
+        None,
+        None,
+      ))
 
       c.clock.step(5)
     }
