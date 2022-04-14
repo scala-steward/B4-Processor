@@ -75,7 +75,11 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   io.reorderBuffer.source2.sourceRegister := Mux(source2IsValid,
     instRs2,
     0.U)
-  io.reorderBuffer.destination.destinationRegister := Mux(destinationIsValid, instRd, 0.U)
+  io.reorderBuffer.destination.destinationRegister := Mux(destinationIsValid,
+    instRd,
+    0.U)
+  io.reorderBuffer.isPrediction := io.imem.bits.isPrediction
+
 
   // レジスタファイルへの入力
   io.registerFile.sourceRegister1 := instRs1

@@ -9,7 +9,11 @@ class ReorderBufferEntry extends Bundle {
   /** デスティネーションレジスタ */
   val destinationRegister = UInt(5.W)
   /** 命令の処理が完了した（コミットできる） */
-  val ready = Bool()
+  val valueReady = Bool()
+  /** 投機的実行である */
+  val isPrediction = Bool()
+  /** 分岐予測は正しかった */
+  val commitReady = Bool()
   /** 実行結果の値 */
   val value = UInt(64.W)
 }
