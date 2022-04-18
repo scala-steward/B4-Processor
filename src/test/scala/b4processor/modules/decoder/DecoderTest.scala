@@ -11,7 +11,7 @@ class ALUValue(val destinationTag: Int = 0, val value: Int = 0)
  * デコーダをテストしやすくするためにラップしたもの
  *
  * @param instructionOffset 同時に扱う命令のうちいくつ目の命令を担当するか
- * @param params             パラメータ
+ * @param params            パラメータ
  */
 class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) extends Decoder(instructionOffset)(params) {
   def initialize(instruction: UInt): Unit = {
@@ -21,13 +21,15 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
     this.setALU()
   }
 
-  def setImem(instruction: UInt): Unit = {
+  def setImem(instruction: UInt, isPrediction: Boolean = false): Unit = {
     this.io.imem.bits.program_counter.poke(0)
     this.io.imem.bits.instruction.poke(instruction)
+    this.io.imem.bits.isPrediction.poke(isPrediction)
     this.io.imem.valid.poke(true)
   }
 
   def setReorderBuffer(destinationTag: Int = 0,
+                       isPrediction: Boolean = false,
                        sourceTag1: Option[Int] = None,
                        value1: Option[Int] = None,
                        sourceTag2: Option[Int] = None,
@@ -208,6 +210,14 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectReorderBuffer(destinationRegister = 10)
       c.expectReservationStation(destinationTag = 5, value2 = 4)
+    }
+  }
+
+  it should "pass isPrediction" in {
+    test(new DecoderWrapper(0)(testParams)) { c =>
+      c.initialize("x0040056f".U)
+      c.setImem("x0040056f".U, isPrediction = true)
+      c.io.reorderBuffer.isPrediction.expect(true)
     }
   }
 }

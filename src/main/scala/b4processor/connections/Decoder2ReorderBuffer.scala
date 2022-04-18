@@ -14,6 +14,7 @@ class Decoder2ReorderBuffer(implicit params: Parameters) extends Bundle {
   val source2 = new SourceRegister()
   val destination = new DestinationRegister()
   val programCounter = Output(UInt(64.W))
+  val isPrediction = Output(Bool())
   // 全体をDecoupledにするとsource1などがすべてOutputにってしまって、間違っているのでこちらに書く
   val ready = Input(Bool())
   val valid = Output(Bool())
