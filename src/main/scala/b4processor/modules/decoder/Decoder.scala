@@ -163,7 +163,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
 
   // RSへの出力を埋める
   val rs = io.reservationStation.bits
-  rs.op_code := instOp
+  rs.opcode := instOp
   rs.function3 := instFunct3
   rs.immediateOrFunction7 := MuxLookup(opcodeFormatChecker.io.format.asUInt, 0.U, Seq(
     R.asUInt -> Cat("b000000".U, instFunct7),
@@ -178,6 +178,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   rs.value1 := valueSelector1.io.value.bits
   rs.value2 := valueSelector2.io.value.bits
   rs.programCounter := io.imem.bits.programCounter
+  rs.valid := true.B
 }
 
 object Decoder extends App {

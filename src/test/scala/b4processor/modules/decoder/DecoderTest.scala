@@ -1,11 +1,10 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
+import b4processor.utils.ALUValue
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
-
-class ALUValue(val destinationTag: Int = 0, val value: Int = 0)
 
 /**
  * デコーダをテストしやすくするためにラップしたもの
@@ -51,11 +50,11 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
     this.io.registerFile.value2.poke(value2)
   }
 
-  def setALU(bypassedValues: Seq[Option[ALUValue]] = Seq.fill(params.numberOfALUs)(None)) = {
+  def setALU(bypassedValues: Seq[Option[ALUValue]] = Seq.fill(params.numberOfALUs)(None)): Unit = {
     for (i <- bypassedValues.indices) {
       this.io.alu(i).valid.poke(bypassedValues(i).isDefined)
-      this.io.alu(i).bits.destinationTag.poke(bypassedValues(i).getOrElse(new ALUValue).destinationTag)
-      this.io.alu(i).bits.value.poke(bypassedValues(i).getOrElse(new ALUValue).value)
+      this.io.alu(i).destinationTag.poke(bypassedValues(i).getOrElse(ALUValue(destinationTag = 0, value = 0)).destinationTag)
+      this.io.alu(i).value.poke(bypassedValues(i).getOrElse(ALUValue(destinationTag = 0, value = 0)).value)
     }
   }
 
@@ -169,7 +168,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
         // add x1,x2,x3
         c.initialize("x003100b3".U)
         c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
-        c.setALU(Seq(Some(new ALUValue(6, 20)), Some(new ALUValue(7, 21))))
+        c.setALU(Seq(Some(ALUValue(6, 20)), Some(ALUValue(7, 21))))
 
         c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
         c.expectReservationStation(destinationTag = 5, value1 = 20, value2 = 21)

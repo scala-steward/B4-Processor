@@ -12,5 +12,6 @@ package b4processor
 case class Parameters(tagWidth: Int = 6,
                       numberOfDecoders: Int = 2,
                       numberOfALUs: Int = 2,
+                      numberOfReservationStationEntries: Int = 20,
                       maxRegisterFileCommitCount: Int = 4,
                       debug: Boolean = false)
