@@ -19,4 +19,5 @@ class ReservationStationEntry(implicit params: Parameters) extends Bundle {
   val ready2 = Bool()
   val value2 = UInt(64.W)
   val destinationTag = UInt(params.tagWidth.W)
+  val programCounter = UInt(64.W)
 }

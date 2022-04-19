@@ -68,7 +68,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     opcodeFormatChecker.io.format === B
 
   // リオーダバッファへの入力
-  io.reorderBuffer.programCounter := io.imem.bits.program_counter
+  io.reorderBuffer.programCounter := io.imem.bits.programCounter
   io.reorderBuffer.source1.sourceRegister := Mux(source1IsValid,
     instRs1,
     0.U)
@@ -177,6 +177,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   rs.ready2 := valueSelector2.io.value.valid
   rs.value1 := valueSelector1.io.value.bits
   rs.value2 := valueSelector2.io.value.bits
+  rs.programCounter := io.imem.bits.programCounter
 }
 
 object Decoder extends App {
