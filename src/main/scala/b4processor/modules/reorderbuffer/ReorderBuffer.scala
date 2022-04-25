@@ -106,10 +106,9 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 
   // ALUの読み込み
   for (alu <- io.alus) {
-    alu.ready := true.B
     when(alu.valid) {
-      buffer(alu.bits.destinationTag).value := alu.bits.value
-      buffer(alu.bits.destinationTag).valueReady := true.B
+      buffer(alu.destinationTag).value := alu.value
+      buffer(alu.destinationTag).valueReady := true.B
     }
   }
 
@@ -133,6 +132,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 }
 
 object ReorderBuffer extends App {
-  implicit val params = Parameters()
+  implicit val params = Parameters(numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1, tagWidth = 4)
   (new ChiselStage).emitVerilog(new ReorderBuffer, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

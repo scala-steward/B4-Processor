@@ -1,11 +1,10 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
+import b4processor.utils.ALUValue
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
-
-class ALUValue(val destinationTag: Int = 0, val value: Int = 0)
 
 /**
  * デコーダをテストしやすくするためにラップしたもの
@@ -22,7 +21,7 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
   }
 
   def setImem(instruction: UInt, isPrediction: Boolean = false): Unit = {
-    this.io.imem.bits.program_counter.poke(0)
+    this.io.imem.bits.programCounter.poke(0)
     this.io.imem.bits.instruction.poke(instruction)
     this.io.imem.bits.isPrediction.poke(isPrediction)
     this.io.imem.valid.poke(true)
@@ -51,11 +50,11 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
     this.io.registerFile.value2.poke(value2)
   }
 
-  def setALU(bypassedValues: Seq[Option[ALUValue]] = Seq.fill(params.numberOfALUs)(None)) = {
+  def setALU(bypassedValues: Seq[Option[ALUValue]] = Seq.fill(params.numberOfALUs)(None)): Unit = {
     for (i <- bypassedValues.indices) {
       this.io.alu(i).valid.poke(bypassedValues(i).isDefined)
-      this.io.alu(i).bits.destinationTag.poke(bypassedValues(i).getOrElse(new ALUValue).destinationTag)
-      this.io.alu(i).bits.value.poke(bypassedValues(i).getOrElse(new ALUValue).value)
+      this.io.alu(i).destinationTag.poke(bypassedValues(i).getOrElse(ALUValue(destinationTag = 0, value = 0)).destinationTag)
+      this.io.alu(i).value.poke(bypassedValues(i).getOrElse(ALUValue(destinationTag = 0, value = 0)).value)
     }
   }
 
@@ -75,12 +74,12 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
                                value1: Int = 0,
                                value2: Int = 0,
                                immediateOrFunction7: Int = 0): Unit = {
-    this.io.reservationStation.bits.destinationTag.expect(destinationTag)
-    this.io.reservationStation.bits.sourceTag1.expect(sourceTag1)
-    this.io.reservationStation.bits.sourceTag2.expect(sourceTag2)
-    this.io.reservationStation.bits.value1.expect(value1)
-    this.io.reservationStation.bits.value2.expect(value2)
-    this.io.reservationStation.bits.immediateOrFunction7.expect(immediateOrFunction7)
+    this.io.reservationStation.entry.destinationTag.expect(destinationTag)
+    this.io.reservationStation.entry.sourceTag1.expect(sourceTag1)
+    this.io.reservationStation.entry.sourceTag2.expect(sourceTag2)
+    this.io.reservationStation.entry.value1.expect(value1)
+    this.io.reservationStation.entry.value2.expect(value2)
+    this.io.reservationStation.entry.immediateOrFunction7.expect(immediateOrFunction7)
   }
 }
 
@@ -91,6 +90,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "decoder"
   implicit val testParams = Parameters()
 
+  // rs1 rs2 rdが正しくリオーダバッファに渡されているか
   it should "pass rs1 rs2 rd to reorder buffer" in {
     test(new DecoderWrapper(0)) { c =>
       // add x1,x2,x3
@@ -99,6 +99,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
+  // レジスタファイルから値を取得できているか
   it should "get values from register file" in {
     test(new DecoderWrapper(0)) { c =>
       // add x1,x2,x3
@@ -110,6 +111,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
+  // stagをリオーダバッファから取得できているか
   it should "get source tags from reorder buffer" in {
     test(new DecoderWrapper(0)) { c =>
       // add x1,x2,x3
@@ -121,6 +123,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
+  // stagと値をリオーダバッファから取得できているか
   it should "get source tags and values from reorder buffer" in {
     test(new DecoderWrapper(0)) {
       c =>
@@ -135,6 +138,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
+  // sd命令を認識できる
   it should "understand sd" in {
     test(new DecoderWrapper(0)) {
       c =>
@@ -145,7 +149,8 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "understand immediate" in {
+  // I形式を認識できる
+  it should "understand I" in {
     test(new DecoderWrapper(0)) { c =>
       // addi x1,x2,20
       c.initialize("x01410093".U)
@@ -156,40 +161,44 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
+  // ALUからの値を使える
   it should "do register bypass" in {
     test(new DecoderWrapper(0)) {
       c =>
         // add x1,x2,x3
         c.initialize("x003100b3".U)
         c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
-        c.setALU(Seq(Some(new ALUValue(6, 20)), Some(new ALUValue(7, 21))))
+        c.setALU(Seq(Some(ALUValue(6, 20)), Some(ALUValue(7, 21))))
 
         c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
         c.expectReservationStation(destinationTag = 5, value1 = 20, value2 = 21)
     }
   }
 
-  it should "say the data is valid" in {
+  // imemがvalidのときRSとRBでvalidと表示されている
+  it should "say the data is valid when imem is valid" in {
     test(new DecoderWrapper(0)) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
 
       c.io.reorderBuffer.valid.expect(true.B)
-      c.io.reservationStation.valid.expect(true.B)
+      c.io.reservationStation.entry.valid.expect(true.B)
     }
   }
 
-  it should "say the data is invalid" in {
+  // imemがvalid=0のときRSとRBでvalid=0と表示されている
+  it should "say the data is invalid when imem invalid" in {
     test(new DecoderWrapper(0)) {
       c =>
         c.initialize(0.U)
         c.io.imem.valid.poke(false.B)
 
         c.io.reorderBuffer.valid.expect(false.B)
-        c.io.reservationStation.valid.expect(false.B)
+        c.io.reservationStation.entry.valid.expect(false.B)
     }
   }
 
+  // U形式を認識
   it should "understand U format" in {
     test(new DecoderWrapper(0)(testParams)) { c =>
       // lui x3, 123

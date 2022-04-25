@@ -8,6 +8,6 @@ import chisel3.util.ReadyValidIO
  */
 class IMem2Decoder extends ReadyValidIO(new Bundle {
   val instruction = UInt(64.W)
-  val program_counter = UInt(64.W)
+  val programCounter = UInt(64.W)
   val isPrediction = Bool()
 })

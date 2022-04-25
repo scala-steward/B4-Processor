@@ -1,6 +1,7 @@
 package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
+import b4processor.utils.{ALUValue, DecoderValue, RegisterFileValue}
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -19,8 +20,8 @@ class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
       val v = values(i)
       alu.valid.poke(v.isDefined)
       if (v.isDefined) {
-        alu.bits.destinationTag.poke(v.get.destinationTag)
-        alu.bits.value.poke(v.get.value)
+        alu.destinationTag.poke(v.get.destinationTag)
+        alu.value.poke(v.get.value)
       }
     }
   }
@@ -56,27 +57,9 @@ class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
   }
 }
 
-case class ALUValue(destinationTag: Int, value: Int)
-
-case class DecoderValue(valid: Boolean = false,
-                        source1: Int = 0,
-                        source2: Int = 0,
-                        destination: Int = 0,
-                        programCounter: Int = 0,
-                        isPrediction: Boolean = false)
-
-case class DecoderExpect(destinationTag: Int,
-                         sourceTag1: Option[Int],
-                         sourceTag2: Option[Int],
-                         value1: Option[Int],
-                         value2: Option[Int])
-
-case class RegisterFileValue(destinationRegister: Int,
-                             value: Int)
-
 class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Reorder Buffer"
-  implicit val defaultParams = Parameters(tagWidth = 5, numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1, debug = true)
+  implicit val defaultParams = Parameters(tagWidth = 4, numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1, debug = true)
 
   /** リオーダバッファに値が出力されない */
   it should "output nothing to register file on first clock" in {

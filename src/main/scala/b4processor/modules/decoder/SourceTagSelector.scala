@@ -27,11 +27,7 @@ class SourceTagSelector(instruction_offset: Int)(implicit params: Parameters) ex
   // reorderBufferのvalidビットを別変数に取り出しておく
   val reorderBufferValid = io.reorderBufferDestinationTag.valid
   // beforeのdestinationTagのvalidビット全てにORをかけたものを取り出す
-  // 読み方
-  // beforeのdestinationTagのそれぞれの値のvalidを取り出し、一つずつORをかけていく
-  // できれば.asUInt.orRが使いたいが、うまく使う方法がわからなかったのでゴリ押し
-  val beforeDestinationRegisterValid = io.beforeDestinationTag.map { d => d.valid }.fold(false.B) { (a, b) => a || b }
-
+  val beforeDestinationRegisterValid = Cat(io.beforeDestinationTag.map { d => d.valid }).orR
   // MuxCaseでソースタグが見つからない -> 値がレジスタファイルに存在している -> valid = 0
   // (otherwise =（beforeDestinationRegisterValid or reorderBufferValidにsource tagが存在している）-> valid = 1)
   // 1になる条件だけで記述できる

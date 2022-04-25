@@ -4,7 +4,6 @@ import b4processor.Parameters
 import b4processor.common.OpcodeFormat._
 import b4processor.common.OpcodeFormatChecker
 import b4processor.connections._
-import b4processor.modules.reservationstation.ReservationStationEntry
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -25,7 +24,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder))
     val decodersAfter = Output(Vec(instructionOffset + 1, new Decoder2NextDecoder))
 
-    val reservationStation = DecoupledIO(new ReservationStationEntry)
+    val reservationStation = new Decoder2ReservationStation
   })
 
   // 命令からそれぞれの昨日のブロックを取り出す
@@ -68,7 +67,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     opcodeFormatChecker.io.format === B
 
   // リオーダバッファへの入力
-  io.reorderBuffer.programCounter := io.imem.bits.program_counter
+  io.reorderBuffer.programCounter := io.imem.bits.programCounter
   io.reorderBuffer.source1.sourceRegister := Mux(source1IsValid,
     instRs1,
     0.U)
@@ -159,11 +158,11 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   io.imem.ready := io.reservationStation.ready && io.reorderBuffer.ready
   // リオーダバッファやリザベーションステーションに新しいエントリを追加するのは命令がある時
   io.reorderBuffer.valid := io.imem.valid
-  io.reservationStation.valid := io.imem.valid
+  io.reservationStation.entry.valid := io.imem.valid
 
   // RSへの出力を埋める
-  val rs = io.reservationStation.bits
-  rs.op_code := instOp
+  val rs = io.reservationStation.entry
+  rs.opcode := instOp
   rs.function3 := instFunct3
   rs.immediateOrFunction7 := MuxLookup(opcodeFormatChecker.io.format.asUInt, 0.U, Seq(
     R.asUInt -> Cat("b000000".U, instFunct7),
@@ -177,6 +176,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   rs.ready2 := valueSelector2.io.value.valid
   rs.value1 := valueSelector1.io.value.bits
   rs.value2 := valueSelector2.io.value.bits
+  rs.programCounter := io.imem.bits.programCounter
 }
 
 object Decoder extends App {
