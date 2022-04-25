@@ -4,7 +4,6 @@ import b4processor.Parameters
 import b4processor.common.OpcodeFormat._
 import b4processor.common.OpcodeFormatChecker
 import b4processor.connections._
-import b4processor.modules.reservationstation.ReservationStationEntry
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._

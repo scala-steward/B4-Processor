@@ -1,7 +1,6 @@
 package b4processor.modules.reorderbuffer
 
 import chisel3._
-import chisel3.util._
 
 class ReorderBufferEntry extends Bundle {
   /** プログラムカウンタ */

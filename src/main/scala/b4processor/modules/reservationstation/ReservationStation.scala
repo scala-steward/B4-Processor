@@ -22,8 +22,8 @@ class ReservationStation(implicit params: Parameters) extends Module {
   val hasReady = Cat(readyList).orR
   val executeIndex = MuxCase(0.U, readyList.zipWithIndex.map { case (ready, index) => ready -> index.U })
 
-//  printf(p"hasEmpty=$hasEmpty at $emptyIndex hasReady=$hasReady at $executeIndex\n")
-//  printf(p"reserved0 valid=${reservation(0).valid} ready1=${reservation(0).ready1} value1=${reservation(0).value1}\n")
+  //  printf(p"hasEmpty=$hasEmpty at $emptyIndex hasReady=$hasReady at $executeIndex\n")
+  //  printf(p"reserved0 valid=${reservation(0).valid} ready1=${reservation(0).ready1} value1=${reservation(0).value1}\n")
 
   // 実行ユニットへ
   val decoderReady = io.decoder.entry.valid && io.decoder.entry.ready1 && io.decoder.entry.ready2
@@ -31,7 +31,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
   val passValueDirectlyFromDecoder = io.executor.ready && !hasReady && decoderReady
   //  printf(p"passValueDirectlyFromDecoder = $passValueDirectlyFromDecoder\n")
   when(passValueDirectlyFromDecoder) {
-//    printf("bypass\n")
+    //    printf("bypass\n")
     io.executor.valid := true.B
     io.executor.bits.opcode := io.decoder.entry.opcode
     io.executor.bits.destinationTag := io.decoder.entry.destinationTag
@@ -43,9 +43,9 @@ class ReservationStation(implicit params: Parameters) extends Module {
   }.otherwise {
     when(io.executor.ready && hasReady) {
       reservation(executeIndex) := 0.U.asTypeOf(new ReservationStationEntry)
-//      printf(p"from reserved $executeIndex\n")
+      //      printf(p"from reserved $executeIndex\n")
     }.otherwise {
-//      printf("no output\n")
+      //      printf("no output\n")
     }
     io.executor.valid := hasReady
     io.executor.bits.opcode := reservation(executeIndex).opcode
@@ -61,7 +61,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
   io.decoder.ready := hasEmpty
   when(io.decoder.entry.valid && hasEmpty && !passValueDirectlyFromDecoder) {
     reservation(emptyIndex) := io.decoder.entry
-//    printf(p"stored in $emptyIndex valid=${io.decoder.entry.valid}\n")
+    //    printf(p"stored in $emptyIndex valid=${io.decoder.entry.valid}\n")
   }
 
   for (alu <- io.alus) {

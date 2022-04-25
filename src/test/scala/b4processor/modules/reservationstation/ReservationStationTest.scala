@@ -2,9 +2,8 @@ package b4processor.modules.reservationstation
 
 import b4processor.Parameters
 import b4processor.utils.ALUValue
-import chiseltest._
 import chisel3._
-import chisel3.util._
+import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ReservationStationWrapper(implicit params: Parameters) extends ReservationStation {

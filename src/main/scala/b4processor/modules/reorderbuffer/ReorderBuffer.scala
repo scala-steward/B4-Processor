@@ -132,6 +132,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 }
 
 object ReorderBuffer extends App {
-  implicit val params = Parameters(numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1,tagWidth = 4)
+  implicit val params = Parameters(numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1, tagWidth = 4)
   (new ChiselStage).emitVerilog(new ReorderBuffer, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }
