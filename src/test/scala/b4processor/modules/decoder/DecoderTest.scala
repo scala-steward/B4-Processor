@@ -74,12 +74,12 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
                                value1: Int = 0,
                                value2: Int = 0,
                                immediateOrFunction7: Int = 0): Unit = {
-    this.io.reservationStation.bits.destinationTag.expect(destinationTag)
-    this.io.reservationStation.bits.sourceTag1.expect(sourceTag1)
-    this.io.reservationStation.bits.sourceTag2.expect(sourceTag2)
-    this.io.reservationStation.bits.value1.expect(value1)
-    this.io.reservationStation.bits.value2.expect(value2)
-    this.io.reservationStation.bits.immediateOrFunction7.expect(immediateOrFunction7)
+    this.io.reservationStation.entry.destinationTag.expect(destinationTag)
+    this.io.reservationStation.entry.sourceTag1.expect(sourceTag1)
+    this.io.reservationStation.entry.sourceTag2.expect(sourceTag2)
+    this.io.reservationStation.entry.value1.expect(value1)
+    this.io.reservationStation.entry.value2.expect(value2)
+    this.io.reservationStation.entry.immediateOrFunction7.expect(immediateOrFunction7)
   }
 }
 
@@ -182,7 +182,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize("x003100b3".U)
 
       c.io.reorderBuffer.valid.expect(true.B)
-      c.io.reservationStation.valid.expect(true.B)
+      c.io.reservationStation.entry.valid.expect(true.B)
     }
   }
 
@@ -194,7 +194,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.imem.valid.poke(false.B)
 
         c.io.reorderBuffer.valid.expect(false.B)
-        c.io.reservationStation.valid.expect(false.B)
+        c.io.reservationStation.entry.valid.expect(false.B)
     }
   }
 

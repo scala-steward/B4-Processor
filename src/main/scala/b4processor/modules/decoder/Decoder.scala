@@ -25,7 +25,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder))
     val decodersAfter = Output(Vec(instructionOffset + 1, new Decoder2NextDecoder))
 
-    val reservationStation = DecoupledIO(new ReservationStationEntry)
+    val reservationStation = new Decoder2ReservationStation
   })
 
   // 命令からそれぞれの昨日のブロックを取り出す
@@ -159,10 +159,10 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   io.imem.ready := io.reservationStation.ready && io.reorderBuffer.ready
   // リオーダバッファやリザベーションステーションに新しいエントリを追加するのは命令がある時
   io.reorderBuffer.valid := io.imem.valid
-  io.reservationStation.valid := io.imem.valid
+  io.reservationStation.entry.valid := io.imem.valid
 
   // RSへの出力を埋める
-  val rs = io.reservationStation.bits
+  val rs = io.reservationStation.entry
   rs.opcode := instOp
   rs.function3 := instFunct3
   rs.immediateOrFunction7 := MuxLookup(opcodeFormatChecker.io.format.asUInt, 0.U, Seq(
@@ -178,7 +178,6 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   rs.value1 := valueSelector1.io.value.bits
   rs.value2 := valueSelector2.io.value.bits
   rs.programCounter := io.imem.bits.programCounter
-  rs.valid := true.B
 }
 
 object Decoder extends App {

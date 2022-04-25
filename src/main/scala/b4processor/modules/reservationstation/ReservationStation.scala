@@ -1,7 +1,7 @@
 package b4processor.modules.reservationstation
 
 import b4processor.Parameters
-import b4processor.connections.{ExecutionRegisterBypass, ReservationStation2Executor}
+import b4processor.connections.{Decoder2ReservationStation, ExecutionRegisterBypass, ReservationStation2Executor}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -10,11 +10,10 @@ class ReservationStation(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val alus = Flipped(Vec(params.numberOfALUs, new ExecutionRegisterBypass))
     val executor = new ReservationStation2Executor
-    val decoder = Flipped(DecoupledIO(new ReservationStationEntry))
+    val decoder = Flipped(new Decoder2ReservationStation)
   })
 
-  val reservation = RegInit(VecInit(Seq.fill(params.numberOfReservationStationEntries)(0.U.asTypeOf(new ReservationStationEntry))))
-  val reservationAndDecoder = MixedVecInit
+  val reservation = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt / params.numberOfDecoders)(0.U.asTypeOf(new ReservationStationEntry))))
   val emptyList = reservation.map { r => !r.valid }
   val readyList = reservation.map { r => r.ready1 && r.ready2 }
 
@@ -23,29 +22,30 @@ class ReservationStation(implicit params: Parameters) extends Module {
   val hasReady = Cat(readyList).orR
   val executeIndex = MuxCase(0.U, readyList.zipWithIndex.map { case (ready, index) => ready -> index.U })
 
-  printf(p"hasEmpty=$hasEmpty at $emptyIndex hasReady=$hasReady at $executeIndex\n")
-  printf(p"reserved0 valid=${reservation(0).valid} ready1=${reservation(0).ready1} value1=${reservation(0).value1}\n")
+//  printf(p"hasEmpty=$hasEmpty at $emptyIndex hasReady=$hasReady at $executeIndex\n")
+//  printf(p"reserved0 valid=${reservation(0).valid} ready1=${reservation(0).ready1} value1=${reservation(0).value1}\n")
 
   // 実行ユニットへ
-
-  val decoderReady = io.decoder.valid && io.decoder.bits.ready1 && io.decoder.bits.ready2
+  val decoderReady = io.decoder.entry.valid && io.decoder.entry.ready1 && io.decoder.entry.ready2
+  //  printf(p"decoder.entry.valid = ${io.decoder.entry.valid}\n")
   val passValueDirectlyFromDecoder = io.executor.ready && !hasReady && decoderReady
+  //  printf(p"passValueDirectlyFromDecoder = $passValueDirectlyFromDecoder\n")
   when(passValueDirectlyFromDecoder) {
-    printf("bypass\n")
+//    printf("bypass\n")
     io.executor.valid := true.B
-    io.executor.bits.opcode := io.decoder.bits.opcode
-    io.executor.bits.destinationTag := io.decoder.bits.destinationTag
-    io.executor.bits.value1 := io.decoder.bits.value1
-    io.executor.bits.value2 := io.decoder.bits.value2
-    io.executor.bits.programCounter := io.decoder.bits.programCounter
-    io.executor.bits.function3 := io.decoder.bits.function3
-    io.executor.bits.immediateOrFunction7 := io.decoder.bits.immediateOrFunction7
+    io.executor.bits.opcode := io.decoder.entry.opcode
+    io.executor.bits.destinationTag := io.decoder.entry.destinationTag
+    io.executor.bits.value1 := io.decoder.entry.value1
+    io.executor.bits.value2 := io.decoder.entry.value2
+    io.executor.bits.programCounter := io.decoder.entry.programCounter
+    io.executor.bits.function3 := io.decoder.entry.function3
+    io.executor.bits.immediateOrFunction7 := io.decoder.entry.immediateOrFunction7
   }.otherwise {
     when(io.executor.ready && hasReady) {
       reservation(executeIndex) := 0.U.asTypeOf(new ReservationStationEntry)
-      printf(p"from reserved $executeIndex\n")
+//      printf(p"from reserved $executeIndex\n")
     }.otherwise {
-      printf("no output\n")
+//      printf("no output\n")
     }
     io.executor.valid := hasReady
     io.executor.bits.opcode := reservation(executeIndex).opcode
@@ -59,9 +59,9 @@ class ReservationStation(implicit params: Parameters) extends Module {
 
   // デコーダから
   io.decoder.ready := hasEmpty
-  when(io.decoder.valid && hasEmpty && !passValueDirectlyFromDecoder) {
-    reservation(emptyIndex) := io.decoder.bits
-    printf(p"stored in $emptyIndex valid=${io.decoder.bits.valid}\n")
+  when(io.decoder.entry.valid && hasEmpty && !passValueDirectlyFromDecoder) {
+    reservation(emptyIndex) := io.decoder.entry
+//    printf(p"stored in $emptyIndex valid=${io.decoder.entry.valid}\n")
   }
 
   for (alu <- io.alus) {
@@ -83,6 +83,6 @@ class ReservationStation(implicit params: Parameters) extends Module {
 }
 
 object ReservationStation extends App {
-  implicit val params = Parameters(numberOfReservationStationEntries = 4, numberOfALUs = 1)
+  implicit val params = Parameters(tagWidth = 2, numberOfALUs = 1, numberOfDecoders = 1)
   (new ChiselStage).emitVerilog(new ReservationStation(), args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

@@ -59,7 +59,7 @@ class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
 
 class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Reorder Buffer"
-  implicit val defaultParams = Parameters(tagWidth = 5, numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1, debug = true)
+  implicit val defaultParams = Parameters(tagWidth = 4, numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1, debug = true)
 
   /** リオーダバッファに値が出力されない */
   it should "output nothing to register file on first clock" in {
