@@ -6,6 +6,7 @@ import chisel3._
 
 /**
  * デコーダ同士をつなぐ
+ *
  * @param params パラメータ
  */
 class Decoder2NextDecoder(implicit params: Parameters) extends Bundle {
