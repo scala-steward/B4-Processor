@@ -16,4 +16,5 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
   val tag = UInt(params.tagWidth.W)
   val data = UInt(64.W)
   val programCounter = UInt(64.W)
+  val R = Bool()
 }

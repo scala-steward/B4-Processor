@@ -8,6 +8,6 @@ import chisel3.util._
  */
 class LoadStoreQueue2ReorderBuffer extends Bundle {
   val programCounter = Input(UInt(64.W))
-  val value = Output((64.W))
+  val value = DecoupledIO(UInt(64.W))
   val valid = Output(Bool())
 }
