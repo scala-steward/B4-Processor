@@ -16,7 +16,7 @@ import chisel3.util._
  */
 class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val imem = Flipped(new IMem2Decoder())
+    val imem = Flipped(new Fetch2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer
     val alu = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
     val registerFile = new Decoder2RegisterFile()

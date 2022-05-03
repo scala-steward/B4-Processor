@@ -1,7 +1,7 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
-import b4processor.connections.IMem2Decoder
+import b4processor.connections.Fetch2Decoder
 import chisel3._
 
 /**
@@ -11,7 +11,7 @@ import chisel3._
  */
 class MultipleDecoder(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val instructions = Vec(params.numberOfDecoders, new IMem2Decoder)
+    val instructions = Vec(params.numberOfDecoders, new Fetch2Decoder)
   })
 
   val decoders = (0 until params.numberOfDecoders).map(i => Module(new Decoder(i)))

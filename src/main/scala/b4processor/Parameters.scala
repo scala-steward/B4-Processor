@@ -13,4 +13,7 @@ case class Parameters(tagWidth: Int = 6,
                       numberOfDecoders: Int = 2,
                       numberOfALUs: Int = 2,
                       maxRegisterFileCommitCount: Int = 4,
+                      fetchWidth: Int = 2,
+                      branchPredictionWidth: Int = 4,
+                      pcInit: Int = 0x0,
                       debug: Boolean = false)
