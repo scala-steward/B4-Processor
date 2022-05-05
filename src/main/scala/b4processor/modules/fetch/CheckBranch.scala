@@ -1,4 +1,4 @@
-package b4processor.common
+package b4processor.modules.fetch
 
 import chisel3._
 import chisel3.util._

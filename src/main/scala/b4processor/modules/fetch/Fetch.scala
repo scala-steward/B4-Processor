@@ -1,7 +1,6 @@
 package b4processor.modules.fetch
 
 import b4processor.Parameters
-import b4processor.common.CheckBranch
 import b4processor.connections.{Fetch2BranchPrediction, Fetch2Decoder, InstructionCache2Fetch}
 import chisel3._
 
@@ -10,6 +9,11 @@ class Fetch(implicit params: Parameters) extends Module {
     val cache = Flipped(Vec(params.numberOfDecoders, new InstructionCache2Fetch))
     val decoders = Vec(params.numberOfDecoders, new Fetch2Decoder)
     val prediction = Vec(params.numberOfDecoders, new Fetch2BranchPrediction)
+
+    val PC = if (params.debug) Some(Output(SInt(64.W))) else None
+    val nextPC = if (params.debug) Some(Output(SInt(64.W))) else None
+    val isPrediction = if (params.debug) Some(Output(Bool())) else None
+    val nextIsPrediction = if (params.debug) Some(Output(Bool())) else None
   })
 
   val pc = RegInit(params.pcInit.S(64.W))
@@ -33,11 +37,18 @@ class Fetch(implicit params: Parameters) extends Module {
     io.prediction(i).isBranch := branch.output.isBranch
 
 
-    nextPC = Mux(branch.output.isBranch && !io.prediction(i).prediction, branch.output.branchAddress, nextPC + 4.S)
+    nextPC = Mux(branch.output.isBranch && io.prediction(i).prediction, branch.output.branchAddress, nextPC + 4.S)
     nextIsPrediction = nextIsPrediction || branch.output.isBranch
     nextIsValid = nextIsValid && io.cache(i).output.valid
   }
 
   pc := nextPC
   isPrediction := nextIsPrediction
+
+  if (params.debug) {
+    io.PC.get := pc
+    io.nextPC.get := nextPC
+    io.isPrediction.get := isPrediction
+    io.nextIsPrediction.get := nextIsPrediction
+  }
 }
