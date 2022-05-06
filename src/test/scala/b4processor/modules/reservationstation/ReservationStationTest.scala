@@ -18,7 +18,13 @@ class ReservationStationWrapper(implicit params: Parameters) extends Reservation
   }
 
   def setDecoderInput(programCounter: Option[Int], value1: Option[Int] = None, value2: Option[Int] = None): Unit = {
-    this.io.decoder.entry.elements.foreach { case (name, value) => value.poke(0.U) }
+    this.io.decoder.entry.elements.foreach { case (name, value) =>
+      if (name == "programCounter") {
+        value.poke(0.S)
+      } else {
+        value.poke(0.U)
+      }
+    }
     this.io.decoder.entry.valid.poke(programCounter.isDefined)
     if (programCounter.isDefined)
       this.io.decoder.entry.programCounter.poke(programCounter.get)

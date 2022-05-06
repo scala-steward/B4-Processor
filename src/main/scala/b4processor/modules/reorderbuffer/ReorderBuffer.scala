@@ -27,7 +27,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val entry = Wire(new ReorderBufferEntry)
     entry.value := 0.U
     entry.valueReady := false.B
-    entry.programCounter := 0.U
+    entry.programCounter := 0.S
     entry.destinationRegister := 0.U
     entry.isPrediction := false.B
     entry.commitReady := false.B

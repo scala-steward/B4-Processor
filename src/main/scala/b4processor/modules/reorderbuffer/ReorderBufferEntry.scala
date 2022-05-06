@@ -4,7 +4,7 @@ import chisel3._
 
 class ReorderBufferEntry extends Bundle {
   /** プログラムカウンタ */
-  val programCounter = UInt(64.W)
+  val programCounter = SInt(64.W)
   /** デスティネーションレジスタ */
   val destinationRegister = UInt(5.W)
   /** 命令の処理が完了した（コミットできる） */
