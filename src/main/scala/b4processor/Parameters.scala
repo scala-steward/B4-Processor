@@ -7,7 +7,7 @@ package b4processor
  * @param numberOfDecoders           デコーダの数
  * @param numberOfALUs               ALUの数
  * @param maxRegisterFileCommitCount リオーダバッファからレジスタファイルに1クロックでコミットする命令の数(Max)
- * @param maxLSQ2MemoryinstCount LSQからメモリに送出する命令の数(max)
+ * @param maxLSQ2MemoryinstCount     LSQからメモリに送出する命令の数(max)
  * @param debug                      デバッグ機能を使う
  */
 case class Parameters(tagWidth: Int = 7,

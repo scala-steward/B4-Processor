@@ -9,9 +9,9 @@ import chisel3.util._
  *
  * @param params パラメータ
  */
-class Decoder2LoadStoreQueue(implicit params: Parameters) extends  Bundle {
+class Decoder2LoadStoreQueue(implicit params: Parameters) extends  ReadyValidIO(new Bundle {
   val opcode = Output(UInt(7.W))
   val stag2 = Output(UInt(params.tagWidth.W))
   val value = DecoupledIO(UInt(64.W))
   val programCounter = Output(UInt((64.W)))
-}
+})
