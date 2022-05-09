@@ -22,11 +22,11 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     val entry = Wire(new LoadStoreQueueEntry)
     entry.opcode := 0.U
     entry.Readyaddress := false.B
-    entry.address := 0.U
+    entry.address := 0.S
     entry.Readydata := false.B
     entry.tag := 0.U
     entry.data := 0.U
-    entry.programCounter := 0.U
+    entry.programCounter := 0.S
     entry.R := true.B // 命令実効済か否か
     entry
   }
@@ -55,17 +55,16 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         val entry = Wire(new LoadStoreQueueEntry)
         entry.opcode := decoder.bits.opcode
         entry.Readyaddress := false.B
-        entry.address := 0.U
+        entry.address := 0.S
         entry.Readydata := false.B
         entry.tag := decoder.bits.stag2
-        entry.data := decoder.bits.value
+        entry.data := decoder.bits.value.bits
         entry.programCounter := decoder.bits.programCounter
         entry.R := false.B
         entry
       }
     }
-    // math.pow(2, params.tagWidth) :Int をUIntにする方法が不明(Scala -> Chisel)
-    insertIndex = Mux(insertIndex === (128.U-1.U), 0.U, insertIndex + decodevalid.asUInt)
+    insertIndex = Mux(insertIndex === (math.pow(2, params.tagWidth).toInt.U-1.U) && decodevalid, 0.U, insertIndex + decodevalid.asUInt)
   }
 
   head := insertIndex
@@ -76,7 +75,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     val alu = io.alus(i)
     for (buf <- buffer) {
       when(alu.valid && !buf.Readyaddress && buf.tag === alu.destinationTag) {
-        buf.address := alu.value
+        buf.address := alu.value.asSInt
         buf.Readyaddress := true.B
       }
     }
@@ -99,9 +98,9 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   // ReorderSign  : リオーダバッファからストア命令の送出信号があるかどうかのフラグ
   // EmissionFlag : LSQから送出するか否かのフラグ
   val Overlap = RegInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
-  val Address = RegInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(0.U)))
-  val StoreOp = Wire(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
-  val ReorderSign = Wire(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
+  val Address = RegInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(0.S)))
+  val StoreOp = WireDefault(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
+  val ReorderSign = WireDefault(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
   val EmissionFlag = RegInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(true.B)))
   io.reorderbuffer.value.ready := true.B
 
@@ -112,7 +111,14 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   // カウンタ変数にjは使えない？ & 2重ループforにtailやindexを使えない
   for (i <- 0 until params.maxLSQ2MemoryinstCount) {
-    emissionindex := tail + i.U // tailがheadを超えていたらemission不可
+    emissionindex :=  Mux(tail + i.U === (math.pow(2, params.tagWidth).toInt.U-1.U), 0.U, emissionindex + 1.U) // リングバッファ
+
+    io.memory(i).valid := false.B
+    io.memory(i).bits.address := 0.S
+    io.memory(i).bits.tag := 0.U
+    io.memory(i).bits.data := 0.U
+    io.memory(i).bits.opcode := 0.U
+
     StoreOp(i) := buffer(emissionindex).opcode
     Overlap(i) := Mux(i.asUInt === 0.U,false.B,
       Address.map(_ === buffer(emissionindex).address).fold(false.B)(_ || _)
@@ -121,14 +127,17 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     ReorderSign := Address.map(_ === io.reorderbuffer.programCounter)
     // EmissionFlag(i) := Mux("loadの送出条件" || "storeの送出条件", true.B, false.B)
     EmissionFlag(i) := Mux(buffer(emissionindex).opcode === "b0100011".U && buffer(emissionindex).Readyaddress && !Overlap(i) && !StoreOp(i) && !buffer(emissionindex).R ||
-      buffer(emissionindex).opcode === "b0000011".U && buffer(emissionindex).Readyaddress && buffer(emissionindex).Readydata && ReorderSign(i),
+      buffer(emissionindex).opcode === "b0000011".U && buffer(emissionindex).Readyaddress && buffer(emissionindex).Readydata && ReorderSign(i) && !buffer(emissionindex).R,
       true.B, false.B)
+
 
     // 送出実行
     when(EmissionFlag(i)) {
+      io.memory(i).valid := true.B
+      io.memory(i).bits.tag := buffer(emissionindex).tag
       io.memory(i).bits.data := buffer(emissionindex).data
       io.memory(i).bits.address := buffer(emissionindex).address
-      io.memory(i).valid := true.B
+      io.memory(i).bits.opcode := buffer(emissionindex).opcode
       buffer(emissionindex).R := true.B
     }
     // tailから送出しない命令までの命令数をカウント
@@ -140,11 +149,10 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   if (params.debug) {
     io.head.get := head
     io.tail.get := tail
-    //    printf(p"reorder buffer pc=${buffer(0).programCounter} value=${buffer(0).value} ready=${buffer(0).ready} rd=${buffer(0).destinationRegister}\n")
   }
 }
 
-object  LoadStoreQueueelabolate extends App {
+object  LoadStoreQueueElabolate extends App {
   implicit val params = Parameters(numberOfDecoders = 1, numberOfALUs = 1, maxLSQ2MemoryinstCount = 2, tagWidth = 4)
   (new ChiselStage).emitVerilog(new LoadStoreQueue, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

@@ -11,10 +11,10 @@ import chisel3._
 class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
   val opcode = UInt(7.W)
   val Readyaddress = Bool()
-  val address = UInt(64.W)
+  val address = SInt(64.W)
   val Readydata = Bool()
   val tag = UInt(params.tagWidth.W)
   val data = UInt(64.W)
-  val programCounter = UInt(64.W)
+  val programCounter = SInt(64.W)
   val R = Bool()
 }
