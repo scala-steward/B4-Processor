@@ -3,6 +3,7 @@ package b4processor.modules.fetch
 import b4processor.Parameters
 import b4processor.connections.{Fetch2BranchPrediction, Fetch2Decoder, InstructionCache2Fetch}
 import chisel3._
+import chisel3.util._
 import chisel3.stage.ChiselStage
 
 class Fetch(implicit params: Parameters) extends Module {
@@ -22,7 +23,7 @@ class Fetch(implicit params: Parameters) extends Module {
 
   var nextPC = pc
   var nextIsPrediction = isPrediction
-  var nextIsValid = true.B.suggestName("nextIsValid0")
+  var nextIsValid = true.B
   for (i <- 0 until params.numberOfDecoders) {
     val decoder = io.decoders(i)
     val cache = io.cache(i)
