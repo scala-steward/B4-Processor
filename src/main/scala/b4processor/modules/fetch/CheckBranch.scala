@@ -40,6 +40,8 @@ object BranchType extends ChiselEnum {
   val Branch = Value
   val JAL = Value
   val JALR = Value
+  val Fence = Value
+  val FenceI = Value
 }
 
 object CheckBranch extends App {

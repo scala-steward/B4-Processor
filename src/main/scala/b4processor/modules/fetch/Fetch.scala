@@ -14,16 +14,14 @@ class Fetch(implicit params: Parameters) extends Module {
 
     val PC = if (params.debug) Some(Output(SInt(64.W))) else None
     val nextPC = if (params.debug) Some(Output(SInt(64.W))) else None
-    val isPrediction = if (params.debug) Some(Output(Bool())) else None
-    val nextIsPrediction = if (params.debug) Some(Output(Bool())) else None
   })
 
   val pc = RegInit(params.pcInit.S(64.W))
-  val isPrediction = RegInit(false.B)
+  val waiting = RegInit(false.B)
 
   var nextPC = pc
-  var nextIsPrediction = isPrediction
   var nextIsValid = true.B
+  var nextWait = waiting
   for (i <- 0 until params.numberOfDecoders) {
     val decoder = io.decoders(i)
     val cache = io.cache(i)
@@ -33,34 +31,39 @@ class Fetch(implicit params: Parameters) extends Module {
     decoder.valid := io.cache(i).output.valid
     decoder.bits.programCounter := nextPC
     decoder.bits.instruction := cache.output.bits
-    decoder.bits.isPrediction := nextIsPrediction
 
     val branch = Module(new CheckBranch)
     branch.io.instruction := io.cache(i).output.bits
+
+    decoder.bits.isBranch := MuxLookup(branch.io.branchType.asUInt, 0.S, Seq(
+      BranchType.JAL.asUInt -> branch.io.offset,
+      BranchType.Branch.asUInt -> Mux(prediction.prediction, branch.io.offset, 4.S),
+      BranchType.None.asUInt -> 4.S,
+    ))
 
     prediction.addressLowerBits := nextPC(params.branchPredictionWidth + 1, 1)
     prediction.isBranch := branch.io.branchType =/= BranchType.None
 
 
-    nextPC = nextPC + MuxLookup(branch.io.branchType.asUInt, 4.S, Seq(
-      BranchType.JAL -> branch.io.offset,
-      BranchType.Branch -> Mux(prediction.prediction, branch.io.offset, 4.S),
-      BranchType.JALR -> 0.U, // TODO: 予測された値を入れる。raの値を使う？
+    nextPC = nextPC + MuxLookup(branch.io.branchType.asUInt, 0.S, Seq(
+      BranchType.JAL.asUInt -> branch.io.offset,
+      BranchType.Branch.asUInt -> Mux(prediction.prediction, branch.io.offset, 4.S),
+      BranchType.None.asUInt -> 4.S,
     ))
-    nextIsPrediction = nextIsPrediction ||
-      branch.io.branchType === BranchType.Branch ||
-      branch.io.branchType === BranchType.JALR
-    nextIsValid = (nextIsValid && io.cache(i).output.valid && decoder.ready)
+    nextWait = nextWait || MuxLookup(branch.io.branchType.asUInt, false.B, Seq(
+      BranchType.JALR.asUInt -> true.B,
+      BranchType.Fence.asUInt -> true.B,
+      BranchType.FenceI.asUInt -> true.B, // TODO: 予測された値を入れる。raの値を使う？
+    ))
+    nextIsValid = nextIsValid && io.cache(i).output.valid && decoder.ready && !nextWait
   }
 
   pc := nextPC
-  isPrediction := nextIsPrediction
+  waiting := nextWait
 
   if (params.debug) {
     io.PC.get := pc
     io.nextPC.get := nextPC
-    io.isPrediction.get := isPrediction
-    io.nextIsPrediction.get := nextIsPrediction
   }
 }
 

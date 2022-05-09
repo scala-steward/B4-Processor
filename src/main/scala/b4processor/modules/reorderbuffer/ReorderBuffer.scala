@@ -53,21 +53,37 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         entry.valueReady := false.B
         entry.programCounter := decoder.programCounter
         entry.destinationRegister := decoder.destination.destinationRegister
-        entry.isPrediction := decoder.isPrediction
+        entry.isPrediction := decoder.isBranch
         entry.commitReady := false.B
         entry
       }
     }
     decoder.destination.destinationTag := insertIndex
     // ソースレジスタに対応するタグ、値の代入
-    decoder.source1.matchingTag.valid := buffer.map { entry => entry.destinationRegister === decoder.source1.sourceRegister }.fold(false.B) { (a, b) => a | b }
-    decoder.source1.matchingTag.bits := MuxCase(0.U, buffer.zipWithIndex.map { case (entry, index) => (entry.destinationRegister === decoder.source1.sourceRegister) -> index.U })
-    decoder.source1.value.valid := buffer.map { entry => entry.destinationRegister === decoder.source1.sourceRegister && entry.valueReady }.fold(false.B) { (a, b) => a | b }
-    decoder.source1.value.bits := MuxCase(0.U, buffer.map { entry => (entry.destinationRegister === decoder.source1.sourceRegister && entry.valueReady) -> entry.value })
-    decoder.source2.matchingTag.valid := buffer.map { entry => entry.destinationRegister === decoder.source2.sourceRegister }.fold(false.B) { (a, b) => a | b }
-    decoder.source2.matchingTag.bits := MuxCase(0.U, buffer.zipWithIndex.map { case (entry, index) => (entry.destinationRegister === decoder.source2.sourceRegister) -> index.U })
-    decoder.source2.value.valid := buffer.map { entry => entry.destinationRegister === decoder.source2.sourceRegister && entry.valueReady }.fold(false.B) { (a, b) => a | b }
-    decoder.source2.value.bits := MuxCase(0.U, buffer.map { entry => (entry.destinationRegister === decoder.source2.sourceRegister && entry.valueReady) -> entry.value })
+    when(decoder.source1.sourceRegister =/= 0.U) {
+      decoder.source1.matchingTag.valid := buffer.map { entry => entry.destinationRegister === decoder.source1.sourceRegister }.fold(false.B) { (a, b) => a | b }
+      decoder.source1.matchingTag.bits := MuxCase(0.U, buffer.zipWithIndex.map { case (entry, index) => (entry.destinationRegister === decoder.source1.sourceRegister) -> index.U })
+      decoder.source1.value.valid := buffer.map { entry => entry.destinationRegister === decoder.source1.sourceRegister && entry.valueReady }.fold(false.B) { (a, b) => a | b }
+      decoder.source1.value.bits := MuxCase(0.U, buffer.map { entry => (entry.destinationRegister === decoder.source1.sourceRegister && entry.valueReady) -> entry.value })
+    }.otherwise {
+      decoder.source1.matchingTag.valid := false.B
+      decoder.source1.matchingTag.bits := 0.U
+      decoder.source1.value.valid := false.B
+      decoder.source1.value.bits := 0.U
+    }
+
+    when(decoder.source2.sourceRegister =/= 0.U) {
+      decoder.source2.matchingTag.valid := buffer.map { entry => entry.destinationRegister === decoder.source2.sourceRegister }.fold(false.B) { (a, b) => a | b }
+      decoder.source2.matchingTag.bits := MuxCase(0.U, buffer.zipWithIndex.map { case (entry, index) => (entry.destinationRegister === decoder.source2.sourceRegister) -> index.U })
+      decoder.source2.value.valid := buffer.map { entry => entry.destinationRegister === decoder.source2.sourceRegister && entry.valueReady }.fold(false.B) { (a, b) => a | b }
+      decoder.source2.value.bits := MuxCase(0.U, buffer.map { entry => (entry.destinationRegister === decoder.source2.sourceRegister && entry.valueReady) -> entry.value })
+    }.otherwise {
+      decoder.source2.matchingTag.valid := false.B
+      decoder.source2.matchingTag.bits := 0.U
+      decoder.source2.value.valid := false.B
+      decoder.source2.value.bits := 0.U
+    }
+
 
     // 次のループで使用するinserIndexとlastReadyを変える
     // わざと:=ではなく=を利用している

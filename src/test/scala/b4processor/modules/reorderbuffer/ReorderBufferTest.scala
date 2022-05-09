@@ -36,7 +36,7 @@ class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
       decoder.source2.sourceRegister.poke(values.source2)
       decoder.destination.destinationRegister.poke(values.destination)
       decoder.programCounter.poke(values.programCounter)
-      decoder.isPrediction.poke(values.isPrediction)
+      decoder.isBranch.poke(values.isPrediction)
     }
   }
 
