@@ -87,6 +87,30 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
+  // 予測で値がどちらとも読み取れる
+  // 書き込む命令
+  // LOOP:
+  // beq zero,zero,LOOP 00000063
+  it should "read both values in loop" in {
+    test(new FetchWrapper(InstructionUtil.fromStringSeq32bit(Seq("00000063", "00000000")))) { c =>
+      c.initialize()
+      c.setPrediction(Seq(true, true))
+
+      c.io.memoryAddress.expect(0)
+      c.expectMemory(Seq("x00000063".U, "x00000000".U))
+      c.io.cacheAddress(0).expect(0)
+      c.io.cacheAddress(0).expect(0)
+
+      c.io.cacheOutput(0).bits.expect("x00000063".U)
+      c.io.cacheOutput(0).valid.expect(true)
+      c.io.prediction(0).isBranch.expect(true)
+
+      c.io.cacheOutput(1).bits.expect("x00000063".U)
+      c.io.cacheOutput(1).valid.expect(true)
+      c.io.prediction(1).isBranch.expect(true)
+    }
+  }
+
   // 普通の命令と分岐先を認識できているか
   // 書き込む命令
   // nop                  00000013
@@ -112,6 +136,34 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize()
       c.setPrediction(Seq(true, true))
       c.io.nextPC.expect(12)
+      c.io.nextIsPrediction.expect(true)
+    }
+  }
+
+  // ループで自身と同じアドレスに戻ってくるか
+  // 書き込む命令
+  // nop                00000013
+  // LOOP:
+  // beq zero,zero,LOOP 00000063
+  it should "understand loop to self" in {
+    test(new FetchWrapper(InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063")))) { c =>
+      c.initialize()
+      c.setPrediction(Seq(true, true))
+      c.io.nextPC.expect(4)
+      c.io.nextIsPrediction.expect(true)
+    }
+  }
+
+  // ループで一つ前に戻る
+  // 書き込む命令
+  // LOOP:
+  // nop                00000013
+  // beq zero,zero,LOOP fe000ee3
+  it should "understand loop" in {
+    test(new FetchWrapper(InstructionUtil.fromStringSeq32bit(Seq("00000013", "fe000ee3")))) { c =>
+      c.initialize()
+      c.setPrediction(Seq(true, true))
+      c.io.nextPC.expect(0)
       c.io.nextIsPrediction.expect(true)
     }
   }

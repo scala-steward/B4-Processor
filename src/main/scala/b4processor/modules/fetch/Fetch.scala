@@ -3,6 +3,7 @@ package b4processor.modules.fetch
 import b4processor.Parameters
 import b4processor.connections.{Fetch2BranchPrediction, Fetch2Decoder, InstructionCache2Fetch}
 import chisel3._
+import chisel3.stage.ChiselStage
 
 class Fetch(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
@@ -21,25 +22,34 @@ class Fetch(implicit params: Parameters) extends Module {
 
   var nextPC = pc
   var nextIsPrediction = isPrediction
-  var nextIsValid = true.B
+  var nextIsValid = true.B.suggestName("nextIsValid0")
   for (i <- 0 until params.numberOfDecoders) {
-    io.cache(i).address := nextPC
-    io.decoders(i).valid := io.cache(i).output.valid
-    io.decoders(i).bits.programCounter := nextPC
-    io.decoders(i).bits.instruction := io.cache(i).output.bits
-    io.decoders(i).bits.isPrediction := nextIsPrediction
+    val decoder = io.decoders(i)
+    val cache = io.cache(i)
+    val prediction = io.prediction(i)
+
+    cache.address := nextPC
+    decoder.valid := io.cache(i).output.valid
+    decoder.bits.programCounter := nextPC
+    decoder.bits.instruction := cache.output.bits
+    decoder.bits.isPrediction := nextIsPrediction
 
     val branch = Module(new CheckBranch)
-    branch.input.instruction := io.cache(i).output.bits
-    branch.input.programCounter := nextPC
+    branch.io.instruction := io.cache(i).output.bits
 
-    io.prediction(i).addressLowerBits := nextPC(params.branchPredictionWidth + 1, 1)
-    io.prediction(i).isBranch := branch.output.isBranch
+    prediction.addressLowerBits := nextPC(params.branchPredictionWidth + 1, 1)
+    prediction.isBranch := branch.io.branchType =/= BranchType.None
 
 
-    nextPC = Mux(branch.output.isBranch && io.prediction(i).prediction, branch.output.branchAddress, nextPC + 4.S)
-    nextIsPrediction = nextIsPrediction || branch.output.isBranch
-    nextIsValid = nextIsValid && io.cache(i).output.valid
+    nextPC = nextPC + MuxLookup(branch.io.branchType.asUInt, 4.S, Seq(
+      BranchType.JAL -> branch.io.offset,
+      BranchType.Branch -> Mux(prediction.prediction, branch.io.offset, 4.S),
+      BranchType.JALR -> 0.U, // TODO: 予測された値を入れる。raの値を使う？
+    ))
+    nextIsPrediction = nextIsPrediction ||
+      branch.io.branchType === BranchType.Branch ||
+      branch.io.branchType === BranchType.JALR
+    nextIsValid = (nextIsValid && io.cache(i).output.valid && decoder.ready)
   }
 
   pc := nextPC
@@ -51,4 +61,9 @@ class Fetch(implicit params: Parameters) extends Module {
     io.isPrediction.get := isPrediction
     io.nextIsPrediction.get := nextIsPrediction
   }
+}
+
+object Fetch extends App {
+  implicit val params = Parameters()
+  (new ChiselStage).emitVerilog(new Fetch(), args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

@@ -1,37 +1,47 @@
 package b4processor.modules.fetch
 
 import chisel3._
+import chisel3.experimental.ChiselEnum
+import chisel3.stage.ChiselStage
 import chisel3.util._
 
 
 /** 命令の種類のチェック */
 class CheckBranch extends Module {
-  val input = IO(Input(new Bundle {
-    val instruction = UInt(32.W)
-    val programCounter = SInt(64.W)
-  }))
-  val output = IO(Output(new Bundle {
-    val isBranch = Bool()
-    val branchAddress = SInt(64.W)
-  }))
+  val io = IO(new Bundle {
+    val instruction = Input(UInt(32.W))
+    val branchType = Output(BranchType())
+    val offset = Output(SInt(21.W))
+  })
 
-  val opcode = input.instruction(6, 0)
+  val opcode = io.instruction(6, 0)
 
-  output.branchAddress := MuxLookup(opcode, input.programCounter + 4.S, Seq(
+  io.offset := MuxLookup(opcode, 4.S, Seq(
     // jalr
-    "b1100111".U -> (input.programCounter
-      + Cat(input.instruction(31, 20), 0.U(1.W)).asSInt),
+    "b1100111".U -> Cat(io.instruction(31, 20), 0.U(1.W)).asSInt,
     // jal
-    "b1101111".U -> (input.programCounter
-      + Cat(input.instruction(31), input.instruction(19, 12), input.instruction(20), input.instruction(30, 21), 0.U(1.W)).asSInt),
+    "b1101111".U -> Cat(io.instruction(31), io.instruction(19, 12), io.instruction(20), io.instruction(30, 21), 0.U(1.W)).asSInt,
     // branch
-    "b1100011".U -> (input.programCounter
-      + Cat(input.instruction(31), input.instruction(7), input.instruction(30, 25), input.instruction(11, 8), 0.U(1.W)).asSInt),
+    "b1100011".U -> Cat(io.instruction(31), io.instruction(7), io.instruction(30, 25), io.instruction(11, 8), 0.U(1.W)).asSInt,
   ))
 
-  output.isBranch := MuxLookup(opcode, false.B, Seq(
-    "b1100111".U -> true.B,
-    "b1101111".U -> true.B,
-    "b1100011".U -> true.B,
+  io.branchType := MuxLookup(opcode, BranchType.None, Seq(
+    // jalr
+    "b1100111".U -> BranchType.JALR,
+    // jal
+    "b1101111".U -> BranchType.JAL,
+    // B
+    "b1100011".U -> BranchType.Branch,
   ))
+}
+
+object BranchType extends ChiselEnum {
+  val None = Value
+  val Branch = Value
+  val JAL = Value
+  val JALR = Value
+}
+
+object CheckBranch extends App {
+  (new ChiselStage).emitVerilog(new CheckBranch)
 }
