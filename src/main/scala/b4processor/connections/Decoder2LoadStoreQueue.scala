@@ -13,5 +13,5 @@ class Decoder2LoadStoreQueue(implicit params: Parameters) extends  ReadyValidIO(
   val opcode = Output(UInt(7.W))
   val stag2 = Output(UInt(params.tagWidth.W))
   val value = DecoupledIO(UInt(64.W))
-  val programCounter = Output(UInt((64.W)))
+  val programCounter = Output(SInt((64.W)))
 })

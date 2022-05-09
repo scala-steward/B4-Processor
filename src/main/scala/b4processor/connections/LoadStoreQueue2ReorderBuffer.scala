@@ -7,6 +7,6 @@ import chisel3.util._
  * LSQとリオーダバッファをつなぐ
  */
 class LoadStoreQueue2ReorderBuffer extends Bundle {
-  val programCounter = Input(UInt(64.W))
+  val programCounter = Input(SInt(64.W))
   val value = Flipped(DecoupledIO(UInt(64.W)))
 }
