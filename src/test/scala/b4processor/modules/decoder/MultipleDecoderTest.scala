@@ -1,10 +1,10 @@
-package b4processor.decoder
+package b4processor.modules.decoder
 
-import b4processor.modules.decoder.MultipleDecoder
+import b4processor.Parameters
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class MultipleDecoderWrapper(number_of_decoders: Int, number_of_alus: Int) extends MultipleDecoder(number_of_decoders, number_of_alus) {
+class MultipleDecoderWrapper(implicit params: Parameters) extends MultipleDecoder {
 
 }
 

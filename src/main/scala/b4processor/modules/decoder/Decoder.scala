@@ -1,27 +1,29 @@
 package b4processor.modules.decoder
 
+import b4processor.Parameters
 import b4processor.common.OpcodeFormat._
 import b4processor.common.OpcodeFormatChecker
 import b4processor.connections._
 import b4processor.modules.reservationstation.ReservationStationEntry
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util._
 
 /**
  * デコーダ
  *
  * @param instructionOffset 同時に扱う命令のうちいくつ目の命令を担当するか
- * @param numberOfAlus      ALUの数
+ * @param params            パラメータ
  */
-class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
+class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val imem = Flipped(new IMem2Decoder())
-    val reorderBuffer = new Decoder2ReorderBuffer()
-    val alu = Vec(numberOfAlus, Flipped(new ExecutionRegisterBypass()))
+    val reorderBuffer = new Decoder2ReorderBuffer
+    val alu = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
     val registerFile = new Decoder2RegisterFile()
 
-    val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder()))
-    val decodersAfter = Output(Vec(instructionOffset + 1, new Decoder2NextDecoder()))
+    val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder))
+    val decodersAfter = Output(Vec(instructionOffset + 1, new Decoder2NextDecoder))
 
     val reservationStation = DecoupledIO(new ReservationStationEntry)
   })
@@ -54,12 +56,30 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
     opcodeFormatChecker.io.format === U ||
     opcodeFormatChecker.io.format === J
 
+  // ソースレジスタ1に値があるかどうか
+  val source1IsValid = opcodeFormatChecker.io.format === R ||
+    opcodeFormatChecker.io.format === I ||
+    opcodeFormatChecker.io.format === S ||
+    opcodeFormatChecker.io.format === B
+
+  // ソースレジスタ2に値があるかどうか
+  val source2IsValid = opcodeFormatChecker.io.format === R ||
+    opcodeFormatChecker.io.format === S ||
+    opcodeFormatChecker.io.format === B
+
   // リオーダバッファへの入力
   io.reorderBuffer.programCounter := io.imem.bits.program_counter
-  io.reorderBuffer.source1.sourceRegister := instRs1
-  io.reorderBuffer.source2.sourceRegister := instRs2
-  io.reorderBuffer.destination.destinationRegister.bits := instRd
-  io.reorderBuffer.destination.destinationRegister.valid := destinationIsValid
+  io.reorderBuffer.source1.sourceRegister := Mux(source1IsValid,
+    instRs1,
+    0.U)
+  io.reorderBuffer.source2.sourceRegister := Mux(source2IsValid,
+    instRs2,
+    0.U)
+  io.reorderBuffer.destination.destinationRegister := Mux(destinationIsValid,
+    instRd,
+    0.U)
+  io.reorderBuffer.isPrediction := io.imem.bits.isPrediction
+
 
   // レジスタファイルへの入力
   io.registerFile.sourceRegister1 := instRs1
@@ -90,16 +110,16 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
 
   // Valueの選択
   // value1
-  val valueSelector1 = Module(new ValueSelector1(numberOfAlus))
+  val valueSelector1 = Module(new ValueSelector1)
   valueSelector1.io.value.ready := true.B
   valueSelector1.io.sourceTag <> sourceTag1
   valueSelector1.io.reorderBufferValue <> io.reorderBuffer.source1.value
   valueSelector1.io.registerFileValue := io.registerFile.value1
-  for (i <- 0 until numberOfAlus) {
+  for (i <- 0 until params.numberOfALUs) {
     valueSelector1.io.aluBypassValue(i) <> io.alu(i)
   }
   // value2
-  val valueSelector2 = Module(new ValueSelector2(numberOfAlus))
+  val valueSelector2 = Module(new ValueSelector2)
   valueSelector2.io.value.ready := true.B
   valueSelector2.io.sourceTag <> sourceTag2
   valueSelector2.io.reorderBufferValue <> io.reorderBuffer.source2.value
@@ -110,7 +130,7 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
     J.asUInt -> immJExtended
   ))
   valueSelector2.io.opcodeFormat := opcodeFormatChecker.io.format
-  for (i <- 0 until numberOfAlus) {
+  for (i <- 0 until params.numberOfALUs) {
     valueSelector2.io.aluBypassValue(i) <> io.alu(i)
   }
 
@@ -151,10 +171,15 @@ class Decoder(instructionOffset: Int, numberOfAlus: Int) extends Module {
     B.asUInt -> instImmB,
   ))
   rs.destinationTag := io.reorderBuffer.destination.destinationTag
-  rs.sourceTag1 := sourceTag1.bits
-  rs.sourceTag2 := sourceTag2.bits
+  rs.sourceTag1 := Mux(valueSelector1.io.value.valid, 0.U, sourceTag1.bits)
+  rs.sourceTag2 := Mux(valueSelector2.io.value.valid, 0.U, sourceTag2.bits)
   rs.ready1 := valueSelector1.io.value.valid
   rs.ready2 := valueSelector2.io.value.valid
   rs.value1 := valueSelector1.io.value.bits
   rs.value2 := valueSelector2.io.value.bits
+}
+
+object Decoder extends App {
+  implicit val params = Parameters()
+  (new ChiselStage).emitVerilog(new Decoder(0))
 }
