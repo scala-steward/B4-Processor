@@ -10,19 +10,34 @@ import chisel3.util._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
+/** フェッチのラッパー
+ *
+ * フェッチ、キャッシュ、命令メモリを含む */
 class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
+    /** 分岐予測 */
     val prediction = Vec(params.numberOfDecoders, new Fetch2BranchPrediction)
+    /** 実行ユニットからの分岐先の値 */
     val executors = Input(Vec(params.numberOfALUs, new ExecutorBranchResult))
+    /** デコーダ */
     val decoders = Vec(params.numberOfDecoders, new Fetch2Decoder)
+    /** ロードストアキューのエントリが空か */
     val loadStoreQueueEmpty = Input(Bool())
+    /** リオーダバッファのエントリが空か */
     val reorderBufferEmpty = Input(Bool())
+    /** メモリに要求されているアドレス */
     val memoryAddress = Output(SInt(64.W))
+    /** メモリの出力 */
     val memoryOutput = Vec(params.fetchWidth, Output(UInt(64.W)))
+    /** キャッシュに要求されているアドレス */
     val cacheAddress = Vec(params.numberOfDecoders, Output(SInt(64.W)))
+    /** キャッシュからの出力 */
     val cacheOutput = Vec(params.numberOfDecoders, Valid(UInt(64.W)))
+    /** プログラムカウンタ */
     val PC = Output(SInt(64.W))
+    /** 次のクロックのプログラムカウンタ */
     val nextPC = Output(SInt(64.W))
+    /** 各命令のぶん機の種類 */
     val branchTypes = Output(Vec(params.numberOfDecoders, new BranchType.Type))
   })
 
@@ -50,16 +65,19 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
 
   fetch.io.decoders.foreach(_.ready := true.B)
 
+  /** 初期化 */
   def initialize(): Unit = {
     this.setPrediction(Seq.fill(params.numberOfDecoders)(false))
   }
 
+  /** 予測をセット */
   def setPrediction(values: Seq[Boolean]): Unit = {
     for (i <- 0 until params.numberOfDecoders) {
       this.io.prediction(i).prediction.poke(values(i))
     }
   }
 
+  /** 分岐先をセット */
   def setExecutorBranchResult(results: Seq[Option[Int]] = Seq.fill(params.numberOfALUs)(None)): Unit = {
     for ((e, r) <- io.executors.zip(results)) {
       e.valid.poke(r.isDefined)
@@ -67,6 +85,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
     }
   }
 
+  /** メモリからの出力内容を確認 */
   def expectMemory(values: Seq[UInt]): Unit = {
     this.io.memoryOutput.zip(values).foreach { case (out, v) => out.expect(v) }
   }

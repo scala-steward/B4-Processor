@@ -7,6 +7,7 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
+/** メモリをキャッシュを含んだラッパー */
 class MemoryAndCache(memoryInit: => Seq[UInt])(implicit params: Parameters) extends Module {
   val io = IO(Vec(params.numberOfDecoders, new InstructionCache2Fetch))
 
@@ -21,6 +22,7 @@ class InstructionMemoryCacheTest extends AnyFlatSpec with ChiselScalatestTester 
   behavior of "Instruction Cache"
   implicit val defaultParams = Parameters()
 
+  /** 命令を読み込む */
   it should "load memory" in {
     test(new MemoryAndCache((0 until 100).map(_.U(8.W)))) { c =>
       c.io(0).address.poke(0)

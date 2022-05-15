@@ -6,16 +6,21 @@ import chisel3.stage.ChiselStage
 import chisel3.util._
 
 
-/** 命令の種類のチェック */
+/** フェッチモジュール用命令の種類のチェック */
 class CheckBranch extends Module {
   val io = IO(new Bundle {
+    /** 命令 */
     val instruction = Input(UInt(32.W))
+    /** 分岐の種類 */
     val branchType = Output(BranchType())
+    /** 分岐後の命令のオフセット */
     val offset = Output(SInt(21.W))
   })
 
+  // オペコードを取り出す
   val opcode = io.instruction(6, 0)
 
+  // オフセットの抽出
   io.offset := MuxLookup(opcode, 4.S, Seq(
     // jalr
     "b1100111".U -> Cat(io.instruction(31, 20), 0.U(1.W)).asSInt,
@@ -27,6 +32,7 @@ class CheckBranch extends Module {
     "b0001111".U -> 4.S
   ))
 
+  // 瓶木の種類の抽出
   io.branchType := MuxLookup(opcode, BranchType.None, Seq(
     // jalr
     "b1100111".U -> BranchType.JALR,
@@ -39,15 +45,6 @@ class CheckBranch extends Module {
       BranchType.FenceI,
       BranchType.Fence),
   ))
-}
-
-object BranchType extends ChiselEnum {
-  val None = Value
-  val Branch = Value
-  val JAL = Value
-  val JALR = Value
-  val Fence = Value
-  val FenceI = Value
 }
 
 object CheckBranch extends App {

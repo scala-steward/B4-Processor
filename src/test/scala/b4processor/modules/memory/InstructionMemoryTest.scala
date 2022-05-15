@@ -10,6 +10,7 @@ class InstructionMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
 
   implicit val defaultParams = Parameters()
 
+  /** 要求されたアドレスの値を返す */
   it should "pass values at address" in {
     test(new InstructionMemory((0 until 100).map(_.U(8.W)))) { c =>
       c.io.address.poke(0)
