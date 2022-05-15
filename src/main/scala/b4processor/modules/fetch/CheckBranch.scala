@@ -23,6 +23,8 @@ class CheckBranch extends Module {
     "b1101111".U -> Cat(io.instruction(31), io.instruction(19, 12), io.instruction(20), io.instruction(30, 21), 0.U(1.W)).asSInt,
     // branch
     "b1100011".U -> Cat(io.instruction(31), io.instruction(7), io.instruction(30, 25), io.instruction(11, 8), 0.U(1.W)).asSInt,
+    // fence, fence.i
+    "b0001111".U -> 4.S
   ))
 
   io.branchType := MuxLookup(opcode, BranchType.None, Seq(
@@ -32,6 +34,10 @@ class CheckBranch extends Module {
     "b1101111".U -> BranchType.JAL,
     // B
     "b1100011".U -> BranchType.Branch,
+    // fence, fence.i
+    "b0001111".U -> Mux(io.instruction(12),
+      BranchType.FenceI,
+      BranchType.Fence),
   ))
 }
 

@@ -23,7 +23,6 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
   def setImem(instruction: UInt, isPrediction: Boolean = false): Unit = {
     this.io.instructionFetch.bits.programCounter.poke(0)
     this.io.instructionFetch.bits.instruction.poke(instruction)
-    this.io.instructionFetch.bits.isBranch.poke(isPrediction)
     this.io.instructionFetch.valid.poke(true)
   }
 
@@ -226,7 +225,6 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new DecoderWrapper(0)(testParams)) { c =>
       c.initialize("x0040056f".U)
       c.setImem("x0040056f".U, isPrediction = true)
-      c.io.reorderBuffer.isBranch.expect(true)
     }
   }
 }

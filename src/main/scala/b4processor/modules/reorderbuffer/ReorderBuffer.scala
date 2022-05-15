@@ -15,7 +15,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val decoders = Vec(params.numberOfDecoders, Flipped(new Decoder2ReorderBuffer))
     val alus = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
-    val prediction = Flipped(new BranchPrediction2ReorderBuffer())
     val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
 
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
@@ -23,20 +22,9 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val bufferIndex0 = if (params.debug) Some(Output(new ReorderBufferEntry)) else None
   })
 
-  val defaultEntry = {
-    val entry = Wire(new ReorderBufferEntry)
-    entry.value := 0.U
-    entry.valueReady := false.B
-    entry.programCounter := 0.S
-    entry.destinationRegister := 0.U
-    entry.isPrediction := false.B
-    entry.commitReady := false.B
-    entry
-  }
-
   val head = RegInit(0.U(params.tagWidth.W))
   val tail = RegInit(0.U(params.tagWidth.W))
-  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt)(defaultEntry)))
+  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt)(ReorderBufferEntry.default())))
 
   // デコーダからの読み取りと書き込み
   var insertIndex = head
@@ -53,7 +41,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         entry.valueReady := false.B
         entry.programCounter := decoder.programCounter
         entry.destinationRegister := decoder.destination.destinationRegister
-        entry.isPrediction := decoder.isBranch
         entry.commitReady := false.B
         entry
       }
@@ -98,23 +85,15 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val index = tail + i.U
 
     val instructionOk = buffer(index).valueReady
-    val predictionOK = !buffer(index).isPrediction || buffer(index).commitReady
-    val canCommit = lastValid && index =/= head && instructionOk && predictionOK
+    val canCommit = lastValid && index =/= head && instructionOk
 
-    val skip = buffer(index).isPrediction && buffer(index).commitReady
+    io.registerFile(i).valid := canCommit
+    io.registerFile(i).bits.value := buffer(index).value
+    io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
 
-    when(skip) {
-      io.registerFile(i).valid := false.B
-      io.registerFile(i).bits.value := 0.U
-      io.registerFile(i).bits.destinationRegister := 0.U
-    }.otherwise {
-      io.registerFile(i).valid := canCommit
-      io.registerFile(i).bits.value := buffer(index).value
-      io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
-    }
 
     when(canCommit) {
-      buffer(index) := defaultEntry
+      buffer(index) := ReorderBufferEntry.default()
     }
     lastValid = canCommit
   }
@@ -125,16 +104,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     when(alu.valid) {
       buffer(alu.destinationTag).value := alu.value
       buffer(alu.destinationTag).valueReady := true.B
-    }
-  }
-
-  // 分岐予測の読み込み
-  when(io.prediction.valid) {
-    for (buf <- buffer) {
-      when(buf.isPrediction) {
-        buf.isPrediction := !io.prediction.wasCorrect
-        buf.commitReady := true.B
-      }
     }
   }
 

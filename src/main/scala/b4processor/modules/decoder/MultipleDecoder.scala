@@ -21,6 +21,6 @@ class MultipleDecoder(implicit params: Parameters) extends Module {
   }
 
   for (i <- 0 until params.numberOfDecoders) {
-    decoders(i).io.imem <> io.instructions(i)
+    decoders(i).io.instructionFetch <> io.instructions(i)
   }
 }
