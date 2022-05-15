@@ -1,7 +1,7 @@
 package b4processor.modules.lsq
 
 import b4processor.Parameters
-import b4processor.connections.{Decoder2LoadStoreQueue, ExecutionRegisterBypass, LoadStoreQueue2Memory, LoadStoreQueue2ReorderBuffer}
+import b4processor.connections.{Decoder2LoadStoreQueue, Execution2LoadStoreQueue, ExecutionRegisterBypass, LoadStoreQueue2Memory, LoadStoreQueue2ReorderBuffer}
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
@@ -9,7 +9,7 @@ import chisel3.stage.ChiselStage
 class LoadStoreQueue(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val decoders = Vec(params.numberOfDecoders, Flipped(new Decoder2LoadStoreQueue()))
-    val alus = Vec(params.numberOfALUs, Flipped(Output(new ExecutionRegisterBypass())))
+    val alus = Vec(params.numberOfALUs, Flipped(Output(new Execution2LoadStoreQueue())))
     val reorderbuffer = new LoadStoreQueue2ReorderBuffer()
     val memory = Vec(params.maxLSQ2MemoryinstCount, new LoadStoreQueue2Memory)
 
@@ -69,14 +69,20 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   head := insertIndex
 
-  /** オペランドバイパスのタグが対応していた場合は，ALUを読み込む */
+  /** オペランドバイパスのタグorPCが対応していた場合は，ALUを読み込む */
 
   for (i <- 0 until params.numberOfALUs) {
     val alu = io.alus(i)
     for (buf <- buffer) {
-      when(alu.valid && !buf.Readyaddress && buf.tag === alu.destinationTag) {
-        buf.address := alu.value.asSInt
-        buf.Readyaddress := true.B
+      when(alu.valid && buf.tag === alu.destinationTag) {
+        when(!buf.Readyaddress && io.alus(i).ProgramCounter === buf.programCounter) {
+          buf.address := alu.value.asSInt
+          buf.Readyaddress := true.B
+        }
+        when(!buf.Readydata && !(io.alus(i).ProgramCounter === buf.programCounter)) {
+          buf.data := alu.value.asUInt
+          buf.Readydata := true.B
+        }
       }
     }
     // 2重構造
