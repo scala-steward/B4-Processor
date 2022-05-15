@@ -30,7 +30,12 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     // 命令メモリから取得した幅の中に要求したアドレスがあれば渡す
     io.fetch(i).output := MuxCase(Valid(UInt(32.W)).Lit(_.valid -> false.B, _.bits -> 0.U),
       io.memory.output.zipWithIndex.map { case (m, index) =>
-        (io.fetch(i).address === baseAddress + (4 * index).S) -> Valid(UInt(32.W)).Lit(_.valid -> true.B, _.bits -> m)
+        (io.fetch(i).address === baseAddress + (4 * index).S) -> {
+          val w = Wire(Valid(UInt(32.W)))
+          w.valid := true.B
+          w.bits := m
+          w
+        }
       }
     )
   }

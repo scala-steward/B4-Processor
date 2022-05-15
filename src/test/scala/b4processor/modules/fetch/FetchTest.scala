@@ -252,21 +252,33 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize()
       c.io.branchTypes(0).expect(BranchType.None)
       c.io.branchTypes(1).expect(BranchType.Fence)
+      c.io.decoders(0).valid.expect(true)
+      c.io.decoders(1).valid.expect(true)
       c.io.nextPC.expect(4)
 
       c.clock.step()
       c.io.nextPC.expect(4)
+      c.io.decoders(0).valid.expect(false)
+      c.io.decoders(1).valid.expect(false)
 
       c.clock.step()
       c.io.reorderBufferEmpty.poke(true)
       c.io.nextPC.expect(4)
+      c.io.decoders(0).valid.expect(false)
+      c.io.decoders(1).valid.expect(false)
 
       c.clock.step()
       c.io.loadStoreQueueEmpty.poke(true)
       c.io.nextPC.expect(4)
+      c.io.decoders(0).valid.expect(false)
+      c.io.decoders(1).valid.expect(false)
 
       c.clock.step()
       c.io.nextPC.expect(16)
+      c.io.decoders(0).valid.expect(true)
+      c.io.decoders(1).valid.expect(true)
     }
   }
+
+
 }
