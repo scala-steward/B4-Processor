@@ -130,10 +130,10 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       Address.map(_ === buffer(emissionindex).address).fold(false.B)(_ || _)
     )
     Address(i) := buffer(emissionindex).address
-    ReorderSign := Address.map(_ === io.reorderbuffer.programCounter)
+    ReorderSign(i) := Cat(io.reorderbuffer.programCounter.map(_ === Address(i))).orR
     // EmissionFlag(i) := Mux("loadの送出条件" || "storeの送出条件", true.B, false.B)
-    EmissionFlag(i) := Mux(buffer(emissionindex).opcode === "b0100011".U && buffer(emissionindex).Readyaddress && !Overlap(i) && !StoreOp(i) && !buffer(emissionindex).R ||
-      buffer(emissionindex).opcode === "b0000011".U && buffer(emissionindex).Readyaddress && buffer(emissionindex).Readydata && ReorderSign(i) && !buffer(emissionindex).R,
+    EmissionFlag(i) := Mux((buffer(emissionindex).opcode === "b0100011".U && buffer(emissionindex).Readyaddress && !Overlap(i) && !StoreOp(i) && !buffer(emissionindex).R) ||
+      (buffer(emissionindex).opcode === "b0000011".U && buffer(emissionindex).Readyaddress && buffer(emissionindex).Readydata && ReorderSign(i) && !buffer(emissionindex).R),
       true.B, false.B)
 
 
