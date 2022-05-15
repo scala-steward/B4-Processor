@@ -11,5 +11,5 @@ class ReservationStation2Executor(implicit params: Parameters) extends ReadyVali
   val function3 = UInt(3.W)
   val immediateOrFunction7 = UInt(12.W)
   val opcode = UInt(7.W)
-  val programCounter = UInt(64.W)
+  val programCounter = SInt(64.W)
 })
