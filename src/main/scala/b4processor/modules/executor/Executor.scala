@@ -12,8 +12,8 @@ class Executor(implicit params: Parameters) extends Module {
     val reservationstation = Flipped(new ReservationStation2Executor)
     val reorderBuffer = new ExecutionRegisterBypass
     val decoders = Vec(params.numberOfDecoders, new ExecutionRegisterBypass)
-    val loadstorequeue = Output(new Execution2LoadStoreQueue)
-    val fetch = new Executor2Fetch
+    val loadstorequeue = Output(new Executor2LoadStoreQueue)
+    val fetch = Output(new Executor2Fetch)
   })
 
   /**
@@ -77,7 +77,7 @@ class Executor(implicit params: Parameters) extends Module {
         -> (io.reservationstation.bits.value2 + io.reservationstation.bits.programCounter.asUInt)
     ))
 
-    io.fetch.bits.programCounter := MuxCase(io.reservationstation.bits.programCounter, Seq(
+    io.fetch.programCounter := MuxCase(io.reservationstation.bits.programCounter, Seq(
       // 分岐
       // Equal
       (instructionChecker.output.branch === BranchOperations.Equal)
@@ -108,16 +108,20 @@ class Executor(implicit params: Parameters) extends Module {
     ))
     io.fetch.valid := instructionChecker.output.instruction === Instructions.Branch
     // S形式(LSQへアドレスを渡す)
-    io.loadstorequeue.ProgramCounter := io.reservationstation.bits.programCounter
+    io.loadstorequeue.programCounter := io.reservationstation.bits.programCounter
     io.loadstorequeue.destinationTag := io.reservationstation.bits.destinationTag
     io.loadstorequeue.value := Mux(instructionChecker.output.instruction === Instructions.Store,
       io.reservationstation.bits.value1 + immediateOrFunction7Extended, destinationRegister)
     io.loadstorequeue.valid := instructionChecker.output.instruction =/= Instructions.Unknown
   }.otherwise {
     io.loadstorequeue.valid := false.B
-    io.loadstorequeue.ProgramCounter := 0.S
+    io.loadstorequeue.programCounter := 0.S
     io.loadstorequeue.destinationTag := 0.U
-    io.fetch.bits.programCounter := 0.S
+    io.loadstorequeue.value := 0.U
+    io.fetch.programCounter := 0.S
+    io.fetch.valid := false.B
+    destinationRegister := 0.U
+
 
   }
 
