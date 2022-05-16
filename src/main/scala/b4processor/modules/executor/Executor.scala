@@ -109,7 +109,8 @@ class Executor(implicit params: Parameters) extends Module {
       (instructionChecker.output.instruction === Instructions.jalr)
         -> Cat(io.reservationstation.bits.value1(31, 0) + io.reservationstation.bits.value2(31, 0), 0.U).asSInt
     ))
-    io.fetch.valid := instructionChecker.output.instruction === Instructions.Branch
+    io.fetch.valid := (instructionChecker.output.instruction === Instructions.Branch) || (instructionChecker.output.instruction === Instructions.jal) ||
+      (instructionChecker.output.instruction === Instructions.auipc) || (instructionChecker.output.instruction === Instructions.jalr)
     // S形式(LSQへアドレスを渡す)
     io.loadstorequeue.programCounter := io.reservationstation.bits.programCounter
     io.loadstorequeue.destinationTag := io.reservationstation.bits.destinationTag
