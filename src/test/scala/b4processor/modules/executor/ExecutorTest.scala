@@ -1,44 +1,142 @@
 package b4processor.modules.executor
 
 import b4processor.Parameters
+import b4processor.utils.{ALUValue, FetchValue, LSQValue, ReservationValue}
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
+class ExecutorWrapper(implicit params: Parameters) extends Executor {
+
+  def setALU(values: ReservationValue): Unit = {
+    val reservationstation = this.io.reservationstation
+    reservationstation.valid.poke(values.valid)
+    reservationstation.bits.destinationTag.poke(values.destinationTag)
+    reservationstation.bits.value1.poke(values.value1)
+    reservationstation.bits.value2.poke(values.value2)
+    reservationstation.bits.function3.poke(values.function3)
+    reservationstation.bits.immediateOrFunction7.poke(values.immediateOrFunction7)
+    reservationstation.bits.opcode.poke(values.opcode)
+    reservationstation.bits.programCounter.poke(values.programCounter)
+  }
+
+  def expectout(values: Option[ALUValue]): Unit = {
+    val out = this.io.out
+    out.valid.expect(values.isDefined)
+    if (values.isDefined) {
+      out.destinationTag.expect(values.get.destinationTag)
+      out.value.expect(values.get.value)
+    }
+  }
+
+  def expectLSQ(values: LSQValue): Unit = {
+    val loadstorequeue = this.io.loadstorequeue
+    loadstorequeue.destinationTag.expect(values.destinationTag)
+    loadstorequeue.value.expect(values.value)
+    loadstorequeue.valid.expect(values.valid)
+    loadstorequeue.programCounter.expect(values.programCounter)
+  }
+
+  def expectFetch(values: FetchValue): Unit = {
+    val fetch = this.io.fetch
+    fetch.valid.expect(values.valid)
+    fetch.programCounter.expect(values.programCounter)
+  }
+}
+
 class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "ExecutorTest"
+  behavior of "Executor"
 
   implicit val defaultParams = Parameters(numberOfDecoders = 1)
 
-  it should "set a value" in {
-    test(new Executor) { c =>
-      // add
-      c.io.reservationstation.valid.poke(true)
-      c.io.reservationstation.bits.destinationTag.poke(10)
-      c.io.reservationstation.bits.value1.poke(40)
-      c.io.reservationstation.bits.value2.poke(30)
-      c.io.reservationstation.bits.function3.poke(7)
-      c.io.reservationstation.bits.immediateOrFunction7.poke(0)
-      c.io.reservationstation.bits.opcode.poke(51) // R
-      c.io.reservationstation.bits.programCounter.poke(100)
+  it should "lui" in {
+    test(new ExecutorWrapper) { c =>
+      // rs1 = 40, rs2 = 16
+      c.setALU(values = ReservationValue(valid = true, destinationTag =  10, value1 =  40, value2 = 16,
+        function3 =  0, immediateOrFunction7 =  0, opcode =  55, programCounter =  100))
 
-      c.clock.step()
+      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 16)))
 
-      c.io.reorderBuffer.valid.expect(true)
-      c.io.reorderBuffer.value.expect(70)
-      c.io.reorderBuffer.destinationTag.expect(10)
+      c.expectLSQ(values = LSQValue(destinationTag = 10, 16,
+        valid = true, programCounter = 100))
 
-      c.io.decoders(0).valid.expect(true)
-      c.io.decoders(0).value.expect(70)
-      c.io.decoders(0).destinationTag.expect(10)
+      c.expectFetch(values = FetchValue(valid = false, programCounter = 100))
+    }
+  }
 
-      c.io.loadstorequeue.valid.expect(false)
-      c.io.loadstorequeue.value.expect(70)
-      c.io.loadstorequeue.destinationTag.expect(10)
-      c.io.loadstorequeue.programCounter.expect(100)
+  it should "auipc" in {
+    test(new ExecutorWrapper) { c =>
+      // rs1 = 40, rs2 = 16
+      c.setALU(values = ReservationValue(valid = true, destinationTag =  10, value1 =  40, value2 = 16,
+        function3 =  0, immediateOrFunction7 =  0, opcode =  55, programCounter =  100))
 
-      c.io.fetch.valid.expect(false)
-      c.io.fetch.programCounter.expect(100)
+      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 16)))
 
+      c.expectLSQ(values = LSQValue(destinationTag = 10, value =  16,
+        valid = true, programCounter = 100))
+
+      c.expectFetch(values = FetchValue(valid = false, programCounter = 100))
+    }
+  }
+
+  it should "jal" in {
+    test(new ExecutorWrapper) { c =>
+      // rs1 = 40, rs2 = 16
+      c.setALU(values = ReservationValue(valid = true, destinationTag =  10, value1 =  40, value2 = 16,
+        function3 =  0, immediateOrFunction7 =  0, opcode = 111, programCounter =  100))
+
+      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 104)))
+
+      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 104,
+        valid = true, programCounter = 100))
+
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 116))
+    }
+  }
+
+  it should "jalr" in {
+    test(new ExecutorWrapper) { c =>
+      //
+      c.setALU(values = ReservationValue(valid = true, destinationTag =  10, value1 =  40, value2 = 16,
+        function3 =  0, immediateOrFunction7 =  0, opcode = 103, programCounter =  100))
+
+      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 104)))
+
+      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 104,
+        valid = true, programCounter = 100))
+
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 56))
+    }
+  }
+
+
+
+  it should "add" in {
+    test(new ExecutorWrapper) { c =>
+      // rs1 = 40, rs2 = 30
+      c.setALU(values = ReservationValue(valid = true, destinationTag =  10, value1 =  40, value2 = 30,
+        function3 =  0, immediateOrFunction7 =  0, opcode =  51, programCounter =  100))
+
+      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 70)))
+
+      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
+        valid = true, programCounter = 100))
+
+      c.expectFetch(values = FetchValue(valid = false, programCounter = 100))
+    }
+  }
+
+  it should "sub" in {
+    test(new ExecutorWrapper) { c =>
+      // rs1 = 40, rs2 = 30
+      c.setALU(values = ReservationValue(valid = true, destinationTag =  10, value1 =  40, value2 = 30,
+        function3 =  0, immediateOrFunction7 =  32, opcode =  51, programCounter =  100))
+
+      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 10)))
+
+      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 10,
+        valid = true, programCounter = 100))
+
+      c.expectFetch(values = FetchValue(valid = false, programCounter = 100))
     }
   }
 }

@@ -107,7 +107,7 @@ class Executor(implicit params: Parameters) extends Module {
         -> (io.reservationstation.bits.programCounter + io.reservationstation.bits.value2.asSInt),
       // jalr
       (instructionChecker.output.instruction === Instructions.jalr)
-        -> Cat(io.reservationstation.bits.value1(31, 0) + io.reservationstation.bits.value2(31, 0), 0.U).asSInt
+        -> Cat((io.reservationstation.bits.value1 + io.reservationstation.bits.value2)(63, 1), 0.U).asSInt
     ))
     io.fetch.valid := (instructionChecker.output.instruction === Instructions.Branch) || (instructionChecker.output.instruction === Instructions.jal) ||
       (instructionChecker.output.instruction === Instructions.auipc) || (instructionChecker.output.instruction === Instructions.jalr)
