@@ -97,5 +97,5 @@ class B4Processor(implicit params: Parameters) extends Module {
 
 object B4Processor extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitVerilog(new B4Processor())
+  (new ChiselStage).emitVerilog(new B4Processor(), args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }
