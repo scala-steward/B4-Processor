@@ -13,7 +13,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
     val decoder = Flipped(new Decoder2ReservationStation)
   })
 
-  val reservation = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt / params.numberOfDecoders)(0.U.asTypeOf(new ReservationStationEntry))))
+  val reservation = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt / params.numberOfDecoders)(ReservationStationEntry.default)))
   val emptyList = reservation.map { r => !r.valid }
   val readyList = reservation.map { r => r.ready1 && r.ready2 }
 

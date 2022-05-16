@@ -18,7 +18,7 @@ class ValueSelector2(implicit params: Parameters) extends Module {
     val reorderBufferValue = Flipped(DecoupledIO(UInt(64.W)))
     val registerFileValue = Input(UInt(64.W))
     val aluBypassValue = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
-    val immediateValue = Input(UInt(64.W))
+    val immediateValue = Input(SInt(64.W))
     val opcodeFormat = Input(OpcodeFormat())
     val sourceTag = Flipped(DecoupledIO(UInt(params.tagWidth.W)))
     val value = DecoupledIO(UInt(64.W))
@@ -41,7 +41,7 @@ class ValueSelector2(implicit params: Parameters) extends Module {
   io.value.bits := MuxCase(0.U,
     Seq(
       // I形式である(即値優先)
-      (io.opcodeFormat === I || io.opcodeFormat === U || io.opcodeFormat === J) -> io.immediateValue,
+      (io.opcodeFormat === I || io.opcodeFormat === U || io.opcodeFormat === J) -> io.immediateValue.asUInt,
       (io.sourceTag.valid && io.reorderBufferValue.valid) -> io.reorderBufferValue.bits,
       (io.sourceTag.valid && aluMatchingTagExists) -> MuxCase(0.U,
         (0 until params.numberOfALUs).map(i => (io.aluBypassValue(i).valid && io.aluBypassValue(i).destinationTag === io.sourceTag.bits) -> io.aluBypassValue(i).value)

@@ -27,7 +27,7 @@ class ValueSelector2Wrapper(implicit params: Parameters) extends ValueSelector2 
     this.io.registerFileValue.poke(registerFileValue.U)
     this.io.sourceTag.valid.poke(sourceTag.isDefined.B)
     this.io.sourceTag.bits.poke(sourceTag.getOrElse(0).U)
-    this.io.immediateValue.poke(immediate.U)
+    this.io.immediateValue.poke(immediate.S)
     this.io.opcodeFormat.poke(opcodeFormat)
   }
 
