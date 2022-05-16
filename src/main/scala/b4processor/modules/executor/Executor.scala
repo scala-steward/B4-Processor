@@ -10,10 +10,9 @@ import chisel3.stage.ChiselStage
 class Executor(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reservationstation = Flipped(new ReservationStation2Executor)
-    val reorderBuffer = new ExecutionRegisterBypass
-    val decoders = Vec(params.numberOfDecoders, new ExecutionRegisterBypass)
+    val bypassValue = new ExecutionRegisterBypass
     val loadStoreQueue = Output(new Executor2LoadStoreQueue)
-    val fetch = Output(new Executor2Fetch)
+    val fetch = Output(new ExecutorBranchResult)
   })
 
   /**
@@ -77,7 +76,7 @@ class Executor(implicit params: Parameters) extends Module {
         -> (io.reservationstation.bits.value2 + io.reservationstation.bits.programCounter.asUInt)
     ))
 
-    io.fetch.programCounter := MuxCase(io.reservationstation.bits.programCounter, Seq(
+    io.fetch.branchAddress := MuxCase(io.reservationstation.bits.programCounter, Seq(
       // 分岐
       // Equal
       (instructionChecker.output.branch === BranchOperations.Equal)
@@ -118,7 +117,7 @@ class Executor(implicit params: Parameters) extends Module {
     io.loadStoreQueue.programCounter := 0.S
     io.loadStoreQueue.destinationTag := 0.U
     io.loadStoreQueue.value := 0.U
-    io.fetch.programCounter := 0.S
+    io.fetch.branchAddress := 0.S
     io.fetch.valid := false.B
     destinationRegister := 0.U
 
@@ -130,17 +129,11 @@ class Executor(implicit params: Parameters) extends Module {
    * (validで送信データを調節)
    * (レジスタ挿入の可能性あり)
    */
-  // reorder Buffer
-  io.reorderBuffer.valid := instructionChecker.output.instruction =/= Instructions.Unknown
-  io.reorderBuffer.destinationTag := io.reservationstation.bits.destinationTag
-  io.reorderBuffer.value := destinationRegister
+  // bypass
+  io.bypassValue.valid := instructionChecker.output.instruction =/= Instructions.Unknown
+  io.bypassValue.destinationTag := io.reservationstation.bits.destinationTag
+  io.bypassValue.value := destinationRegister
 
-  // decoders
-  for (i <- 0 until params.numberOfDecoders) {
-    io.decoders(i).valid := instructionChecker.output.instruction =/= Instructions.Unknown
-    io.decoders(i).destinationTag := io.reservationstation.bits.destinationTag
-    io.decoders(i).value := destinationRegister
-  }
 }
 
 object ExecutorElaborate extends App {

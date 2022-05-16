@@ -11,16 +11,16 @@ import chisel3._
  */
 class MultipleDecoder(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val instructions = Vec(params.numberOfDecoders, new Fetch2Decoder)
+    val instructions = Vec(params.runParallel, new Fetch2Decoder)
   })
 
-  val decoders = (0 until params.numberOfDecoders).map(i => Module(new Decoder(i)))
+  val decoders = (0 until params.runParallel).map(i => Module(new Decoder(i)))
 
-  for (i <- 1 until params.numberOfDecoders) {
+  for (i <- 1 until params.runParallel) {
     decoders(i).io.decodersBefore <> decoders(i - 1).io.decodersAfter
   }
 
-  for (i <- 0 until params.numberOfDecoders) {
+  for (i <- 0 until params.runParallel) {
     decoders(i).io.instructionFetch <> io.instructions(i)
   }
 }

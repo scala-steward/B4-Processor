@@ -49,11 +49,11 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
     this.io.registerFile.value2.poke(value2)
   }
 
-  def setALU(bypassedValues: Seq[Option[ALUValue]] = Seq.fill(params.numberOfALUs)(None)): Unit = {
+  def setALU(bypassedValues: Seq[Option[ALUValue]] = Seq.fill(params.runParallel)(None)): Unit = {
     for (i <- bypassedValues.indices) {
-      this.io.alu(i).valid.poke(bypassedValues(i).isDefined)
-      this.io.alu(i).destinationTag.poke(bypassedValues(i).getOrElse(ALUValue(destinationTag = 0, value = 0)).destinationTag)
-      this.io.alu(i).value.poke(bypassedValues(i).getOrElse(ALUValue(destinationTag = 0, value = 0)).value)
+      this.io.executors(i).valid.poke(bypassedValues(i).isDefined)
+      this.io.executors(i).destinationTag.poke(bypassedValues(i).getOrElse(ALUValue(destinationTag = 0, value = 0)).destinationTag)
+      this.io.executors(i).value.poke(bypassedValues(i).getOrElse(ALUValue(destinationTag = 0, value = 0)).value)
     }
   }
 

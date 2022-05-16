@@ -16,7 +16,7 @@ class ValueSelector2Wrapper(implicit params: Parameters) extends ValueSelector2 
    * @param reorderBufferValue リオーダバッファからの値
    * @param aluBypassValue     ALUからバイパスされてきた値。タプルの1つめの値がdestination tag、2つめがvalue。
    */
-  def initalize(sourceTag: Option[Int] = None, registerFileValue: Int = 0, reorderBufferValue: Option[Int] = None, aluBypassValue: Seq[Option[(Int, Int)]] = Seq.fill(params.numberOfALUs)(None), opcodeFormat: OpcodeFormat.Type = R, immediate: Int = 0): Unit = {
+  def initalize(sourceTag: Option[Int] = None, registerFileValue: Int = 0, reorderBufferValue: Option[Int] = None, aluBypassValue: Seq[Option[(Int, Int)]] = Seq.fill(params.runParallel)(None), opcodeFormat: OpcodeFormat.Type = R, immediate: Int = 0): Unit = {
     for (i <- aluBypassValue.indices) {
       this.io.aluBypassValue(i).valid.poke(aluBypassValue(i).isDefined.B)
       this.io.aluBypassValue(i).destinationTag.poke(aluBypassValue(i).getOrElse((0, 0))._1.U)
@@ -41,7 +41,7 @@ class ValueSelector2Wrapper(implicit params: Parameters) extends ValueSelector2 
 
 class ValueSelector2Test extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "ValueSelector1"
-  implicit val defaultParams = Parameters(numberOfALUs = 0)
+  implicit val defaultParams = Parameters(runParallel = 0)
 
   it should "use the register file" in {
     test(new ValueSelector2Wrapper) { c =>
@@ -58,14 +58,14 @@ class ValueSelector2Test extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "use the alu bypass" in {
-    test(new ValueSelector2Wrapper()(defaultParams.copy(numberOfALUs = 1))) { c =>
+    test(new ValueSelector2Wrapper()(defaultParams.copy(runParallel = 1))) { c =>
       c.initalize(sourceTag = Some(3), registerFileValue = 5, aluBypassValue = Seq(Some((3, 12))))
       c.expectValue(Some(12))
     }
   }
 
   it should "use multiple alu bypasses" in {
-    test(new ValueSelector2Wrapper()(defaultParams.copy(numberOfALUs = 4))) { c =>
+    test(new ValueSelector2Wrapper()(defaultParams.copy(runParallel = 4))) { c =>
       c.initalize(sourceTag = Some(3), registerFileValue = 5, aluBypassValue = Seq(Some((1, 10)), Some(2, 11), Some(3, 12), Some(4, 13)))
       c.expectValue(Some(12))
     }

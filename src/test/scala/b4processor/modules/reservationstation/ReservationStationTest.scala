@@ -10,7 +10,7 @@ class ReservationStationWrapper(implicit params: Parameters) extends Reservation
   def initialize(): Unit = {
     setExecutorReady(true)
     setDecoderInput(None)
-    setALUs(Seq.fill(params.numberOfALUs)(None))
+    setALUs(Seq.fill(params.runParallel)(None))
   }
 
   def setExecutorReady(value: Boolean): Unit = {
@@ -33,10 +33,10 @@ class ReservationStationWrapper(implicit params: Parameters) extends Reservation
   }
 
   def setALUs(values: Seq[Option[ALUValue]]): Unit = {
-    for ((alu, v) <- io.alus.zip(values)) {
-      alu.valid.poke(v.isDefined)
-      alu.value.poke(v.getOrElse(ALUValue(destinationTag = 0, value = 0)).value)
-      alu.destinationTag.poke(v.getOrElse(ALUValue(destinationTag = 0, value = 0)).destinationTag)
+    for ((bypassValue, v) <- io.bypassValues.zip(values)) {
+      bypassValue.valid.poke(v.isDefined)
+      bypassValue.value.poke(v.getOrElse(ALUValue(destinationTag = 0, value = 0)).value)
+      bypassValue.destinationTag.poke(v.getOrElse(ALUValue(destinationTag = 0, value = 0)).destinationTag)
     }
   }
 
@@ -49,7 +49,7 @@ class ReservationStationWrapper(implicit params: Parameters) extends Reservation
 
 class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Reservation Station"
-  implicit val params = Parameters(numberOfALUs = 1, numberOfDecoders = 1, tagWidth = 4)
+  implicit val params = Parameters(runParallel = 1, tagWidth = 4)
 
   // エントリを追加してALUから値をうけとり、実行ユニットに回す
   it should "store a entry and release it" in {
@@ -64,28 +64,6 @@ class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectExecutor(Some(1))
       c.clock.step()
       c.expectExecutor(None)
-      c.clock.step()
-    }
-  }
-
-  // RSをバイパスしてデコーダから直接実行ユニットに行く
-  it should "bypass the RS" in {
-    test(new ReservationStationWrapper()).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-      c.initialize()
-      c.setDecoderInput(programCounter = Some(1), value1 = Some(2), value2 = Some(3))
-      c.expectExecutor(Some(1))
-
-      c.clock.step()
-      c.setDecoderInput(programCounter = None)
-      c.expectExecutor(None)
-
-      c.clock.step()
-      c.expectExecutor(None)
-      c.setALUs(Seq(Some(ALUValue(destinationTag = 0, value = 0))))
-
-      c.clock.step()
-      c.expectExecutor(None)
-
       c.clock.step()
     }
   }

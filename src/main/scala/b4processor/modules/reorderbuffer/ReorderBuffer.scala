@@ -13,9 +13,10 @@ import chisel3.util._
  */
 class ReorderBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val decoders = Vec(params.numberOfDecoders, Flipped(new Decoder2ReorderBuffer))
-    val alus = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
+    val decoders = Vec(params.runParallel, Flipped(new Decoder2ReorderBuffer))
+    val executors = Vec(params.runParallel, Flipped(new ExecutionRegisterBypass))
     val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
+    val isEmpty = Output(Bool())
     // TODO: 有効化する
     //val loadStoreQueue = Flipped(new LoadStoreQueue2ReorderBuffer)
 
@@ -31,7 +32,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   // デコーダからの読み取りと書き込み
   var insertIndex = head
   var lastReady = true.B
-  for (i <- 0 until params.numberOfDecoders) {
+  for (i <- 0 until params.runParallel) {
     val decoder = io.decoders(i)
     decoder.ready := lastReady && (insertIndex + 1.U) =/= tail
     when(decoder.valid && decoder.ready) {
@@ -101,8 +102,10 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   }
   tail := tail + MuxCase(params.maxRegisterFileCommitCount.U, io.registerFile.zipWithIndex.map { case (entry, index) => !entry.valid -> index.U })
 
+  io.isEmpty := head === tail
+
   // ALUの読み込み
-  for (alu <- io.alus) {
+  for (alu <- io.executors) {
     when(alu.valid) {
       buffer(alu.destinationTag).value := alu.value
       buffer(alu.destinationTag).valueReady := true.B
@@ -119,6 +122,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 }
 
 object ReorderBuffer extends App {
-  implicit val params = Parameters(numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1, tagWidth = 4)
+  implicit val params = Parameters(runParallel = 1, maxRegisterFileCommitCount = 1, tagWidth = 4)
   (new ChiselStage).emitVerilog(new ReorderBuffer, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

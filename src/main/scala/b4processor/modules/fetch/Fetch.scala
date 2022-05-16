@@ -10,23 +10,23 @@ import chisel3.stage.ChiselStage
 class Fetch(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     /** 命令キャッシュ */
-    val cache = Flipped(Vec(params.numberOfDecoders, new InstructionCache2Fetch))
+    val cache = Flipped(Vec(params.runParallel, new InstructionCache2Fetch))
     /** 分岐予測 */
-    val prediction = Vec(params.numberOfDecoders, new Fetch2BranchPrediction)
+    val prediction = Vec(params.runParallel, new Fetch2BranchPrediction)
     /** リオーダバッファの中身が空である */
     val reorderBufferEmpty = Input(Bool())
     /** ロードストアキューが空である */
     val loadStoreQueueEmpty = Input(Bool())
     /** 実行ユニットから分岐先の計算結果が帰ってきた */
-    val executorBranchResult = Vec(params.numberOfALUs, Input(new ExecutorBranchResult))
+    val executorBranchResult = Vec(params.runParallel, Input(new ExecutorBranchResult))
 
     /** デコーダ */
-    val decoders = Vec(params.numberOfDecoders, new Fetch2Decoder)
+    val decoders = Vec(params.runParallel, new Fetch2Decoder)
 
     /** デバッグ用 */
     val PC = if (params.debug) Some(Output(SInt(64.W))) else None
     val nextPC = if (params.debug) Some(Output(SInt(64.W))) else None
-    val branchTypes = if (params.debug) Some(Output(Vec(params.numberOfDecoders, new BranchType.Type))) else None
+    val branchTypes = if (params.debug) Some(Output(Vec(params.runParallel, new BranchType.Type))) else None
   })
 
   /** プログラムカウンタ */
@@ -36,7 +36,7 @@ class Fetch(implicit params: Parameters) extends Module {
 
   var nextPC = pc
   var nextWait = waiting
-  for (i <- 0 until params.numberOfDecoders) {
+  for (i <- 0 until params.runParallel) {
     val decoder = io.decoders(i)
     val cache = io.cache(i)
 

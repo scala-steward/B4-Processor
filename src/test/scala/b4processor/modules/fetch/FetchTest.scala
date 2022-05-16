@@ -16,11 +16,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     /** 分岐予測 */
-    val prediction = Vec(params.numberOfDecoders, new Fetch2BranchPrediction)
+    val prediction = Vec(params.runParallel, new Fetch2BranchPrediction)
     /** 実行ユニットからの分岐先の値 */
-    val executors = Input(Vec(params.numberOfALUs, new ExecutorBranchResult))
+    val executors = Input(Vec(params.runParallel, new ExecutorBranchResult))
     /** デコーダ */
-    val decoders = Vec(params.numberOfDecoders, new Fetch2Decoder)
+    val decoders = Vec(params.runParallel, new Fetch2Decoder)
     /** ロードストアキューのエントリが空か */
     val loadStoreQueueEmpty = Input(Bool())
     /** リオーダバッファのエントリが空か */
@@ -30,15 +30,15 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
     /** メモリの出力 */
     val memoryOutput = Vec(params.fetchWidth, Output(UInt(64.W)))
     /** キャッシュに要求されているアドレス */
-    val cacheAddress = Vec(params.numberOfDecoders, Output(SInt(64.W)))
+    val cacheAddress = Vec(params.runParallel, Output(SInt(64.W)))
     /** キャッシュからの出力 */
-    val cacheOutput = Vec(params.numberOfDecoders, Valid(UInt(64.W)))
+    val cacheOutput = Vec(params.runParallel, Valid(UInt(64.W)))
     /** プログラムカウンタ */
     val PC = Output(SInt(64.W))
     /** 次のクロックのプログラムカウンタ */
     val nextPC = Output(SInt(64.W))
     /** 各命令のぶん機の種類 */
-    val branchTypes = Output(Vec(params.numberOfDecoders, new BranchType.Type))
+    val branchTypes = Output(Vec(params.runParallel, new BranchType.Type))
   })
 
   val fetch = Module(new Fetch)
@@ -67,18 +67,18 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
 
   /** 初期化 */
   def initialize(): Unit = {
-    this.setPrediction(Seq.fill(params.numberOfDecoders)(false))
+    this.setPrediction(Seq.fill(params.runParallel)(false))
   }
 
   /** 予測をセット */
   def setPrediction(values: Seq[Boolean]): Unit = {
-    for (i <- 0 until params.numberOfDecoders) {
+    for (i <- 0 until params.runParallel) {
       this.io.prediction(i).prediction.poke(values(i))
     }
   }
 
   /** 分岐先をセット */
-  def setExecutorBranchResult(results: Seq[Option[Int]] = Seq.fill(params.numberOfALUs)(None)): Unit = {
+  def setExecutorBranchResult(results: Seq[Option[Int]] = Seq.fill(params.runParallel)(None)): Unit = {
     for ((e, r) <- io.executors.zip(results)) {
       e.valid.poke(r.isDefined)
       e.branchAddress.poke(r.getOrElse(0))
@@ -93,7 +93,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
 
 class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Fetch"
-  implicit val defaultParams = Parameters(debug = true, numberOfALUs = 1)
+  implicit val defaultParams = Parameters(debug = true, runParallel = 2)
 
   // 普通の命令と分岐を区別できるか
   // 書き込む命令

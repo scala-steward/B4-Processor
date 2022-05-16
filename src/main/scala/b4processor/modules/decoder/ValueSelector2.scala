@@ -17,7 +17,7 @@ class ValueSelector2(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reorderBufferValue = Flipped(DecoupledIO(UInt(64.W)))
     val registerFileValue = Input(UInt(64.W))
-    val aluBypassValue = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
+    val aluBypassValue = Vec(params.runParallel, Flipped(new ExecutionRegisterBypass))
     val immediateValue = Input(SInt(64.W))
     val opcodeFormat = Input(OpcodeFormat())
     val sourceTag = Flipped(DecoupledIO(UInt(params.tagWidth.W)))
@@ -27,7 +27,7 @@ class ValueSelector2(implicit params: Parameters) extends Module {
   io.reorderBufferValue.ready := true.B
   io.sourceTag.ready := true.B
 
-  val aluMatchingTagExists = Cat((0 until params.numberOfALUs)
+  val aluMatchingTagExists = Cat((0 until params.runParallel)
     .map { i => io.aluBypassValue(i).valid && io.aluBypassValue(i).destinationTag === io.sourceTag.bits }).orR
 
   io.value.valid := MuxCase(false.B,
@@ -44,7 +44,7 @@ class ValueSelector2(implicit params: Parameters) extends Module {
       (io.opcodeFormat === I || io.opcodeFormat === U || io.opcodeFormat === J) -> io.immediateValue.asUInt,
       (io.sourceTag.valid && io.reorderBufferValue.valid) -> io.reorderBufferValue.bits,
       (io.sourceTag.valid && aluMatchingTagExists) -> MuxCase(0.U,
-        (0 until params.numberOfALUs).map(i => (io.aluBypassValue(i).valid && io.aluBypassValue(i).destinationTag === io.sourceTag.bits) -> io.aluBypassValue(i).value)
+        (0 until params.runParallel).map(i => (io.aluBypassValue(i).valid && io.aluBypassValue(i).destinationTag === io.sourceTag.bits) -> io.aluBypassValue(i).value)
       ),
       (!io.sourceTag.valid) -> io.registerFileValue,
     ))

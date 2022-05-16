@@ -14,9 +14,11 @@ import chisel3.util._
 class RegisterFile(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     /** デコーダへ */
-    val decoders = Flipped(Vec(params.numberOfDecoders, new Decoder2RegisterFile))
+    val decoders = Flipped(Vec(params.runParallel, new Decoder2RegisterFile))
     /** リオーダバッファ */
     val reorderBuffer = Flipped(Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile()))
+
+    val values = if (params.debug) Some(Vec(31, UInt(64.W))) else None
   })
 
   /** レジスタx1~x31 */
@@ -39,6 +41,10 @@ class RegisterFile(implicit params: Parameters) extends Module {
     dec.value1 := Mux(dec.sourceRegister1 === 0.U, 0.U, registers(dec.sourceRegister1 - 1.U))
     dec.value2 := Mux(dec.sourceRegister2 === 0.U, 0.U, registers(dec.sourceRegister2 - 1.U))
   }
+
+  //デバッグ用信号
+  if (params.debug)
+    io.values.get <> registers
 }
 
 object RegisterFile extends App {

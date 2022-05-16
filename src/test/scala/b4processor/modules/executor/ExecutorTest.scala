@@ -7,7 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "ExecutorTest"
 
-  implicit val defaultParams = Parameters(numberOfDecoders = 1)
+  implicit val defaultParams = Parameters(runParallel = 1)
 
   it should "set a value" in {
     test(new Executor) { c =>
@@ -23,13 +23,9 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.clock.step()
 
-      c.io.reorderBuffer.valid.expect(true)
-      c.io.reorderBuffer.value.expect(70)
-      c.io.reorderBuffer.destinationTag.expect(10)
-
-      c.io.decoders(0).valid.expect(true)
-      c.io.decoders(0).value.expect(70)
-      c.io.decoders(0).destinationTag.expect(10)
+      c.io.bypassValue.valid.expect(true)
+      c.io.bypassValue.value.expect(70)
+      c.io.bypassValue.destinationTag.expect(10)
 
       c.io.loadStoreQueue.valid.expect(true)
       c.io.loadStoreQueue.value.expect(70)
@@ -37,7 +33,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.loadStoreQueue.programCounter.expect(100)
 
       c.io.fetch.valid.expect(false)
-      c.io.fetch.programCounter.expect(100)
+      c.io.fetch.branchAddress.expect(100)
 
     }
   }

@@ -9,7 +9,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 /** メモリをキャッシュを含んだラッパー */
 class MemoryAndCache(memoryInit: => Seq[UInt])(implicit params: Parameters) extends Module {
-  val io = IO(Vec(params.numberOfDecoders, new InstructionCache2Fetch))
+  val io = IO(Vec(params.runParallel, new InstructionCache2Fetch))
 
   val cache = Module(new InstructionMemoryCache)
   val memory = Module(new InstructionMemory(memoryInit))

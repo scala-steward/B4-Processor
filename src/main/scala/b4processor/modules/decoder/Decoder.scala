@@ -19,7 +19,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   val io = IO(new Bundle {
     val instructionFetch = Flipped(new Fetch2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer
-    val alu = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
+    val executors = Vec(params.runParallel, Flipped(new ExecutionRegisterBypass))
     val registerFile = new Decoder2RegisterFile()
 
     val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder))
@@ -27,7 +27,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
 
     val reservationStation = new Decoder2ReservationStation
 
-    val loadstorequeue = new Decoder2LoadStoreQueue()
+    val loadStoreQueue = new Decoder2LoadStoreQueue()
   })
 
   // 命令からそれぞれの昨日のブロックを取り出す
@@ -115,8 +115,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   valueSelector1.io.sourceTag <> sourceTag1
   valueSelector1.io.reorderBufferValue <> io.reorderBuffer.source1.value
   valueSelector1.io.registerFileValue := io.registerFile.value1
-  for (i <- 0 until params.numberOfALUs) {
-    valueSelector1.io.aluBypassValue(i) <> io.alu(i)
+  for (i <- 0 until params.runParallel) {
+    valueSelector1.io.aluBypassValue(i) <> io.executors(i)
   }
   // value2
   val valueSelector2 = Module(new ValueSelector2)
@@ -130,8 +130,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     J.asUInt -> immJExtended
   ))
   valueSelector2.io.opcodeFormat := opcodeFormatChecker.io.format
-  for (i <- 0 until params.numberOfALUs) {
-    valueSelector2.io.aluBypassValue(i) <> io.alu(i)
+  for (i <- 0 until params.runParallel) {
+    valueSelector2.io.aluBypassValue(i) <> io.executors(i)
   }
 
   // 前のデコーダから次のデコーダへ
@@ -180,13 +180,13 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   rs.programCounter := io.instructionFetch.bits.programCounter
 
   // load or store命令の場合，LSQへ発送
-  io.loadstorequeue.valid := false.B
-  io.loadstorequeue.stag2 <> sourceTagSelector2.io.sourceTag
-  io.loadstorequeue.value <> valueSelector2.io.value
-  io.loadstorequeue.opcode := instOp
-  io.loadstorequeue.programCounter := io.instructionFetch.bits.programCounter
-  when(io.loadstorequeue.ready && io.loadstorequeue.opcode === BitPat("b0?00011")) {
-    io.loadstorequeue.valid := true.B
+  io.loadStoreQueue.valid := false.B
+  io.loadStoreQueue.stag2 <> sourceTagSelector2.io.sourceTag
+  io.loadStoreQueue.value <> valueSelector2.io.value
+  io.loadStoreQueue.opcode := instOp
+  io.loadStoreQueue.programCounter := io.instructionFetch.bits.programCounter
+  when(io.loadStoreQueue.ready && io.loadStoreQueue.opcode === BitPat("b0?00011")) {
+    io.loadStoreQueue.valid := true.B
   }
 }
 

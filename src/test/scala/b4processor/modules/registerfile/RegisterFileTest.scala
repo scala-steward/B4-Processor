@@ -7,7 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "register file"
 
-  implicit val detfaultParams = Parameters(numberOfDecoders = 1, maxRegisterFileCommitCount = 1)
+  implicit val detfaultParams = Parameters(runParallel = 1, maxRegisterFileCommitCount = 1)
 
   it should "save a value" in {
     test(new RegisterFile) { c =>

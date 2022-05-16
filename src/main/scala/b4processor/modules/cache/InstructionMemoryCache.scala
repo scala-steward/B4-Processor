@@ -14,7 +14,7 @@ import chisel3.util._
 class InstructionMemoryCache(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     /** フェッチ */
-    val fetch = Vec(params.numberOfDecoders, new InstructionCache2Fetch)
+    val fetch = Vec(params.runParallel, new InstructionCache2Fetch)
     /** 命令メモリ */
     val memory = Flipped(new InstructionMemory2Cache)
   })
@@ -26,7 +26,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
   io.fetch(0).output.bits := io.memory.output(0)
   io.fetch(0).output.valid := true.B
 
-  for (i <- 1 until params.numberOfDecoders) {
+  for (i <- 1 until params.runParallel) {
     // 命令メモリから取得した幅の中に要求したアドレスがあれば渡す
     io.fetch(i).output := MuxCase(Valid(UInt(32.W)).Lit(_.valid -> false.B, _.bits -> 0.U),
       io.memory.output.zipWithIndex.map { case (m, index) =>

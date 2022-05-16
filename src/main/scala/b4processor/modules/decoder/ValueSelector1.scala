@@ -14,7 +14,7 @@ class ValueSelector1(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reorderBufferValue = Flipped(DecoupledIO(UInt(64.W)))
     val registerFileValue = Input(UInt(64.W))
-    val aluBypassValue = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
+    val aluBypassValue = Vec(params.runParallel, Flipped(new ExecutionRegisterBypass))
     val sourceTag = Flipped(DecoupledIO(UInt(params.tagWidth.W)))
     val value = DecoupledIO(UInt(64.W))
   })
@@ -24,7 +24,7 @@ class ValueSelector1(implicit params: Parameters) extends Module {
   io.sourceTag.ready := true.B
 
   // ALUからバイパスされた値のうち、destination tagと一致するsource tagを持っている
-  val aluMatchingTagExists = Cat((0 until params.numberOfALUs)
+  val aluMatchingTagExists = Cat((0 until params.runParallel)
     .map { i => io.aluBypassValue(i).valid && io.aluBypassValue(i).destinationTag === io.sourceTag.bits }).orR
 
   // 値があるか
@@ -40,7 +40,7 @@ class ValueSelector1(implicit params: Parameters) extends Module {
       (io.sourceTag.valid && io.reorderBufferValue.valid) -> io.reorderBufferValue.bits,
       (io.sourceTag.valid && aluMatchingTagExists) -> MuxCase(0.U,
         // aluバイパスの中で一致するものの値を取り出す
-        (0 until params.numberOfALUs).map(i => (io.aluBypassValue(i).valid && io.aluBypassValue(i).destinationTag === io.sourceTag.bits) -> io.aluBypassValue(i).value)
+        (0 until params.runParallel).map(i => (io.aluBypassValue(i).valid && io.aluBypassValue(i).destinationTag === io.sourceTag.bits) -> io.aluBypassValue(i).value)
       ),
       (!io.sourceTag.valid) -> io.registerFileValue,
     ))
