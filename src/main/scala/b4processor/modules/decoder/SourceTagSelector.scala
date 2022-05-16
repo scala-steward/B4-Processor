@@ -7,18 +7,18 @@ import chisel3.util._
 /**
  * sourceTag選択回路
  *
- * @param instruction_offset 基準から何個目の敬礼を処理しているか
- * @param params             パラメータ
+ * @param instructionOffset 基準から何個目の命令を処理しているか
+ * @param params            パラメータ
  */
-class SourceTagSelector(instruction_offset: Int)(implicit params: Parameters) extends Module {
+class SourceTagSelector(instructionOffset: Int)(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val beforeDestinationTag = Vec(instruction_offset, Flipped(DecoupledIO(UInt(params.tagWidth.W))))
+    val beforeDestinationTag = Vec(instructionOffset, Flipped(DecoupledIO(UInt(params.tagWidth.W))))
     val reorderBufferDestinationTag = Flipped(DecoupledIO(UInt(params.tagWidth.W)))
-    val sourceTag = DecoupledIO(UInt(8.W)) // 選択したsource tagを格納
+    val sourceTag = DecoupledIO(UInt(params.tagWidth.W)) // 選択したsource tagを格納
   })
 
   // すべての入力をReadyにする
-  for (i <- 0 until instruction_offset) {
+  for (i <- 0 until instructionOffset) {
     io.beforeDestinationTag(i).ready := true.B
   }
   io.reorderBufferDestinationTag.ready := true.B
@@ -42,7 +42,7 @@ class SourceTagSelector(instruction_offset: Int)(implicit params: Parameters) ex
       MuxCase(
         0.U, // デフォルト値0
         // これまでのdestinationTagを遡っていき(reverse)、validなものを選ぶ
-        (0 until instruction_offset).reverse.map(i => io.beforeDestinationTag(i).valid -> io.beforeDestinationTag(i).bits)),
+        (0 until instructionOffset).reverse.map(i => io.beforeDestinationTag(i).valid -> io.beforeDestinationTag(i).bits)),
       // リオーダバッファの値
       io.reorderBufferDestinationTag.bits,
     )

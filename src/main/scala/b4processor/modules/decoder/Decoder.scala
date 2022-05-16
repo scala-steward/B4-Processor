@@ -4,6 +4,7 @@ import b4processor.Parameters
 import b4processor.common.OpcodeFormat._
 import b4processor.common.OpcodeFormatChecker
 import b4processor.connections._
+import b4processor.modules.reservationstation.ReservationStationEntry
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -25,6 +26,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     val decodersAfter = Output(Vec(instructionOffset + 1, new Decoder2NextDecoder))
 
     val reservationStation = new Decoder2ReservationStation
+
+    val loadstorequeue = new Decoder2LoadStoreQueue()
   })
 
   // 命令からそれぞれの昨日のブロックを取り出す
@@ -175,6 +178,16 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   rs.value1 := valueSelector1.io.value.bits
   rs.value2 := valueSelector2.io.value.bits
   rs.programCounter := io.instructionFetch.bits.programCounter
+
+  // load or store命令の場合，LSQへ発送
+  io.loadstorequeue.valid := false.B
+  io.loadstorequeue.stag2 <> sourceTagSelector2.io.sourceTag
+  io.loadstorequeue.value <> valueSelector2.io.value
+  io.loadstorequeue.opcode := instOp
+  io.loadstorequeue.programCounter := io.instructionFetch.bits.programCounter
+  when(io.loadstorequeue.ready && io.loadstorequeue.opcode === BitPat("b0?00011")) {
+    io.loadstorequeue.valid := true.B
+  }
 }
 
 object Decoder extends App {

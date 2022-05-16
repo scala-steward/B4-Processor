@@ -1,7 +1,7 @@
 package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
-import b4processor.connections.{BranchPrediction2ReorderBuffer, Decoder2ReorderBuffer, ExecutionRegisterBypass, ReorderBuffer2RegisterFile}
+import b4processor.connections.{BranchPrediction2ReorderBuffer, Decoder2ReorderBuffer, ExecutionRegisterBypass, ReorderBuffer2RegisterFile, LoadStoreQueue2ReorderBuffer}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -16,6 +16,8 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val decoders = Vec(params.numberOfDecoders, Flipped(new Decoder2ReorderBuffer))
     val alus = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
     val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
+    // TODO: 有効化する
+    //val loadStoreQueue = Flipped(new LoadStoreQueue2ReorderBuffer)
 
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
     val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
