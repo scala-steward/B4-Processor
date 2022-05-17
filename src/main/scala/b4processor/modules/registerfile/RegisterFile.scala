@@ -18,7 +18,7 @@ class RegisterFile(implicit params: Parameters) extends Module {
     /** リオーダバッファ */
     val reorderBuffer = Flipped(Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile()))
 
-    val values = if (params.debug) Some(Vec(31, UInt(64.W))) else None
+    val values = if (params.debug) Some(Output(Vec(31, UInt(64.W)))) else None
   })
 
   /** レジスタx1~x31 */
@@ -44,7 +44,7 @@ class RegisterFile(implicit params: Parameters) extends Module {
 
   //デバッグ用信号
   if (params.debug)
-    io.values.get <> registers
+    io.values.get := registers
 }
 
 object RegisterFile extends App {

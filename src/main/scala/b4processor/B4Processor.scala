@@ -12,7 +12,6 @@ import b4processor.modules.reservationstation.ReservationStation
 import chisel3._
 import chisel3.experimental.FlatIO
 import chisel3.stage.ChiselStage
-import org.json4s.native.DocNest
 
 class B4Processor(implicit params: Parameters) extends Module {
   val io = FlatIO(new Bundle {
@@ -34,6 +33,10 @@ class B4Processor(implicit params: Parameters) extends Module {
 
   /** 命令メモリと命令キャッシュを接続 */
   io.instructionMemory <> instructionCache.io.memory
+
+  /** レジスタのコンテンツをデバッグ時に接続 */
+  if (params.debug)
+    io.registerFileContents.get <> registerFile.io.values.get
 
   /** デコーダ同士を接続 */
   for (i <- 1 until params.runParallel)

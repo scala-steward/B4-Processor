@@ -1,6 +1,6 @@
 CFLAGS += -T ../linker.ld
 
-PROGRAMNAME := branch
+PROGRAMNAME := fibonacci
 
 .PHONY:clean
 all: $(PROGRAMNAME).8.hex $(PROGRAMNAME).32.hex $(PROGRAMNAME).o
