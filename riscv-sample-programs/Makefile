@@ -1,5 +1,5 @@
 export CC := riscv64-unknown-elf-gcc
-export OBJCOPY := riscv64-unknown-elf-objcopy
+export OBJCOPY := riscv64-elf-objcopy
 export CFLAGS := -nodefaultlibs -nostdlib -march=rv64i -mabi=lp64 -no-pie -static
 
 SUBDIRS := fibonacci branch

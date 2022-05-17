@@ -35,7 +35,24 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute fibonacci with no parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci/fibonacci.32.hex"))(defaultParams.copy(runParallel = 1)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.step(100)
+        c.clock.step(200)
+        c.io.registerFileContents.get(9).expect(55)
+      }
+  }
+
+  it should "execute fibonacci with 2 parallel" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci/fibonacci.32.hex")))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.step(200)
+        c.io.registerFileContents.get(9).expect(55)
+      }
+  }
+
+  it should "execute fibonacci with 4 parallel" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci/fibonacci.32.hex"))(defaultParams.copy(runParallel = 4)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.step(200)
+        c.io.registerFileContents.get(9).expect(55)
       }
   }
 }

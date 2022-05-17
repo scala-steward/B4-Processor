@@ -28,7 +28,8 @@ class Executor(implicit params: Parameters) extends Module {
 
   val destinationRegister = Wire(UInt(64.W))
   val immediateOrFunction7Extended = Mux(io.reservationstation.bits.immediateOrFunction7(11), (!0.U(64.W)) & io.reservationstation.bits.immediateOrFunction7, 0.U(64.W) | io.reservationstation.bits.immediateOrFunction7)
-  val newProgramCounter = io.reservationstation.bits.programCounter + immediateOrFunction7Extended.asSInt
+  val branchedProgramCounter = io.reservationstation.bits.programCounter + (immediateOrFunction7Extended ## 0.U(1.W)).asSInt
+  val nextProgramCounter = io.reservationstation.bits.programCounter + 4.S
 
   // set destinationRegister
   io.reservationstation.ready := true.B
@@ -81,27 +82,27 @@ class Executor(implicit params: Parameters) extends Module {
       // Equal
       (instructionChecker.output.branch === BranchOperations.Equal)
         -> Mux(io.reservationstation.bits.value1 === io.reservationstation.bits.value2,
-        newProgramCounter, 0.S),
+        branchedProgramCounter, nextProgramCounter),
       // NotEqual
       (instructionChecker.output.branch === BranchOperations.NotEqual)
         -> Mux(io.reservationstation.bits.value1 =/= io.reservationstation.bits.value2,
-        newProgramCounter, 0.S),
+        branchedProgramCounter, nextProgramCounter),
       // Less Than (signed)
       (instructionChecker.output.branch === BranchOperations.LessThan)
         -> Mux(io.reservationstation.bits.value1.asSInt < io.reservationstation.bits.value2.asSInt,
-        newProgramCounter, 0.S),
+        branchedProgramCounter, nextProgramCounter),
       // Less Than (unsigned)
       (instructionChecker.output.branch === BranchOperations.LessThanUnsigned)
         -> Mux(io.reservationstation.bits.value1 < io.reservationstation.bits.value2,
-        newProgramCounter, 0.S),
+        branchedProgramCounter, nextProgramCounter),
       // Greater Than (signed)
       (instructionChecker.output.branch === BranchOperations.GreaterOrEqual)
         -> Mux(io.reservationstation.bits.value1.asSInt >= io.reservationstation.bits.value2.asSInt,
-        newProgramCounter, 0.S),
+        branchedProgramCounter, nextProgramCounter),
       // Greater Than (unsigned)
       (instructionChecker.output.branch === BranchOperations.GreaterOrEqualUnsigned)
         -> Mux(io.reservationstation.bits.value1 >= io.reservationstation.bits.value2,
-        newProgramCounter, 0.S),
+        branchedProgramCounter, nextProgramCounter),
       // jal or auipc
       (instructionChecker.output.instruction === Instructions.auipc || instructionChecker.output.instruction === Instructions.jal)
         -> (io.reservationstation.bits.programCounter + io.reservationstation.bits.value2.asSInt),

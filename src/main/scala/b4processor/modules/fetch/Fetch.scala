@@ -58,11 +58,11 @@ class Fetch(implicit params: Parameters) extends Module {
       BranchType.FenceI.asUInt -> Waiting.waitFor(BranchType.FenceI),
     )))
     // PCの更新を確認
-    nextPC = nextPC + Mux(nextWait.isWaiting,
+    nextPC = nextPC + Mux(nextWait.isWaiting || !decoder.valid,
       0.S,
-      MuxLookup(branch.io.branchType.asUInt, 4.S, Seq(
-        BranchType.JAL.asUInt -> branch.io.offset
-      )))
+      Mux(branch.io.branchType === BranchType.JAL,
+        branch.io.offset,
+        4.S))
   }
   pc := nextPC
   waiting := nextWait
