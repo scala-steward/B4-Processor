@@ -10,9 +10,9 @@ import chisel3.stage.ChiselStage
 class Executor(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reservationstation = Flipped(new ReservationStation2Executor)
-    val bypassValue = new ExecutionRegisterBypass
+    val out = new ExecutionRegisterBypass
     val loadStoreQueue = Output(new Executor2LoadStoreQueue)
-    val fetch = Output(new ExecutorBranchResult)
+    val fetch = Output(new Executor2Fetch)
   })
 
   /**
@@ -76,7 +76,7 @@ class Executor(implicit params: Parameters) extends Module {
         -> (io.reservationstation.bits.value2 + io.reservationstation.bits.programCounter.asUInt)
     ))
 
-    io.fetch.branchAddress := MuxCase(io.reservationstation.bits.programCounter, Seq(
+    io.fetch.programCounter := MuxCase(io.reservationstation.bits.programCounter, Seq(
       // 分岐
       // Equal
       (instructionChecker.output.branch === BranchOperations.Equal)
@@ -102,10 +102,15 @@ class Executor(implicit params: Parameters) extends Module {
       (instructionChecker.output.branch === BranchOperations.GreaterOrEqualUnsigned)
         -> Mux(io.reservationstation.bits.value1 >= io.reservationstation.bits.value2,
         newProgramCounter, 0.S),
-      (instructionChecker.output.instruction === Instructions.auipc)
+      // jal or auipc
+      (instructionChecker.output.instruction === Instructions.auipc || instructionChecker.output.instruction === Instructions.jal)
         -> (io.reservationstation.bits.programCounter + io.reservationstation.bits.value2.asSInt),
+      // jalr
+      (instructionChecker.output.instruction === Instructions.jalr)
+        -> Cat((io.reservationstation.bits.value1 + io.reservationstation.bits.value2) (63, 1), 0.U).asSInt
     ))
-    io.fetch.valid := instructionChecker.output.instruction === Instructions.Branch
+    io.fetch.valid := (instructionChecker.output.instruction === Instructions.Branch) || (instructionChecker.output.instruction === Instructions.jal) ||
+      (instructionChecker.output.instruction === Instructions.auipc) || (instructionChecker.output.instruction === Instructions.jalr)
     // S形式(LSQへアドレスを渡す)
     io.loadStoreQueue.programCounter := io.reservationstation.bits.programCounter
     io.loadStoreQueue.destinationTag := io.reservationstation.bits.destinationTag
@@ -117,7 +122,7 @@ class Executor(implicit params: Parameters) extends Module {
     io.loadStoreQueue.programCounter := 0.S
     io.loadStoreQueue.destinationTag := 0.U
     io.loadStoreQueue.value := 0.U
-    io.fetch.branchAddress := 0.S
+    io.fetch.programCounter := 0.S
     io.fetch.valid := false.B
     destinationRegister := 0.U
 
@@ -129,11 +134,10 @@ class Executor(implicit params: Parameters) extends Module {
    * (validで送信データを調節)
    * (レジスタ挿入の可能性あり)
    */
-  // bypass
-  io.bypassValue.valid := instructionChecker.output.instruction =/= Instructions.Unknown
-  io.bypassValue.destinationTag := io.reservationstation.bits.destinationTag
-  io.bypassValue.value := destinationRegister
-
+  // reorder Buffer
+  io.out.valid := instructionChecker.output.instruction =/= Instructions.Unknown
+  io.out.destinationTag := io.reservationstation.bits.destinationTag
+  io.out.value := destinationRegister
 }
 
 object ExecutorElaborate extends App {

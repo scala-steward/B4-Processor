@@ -1,7 +1,7 @@
 package b4processor.modules.fetch
 
 import b4processor.Parameters
-import b4processor.connections.{ExecutorBranchResult, Fetch2BranchPrediction, Fetch2Decoder, InstructionCache2Fetch}
+import b4processor.connections.{Executor2Fetch, Fetch2BranchPrediction, Fetch2Decoder, InstructionCache2Fetch}
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
@@ -18,7 +18,7 @@ class Fetch(implicit params: Parameters) extends Module {
     /** ロードストアキューが空である */
     val loadStoreQueueEmpty = Input(Bool())
     /** 実行ユニットから分岐先の計算結果が帰ってきた */
-    val executorBranchResult = Vec(params.runParallel, Input(new ExecutorBranchResult))
+    val executorBranchResult = Vec(params.runParallel, Input(new Executor2Fetch))
 
     /** デコーダ */
     val decoders = Vec(params.runParallel, new Fetch2Decoder)
@@ -73,7 +73,7 @@ class Fetch(implicit params: Parameters) extends Module {
       for (e <- io.executorBranchResult) {
         when(e.valid) {
           waiting := Waiting.notWaiting()
-          pc := e.branchAddress
+          pc := e.programCounter
         }
       }
     }

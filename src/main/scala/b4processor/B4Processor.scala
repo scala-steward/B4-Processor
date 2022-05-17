@@ -34,6 +34,9 @@ class B4Processor(implicit params: Parameters) extends Module {
   /** 命令メモリと命令キャッシュを接続 */
   io.instructionMemory <> instructionCache.io.memory
 
+  /** データキャッシュは現在無効 :TODO */
+  io.dataMemory <> DontCare
+
   /** レジスタのコンテンツをデバッグ時に接続 */
   if (params.debug)
     io.registerFileContents.get <> registerFile.io.values.get
@@ -59,21 +62,21 @@ class B4Processor(implicit params: Parameters) extends Module {
     reservationStations(i).io.executor <> executors(i).io.reservationstation
 
     /** 実行ユニットとリオーダバッファを接続 */
-    executors(i).io.bypassValue <> reorderBuffer.io.executors(i)
+    executors(i).io.out <> reorderBuffer.io.executors(i)
 
     /** デコーダとレジスタファイルの接続 */
     decoders(i).io.registerFile <> registerFile.io.decoders(i)
 
     /** デコーダと実行ユニットの接続 */
     for ((e, index) <- executors.zipWithIndex)
-      decoders(i).io.executors(index) <> e.io.bypassValue
+      decoders(i).io.executors(index) <> e.io.out
 
     /** デコーダとLSQの接続 */
     loadStoreQueue.io.decoders(i) <> decoders(i).io.loadStoreQueue
 
     /** リザベーションステーションと実行ユニットの接続 */
     for ((e, index) <- executors.zipWithIndex)
-      reservationStations(i).io.bypassValues(index) <> e.io.bypassValue
+      reservationStations(i).io.bypassValues(index) <> e.io.out
 
     /** LSQと実行ユニットの接続 */
     executors(i).io.loadStoreQueue <> loadStoreQueue.io.alus(i)
