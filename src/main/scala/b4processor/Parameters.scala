@@ -15,7 +15,7 @@ package b4processor
 case class Parameters(tagWidth: Int = 6,
                       runParallel: Int = 2,
                       maxRegisterFileCommitCount: Int = 4,
-                      fetchWidth: Int = 2,
+                      fetchWidth: Int = 4,
                       branchPredictionWidth: Int = 4,
                       pcInit: Int = 0x0,
                       maxLSQ2MemoryInstCount: Int = 4,

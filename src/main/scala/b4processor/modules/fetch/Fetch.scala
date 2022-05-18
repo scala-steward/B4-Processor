@@ -41,14 +41,16 @@ class Fetch(implicit params: Parameters) extends Module {
     val cache = io.cache(i)
 
     cache.address := nextPC
-    decoder.valid := io.cache(i).output.valid && !nextWait.isWaiting
-    decoder.bits.programCounter := nextPC
-    decoder.bits.instruction := cache.output.bits
 
     val branch = Module(new CheckBranch)
     branch.io.instruction := io.cache(i).output.bits
     if (params.debug)
       io.branchTypes.get(i) := branch.io.branchType
+
+    // キャッシュからの値があり、待つ必要はなく、JAL命令ではない（JALはアドレスを変えるだけとして処理できて、デコーダ以降を使う必要はない）
+    decoder.valid := io.cache(i).output.valid && !nextWait.isWaiting && branch.io.branchType =/= BranchType.JAL
+    decoder.bits.programCounter := nextPC
+    decoder.bits.instruction := cache.output.bits
 
     // 次に停止する必要があるか確認
     nextWait = Mux(nextWait.isWaiting, nextWait, MuxLookup(branch.io.branchType.asUInt, nextWait, Seq(
@@ -58,11 +60,10 @@ class Fetch(implicit params: Parameters) extends Module {
       BranchType.FenceI.asUInt -> Waiting.waitFor(BranchType.FenceI),
     )))
     // PCの更新を確認
-    nextPC = nextPC + Mux(nextWait.isWaiting || !decoder.valid,
-      0.S,
-      Mux(branch.io.branchType === BranchType.JAL,
-        branch.io.offset,
-        4.S))
+    nextPC = nextPC + MuxCase(4.S, Seq(
+      (branch.io.branchType === BranchType.JAL) -> branch.io.offset,
+      (nextWait.isWaiting || !decoder.valid) -> 0.S))
+
   }
   pc := nextPC
   waiting := nextWait
