@@ -26,7 +26,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
 
     val reservationStation = new Decoder2ReservationStation
 
-    val loadstorequeue = new Decoder2LoadStoreQueue()
+    val loadstorequeue = Output(new Decoder2LoadStoreQueue)
   })
 
   // 命令からそれぞれの機能のブロックを取り出す
@@ -181,14 +181,12 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   rs.programCounter := io.imem.bits.programCounter
 
   // load or store命令の場合，LSQへ発送
-  io.loadstorequeue.valid := false.B
   io.loadstorequeue.bits.stag2 := valueSelector2.io.sourceTag
   io.loadstorequeue.bits.value := valueSelector2.io.value
   io.loadstorequeue.bits.opcode := instOp
+  io.loadstorequeue.bits.function3 := instFunct3
   io.loadstorequeue.bits.programCounter := io.imem.bits.programCounter
-  when(io.loadstorequeue.ready && io.loadstorequeue.bits.opcode === BitPat("b0?00011")) {
-    io.loadstorequeue.valid := true.B
-  }
+  io.loadstorequeue.valid := io.loadstorequeue.ready && io.loadstorequeue.bits.opcode === BitPat("b0?00011")
 }
 
 object Decoder extends App {

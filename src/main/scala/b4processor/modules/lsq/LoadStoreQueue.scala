@@ -8,7 +8,7 @@ import chisel3.stage.ChiselStage
 
 class LoadStoreQueue(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val decoders = Vec(params.numberOfDecoders, Flipped(new Decoder2LoadStoreQueue()))
+    val decoders = Vec(params.numberOfDecoders, Flipped(Output((new Decoder2LoadStoreQueue))))
     val alus = Vec(params.numberOfALUs, Flipped(Output(new Execution2LoadStoreQueue())))
     val reorderbuffer = new LoadStoreQueue2ReorderBuffer()
     val memory = Vec(params.maxLSQ2MemoryinstCount, new LoadStoreQueue2Memory)
@@ -26,6 +26,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     entry.Readydata := false.B
     entry.tag := 0.U
     entry.data := 0.U
+    entry.function3 := 0.U
     entry.programCounter := 0.S
     entry.R := true.B // 命令実効済か否か
     entry
@@ -39,10 +40,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   /** デコードした命令をLSQに加えるかどうか確認し，l or s 命令ならばエンキュー */
   for (i <- 0 until params.numberOfDecoders) {
     val decoder = io.decoders(i)
-    io.decoders(i).ready := true.B
-    when(tail === insertIndex + 1.U) {
-      io.decoders(i).ready := false.B
-    }
+    io.decoders(i).ready := tail =/= insertIndex + 1.U
     val decodevalid = Mux(io.decoders(i).ready === true.B && (decoder.bits.opcode === "b0000011".U || decoder.bits.opcode === "b0100011".U), true.B, false.B)
 
     /**
@@ -58,7 +56,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         entry.address := 0.S
         entry.Readydata := false.B
         entry.tag := decoder.bits.stag2
-        entry.data := decoder.bits.value.bits
+        entry.data := decoder.bits.value
+        entry.function3 := decoder.bits.function3
         entry.programCounter := decoder.bits.programCounter
         entry.R := false.B
         entry
@@ -144,6 +143,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       io.memory(i).bits.data := buffer(emissionindex).data
       io.memory(i).bits.address := buffer(emissionindex).address
       io.memory(i).bits.opcode := buffer(emissionindex).opcode
+      io.memory(i).bits.function3 := buffer(emissionindex).function3
       buffer(emissionindex).R := true.B
     }
     // tailから送出しない命令までの命令数をカウント
