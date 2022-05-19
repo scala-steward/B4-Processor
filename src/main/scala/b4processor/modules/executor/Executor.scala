@@ -1,7 +1,7 @@
 package b4processor.modules.executor
 
 import b4processor.Parameters
-import b4processor.common.{ArithmeticOperations, BranchOperations, InstructionChecker, Instructions}
+import b4processor.common.{ArithmeticOperations, BranchOperations, InstructionChecker, Instructions, OperationWidth}
 import b4processor.connections._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -134,22 +134,11 @@ class Executor(implicit params: Parameters) extends Module {
     }.otherwise {
       io.fetch.programCounter := io.reservationstation.bits.programCounter + 4.S
     }
-    // S形式(LSQへアドレスを渡す)
-    io.loadstorequeue.programCounter := io.reservationstation.bits.programCounter
-    io.loadstorequeue.destinationTag := io.reservationstation.bits.destinationTag
-    io.loadstorequeue.value := Mux(instructionChecker.output.instruction === Instructions.Store,
-      io.reservationstation.bits.value1 + immediateOrFunction7Extended, destinationRegister)
-    io.loadstorequeue.valid := instructionChecker.output.instruction =/= Instructions.Unknown
+
   }.otherwise {
-    io.loadstorequeue.valid := false.B
-    io.loadstorequeue.programCounter := 0.S
-    io.loadstorequeue.destinationTag := 0.U
-    io.loadstorequeue.value := 0.U
-    io.fetch.programCounter := 0.S
-    io.fetch.valid := false.B
     destinationRegister := 0.U
-
-
+    io.fetch.programCounter := io.reservationstation.bits.programCounter + 4.S
+    io.fetch.valid := false.B
   }
 
   /**
@@ -157,10 +146,24 @@ class Executor(implicit params: Parameters) extends Module {
    * (validで送信データを調節)
    * (レジスタ挿入の可能性あり)
    */
+
+  // LSQ
+  io.loadstorequeue.valid := (instructionChecker.output.instruction =/= Instructions.Unknown) ||
+    !io.reservationstation.valid
+  io.loadstorequeue.programCounter := io.reservationstation.bits.programCounter
+  io.loadstorequeue.destinationTag := io.reservationstation.bits.destinationTag
+  io.loadstorequeue.value := Mux(instructionChecker.output.instruction === Instructions.Store,
+    io.reservationstation.bits.value1 + immediateOrFunction7Extended, Mux(instructionChecker.output.operationWidth === OperationWidth.Word,
+      Mux(destinationRegister(31), Cat(!0.U(32.W), destinationRegister(31, 0)), Cat(0.U(32.W), destinationRegister(31, 0))),
+      destinationRegister))
+
   // reorder Buffer
-  io.out.valid := instructionChecker.output.instruction =/= Instructions.Unknown
+  io.out.valid := instructionChecker.output.instruction =/= Instructions.Unknown ||
+    !io.reservationstation.valid
   io.out.destinationTag := io.reservationstation.bits.destinationTag
-  io.out.value := destinationRegister
+  io.out.value := Mux(instructionChecker.output.operationWidth === OperationWidth.Word,
+    Mux(destinationRegister(31), Cat(!0.U(32.W), destinationRegister(31, 0)), Cat(0.U(32.W), destinationRegister(31, 0))),
+    destinationRegister)
 }
 
 object ExecutorElaborate extends App {

@@ -199,7 +199,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new ExecutorWrapper) { c =>
       // rs1 = 20, rs = 30, offset = 200 (jump先： PC + (offset*2))
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
-        function3 = 4, immediateOrFunction7 = 100, opcode = 99, programCounter = 100))
+        function3 = 4, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
       c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
 
@@ -435,6 +435,21 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
+  it should "addiw" in {
+    test(new ExecutorWrapper) { c =>
+      // rs1 = 40, rs2 = 30
+      c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 2147483647, value2 = 2147483647,
+        function3 = 0, immediateOrFunction7 = 0, opcode = 27, programCounter = 100))
+
+      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 70)))
+
+      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
+        valid = true, programCounter = 100))
+
+      c.expectFetch(values = FetchValue(valid = false, programCounter = 104))
+    }
+  }
+
   it should "slti_NG" in {
     test(new ExecutorWrapper) { c =>
       // rs1 = 40, rs2 = 30
@@ -557,7 +572,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
   //
   it should "srli" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 64, rs2 = 3, rd = 8
+      // rs1 = 64(b100 0000), rs2 = 3, rd = 8
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 64, value2 = 3,
         function3 = 5, immediateOrFunction7 = 0, opcode = 19, programCounter = 100))
 
@@ -569,16 +584,16 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectFetch(values = FetchValue(valid = false, programCounter = 104))
     }
   }
-  //
+
   it should "srai" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 10, rs2 = 2, rd = 40
-      c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 10, value2 = 2,
-        function3 = 1, immediateOrFunction7 = 32, opcode = 19, programCounter = 100))
+      // rs1 = 7(b0111), rs2 = 2, rd = 1(b0001)
+      c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 7, value2 = 2,
+        function3 = 5, immediateOrFunction7 = 32, opcode = 19, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 40)))
+      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 40,
+      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 104))
