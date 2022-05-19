@@ -1,7 +1,7 @@
 package b4processor.modules.reservationstation
 
 import b4processor.Parameters
-import b4processor.utils.ALUValue
+import b4processor.utils.ExecutorValue
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -10,7 +10,7 @@ class ReservationStationWrapper(implicit params: Parameters) extends Reservation
   def initialize(): Unit = {
     setExecutorReady(true)
     setDecoderInput(None)
-    setALUs(Seq.fill(params.runParallel)(None))
+    setExecutors(Seq.fill(params.runParallel)(None))
   }
 
   def setExecutorReady(value: Boolean): Unit = {
@@ -32,11 +32,11 @@ class ReservationStationWrapper(implicit params: Parameters) extends Reservation
     }
   }
 
-  def setALUs(values: Seq[Option[ALUValue]]): Unit = {
+  def setExecutors(values: Seq[Option[ExecutorValue]]): Unit = {
     for ((bypassValue, v) <- io.bypassValues.zip(values)) {
       bypassValue.valid.poke(v.isDefined)
-      bypassValue.value.poke(v.getOrElse(ALUValue(destinationTag = 0, value = 0)).value)
-      bypassValue.destinationTag.poke(v.getOrElse(ALUValue(destinationTag = 0, value = 0)).destinationTag)
+      bypassValue.value.poke(v.getOrElse(ExecutorValue(destinationTag = 0, value = 0)).value)
+      bypassValue.destinationTag.poke(v.getOrElse(ExecutorValue(destinationTag = 0, value = 0)).destinationTag)
     }
   }
 
@@ -58,7 +58,7 @@ class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setDecoderInput(programCounter = Some(1))
       c.clock.step()
       c.setDecoderInput(None)
-      c.setALUs(Seq(Some(ALUValue(destinationTag = 0, value = 0))))
+      c.setExecutors(Seq(Some(ExecutorValue(destinationTag = 0, value = 0))))
       c.expectExecutor(None)
       c.clock.step()
       c.expectExecutor(Some(1))

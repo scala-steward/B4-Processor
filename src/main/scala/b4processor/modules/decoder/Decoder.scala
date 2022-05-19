@@ -114,7 +114,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   valueSelector1.io.reorderBufferValue <> io.reorderBuffer.source1.value
   valueSelector1.io.registerFileValue := io.registerFile.value1
   for (i <- 0 until params.runParallel) {
-    valueSelector1.io.aluBypassValue(i) <> io.executors(i)
+    valueSelector1.io.executorBypassValue(i) <> io.executors(i)
   }
   // value2
   val valueSelector2 = Module(new ValueSelector2)
@@ -129,7 +129,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   ))
   valueSelector2.io.opcodeFormat := opcodeFormatChecker.io.format
   for (i <- 0 until params.runParallel) {
-    valueSelector2.io.aluBypassValue(i) <> io.executors(i)
+    valueSelector2.io.executorBypassValue(i) <> io.executors(i)
   }
 
   // 前のデコーダから次のデコーダへ

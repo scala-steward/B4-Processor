@@ -1,7 +1,7 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
-import b4processor.utils.ALUValue
+import b4processor.utils.ExecutorValue
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -17,7 +17,7 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
     this.setImem(instruction)
     this.setReorderBuffer()
     this.setRegisterFile()
-    this.setALU()
+    this.setExecutors()
   }
 
   def setImem(instruction: UInt, isPrediction: Boolean = false): Unit = {
@@ -49,11 +49,11 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
     this.io.registerFile.value2.poke(value2)
   }
 
-  def setALU(bypassedValues: Seq[Option[ALUValue]] = Seq.fill(params.runParallel)(None)): Unit = {
+  def setExecutors(bypassedValues: Seq[Option[ExecutorValue]] = Seq.fill(params.runParallel)(None)): Unit = {
     for (i <- bypassedValues.indices) {
       this.io.executors(i).valid.poke(bypassedValues(i).isDefined)
-      this.io.executors(i).destinationTag.poke(bypassedValues(i).getOrElse(ALUValue(destinationTag = 0, value = 0)).destinationTag)
-      this.io.executors(i).value.poke(bypassedValues(i).getOrElse(ALUValue(destinationTag = 0, value = 0)).value)
+      this.io.executors(i).destinationTag.poke(bypassedValues(i).getOrElse(ExecutorValue(destinationTag = 0, value = 0)).destinationTag)
+      this.io.executors(i).value.poke(bypassedValues(i).getOrElse(ExecutorValue(destinationTag = 0, value = 0)).value)
     }
   }
 
@@ -167,7 +167,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
         // add x1,x2,x3
         c.initialize("x003100b3".U)
         c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
-        c.setALU(Seq(Some(ALUValue(6, 20)), Some(ALUValue(7, 21))))
+        c.setExecutors(Seq(Some(ExecutorValue(6, 20)), Some(ExecutorValue(7, 21))))
 
         c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
         c.expectReservationStation(destinationTag = 5, value1 = 20, value2 = 21)

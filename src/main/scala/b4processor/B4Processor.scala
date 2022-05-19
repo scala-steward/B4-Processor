@@ -79,7 +79,7 @@ class B4Processor(implicit params: Parameters) extends Module {
       reservationStations(i).io.bypassValues(index) <> e.io.out
 
     /** LSQと実行ユニットの接続 */
-    executors(i).io.loadStoreQueue <> loadStoreQueue.io.alus(i)
+    executors(i).io.loadStoreQueue <> loadStoreQueue.io.executors(i)
 
     /** フェッチと実行ユニットの接続 */
     fetch.io.executorBranchResult(i) <> executors(i).io.fetch

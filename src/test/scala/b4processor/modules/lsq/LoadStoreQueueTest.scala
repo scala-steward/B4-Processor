@@ -1,7 +1,7 @@
 package b4processor.modules.lsq
 
 import b4processor.Parameters
-import b4processor.utils.ALUValue
+import b4processor.utils.ExecutorValue
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -17,8 +17,8 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
     }
   }
 
-  def expectExecutor(values: Seq[Option[ALUValue]]): Unit = {
-    for ((alu, v) <- this.io.alus.zip(values)) {
+  def expectExecutor(values: Seq[Option[ExecutorValue]]): Unit = {
+    for ((alu, v) <- this.io.executors.zip(values)) {
       //      alu.valid.poke(v.isDefined)
       //      alu.value.poke()
     }

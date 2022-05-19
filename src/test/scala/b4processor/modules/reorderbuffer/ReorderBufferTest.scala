@@ -1,7 +1,7 @@
 package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
-import b4processor.utils.{ALUValue, DecoderValue, RegisterFileValue}
+import b4processor.utils.{ExecutorValue, DecoderValue, RegisterFileValue}
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -9,12 +9,12 @@ import scala.util.Random
 
 class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
   def initialize(): Unit = {
-    setALU()
+    setExecutors()
     setDecoder()
   }
 
 
-  def setALU(values: Seq[Option[ALUValue]] = Seq.fill(params.runParallel)(None)): Unit = {
+  def setExecutors(values: Seq[Option[ExecutorValue]] = Seq.fill(params.runParallel)(None)): Unit = {
     for (i <- 0 until params.runParallel) {
       val alu = this.io.executors(i)
       val v = values(i)
@@ -135,7 +135,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setDecoder(Seq(
         DecoderValue(valid = true, destination = 1, source1 = 2, source2 = 3),
       ))
-      c.setALU(Seq(Some(ALUValue(destinationTag = 0, value = 3))))
+      c.setExecutors(Seq(Some(ExecutorValue(destinationTag = 0, value = 3))))
       c.clock.step(2)
 
       //      println(c.io.head.get.peek().litValue, c.io.tail.get.peek().litValue)
@@ -163,10 +163,10 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
 
       // 値のセット
       c.setDecoder(Seq(DecoderValue()))
-      c.setALU(Seq(Some(ALUValue(destinationTag = 0, value = 10))))
+      c.setExecutors(Seq(Some(ExecutorValue(destinationTag = 0, value = 10))))
 
       c.clock.step()
-      c.setALU(Seq(None))
+      c.setExecutors(Seq(None))
       // 値の確認
       c.expectRegisterFile(Seq(Some(RegisterFileValue(destinationRegister = 1, value = 10))))
 
@@ -231,15 +231,15 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
 
       // 値のセット
       c.setDecoder(Seq.fill(4)(DecoderValue()))
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 0, value = 10)),
-        Some(ALUValue(destinationTag = 1, value = 20)),
-        Some(ALUValue(destinationTag = 2, value = 30)),
-        Some(ALUValue(destinationTag = 3, value = 40))
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 0, value = 10)),
+        Some(ExecutorValue(destinationTag = 1, value = 20)),
+        Some(ExecutorValue(destinationTag = 2, value = 30)),
+        Some(ExecutorValue(destinationTag = 3, value = 40))
       ))
 
       c.clock.step()
-      c.setALU(Seq(None, None, None, None))
+      c.setExecutors(Seq(None, None, None, None))
       c.io.registerFile(0).valid.expect(true)
       // 値の確認
       c.expectRegisterFile(Seq(
@@ -279,24 +279,24 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
         DecoderValue(valid = true, destination = 7, source1 = 2, source2 = 3, programCounter = 524),
         DecoderValue(valid = true, destination = 8, source1 = 2, source2 = 3, programCounter = 528)
       ))
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 4, value = 50)),
-        Some(ALUValue(destinationTag = 5, value = 60)),
-        Some(ALUValue(destinationTag = 6, value = 70)),
-        Some(ALUValue(destinationTag = 7, value = 80))
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 4, value = 50)),
+        Some(ExecutorValue(destinationTag = 5, value = 60)),
+        Some(ExecutorValue(destinationTag = 6, value = 70)),
+        Some(ExecutorValue(destinationTag = 7, value = 80))
       ))
 
       c.clock.step()
       c.setDecoder()
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 0, value = 10)),
-        Some(ALUValue(destinationTag = 1, value = 20)),
-        Some(ALUValue(destinationTag = 2, value = 30)),
-        Some(ALUValue(destinationTag = 3, value = 40))
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 0, value = 10)),
+        Some(ExecutorValue(destinationTag = 1, value = 20)),
+        Some(ExecutorValue(destinationTag = 2, value = 30)),
+        Some(ExecutorValue(destinationTag = 3, value = 40))
       ))
 
       c.clock.step()
-      c.setALU(Seq(None, None, None, None))
+      c.setExecutors(Seq(None, None, None, None))
       // 値の確認
       c.expectRegisterFile(Seq(
         Some(RegisterFileValue(destinationRegister = 1, value = 10)),
@@ -343,25 +343,25 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
         DecoderValue(valid = true, destination = 7, source1 = 2, source2 = 3, programCounter = 524),
         DecoderValue(valid = true, destination = 8, source1 = 2, source2 = 3, programCounter = 528)
       ))
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 1, value = 20)),
-        Some(ALUValue(destinationTag = 5, value = 60)),
-        Some(ALUValue(destinationTag = 7, value = 80)),
-        Some(ALUValue(destinationTag = 2, value = 30)),
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 1, value = 20)),
+        Some(ExecutorValue(destinationTag = 5, value = 60)),
+        Some(ExecutorValue(destinationTag = 7, value = 80)),
+        Some(ExecutorValue(destinationTag = 2, value = 30)),
 
       ))
 
       c.clock.step()
       c.setDecoder()
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 0, value = 10)),
-        Some(ALUValue(destinationTag = 6, value = 70)),
-        Some(ALUValue(destinationTag = 4, value = 50)),
-        Some(ALUValue(destinationTag = 3, value = 40)),
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 0, value = 10)),
+        Some(ExecutorValue(destinationTag = 6, value = 70)),
+        Some(ExecutorValue(destinationTag = 4, value = 50)),
+        Some(ExecutorValue(destinationTag = 3, value = 40)),
       ))
 
       c.clock.step()
-      c.setALU(Seq(None, None, None, None))
+      c.setExecutors(Seq(None, None, None, None))
       // 値の確認
       c.expectRegisterFile(Seq(
         Some(RegisterFileValue(destinationRegister = 1, value = 10)),
@@ -406,11 +406,11 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
         DecoderValue(valid = true, destination = 17, source1 = 2, source2 = 3, programCounter = 524),
         DecoderValue(valid = true, destination = 18, source1 = 2, source2 = 3, programCounter = 528)
       ))
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 0, value = 10)),
-        Some(ALUValue(destinationTag = 1, value = 20)),
-        Some(ALUValue(destinationTag = 5, value = 60)),
-        Some(ALUValue(destinationTag = 4, value = 50)),
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 0, value = 10)),
+        Some(ExecutorValue(destinationTag = 1, value = 20)),
+        Some(ExecutorValue(destinationTag = 5, value = 60)),
+        Some(ExecutorValue(destinationTag = 4, value = 50)),
       ))
 
       c.clock.step()
@@ -423,15 +423,15 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
         None,
       ))
 
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 6, value = 70)),
-        Some(ALUValue(destinationTag = 3, value = 40)),
-        Some(ALUValue(destinationTag = 7, value = 80)),
-        Some(ALUValue(destinationTag = 2, value = 30)),
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 6, value = 70)),
+        Some(ExecutorValue(destinationTag = 3, value = 40)),
+        Some(ExecutorValue(destinationTag = 7, value = 80)),
+        Some(ExecutorValue(destinationTag = 2, value = 30)),
       ))
 
       c.clock.step()
-      c.setALU(Seq(None, None, None, None))
+      c.setExecutors(Seq(None, None, None, None))
       // 値の確認
       c.expectRegisterFile(Seq(
         Some(RegisterFileValue(destinationRegister = 13, value = 30)),

@@ -9,7 +9,7 @@ import chisel3.stage.ChiselStage
 class LoadStoreQueue(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val decoders = Vec(params.runParallel, Flipped(new Decoder2LoadStoreQueue()))
-    val alus = Vec(params.runParallel, Flipped(Output(new Executor2LoadStoreQueue)))
+    val executors = Vec(params.runParallel, Flipped(Output(new Executor2LoadStoreQueue)))
     val reorderbuffer = new LoadStoreQueue2ReorderBuffer()
     val memory = Vec(params.maxLSQ2MemoryInstCount, new LoadStoreQueue2Memory)
     val isEmpty = Output(Bool())
