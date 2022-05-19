@@ -100,6 +100,15 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
       }
   }
 
+  // タグ幅をとても小さくする（すべてのデコーダが使えない）ような状況でもうまく動作する
+  it should "execute many_add with 4 parallel with very low tag width" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex"))(defaultParams.copy(runParallel = 4, fetchWidth = 8, tagWidth = 2)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.step(20)
+        c.io.registerFileContents.get(0).expect(8)
+      }
+  }
+
   //  // 並列実行できそうな大量のadd命令を同時発行数8で試す
   //  it should "execute many_add with 8 parallel" in {
   //    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex"))(defaultParams.copy(runParallel = 8, fetchWidth = 8)))
