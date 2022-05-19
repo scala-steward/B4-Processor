@@ -88,19 +88,17 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   // リオーダバッファから一致するタグを取得する
   // セレクタ1
   val sourceTagSelector1 = Module(new SourceTagSelector(instructionOffset))
-  sourceTagSelector1.io.sourceTag.ready := true.B
   sourceTagSelector1.io.reorderBufferDestinationTag <> io.reorderBuffer.source1.matchingTag
   for (i <- 0 until instructionOffset) {
     // 前のデコーダから流れてきたdestination tag
     sourceTagSelector1.io.beforeDestinationTag(i).bits := io.decodersBefore(i).destinationTag
     // 前のデコーダから流れてきたdestination registerがsource registerと等しいか
     // (もともとvalidは情報が存在するかという意味で使われているが、ここで一致しているかという意味に変換)
-    sourceTagSelector1.io.beforeDestinationTag(i).valid := io.decodersBefore(i).destinationRegister === instRs1
+    sourceTagSelector1.io.beforeDestinationTag(i).valid := io.decodersBefore(i).destinationRegister === instRs1 && io.decodersBefore(i).valid
   }
   val sourceTag1 = sourceTagSelector1.io.sourceTag
   // セレクタ2
   val sourceTagSelector2 = Module(new SourceTagSelector(instructionOffset))
-  sourceTagSelector2.io.sourceTag.ready := true.B
   sourceTagSelector2.io.reorderBufferDestinationTag <> io.reorderBuffer.source2.matchingTag
   for (i <- 0 until instructionOffset) {
     sourceTagSelector2.io.beforeDestinationTag(i).bits := io.decodersBefore(i).destinationTag
@@ -139,7 +137,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     io.decodersAfter(i) <> io.decodersBefore(i)
   }
   // 次のデコーダへ伝える情報
-  when(destinationIsValid) {
+  when(destinationIsValid && instRd =/= 0.U) {
     io.decodersAfter(instructionOffset).destinationTag := io.reorderBuffer.destination.destinationTag
     io.decodersAfter(instructionOffset).destinationRegister := instRd
     io.decodersAfter(instructionOffset).valid := true.B
@@ -171,8 +169,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     B.asUInt -> instImmB,
   ))
   rs.destinationTag := io.reorderBuffer.destination.destinationTag
-  rs.sourceTag1 := Mux(valueSelector1.io.value.valid, 0.U, sourceTag1.bits)
-  rs.sourceTag2 := Mux(valueSelector2.io.value.valid, 0.U, sourceTag2.bits)
+  rs.sourceTag1 := Mux(valueSelector1.io.value.valid, 0.U, sourceTag1.tag)
+  rs.sourceTag2 := Mux(valueSelector2.io.value.valid, 0.U, sourceTag2.tag)
   rs.ready1 := valueSelector1.io.value.valid
   rs.ready2 := valueSelector2.io.value.valid
   rs.value1 := valueSelector1.io.value.bits

@@ -1,10 +1,12 @@
 package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
-import b4processor.connections.{BranchPrediction2ReorderBuffer, Decoder2ReorderBuffer, ExecutionRegisterBypass, ReorderBuffer2RegisterFile, LoadStoreQueue2ReorderBuffer}
+import b4processor.connections.{BranchPrediction2ReorderBuffer, Decoder2ReorderBuffer, ExecutionRegisterBypass, LoadStoreQueue2ReorderBuffer, ReorderBuffer2RegisterFile}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
+
+import scala.math.pow
 
 /**
  * リオーダバッファ
@@ -50,11 +52,18 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     }
     decoder.destination.destinationTag := insertIndex
     // ソースレジスタに対応するタグ、値の代入
+    val descendingIndex = VecInit((0 until pow(2, params.tagWidth).toInt).map(indexOffset => head - indexOffset.U))
     when(decoder.source1.sourceRegister =/= 0.U) {
-      decoder.source1.matchingTag.valid := buffer.map { entry => entry.destinationRegister === decoder.source1.sourceRegister }.fold(false.B) { (a, b) => a | b }
-      decoder.source1.matchingTag.bits := MuxCase(0.U, buffer.zipWithIndex.map { case (entry, index) => (entry.destinationRegister === decoder.source1.sourceRegister) -> index.U })
-      decoder.source1.value.valid := buffer.map { entry => entry.destinationRegister === decoder.source1.sourceRegister && entry.valueReady }.fold(false.B) { (a, b) => a | b }
-      decoder.source1.value.bits := MuxCase(0.U, buffer.map { entry => (entry.destinationRegister === decoder.source1.sourceRegister && entry.valueReady) -> entry.value })
+      val matchingBits = Cat(buffer.reverse.map(entry => entry.destinationRegister === decoder.source1.sourceRegister))
+        .suggestName(s"matchingBits_d${i}_s1")
+      val hasMatching = matchingBits.orR
+        .suggestName(s"hasMatching_d${i}_s1")
+      val matchingIndex = MuxCase(0.U, descendingIndex.map { index => matchingBits(index).asBool -> index })
+        .suggestName(s"matchingIndex_d${i}_s1")
+      decoder.source1.matchingTag.valid := hasMatching
+      decoder.source1.matchingTag.bits := matchingIndex
+      decoder.source1.value.valid := buffer(matchingIndex).valueReady
+      decoder.source1.value.bits := buffer(matchingIndex).value
     }.otherwise {
       decoder.source1.matchingTag.valid := false.B
       decoder.source1.matchingTag.bits := 0.U
@@ -63,10 +72,14 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     }
 
     when(decoder.source2.sourceRegister =/= 0.U) {
-      decoder.source2.matchingTag.valid := buffer.map { entry => entry.destinationRegister === decoder.source2.sourceRegister }.fold(false.B) { (a, b) => a | b }
-      decoder.source2.matchingTag.bits := MuxCase(0.U, buffer.zipWithIndex.map { case (entry, index) => (entry.destinationRegister === decoder.source2.sourceRegister) -> index.U })
-      decoder.source2.value.valid := buffer.map { entry => entry.destinationRegister === decoder.source2.sourceRegister && entry.valueReady }.fold(false.B) { (a, b) => a | b }
-      decoder.source2.value.bits := MuxCase(0.U, buffer.map { entry => (entry.destinationRegister === decoder.source2.sourceRegister && entry.valueReady) -> entry.value })
+      val matchingBits = Cat(buffer.reverse.map(entry => entry.destinationRegister === decoder.source2.sourceRegister))
+        .suggestName(s"matchingBits_d${i}_s2")
+      val hasMatching = matchingBits.orR
+      val matchingIndex = MuxCase(0.U, descendingIndex.map { index => matchingBits(index).asBool -> index })
+      decoder.source2.matchingTag.valid := hasMatching
+      decoder.source2.matchingTag.bits := matchingIndex
+      decoder.source2.value.valid := buffer(matchingIndex).valueReady
+      decoder.source2.value.bits := buffer(matchingIndex).value
     }.otherwise {
       decoder.source2.matchingTag.valid := false.B
       decoder.source2.matchingTag.bits := 0.U

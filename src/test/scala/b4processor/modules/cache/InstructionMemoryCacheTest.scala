@@ -20,7 +20,7 @@ class MemoryAndCache(memoryInit: => Seq[UInt])(implicit params: Parameters) exte
 
 class InstructionMemoryCacheTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Instruction Cache"
-  implicit val defaultParams = Parameters()
+  implicit val defaultParams = Parameters(fetchWidth = 2)
 
   /** 命令を読み込む */
   it should "load memory" in {

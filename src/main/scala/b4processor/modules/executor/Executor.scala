@@ -110,14 +110,14 @@ class Executor(implicit params: Parameters) extends Module {
       (instructionChecker.output.instruction === Instructions.jalr)
         -> Cat((io.reservationstation.bits.value1 + io.reservationstation.bits.value2) (63, 1), 0.U).asSInt
     ))
-    io.fetch.valid := (instructionChecker.output.instruction === Instructions.Branch) || (instructionChecker.output.instruction === Instructions.jal) ||
-      (instructionChecker.output.instruction === Instructions.auipc) || (instructionChecker.output.instruction === Instructions.jalr)
+    io.fetch.valid := ((instructionChecker.output.instruction === Instructions.Branch) || (instructionChecker.output.instruction === Instructions.jal) ||
+      (instructionChecker.output.instruction === Instructions.auipc) || (instructionChecker.output.instruction === Instructions.jalr)) && io.reservationstation.valid
     // S形式(LSQへアドレスを渡す)
     io.loadStoreQueue.programCounter := io.reservationstation.bits.programCounter
     io.loadStoreQueue.destinationTag := io.reservationstation.bits.destinationTag
     io.loadStoreQueue.value := Mux(instructionChecker.output.instruction === Instructions.Store,
       io.reservationstation.bits.value1 + immediateOrFunction7Extended, destinationRegister)
-    io.loadStoreQueue.valid := instructionChecker.output.instruction =/= Instructions.Unknown
+    io.loadStoreQueue.valid := instructionChecker.output.instruction =/= Instructions.Unknown && io.reservationstation.valid
   }.otherwise {
     io.loadStoreQueue.valid := false.B
     io.loadStoreQueue.programCounter := 0.S
@@ -136,7 +136,7 @@ class Executor(implicit params: Parameters) extends Module {
    * (レジスタ挿入の可能性あり)
    */
   // reorder Buffer
-  io.out.valid := instructionChecker.output.instruction =/= Instructions.Unknown
+  io.out.valid := instructionChecker.output.instruction =/= Instructions.Unknown && io.reservationstation.valid
   io.out.destinationTag := io.reservationstation.bits.destinationTag
   io.out.value := destinationRegister
 }

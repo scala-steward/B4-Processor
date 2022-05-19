@@ -19,7 +19,8 @@ class B4ProcessorWrapper(instructions: Seq[UInt])(implicit params: Parameters) e
 
 class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "B4Processor"
-  implicit val defaultParams = Parameters(debug = true)
+  // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
+  implicit val defaultParams = Parameters(debug = true, tagWidth = 4)
 
   // コンパイルが通ることを確認（信号をつなぎきれていないとエラーになる）
   it should "compile" in {
@@ -34,30 +35,30 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
       }
   }
 
-  // フィボナッチ数列の計算が並列無しでできる
+  // フィボナッチ数列の計算が同時発行数1でできる
   it should "execute fibonacci with no parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci/fibonacci.32.hex"))(defaultParams.copy(runParallel = 1)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.step(200)
-        c.io.registerFileContents.get(9).expect(55)
+        c.clock.step(150)
+        c.io.registerFileContents.get(5).expect(55)
       }
   }
 
-  // フィボナッチ数列の計算が2並列でできる
+  // フィボナッチ数列の計算が同時発行数2でできる
   it should "execute fibonacci with 2 parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci/fibonacci.32.hex")))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.step(200)
-        c.io.registerFileContents.get(9).expect(55)
+        c.clock.step(100)
+        c.io.registerFileContents.get(5).expect(55)
       }
   }
 
-  // フィボナッチ数列の計算が4並列でできる
+  // フィボナッチ数列の計算が同時発行数4でできる
   it should "execute fibonacci with 4 parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci/fibonacci.32.hex"))(defaultParams.copy(runParallel = 4)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.step(200)
-        c.io.registerFileContents.get(9).expect(55)
+        c.clock.step(100)
+        c.io.registerFileContents.get(5).expect(55)
       }
   }
 
@@ -72,7 +73,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
       }
   }
 
-  // 並列実行できそうな大量のadd命令を並列なしで試す
+  // 並列実行できそうな大量のadd命令を同時発行数1で試す
   it should "execute many_add with no parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex"))(defaultParams.copy(runParallel = 1)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
@@ -81,7 +82,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
       }
   }
 
-  // 並列実行できそうな大量のadd命令を2並列で試す
+  // 並列実行できそうな大量のadd命令を同時発行数2で試す
   it should "execute many_add with 2 parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex"))(defaultParams.copy(fetchWidth = 8)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
@@ -90,7 +91,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
       }
   }
 
-  // 並列実行できそうな大量のadd命令を4並列で試す
+  // 並列実行できそうな大量のadd命令を同時発行数4で試す
   it should "execute many_add with 4 parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex"))(defaultParams.copy(runParallel = 4, fetchWidth = 8)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
@@ -98,4 +99,14 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.registerFileContents.get(0).expect(8)
       }
   }
+
+  //  // 並列実行できそうな大量のadd命令を同時発行数8で試す
+  //  it should "execute many_add with 8 parallel" in {
+  //    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex"))(defaultParams.copy(runParallel = 8, fetchWidth = 8)))
+  //      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+  //        c.clock.step(20)
+  //        c.io.registerFileContents.get(0).expect(8)
+  //      }
+  //  }
+
 }

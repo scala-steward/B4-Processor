@@ -20,20 +20,20 @@ class ValueSelector2(implicit params: Parameters) extends Module {
     val aluBypassValue = Vec(params.runParallel, Flipped(new ExecutionRegisterBypass))
     val immediateValue = Input(SInt(64.W))
     val opcodeFormat = Input(OpcodeFormat())
-    val sourceTag = Flipped(DecoupledIO(UInt(params.tagWidth.W)))
+    val sourceTag = Input(new SourceTagInfo)
     val value = DecoupledIO(UInt(64.W))
   })
 
   io.reorderBufferValue.ready := true.B
-  io.sourceTag.ready := true.B
 
   val aluMatchingTagExists = Cat((0 until params.runParallel)
-    .map { i => io.aluBypassValue(i).valid && io.aluBypassValue(i).destinationTag === io.sourceTag.bits }).orR
+    .map { i => io.aluBypassValue(i).valid && io.aluBypassValue(i).destinationTag === io.sourceTag.tag }).orR
 
   io.value.valid := MuxCase(false.B,
     Seq(
       // I形式である(即値優先)
       (io.opcodeFormat === I || io.opcodeFormat === U || io.opcodeFormat === J) -> true.B,
+      (io.sourceTag.from === SourceTagFrom.BeforeDecoder) -> false.B,
       (io.sourceTag.valid && io.reorderBufferValue.valid) -> true.B,
       (io.sourceTag.valid && aluMatchingTagExists) -> true.B,
       (!io.sourceTag.valid) -> true.B,
@@ -42,9 +42,10 @@ class ValueSelector2(implicit params: Parameters) extends Module {
     Seq(
       // I形式である(即値優先)
       (io.opcodeFormat === I || io.opcodeFormat === U || io.opcodeFormat === J) -> io.immediateValue.asUInt,
+      (io.sourceTag.from === SourceTagFrom.BeforeDecoder) -> 0.U,
       (io.sourceTag.valid && io.reorderBufferValue.valid) -> io.reorderBufferValue.bits,
       (io.sourceTag.valid && aluMatchingTagExists) -> MuxCase(0.U,
-        (0 until params.runParallel).map(i => (io.aluBypassValue(i).valid && io.aluBypassValue(i).destinationTag === io.sourceTag.bits) -> io.aluBypassValue(i).value)
+        (0 until params.runParallel).map(i => (io.aluBypassValue(i).valid && io.aluBypassValue(i).destinationTag === io.sourceTag.tag) -> io.aluBypassValue(i).value)
       ),
       (!io.sourceTag.valid) -> io.registerFileValue,
     ))

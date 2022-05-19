@@ -48,7 +48,7 @@ class Fetch(implicit params: Parameters) extends Module {
       io.branchTypes.get(i) := branch.io.branchType
 
     // キャッシュからの値があり、待つ必要はなく、JAL命令ではない（JALはアドレスを変えるだけとして処理できて、デコーダ以降を使う必要はない）
-    decoder.valid := io.cache(i).output.valid && !nextWait.isWaiting && branch.io.branchType =/= BranchType.JAL
+    decoder.valid := io.cache(i).output.valid && !nextWait.isWaiting
     decoder.bits.programCounter := nextPC
     decoder.bits.instruction := cache.output.bits
 
