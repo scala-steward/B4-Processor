@@ -122,7 +122,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "beq_NG" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 40, rs = 30, offset = 200
+      // rs1 = 40, rs = 30, offset = 200 (jump先： PC + (offset*2))
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 0, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
@@ -137,7 +137,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "beq_OK" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 40, rs = 40, offset = 200
+      // rs1 = 40, rs = 40, offset = 200 (jump先： PC + (offset*2))
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 40,
         function3 = 0, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
@@ -146,13 +146,13 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
 
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 300))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
     }
   }
 
   it should "bne_NG" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 40, rs = 40, offset = 200
+      // rs1 = 40, rs = 40, offset = 200 (jump先： PC + (offset*2))
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 40,
         function3 = 1, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
@@ -167,7 +167,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "bne_OK" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 40, rs = 30, offset = 200
+      // rs1 = 40, rs = 30, offset = 200 (jump先： PC + (offset*2))
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 1, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
@@ -176,13 +176,13 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
 
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 300))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
     }
   }
 
   it should "blt_NG" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 40, rs = 30, offset = 200
+      // rs1 = 40, rs = 30, offset = 200 (jump先： PC + (offset*2))
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 4, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
@@ -197,7 +197,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "blt_OK" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 20, rs = 30, offset = 200
+      // rs1 = 20, rs = 30, offset = 200 (jump先： PC + (offset*2))
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
         function3 = 4, immediateOrFunction7 = 100, opcode = 99, programCounter = 100))
 
@@ -206,13 +206,13 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
 
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 300))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
     }
   }
 
   it should "bge_NG" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 20, rs = 30, offset = 200
+      // rs1 = 20, rs = 30, offset = 200 (jump先： PC + (offset*2))
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
         function3 = 5, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
@@ -227,7 +227,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "bge_OK" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 40, rs = 30, offset = 200
+      // rs1 = 40, rs = 30, offset = 200 (jump先： PC + (offset*2))
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 5, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
@@ -236,13 +236,13 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
 
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 300))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
     }
   }
 
   it should "bltu_NG" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 40, rs = 30, offset = 200
+      // rs1 = 40, rs = 30, offset = 200 (jump先： PC + (offset*2))
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 6, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
@@ -257,7 +257,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "bltu_OK" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 20, rs = 30, offset = 200
+      // rs1 = 20, rs = 30, offset = 200 (jump先： PC + (offset*2))
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
         function3 = 6, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
@@ -266,13 +266,13 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
 
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 300))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
     }
   }
 
   it should "bgeu_NG" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 20, rs = 30, offset = 200
+      // rs1 = 20, rs = 30, offset = 200 (jump先： PC + (offset*2))
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
         function3 = 7, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
@@ -287,7 +287,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "bgeu_OK" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 40, rs = 30, offset = 200
+      // rs1 = 40, rs = 30, offset = 200 (jump先： PC + (offset*2))
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 7, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
@@ -296,7 +296,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
 
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 300))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
     }
   }
 
