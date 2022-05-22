@@ -439,7 +439,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "addiw" in {
     test(new ExecutorWrapper) { c =>
       // rs1 = 40, rs2 = 30
-      c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 2147483647, value2 = 2147483647,
+      c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 0, immediateOrFunction7 = 0, opcode = 27, programCounter = 100))
 
       c.expectout(values = Some(ALUValue(destinationTag = 10, value = 70)))
@@ -724,8 +724,8 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
   //
   it should "srl" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 64, rs2 = 3, rd = 72
-      c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 64, value2 = 72,
+      // rs1 = 64, rs2 = 3, rd = 8
+      c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 64, value2 = 3,
         function3 = 5, immediateOrFunction7 = 0, opcode = 51, programCounter = 100))
 
       c.expectout(values = Some(ALUValue(destinationTag = 10, value = 8)))
