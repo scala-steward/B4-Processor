@@ -13,14 +13,15 @@ class ExecutorWrapper(implicit params: Parameters) extends Executor {
     val reservationstation = this.io.reservationstation
     reservationstation.valid.poke(values.valid)
     reservationstation.bits.destinationTag.poke(values.destinationTag)
+    /** マイナスの表現ができていない */
     if(values.value1 < 0) {
-      reservationstation.bits.value1.poke(values.value1.U(64.W))
+      reservationstation.bits.value1.poke(-(-values.value1).U(64.W))
     }
     else {
       reservationstation.bits.value1.poke(values.value1)
     }
     if(values.value2 < 0) {
-      reservationstation.bits.value2.poke(values.value2.U(64.W))
+      reservationstation.bits.value2.poke(-(-values.value2).U(64.W))
     }
     else {
       reservationstation.bits.value2.poke(values.value2)
