@@ -664,7 +664,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "slt_OK" in {
     test(new ExecutorWrapper) { c =>
       // rs1 = 20, rs2 = 30
-      c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = -1, value2 = 30,
+      c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
         function3 = 2, immediateOrFunction7 = 0, opcode = 51, programCounter = 100))
 
       c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
