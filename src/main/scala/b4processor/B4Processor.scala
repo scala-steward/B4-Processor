@@ -21,6 +21,11 @@ class B4Processor(implicit params: Parameters) extends Module {
     val registerFileContents = if (params.debug) Some(Output(Vec(31, UInt(64.W)))) else None
   })
 
+  require(params.runParallel >= 1, "同時発行数は1以上である必要があります。")
+  require(params.tagWidth >= 1, "タグ幅は1以上である必要があります。")
+  require(params.fetchWidth >= 1, "フェッチ幅は1以上である必要があります。")
+  require(params.maxRegisterFileCommitCount >= 1, "レジスタファイルへのコミット数は1以上である必要があります。")
+
   val instructionCache = Module(new InstructionMemoryCache)
   val fetch = Module(new Fetch)
   val reorderBuffer = Module(new ReorderBuffer)
