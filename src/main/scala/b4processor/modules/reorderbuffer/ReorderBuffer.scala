@@ -17,7 +17,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val alus = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
     val prediction = Flipped(new BranchPrediction2ReorderBuffer())
     val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
-    val loadstorequeue = Flipped(new LoadStoreQueue2ReorderBuffer)
+    val loadstorequeue = Output(new LoadStoreQueue2ReorderBuffer)
 
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
     val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
@@ -97,6 +97,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       io.registerFile(i).bits.value := buffer(index).value
       io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
       io.loadstorequeue.programCounter(i) := buffer(index).programCounter
+      io.loadstorequeue.valid(i) := buffer(index)
     }
 
     when(canCommit) {
