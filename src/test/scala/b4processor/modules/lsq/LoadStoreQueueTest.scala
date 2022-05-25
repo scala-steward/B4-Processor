@@ -1,7 +1,7 @@
 package b4processor.modules.lsq
 
 import b4processor.Parameters
-import b4processor.utils.{DecodeEnqueue, LSQfromALU}
+import b4processor.utils.{DecodeEnqueue, LSQ2Memory, LSQfromALU}
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -25,12 +25,35 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
     }
   }
 
-  def SetDecoder(values: Seq[DecodeEnqueue] = Seq.fill(params.numberOfDecoders)(DecodeEnqueue())): Unit = {
+  def SetDecoder(values: Seq[Option[DecodeEnqueue]] = Seq.fill(params.numberOfDecoders)(None)): Unit = {
     for(i <- 0 until params.numberOfDecoders) {
       val decode = this.io.decoders(i)
       val value = values(i)
-      decode.valid.poke(value.valid)
-      decode.bits.stag2
+      decode.valid.poke(value.get.valid)
+      decode.bits.stag2.poke(value.get.stag2)
+      decode.bits.value.poke(value.get.value)
+      decode.bits.opcode.poke(value.get.opcode)
+      decode.bits.programCounter.poke(value.get.ProgramCounter)
+      decode.bits.function3.poke(value.get.function3)
+    }
+  }
+
+  def SetReorderBuffer(ProgramCounters: Seq[Int], valids: Seq[Boolean]): Unit = {
+    for(i <- 0 until params.maxRegisterFileCommitCount) {
+      val pc = ProgramCounters(i)
+      val v = valids(i)
+      io.reorderbuffer.programCounter(i).poke(pc)
+      io.reorderbuffer.valid(i).poke(v)
+    }
+  }
+
+  def expectMemory(values: Seq[Option[LSQ2Memory]] = Seq.fill(params.maxLSQ2MemoryinstCount)(None)): Unit = {
+    for(i <- 0 until params.maxLSQ2MemoryinstCount) {
+      val memory = io.memory(i)
+      val value = values(i)
+      memory.valid.poke(value.isDefined)
+      memory.bits.address.poke(value.get.address)
+      memory.bits.tag.poke()
     }
   }
 }

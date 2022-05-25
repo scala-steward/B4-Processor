@@ -10,7 +10,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val decoders = Vec(params.numberOfDecoders, Flipped(Output((new Decoder2LoadStoreQueue))))
     val alus = Vec(params.numberOfALUs, Flipped(Output(new Execution2LoadStoreQueue())))
-    val reorderbuffer = new LoadStoreQueue2ReorderBuffer()
+    val reorderbuffer = Input(new LoadStoreQueue2ReorderBuffer())
     val memory = Vec(params.maxLSQ2MemoryinstCount, new LoadStoreQueue2Memory)
 
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
@@ -107,7 +107,6 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   val StoreOp = WireDefault(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
   val ReorderSign = WireDefault(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
   val EmissionFlag = RegInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(true.B)))
-  io.reorderbuffer.value.ready := true.B
 
   // emissionindex : 送出可能か調べるエントリを指すindex
   // nexttail      : 1クロック分の送出確認後，動かすtailのエントリを指すindex
@@ -129,7 +128,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       Address.map(_ === buffer(emissionindex).address).fold(false.B)(_ || _)
     )
     Address(i) := buffer(emissionindex).address
-    ReorderSign(i) := Cat(io.reorderbuffer.programCounter.map(_ === Address(i))).orR
+    ReorderSign(i) := Mux(Cat(io.reorderbuffer.valid).orR ,Cat(io.reorderbuffer.programCounter.map(_ === Address(i))).orR, false.B)
     // EmissionFlag(i) := Mux("loadの送出条件" || "storeの送出条件", true.B, false.B)
     EmissionFlag(i) := Mux((buffer(emissionindex).opcode === "b0100011".U && buffer(emissionindex).Readyaddress && !Overlap(i) && !StoreOp(i) && !buffer(emissionindex).R) ||
       (buffer(emissionindex).opcode === "b0000011".U && buffer(emissionindex).Readyaddress && buffer(emissionindex).Readydata && ReorderSign(i) && !buffer(emissionindex).R),
