@@ -2,43 +2,43 @@ package b4processor.modules.executor
 
 import b4processor.Parameters
 import b4processor.connections.Executor2Fetch
-import b4processor.utils.{ALUValue, FetchValue, LSQValue, ReservationValue}
+import b4processor.utils.{ExecutorValue, FetchValue, LSQValue, ReservationValue}
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
 
 class ExecutorWrapper(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val reservationstation = Flipped(new ReservationStation2ExecutorForTest)
+    val reservationStation = Flipped(new ReservationStation2ExecutorForTest)
     val out = new ExecutionRegisterBypassForTest
-    val loadstorequeue = Output(new Executor2LoadStoreQueueForTest)
+    val loadStoreQueue = Output(new Executor2LoadStoreQueueForTest)
     val fetch = Output(new Executor2Fetch)
   })
 
   val executor = Module(new Executor)
-  executor.io.reservationstation.bits.destinationTag := io.reservationstation.bits.destinationTag
-  executor.io.reservationstation.bits.value1 := io.reservationstation.bits.value1.asUInt
-  executor.io.reservationstation.bits.value2 := io.reservationstation.bits.value2.asUInt
-  executor.io.reservationstation.bits.function3 := io.reservationstation.bits.function3
-  executor.io.reservationstation.bits.immediateOrFunction7 := io.reservationstation.bits.immediateOrFunction7
-  executor.io.reservationstation.bits.opcode := io.reservationstation.bits.opcode
-  executor.io.reservationstation.bits.programCounter := io.reservationstation.bits.programCounter
-  executor.io.reservationstation.valid := io.reservationstation.valid
-  io.reservationstation.ready := executor.io.reservationstation.ready
+  executor.io.reservationstation.bits.destinationTag := io.reservationStation.bits.destinationTag
+  executor.io.reservationstation.bits.value1 := io.reservationStation.bits.value1.asUInt
+  executor.io.reservationstation.bits.value2 := io.reservationStation.bits.value2.asUInt
+  executor.io.reservationstation.bits.function3 := io.reservationStation.bits.function3
+  executor.io.reservationstation.bits.immediateOrFunction7 := io.reservationStation.bits.immediateOrFunction7
+  executor.io.reservationstation.bits.opcode := io.reservationStation.bits.opcode
+  executor.io.reservationstation.bits.programCounter := io.reservationStation.bits.programCounter
+  executor.io.reservationstation.valid := io.reservationStation.valid
+  io.reservationStation.ready := executor.io.reservationstation.ready
 
   io.out.value := executor.io.out.value.asSInt
   io.out.valid := executor.io.out.valid
   io.out.destinationTag := executor.io.out.destinationTag
 
-  io.loadstorequeue.value := executor.io.loadstorequeue.value.asSInt
-  io.loadstorequeue.valid := executor.io.loadstorequeue.valid
-  io.loadstorequeue.programCounter := executor.io.loadstorequeue.programCounter
-  io.loadstorequeue.destinationTag := executor.io.loadstorequeue.destinationTag
+  io.loadStoreQueue.value := executor.io.loadStoreQueue.value.asSInt
+  io.loadStoreQueue.valid := executor.io.loadStoreQueue.valid
+  io.loadStoreQueue.programCounter := executor.io.loadStoreQueue.programCounter
+  io.loadStoreQueue.destinationTag := executor.io.loadStoreQueue.destinationTag
 
   executor.io.fetch <> io.fetch
 
   def setALU(values: ReservationValue): Unit = {
-    val reservationstation = this.io.reservationstation
+    val reservationstation = this.io.reservationStation
     reservationstation.valid.poke(values.valid)
     reservationstation.bits.destinationTag.poke(values.destinationTag)
 
@@ -52,7 +52,7 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
     reservationstation.bits.programCounter.poke(values.programCounter)
   }
 
-  def expectout(values: Option[ALUValue]): Unit = {
+  def expectout(values: Option[ExecutorValue]): Unit = {
     val out = this.io.out
     out.valid.expect(values.isDefined)
     if (values.isDefined) {
@@ -62,11 +62,11 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   }
 
   def expectLSQ(values: LSQValue): Unit = {
-    val loadstorequeue = this.io.loadstorequeue
-    loadstorequeue.destinationTag.expect(values.destinationTag)
-    loadstorequeue.value.expect(values.value)
-    loadstorequeue.valid.expect(values.valid)
-    loadstorequeue.programCounter.expect(values.programCounter)
+    val loadStoreQueue = this.io.loadStoreQueue
+    loadStoreQueue.destinationTag.expect(values.destinationTag)
+    loadStoreQueue.value.expect(values.value)
+    loadStoreQueue.valid.expect(values.valid)
+    loadStoreQueue.programCounter.expect(values.programCounter)
   }
 
   def expectFetch(values: FetchValue): Unit = {
@@ -79,7 +79,7 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
 class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Executor"
 
-  implicit val defaultParams = Parameters(numberOfDecoders = 1)
+  implicit val defaultParams = Parameters(runParallel = 1)
 
   it should "lui" in {
     test(new ExecutorWrapper) { c =>
@@ -87,7 +87,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 16,
         function3 = 0, immediateOrFunction7 = 0, opcode = 55, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 16)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 16)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, 16,
         valid = true, programCounter = 100))
@@ -102,7 +102,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 16,
         function3 = 0, immediateOrFunction7 = 0, opcode = 55, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 16)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 16)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 16,
         valid = true, programCounter = 100))
@@ -117,7 +117,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 16,
         function3 = 0, immediateOrFunction7 = 0, opcode = 111, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 104)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 104)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 104,
         valid = true, programCounter = 100))
@@ -132,7 +132,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 16,
         function3 = 0, immediateOrFunction7 = 0, opcode = 103, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 104)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 104)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 104,
         valid = true, programCounter = 100))
@@ -147,7 +147,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 0, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 0)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
         valid = true, programCounter = 100))
@@ -162,7 +162,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 40,
         function3 = 0, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
@@ -177,7 +177,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 40,
         function3 = 1, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 0)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
         valid = true, programCounter = 100))
@@ -192,7 +192,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 1, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
@@ -207,7 +207,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 4, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 0)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
         valid = true, programCounter = 100))
@@ -222,7 +222,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
         function3 = 4, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
@@ -237,7 +237,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
         function3 = 5, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 0)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
         valid = true, programCounter = 100))
@@ -252,7 +252,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 5, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
@@ -267,7 +267,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 6, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 0)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
         valid = true, programCounter = 100))
@@ -282,7 +282,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
         function3 = 6, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
@@ -297,7 +297,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
         function3 = 7, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 0)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
         valid = true, programCounter = 100))
@@ -312,7 +312,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 7, immediateOrFunction7 = 200, opcode = 99, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
@@ -327,7 +327,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 0, immediateOrFunction7 = 0, opcode = 3, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 70)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
         valid = true, programCounter = 100))
@@ -342,7 +342,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 1, immediateOrFunction7 = 0, opcode = 3, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 70)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
         valid = true, programCounter = 100))
@@ -357,7 +357,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 2, immediateOrFunction7 = 0, opcode = 3, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 70)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
         valid = true, programCounter = 100))
@@ -372,7 +372,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 4, immediateOrFunction7 = 0, opcode = 3, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 70)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
         valid = true, programCounter = 100))
@@ -387,7 +387,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 5, immediateOrFunction7 = 0, opcode = 3, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 70)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
         valid = true, programCounter = 100))
@@ -402,7 +402,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 0, immediateOrFunction7 = 200, opcode = 35, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 0)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 240,
         valid = true, programCounter = 100))
@@ -417,7 +417,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 1, immediateOrFunction7 = 200, opcode = 35, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 0)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 240,
         valid = true, programCounter = 100))
@@ -432,7 +432,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 2, immediateOrFunction7 = 200, opcode = 35, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 0)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 240,
         valid = true, programCounter = 100))
@@ -447,7 +447,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 0, immediateOrFunction7 = 0, opcode = 19, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 70)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
         valid = true, programCounter = 100))
@@ -462,7 +462,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 0, immediateOrFunction7 = 0, opcode = 27, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 70)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
         valid = true, programCounter = 100))
@@ -477,7 +477,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 2, immediateOrFunction7 = 0, opcode = 19, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 0)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
         valid = true, programCounter = 100))
@@ -492,7 +492,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
         function3 = 2, immediateOrFunction7 = 0, opcode = 19, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
@@ -507,7 +507,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 3, immediateOrFunction7 = 0, opcode = 19, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 0)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
         valid = true, programCounter = 100))
@@ -522,7 +522,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
         function3 = 3, immediateOrFunction7 = 0, opcode = 19, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
@@ -537,7 +537,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 10, value2 = 18,
         function3 = 4, immediateOrFunction7 = 0, opcode = 19, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 24)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 24)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 24,
         valid = true, programCounter = 100))
@@ -552,7 +552,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 10, value2 = 18,
         function3 = 6, immediateOrFunction7 = 0, opcode = 19, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 26)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 26)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 26,
         valid = true, programCounter = 100))
@@ -567,7 +567,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 10, value2 = 18,
         function3 = 7, immediateOrFunction7 = 0, opcode = 19, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 2)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 2)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 2,
         valid = true, programCounter = 100))
@@ -582,7 +582,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 10, value2 = 2,
         function3 = 1, immediateOrFunction7 = 0, opcode = 19, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 40)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 40)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 40,
         valid = true, programCounter = 100))
@@ -597,7 +597,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 64, value2 = 3,
         function3 = 5, immediateOrFunction7 = 0, opcode = 19, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 8)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 8)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 8,
         valid = true, programCounter = 100))
@@ -612,7 +612,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 7, value2 = 2,
         function3 = 5, immediateOrFunction7 = 32, opcode = 19, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
@@ -627,7 +627,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = -123, value2 = 2,
         function3 = 5, immediateOrFunction7 = 32, opcode = 19, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = -31)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = -31)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = -31,
         valid = true, programCounter = 100))
@@ -642,7 +642,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 0, immediateOrFunction7 = 0, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 70)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
         valid = true, programCounter = 100))
@@ -657,7 +657,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 0, immediateOrFunction7 = 32, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 10)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 10)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 10,
         valid = true, programCounter = 100))
@@ -672,7 +672,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 10, value2 = 2,
         function3 = 1, immediateOrFunction7 = 0, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 40)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 40)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 40,
         valid = true, programCounter = 100))
@@ -687,7 +687,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 2, immediateOrFunction7 = 0, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 0)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
         valid = true, programCounter = 100))
@@ -702,7 +702,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
         function3 = 2, immediateOrFunction7 = 0, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
@@ -717,7 +717,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 40, value2 = 30,
         function3 = 3, immediateOrFunction7 = 0, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 0)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
         valid = true, programCounter = 100))
@@ -732,7 +732,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 20, value2 = 30,
         function3 = 3, immediateOrFunction7 = 0, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
         valid = true, programCounter = 100))
@@ -747,7 +747,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 10, value2 = 18,
         function3 = 4, immediateOrFunction7 = 0, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 24)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 24)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 24,
         valid = true, programCounter = 100))
@@ -763,7 +763,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 64, value2 = 3,
         function3 = 5, immediateOrFunction7 = 0, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 8)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 8)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 8,
         valid = true, programCounter = 100))
@@ -778,7 +778,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 10, value2 = 2,
         function3 = 5, immediateOrFunction7 = 32, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 2)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 2)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 2,
         valid = true, programCounter = 100))
@@ -793,7 +793,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = -100, value2 = 2,
         function3 = 5, immediateOrFunction7 = 32, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = -25)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = -25)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = -25,
         valid = true, programCounter = 100))
@@ -808,7 +808,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 10, value2 = 18,
         function3 = 6, immediateOrFunction7 = 0, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 26)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 26)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 26,
         valid = true, programCounter = 100))
@@ -823,7 +823,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 10, value2 = 18,
         function3 = 7, immediateOrFunction7 = 0, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 2)))
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 2)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 2,
         valid = true, programCounter = 100))

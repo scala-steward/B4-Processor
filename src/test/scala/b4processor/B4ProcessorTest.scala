@@ -124,9 +124,17 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         c.clock.step(15)
         c.io.registerFileContents.get(0).expect(1)
-        c.io.registerFileContents.get(1).expect(1)
-        c.io.registerFileContents.get(2).expect(1)
-        c.io.registerFileContents.get(3).expect(1)
+        c.io.registerFileContents.get(1).expect(2)
+        c.io.registerFileContents.get(2).expect(3)
+        c.io.registerFileContents.get(3).expect(4)
+        c.io.registerFileContents.get(4).expect(1)
+        c.io.registerFileContents.get(5).expect(2)
+        c.io.registerFileContents.get(6).expect(3)
+        c.io.registerFileContents.get(7).expect(4)
+        c.io.registerFileContents.get(8).expect(1)
+        c.io.registerFileContents.get(9).expect(2)
+        c.io.registerFileContents.get(10).expect(3)
+        c.io.registerFileContents.get(11).expect(4)
       }
   }
 
