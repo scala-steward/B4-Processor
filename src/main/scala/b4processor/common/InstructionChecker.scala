@@ -84,6 +84,8 @@ class InstructionChecker extends Module {
       5.U -> Mux(input.function7bits(5),
         ArithmeticOperations.ShiftRightArithmetic,
         ArithmeticOperations.ShiftRightLogical),
+      6.U -> ArithmeticOperations.Or,
+      7.U -> ArithmeticOperations.And
     )),
     ArithmeticOperations.Unknown
   )
