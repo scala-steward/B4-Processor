@@ -118,4 +118,16 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   //      }
   //  }
 
+  // アウトオブオーダでできそうな命令を同時発行数4で試す
+  it should "execute out_of_order with 4 parallel" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_add_out_of_order/many_add_out_of_order.32.hex"))(defaultParams.copy(runParallel = 4, fetchWidth = 8, maxRegisterFileCommitCount = 8)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.step(15)
+        c.io.registerFileContents.get(0).expect(1)
+        c.io.registerFileContents.get(1).expect(1)
+        c.io.registerFileContents.get(2).expect(1)
+        c.io.registerFileContents.get(3).expect(1)
+      }
+  }
+
 }
