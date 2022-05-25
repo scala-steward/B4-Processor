@@ -774,13 +774,13 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "sra" in {
     test(new ExecutorWrapper) { c =>
-      // rs1 = 10, rs2 = 2, rd = 40
+      // rs1 = 10, rs2 = 2, rd = 2
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 10, value2 = 2,
-        function3 = 1, immediateOrFunction7 = 32, opcode = 51, programCounter = 100))
+        function3 = 5, immediateOrFunction7 = 32, opcode = 51, programCounter = 100))
 
-      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 40)))
+      c.expectout(values = Some(ALUValue(destinationTag = 10, value = 2)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 40,
+      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 2,
         valid = true, programCounter = 100))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 104))
