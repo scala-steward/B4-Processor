@@ -53,11 +53,22 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
       val value = values(i)
       memory.valid.poke(value.isDefined)
       memory.bits.address.poke(value.get.address)
-      memory.bits.tag.poke()
+      memory.bits.tag.poke(value.get.tag)
+      memory.bits.opcode.poke(value.get.opcode)
+      memory.bits.function3.poke(value.get.function3)
+      memory.bits.data.poke(value.get.data)
     }
   }
 }
 
-class LoadStoreQueueTest {
+class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
+  behavior of "Load Store Queue"
+  implicit val defalutParams = Parameters(tagWidth = 4, numberOfDecoders = 1, maxRegisterFileCommitCount = 2, maxLSQ2MemoryinstCount = 2)
+
+  it should "" in {
+    test(new LoadStoreQueueWrapper) { c =>
+      c.SetDecoder()
+    }
+  }
 
 }
