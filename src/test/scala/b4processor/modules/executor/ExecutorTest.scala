@@ -1,31 +1,51 @@
 package b4processor.modules.executor
 
 import b4processor.Parameters
+import b4processor.connections.Executor2Fetch
 import b4processor.utils.{ALUValue, FetchValue, LSQValue, ReservationValue}
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
-import chisel3.util._
 
-class ExecutorWrapper(implicit params: Parameters) extends Executor {
+class ExecutorWrapper(implicit params: Parameters) extends Module {
+  val io = IO(new Bundle {
+    val reservationstation = Flipped(new ReservationStation2ExecutorForTest)
+    val out = new ExecutionRegisterBypassForTest
+    val loadstorequeue = Output(new Executor2LoadStoreQueueForTest)
+    val fetch = Output(new Executor2Fetch)
+  })
+
+  val executor = Module(new Executor)
+  executor.io.reservationstation.bits.destinationTag := io.reservationstation.bits.destinationTag
+  executor.io.reservationstation.bits.value1 := io.reservationstation.bits.value1.asUInt
+  executor.io.reservationstation.bits.value2 := io.reservationstation.bits.value2.asUInt
+  executor.io.reservationstation.bits.function3 := io.reservationstation.bits.function3
+  executor.io.reservationstation.bits.immediateOrFunction7 := io.reservationstation.bits.immediateOrFunction7
+  executor.io.reservationstation.bits.opcode := io.reservationstation.bits.opcode
+  executor.io.reservationstation.bits.programCounter := io.reservationstation.bits.programCounter
+  executor.io.reservationstation.valid := io.reservationstation.valid
+  io.reservationstation.ready := executor.io.reservationstation.ready
+
+  io.out.value := executor.io.out.value.asSInt
+  io.out.valid := executor.io.out.valid
+  io.out.destinationTag := executor.io.out.destinationTag
+
+  io.loadstorequeue.value := executor.io.loadstorequeue.value.asSInt
+  io.loadstorequeue.valid := executor.io.loadstorequeue.valid
+  io.loadstorequeue.programCounter := executor.io.loadstorequeue.programCounter
+  io.loadstorequeue.destinationTag := executor.io.loadstorequeue.destinationTag
+
+  executor.io.fetch <> io.fetch
 
   def setALU(values: ReservationValue): Unit = {
     val reservationstation = this.io.reservationstation
     reservationstation.valid.poke(values.valid)
     reservationstation.bits.destinationTag.poke(values.destinationTag)
+
     /** マイナスの表現ができていない */
-    if(values.value1 < 0) {
-      reservationstation.bits.value1.poke(-(-values.value1).U(64.W))
-    }
-    else {
-      reservationstation.bits.value1.poke(values.value1)
-    }
-    if(values.value2 < 0) {
-      reservationstation.bits.value2.poke(-(-values.value2).U(64.W))
-    }
-    else {
-      reservationstation.bits.value2.poke(values.value2)
-    }
+
+    reservationstation.bits.value1.poke(values.value1)
+    reservationstation.bits.value2.poke(values.value2)
     reservationstation.bits.function3.poke(values.function3)
     reservationstation.bits.immediateOrFunction7.poke(values.immediateOrFunction7)
     reservationstation.bits.opcode.poke(values.opcode)
@@ -570,7 +590,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectFetch(values = FetchValue(valid = false, programCounter = 104))
     }
   }
-  //
+
   it should "srli" in {
     test(new ExecutorWrapper) { c =>
       // rs1 = 64(b100 0000), rs2 = 3, rd = 8
@@ -595,6 +615,21 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectout(values = Some(ALUValue(destinationTag = 10, value = 1)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
+        valid = true, programCounter = 100))
+
+      c.expectFetch(values = FetchValue(valid = false, programCounter = 104))
+    }
+  }
+
+  it should "srai nigative" in {
+    test(new ExecutorWrapper) { c =>
+      // rs1 = -123, rs2 = 2, rd = -31
+      c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = -123, value2 = 2,
+        function3 = 5, immediateOrFunction7 = 32, opcode = 19, programCounter = 100))
+
+      c.expectout(values = Some(ALUValue(destinationTag = 10, value = -31)))
+
+      c.expectLSQ(values = LSQValue(destinationTag = 10, value = -31,
         valid = true, programCounter = 100))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 104))
@@ -736,7 +771,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectFetch(values = FetchValue(valid = false, programCounter = 104))
     }
   }
-  //
+
   it should "sra" in {
     test(new ExecutorWrapper) { c =>
       // rs1 = 10, rs2 = 2, rd = 40
@@ -746,6 +781,21 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectout(values = Some(ALUValue(destinationTag = 10, value = 40)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 40,
+        valid = true, programCounter = 100))
+
+      c.expectFetch(values = FetchValue(valid = false, programCounter = 104))
+    }
+  }
+
+  it should "sra negative" in {
+    test(new ExecutorWrapper) { c =>
+      // rs1 = -100, rs2 = 2, rd = -25
+      c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = -100, value2 = 2,
+        function3 = 5, immediateOrFunction7 = 32, opcode = 51, programCounter = 100))
+
+      c.expectout(values = Some(ALUValue(destinationTag = 10, value = -25)))
+
+      c.expectLSQ(values = LSQValue(destinationTag = 10, value = -25,
         valid = true, programCounter = 100))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 104))
