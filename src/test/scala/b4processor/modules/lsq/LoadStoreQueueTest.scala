@@ -67,7 +67,8 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "enpqueue to LSQ" in {
     test(new LoadStoreQueueWrapper) { c =>
-      c.SetDecoder(values = )
+      c.SetDecoder(values = Seq(defalutParams.numberOfDecoders)(DecodeEnqueue(valid = true, stag2 = 10,
+        value = 40, opcode = 3, ProgramCounter = 100, function3 = 2)))
       c.setMemoryReady(true)
     }
   }
