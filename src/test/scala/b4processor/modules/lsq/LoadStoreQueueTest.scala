@@ -65,9 +65,10 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Load Store Queue"
   implicit val defalutParams = Parameters(tagWidth = 4, numberOfDecoders = 1, maxRegisterFileCommitCount = 2, maxLSQ2MemoryinstCount = 2)
 
-  it should "" in {
+  it should "enpqueue to LSQ" in {
     test(new LoadStoreQueueWrapper) { c =>
-      c.SetDecoder()
+      c.SetDecoder(values = )
+      c.setMemoryReady(true)
     }
   }
 
