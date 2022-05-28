@@ -8,7 +8,7 @@ import chisel3.stage.ChiselStage
 
 class LoadStoreQueue(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val decoders = Vec(params.numberOfDecoders, Flipped(Output((new Decoder2LoadStoreQueue))))
+    val decoders = Vec(params.numberOfDecoders, Flipped(Output(new Decoder2LoadStoreQueue)))
     val alus = Vec(params.numberOfALUs, Flipped(Output(new Execution2LoadStoreQueue())))
     val reorderbuffer = Input(new LoadStoreQueue2ReorderBuffer())
     val memory = Vec(params.maxLSQ2MemoryinstCount, new LoadStoreQueue2Memory)
