@@ -7,10 +7,13 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue {
-  def initialize(): Unit = {
-    SetDecoder()
-    SetFromExecutor()
+
+  def setMemoryReady(value: Boolean): Unit = {
+    for(mem <- this.io.memory) {
+      mem.ready.poke(value)
+    }
   }
+
   def SetFromExecutor(values: Seq[Option[LSQfromALU]] = Seq.fill(params.numberOfALUs)(None)): Unit = {
     for(i <- 0 until params.numberOfALUs) {
       val alu = this.io.alus(i)
@@ -60,23 +63,11 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
 
 class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Load Store Queue"
-  implicit val defalutParams = Parameters(tagWidth = 4, numberOfDecoders = 1, maxRegisterFileCommitCount = 2, maxLSQ2MemoryinstCount = 2, debug = true)
+  implicit val defalutParams = Parameters(tagWidth = 4, numberOfDecoders = 1, maxRegisterFileCommitCount = 2, maxLSQ2MemoryinstCount = 2)
 
-  it should "output nothing" in {
+  it should "nothing" in {
     test(new LoadStoreQueueWrapper) { c =>
-      c.initialize()
-      c.expectMemory(Seq(None))
-    }
-  }
-  it should "enpqueue to LSQ" in {
-    test(new LoadStoreQueueWrapper) { c =>
-      c.initialize()
-      c.io.decoders(0).ready.expect(true)
-      c.io.head.get.expect(0)
-      c.io.tail.get.expect(0)
-      c.SetDecoder(values = Seq(Some(DecodeEnqueue(valid = true, stag2 = 10,
-        value = 40, opcode = 3, ProgramCounter = 100, function3 = 2))))
-      c.SetReorderBuffer(valids = Seq(false, false), ProgramCounters = Seq(1, 2))
+      c.SetDecoder()
     }
   }
 
