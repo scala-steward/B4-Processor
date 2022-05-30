@@ -63,11 +63,19 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
 
 class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Load Store Queue"
-  implicit val defalutParams = Parameters(tagWidth = 4, numberOfDecoders = 1, maxRegisterFileCommitCount = 2, maxLSQ2MemoryinstCount = 2)
+  implicit val defalutParams = Parameters(tagWidth = 4, numberOfDecoders = 2, maxRegisterFileCommitCount = 2, maxLSQ2MemoryinstCount = 2, debug = true)
 
-  it should "nothing" in {
+  it should "Both Of Instructions Enqueue LSQ" in {
     test(new LoadStoreQueueWrapper) { c =>
-      c.SetDecoder()
+      c.io.head.get.expect(0)
+      c.io.tail.get.expect(0)
+      c.io.decoders(0).ready.expect(true)
+      c.io.decoders(1).ready.expect(true)
+      c.SetDecoder(values =
+        Seq(Some(DecodeEnqueue(valid = true, stag2 = 10, value = 100, opcode = 3, ProgramCounter = 100, function3 = 0)),
+          Some(DecodeEnqueue(valid = true, stag2 = 11, value = 0, opcode = 3, ProgramCounter = 104, function3 = 0))))
+      c.clock.step(1)
+      c.io.head.get.expect(2)
     }
   }
 
