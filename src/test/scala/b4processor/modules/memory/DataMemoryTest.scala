@@ -6,6 +6,7 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class DataMemoryTestWrapper(implicit params: Parameters) extends AnyFlatSpec with ChiselScalatestTester {
-  def setMemory(values: Seq[Option[DataMemoryValue]] = Seq.fill(params.))
+class DataMemoryTestWrapper(implicit params: Parameters) extends DataMemory {}
+
+class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
 }
