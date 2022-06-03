@@ -7,5 +7,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class DataMemoryTestWrapper(implicit params: Parameters) extends AnyFlatSpec with ChiselScalatestTester {
-  def setMemory(values: Seq[Option[DataMemoryValue]] = Seq.fill(params.))
+  def setMemory(values: Seq[Option[DataMemoryValue]] = Seq.fill(params.maxRegisterFileCommitCount)(None)): Unit = {
+
+  }
 }

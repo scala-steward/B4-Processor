@@ -8,7 +8,7 @@ import chisel3.stage.ChiselStage
 
 class DataMemory(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val dataIn = Flipped(new LoadStoreQueue2Memory)
+    val dataIn = Vec(params.maxRegisterFileCommitCount, Flipped(new LoadStoreQueue2Memory))
     val dataOut = new Memory2ReorderBuffer
   })
 
