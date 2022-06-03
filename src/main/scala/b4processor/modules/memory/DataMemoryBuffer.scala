@@ -16,7 +16,8 @@ class DataMemoryBuffer(implicit  params: Parameters) extends Module {
   val io = IO(new Bundle {
     val dataIn = Vec(params.maxLSQ2MemoryinstCount, Flipped(new LoadStoreQueue2Memory))
     val dataOut = new LoadStoreQueue2Memory
-    val head =
+    val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
+    val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
   })
 
   // enqueue
