@@ -15,10 +15,11 @@ class DataMemory(implicit params: Parameters) extends Module {
   val mem = SyncReadMem(math.pow(2, params.tagWidth).toInt, UInt(64.W))
 
   io.dataOut := DontCare
+
   io.dataIn.ready := true.B
 
   when(io.dataIn.valid) {
-    val rdwrPort = mem((io.dataIn.bits.address).asUInt)
+    val rdwrPort = mem(io.dataIn.bits.address.asUInt)
     when(io.dataIn.bits.opcode === "b0000011".U) {
       // Load
       rdwrPort := MuxLookup(io.dataIn.bits.function3, 0.U, Seq(
