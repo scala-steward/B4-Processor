@@ -14,7 +14,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
     }
   }
 
-  def SetFromExecutor(values: Seq[Option[LSQfromALU]] = Seq.fill(params.numberOfALUs)(None)): Unit = {
+  def SetExecutor(values: Seq[Option[LSQfromALU]] = Seq.fill(params.numberOfALUs)(None)): Unit = {
     for(i <- 0 until params.numberOfALUs) {
       val alu = this.io.alus(i)
       val value = values(i)
@@ -47,23 +47,23 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
     }
   }
 
-  def expectMemory(values: Seq[Option[LSQ2Memory]] = Seq.fill(params.maxLSQ2MemoryinstCount)(None)): Unit = {
+  def expectMemory(values: Seq[Option[LSQ2Memory]]): Unit = {
     for(i <- 0 until params.maxLSQ2MemoryinstCount) {
-      val memory = io.memory(i)
-      val value = values(i)
-      memory.valid.poke(value.isDefined)
-      memory.bits.address.poke(value.get.address)
-      memory.bits.tag.poke(value.get.tag)
-      memory.bits.opcode.poke(value.get.opcode)
-      memory.bits.function3.poke(value.get.function3)
-      memory.bits.data.poke(value.get.data)
+      if (values(i).isDefined) {
+        this.io.memory(i).valid.expect(values(i).isDefined)
+        this.io.memory(i).bits.address.expect(values(i).get.address)
+        this.io.memory(i).bits.tag.expect(values(i).get.tag)
+        this.io.memory(i).bits.opcode.expect(values(i).get.opcode)
+        this.io.memory(i).bits.function3.expect(values(i).get.function3)
+        this.io.memory(i).bits.data.expect(values(i).get.data)
+      }
     }
   }
 }
 
 class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Load Store Queue"
-  implicit val defalutParams = Parameters(tagWidth = 4, numberOfDecoders = 1, maxRegisterFileCommitCount = 2, maxLSQ2MemoryinstCount = 2, debug = true)
+  implicit val defalutParams = Parameters(tagWidth = 4, numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1, maxLSQ2MemoryinstCount = 2, debug = true)
 
   it should "Both Of Instructions Enqueue LSQ" in {
     test(new LoadStoreQueueWrapper) { c =>
@@ -72,9 +72,45 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.decoders(0).ready.expect(true)
       // c.io.decoders(1).ready.expect(true)
       c.SetDecoder(values =
-        Seq(Some(DecodeEnqueue(valid = true, stag2 = 10, value = 100, opcode = 3, ProgramCounter = 100, function3 = 0)),
+        Seq(Some(DecodeEnqueue(valid = true, stag2 = 10, value = 0, opcode = 3, ProgramCounter = 100, function3 = 0)),
           Some(DecodeEnqueue(valid = true, stag2 = 11, value = 0, opcode = 3, ProgramCounter = 104, function3 = 0))))
       c.clock.step(1)
+      c.io.head.get.expect(1)
+      c.io.tail.get.expect(0)
+    }
+  }
+
+  it should "invalid enqueue" in {
+    test(new LoadStoreQueueWrapper) { c =>
+      c.io.head.get.expect(0)
+      c.io.tail.get.expect(0)
+      c.io.decoders(0).ready.expect(true)
+      // c.io.decoders(1).ready.expect(true)
+      c.SetDecoder(values =
+        Seq(Some(DecodeEnqueue(valid = false, stag2 = 10, value = 0, opcode = 33, ProgramCounter = 100, function3 = 0)),
+          ))
+      c.clock.step(1)
+      c.io.head.get.expect(0)
+      c.io.tail.get.expect(0)
+    }
+  }
+
+  it should "alu check" in {
+    test(new LoadStoreQueueWrapper) { c =>
+      // 初期化
+      c.io.head.get.expect(0)
+      c.io.tail.get.expect(0)
+      c.io.decoders(0).ready.expect(true)
+      c.expectMemory(Seq(None))
+
+      // 値のセット
+      c.SetDecoder(values =
+        Seq(Some(DecodeEnqueue(valid = true, stag2 = 10, value = 0, opcode = 3, ProgramCounter = 100, function3 = 0)),
+          ))
+      c.clock.step(1)
+
+      // 値の確認
+
       c.io.head.get.expect(1)
     }
   }

@@ -179,8 +179,10 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   rs.programCounter := io.instructionFetch.bits.programCounter
 
   // load or store命令の場合，LSQへ発送
-  io.loadstorequeue.bits.stag2 := valueSelector2.io.sourceTag.bits
-  io.loadstorequeue.bits.value := valueSelector2.io.value.bits
+  io.loadstorequeue.bits.stag2 := Mux(io.loadstorequeue.bits.opcode === "b0000011".U,
+    io.reorderBuffer.destination.destinationTag, valueSelector2.io.sourceTag.bits)
+  io.loadstorequeue.bits.value := Mux(io.loadstorequeue.bits.opcode === "b0000011".U,
+    0.U, valueSelector2.io.value.bits)
   io.loadstorequeue.bits.opcode := instOp
   io.loadstorequeue.bits.function3 := instFunct3
   io.loadstorequeue.bits.programCounter := io.instructionFetch.bits.programCounter

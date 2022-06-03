@@ -41,7 +41,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   for (i <- 0 until params.numberOfDecoders) {
     val decoder = io.decoders(i)
     io.decoders(i).ready := tail =/= insertIndex + 1.U
-    val decodevalid = Mux(io.decoders(i).ready === true.B && (decoder.bits.opcode === "b0000011".U || decoder.bits.opcode === "b0100011".U), true.B, false.B)
+    val decodevalid = Mux(io.decoders(i).ready && io.decoders(i).valid && (decoder.bits.opcode === "b0000011".U || decoder.bits.opcode === "b0100011".U), true.B, false.B)
 
     /**
      * 現状，(LSQの最大エントリ数 = リオーダバッファの最大エントリ数)であり，
