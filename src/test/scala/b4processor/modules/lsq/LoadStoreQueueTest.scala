@@ -101,7 +101,8 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.head.get.expect(0)
       c.io.tail.get.expect(0)
       c.io.decoders(0).ready.expect(true)
-      c.io.memory(0).ready.expect(true)
+      c.io.memory(0).ready.poke(true)
+      c.expectMemory(Seq(None))
 
       // 値のセット
       c.SetDecoder(values =
