@@ -57,7 +57,7 @@ class DataMemoryBuffer(implicit  params: Parameters) extends Module {
 
   // dequeue
   var emissionIndex = tail
-  when(io.dataOut.ready && tail === head) {
+  when(io.dataOut.ready && tail =/= head) {
     io.dataOut.valid := true.B
     io.dataOut.bits.address := buffer(tail).address
     io.dataOut.bits.tag := buffer(tail).tag
