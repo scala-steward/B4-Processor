@@ -1,7 +1,6 @@
 package b4processor.modules.memory
 
 import b4processor.Parameters
-import b4processor.connections
 import b4processor.connections.LoadStoreQueue2Memory
 import chisel3._
 import chisel3.stage.ChiselStage
@@ -22,7 +21,7 @@ class DataMemoryBuffer(implicit  params: Parameters) extends Module {
 
   val defaultEntry = {
     val entry = Wire(new DataMemoryBufferEntry)
-    entry.address := 0.U
+    entry.address := 0.S
     entry.tag := 0.U
     entry.data := 0.U
     entry.opcode := 0.U
@@ -67,11 +66,17 @@ class DataMemoryBuffer(implicit  params: Parameters) extends Module {
     io.dataOut.bits.function3 := buffer(tail).function3
   }.otherwise {
     io.dataOut.valid := false.B
-    io.dataOut.bits.address := 0.U
+    io.dataOut.bits.address := 0.S
     io.dataOut.bits.tag := 0.U
     io.dataOut.bits.data := 0.U
     io.dataOut.bits.opcode := 0.U
     io.dataOut.bits.function3 := 0.U
   }
-  tail := tail + io.dataOut.valid.asUInt
+  tail := Mux(tail === (math.pow(2, params.tagWidth).toInt.U-1.U) && io.dataOut.valid,
+    0.U, tail + io.dataOut.valid.asUInt)
+}
+
+object DataMemoryBuffer extends App {
+  implicit val params = Parameters(tagWidth = 4, maxLSQ2MemoryinstCount = 2)
+  (new ChiselStage).emitVerilog(new DataMemoryBuffer, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }
