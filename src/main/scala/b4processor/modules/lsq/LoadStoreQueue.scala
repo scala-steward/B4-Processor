@@ -28,7 +28,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     entry.data := 0.U
     entry.function3 := 0.U
     entry.programCounter := 0.S
-    entry.R := true.B // 命令実効済か否か
+    entry.R := false.B // 命令実効済か否か
+    entry.ReadyReorderSign := false.B
     entry
   }
 
@@ -59,7 +60,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         entry.data := decoder.bits.value
         entry.function3 := decoder.bits.function3
         entry.programCounter := decoder.bits.programCounter
-        entry.R := false.B
+        entry.R := true.B
+        entry.ReadyReorderSign := false.B
         entry
       }
     }
@@ -79,12 +81,25 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
           buf.Readyaddress := true.B
         }
         when(!buf.Readydata && !(io.alus(i).ProgramCounter === buf.programCounter)) {
+          // only Store
           buf.data := alu.value.asUInt
           buf.Readydata := true.B
         }
+        // printf(p"address = ${buf.address}\n")
+        // printf(p"data = ${buf.data}\n")
       }
     }
     // 2重構造
+  }
+
+  for(i <- 0 until params.maxRegisterFileCommitCount) {
+    when(io.reorderbuffer.valid(i)) {
+      for (buf <- buffer) {
+        when(buf.R && (io.reorderbuffer.programCounter(i) === buf.programCounter)) {
+          buf.ReadyReorderSign := true.B
+        }
+      }
+    }
   }
 
   /**
@@ -99,14 +114,10 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   // val opcodeFormatChecker = Module(new OpcodeFormatChecker)
   // Overlap      : 先行する命令の実効アドレスとの被りがあるかのフラグ (T:あり　F:なし)
   // Address      : 送出対象の命令のアドレスを格納
-  // StoreOp      : オペコードがストア(=0000011)かどうかのフラグ
-  // ReorderSign  : リオーダバッファからストア命令の送出信号があるかどうかのフラグ
   // EmissionFlag : LSQから送出するか否かのフラグ
-  val Overlap = RegInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
-  val Address = RegInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(0.S)))
-  val StoreOp = WireDefault(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
-  val ReorderSign = WireDefault(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
-  val EmissionFlag = RegInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(true.B)))
+  val Overlap = WireInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
+  val Address = WireInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(0.S(64.W))))
+  val EmissionFlag = WireInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
 
   // emissionindex : 送出可能か調べるエントリを指すindex
   // nexttail      : 1クロック分の送出確認後，動かすtailのエントリを指すindex
@@ -114,47 +125,59 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   var nexttail = tail
 
   // カウンタ変数にjは使えない？ & 2重ループforにtailやindexを使えない
-  for (i <- 0 until params.maxLSQ2MemoryinstCount) {
-    emissionindex :=  Mux(tail + i.U === (math.pow(2, params.tagWidth).toInt.U-1.U), 0.U, emissionindex + 1.U) // リングバッファ
+  for (i <- 0 until params.maxRegisterFileCommitCount) {
+    emissionindex :=  Mux(emissionindex === (math.pow(2, params.tagWidth).toInt.U-1.U), 0.U, emissionindex + 1.U) // リングバッファ
 
-    io.memory(i).valid := false.B
+    io.memory(i).valid := io.memory(i).ready && (head =/= tail)
     io.memory(i).bits.address := 0.S
     io.memory(i).bits.tag := 0.U
     io.memory(i).bits.data := 0.U
     io.memory(i).bits.opcode := 0.U
     io.memory(i).bits.function3 := 0.U
 
-    StoreOp(i) := buffer(emissionindex).opcode
-    Overlap(i) := Mux(i.asUInt === 0.U,false.B,
-      Address.map(_ === buffer(emissionindex).address).fold(false.B)(_ || _)
-    )
-    Address(i) := buffer(emissionindex).address
-    ReorderSign(i) := Mux(Cat(io.reorderbuffer.valid).orR ,Cat(io.reorderbuffer.programCounter.map(_ === Address(i))).orR, false.B)
-    // EmissionFlag(i) := Mux("loadの送出条件" || "storeの送出条件", true.B, false.B)
-    EmissionFlag(i) := Mux(io.memory(i).ready && ((buffer(emissionindex).opcode === "b0100011".U && buffer(emissionindex).Readyaddress && !Overlap(i) && !StoreOp(i) && !buffer(emissionindex).R) ||
-      (buffer(emissionindex).opcode === "b0000011".U && buffer(emissionindex).Readyaddress && buffer(emissionindex).Readydata && ReorderSign(i) && !buffer(emissionindex).R)),
-      true.B, false.B)
-
+    Address(i) := buffer(emissionindex).programCounter
+    Overlap(i) := Mux(i.asUInt === 0.U, false.B,
+      Address.map(_ === buffer(emissionindex).address).fold(false.B)(_ || _))
+    // EmissionFlag(i) :=  io.memory(i).ready && ("loadの送出条件" || "storeの送出条件")
+    EmissionFlag(i) := io.memory(i).valid && (((buffer(emissionindex).opcode === "b0000011".U) && buffer(emissionindex).Readyaddress && !Overlap(i) && buffer(emissionindex).R) ||
+      (buffer(emissionindex).opcode === "b0100011".U && buffer(emissionindex).Readyaddress && buffer(emissionindex).Readydata && buffer(emissionindex).ReadyReorderSign && buffer(emissionindex).R))
 
     // 送出実行
     when(EmissionFlag(i)) {
-      io.memory(i).valid := true.B
       io.memory(i).bits.tag := buffer(emissionindex).tag
       io.memory(i).bits.data := buffer(emissionindex).data
       io.memory(i).bits.address := buffer(emissionindex).address
       io.memory(i).bits.opcode := buffer(emissionindex).opcode
       io.memory(i).bits.function3 := buffer(emissionindex).function3
-      buffer(emissionindex).R := true.B
+      buffer(emissionindex).R := false.B
     }
     // tailから送出しない命令までの命令数をカウント
     nexttail := Mux(EmissionFlag.fold(true.B)(_ && _), nexttail + 1.U, nexttail)
+    // printf(p"address(0) = ${Address(0)}\n")
+    // printf(p"emissionIndex = ${emissionindex}\n")
+     printf(p"Emission(0) = ${EmissionFlag(0)}\n")
+    // printf(p"(0) = ${io.memory(i).valid && (((buffer(emissionindex).opcode === "b0000011".U) && buffer(emissionindex).Readyaddress && !Overlap(i) && buffer(emissionindex).R) ||
+    //  (buffer(emissionindex).opcode === "b0100011".U && buffer(emissionindex).Readyaddress && buffer(emissionindex).Readydata && buffer(emissionindex).ReadyReorderSign && buffer(emissionindex).R))}\n")
+    printf(p"nexttail = ${nexttail}\n")
+    printf(p"1 or 0 = ${EmissionFlag.fold(true.B)(_ && _)}\n")
+
   }
   tail := nexttail
+  printf(p"tail = ${tail}\n\n")
 
   // デバッグ
   if (params.debug) {
     io.head.get := head
     io.tail.get := tail
+    // printf(p"buffer(0).pc = ${buffer(0).programCounter}\n")
+    // printf(p"buffer(0).opcode = ${buffer(0).opcode}\n")
+    // printf(p"buffer(0).address = ${buffer(0).address}\n")
+    // printf(p"buffer(0).data = ${buffer(0).data}\n")
+    // printf(p"buffer(0).Rrs = ${buffer(0).ReadyReorderSign}\n")
+    // printf(p"buffer(0).R = ${buffer(0).R}\n")
+    // printf(p"buffer(0).Rd = ${buffer(0).Readydata}\n")
+    // printf(p"buffer(0).Ra = ${buffer(0).Readyaddress}\n\n")
+
   }
 }
 
