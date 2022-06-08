@@ -121,12 +121,12 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   // emissionindex : 送出可能か調べるエントリを指すindex
   // nexttail      : 1クロック分の送出確認後，動かすtailのエントリを指すindex
-  var emissionindex = tail
-  var nexttail = tail
+  var emissionIndex = tail
+  var nextTail = tail
 
   // カウンタ変数にjは使えない？ & 2重ループforにtailやindexを使えない
   for (i <- 0 until params.maxRegisterFileCommitCount) {
-    emissionindex := Mux(emissionindex === (math.pow(2, params.tagWidth).toInt.U - 1.U), 0.U, emissionindex + 1.U) // リングバッファ
+    emissionIndex := Mux(emissionIndex === (math.pow(2, params.tagWidth).toInt.U - 1.U), 0.U, emissionIndex + 1.U) // リングバッファ
 
     io.memory(i).valid := io.memory(i).ready && (head =/= tail)
     io.memory(i).bits.address := 0.S
@@ -135,34 +135,34 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     io.memory(i).bits.opcode := 0.U
     io.memory(i).bits.function3 := 0.U
 
-    Address(i) := buffer(emissionindex).programCounter
+    Address(i) := buffer(emissionIndex).programCounter
     Overlap(i) := Mux(i.asUInt === 0.U, false.B,
-      Address.map(_ === buffer(emissionindex).address).fold(false.B)(_ || _))
+      Cat(Address.map(_ === buffer(emissionIndex).address)).orR)
     // EmissionFlag(i) :=  io.memory(i).ready && ("loadの送出条件" || "storeの送出条件")
-    EmissionFlag(i) := io.memory(i).valid && (((buffer(emissionindex).opcode === "b0000011".U) && buffer(emissionindex).Readyaddress && !Overlap(i) && buffer(emissionindex).R) ||
-      (buffer(emissionindex).opcode === "b0100011".U && buffer(emissionindex).Readyaddress && buffer(emissionindex).Readydata && buffer(emissionindex).ReadyReorderSign && buffer(emissionindex).R))
+    EmissionFlag(i) := io.memory(i).valid && (((buffer(emissionIndex).opcode === "b0000011".U) && buffer(emissionIndex).Readyaddress && !Overlap(i) && buffer(emissionIndex).R) ||
+      (buffer(emissionIndex).opcode === "b0100011".U && buffer(emissionIndex).Readyaddress && buffer(emissionIndex).Readydata && buffer(emissionIndex).ReadyReorderSign && buffer(emissionIndex).R))
 
     // 送出実行
     when(EmissionFlag(i)) {
-      io.memory(i).bits.tag := buffer(emissionindex).tag
-      io.memory(i).bits.data := buffer(emissionindex).data
-      io.memory(i).bits.address := buffer(emissionindex).address
-      io.memory(i).bits.opcode := buffer(emissionindex).opcode
-      io.memory(i).bits.function3 := buffer(emissionindex).function3
-      buffer(emissionindex).R := false.B
+      io.memory(i).bits.tag := buffer(emissionIndex).tag
+      io.memory(i).bits.data := buffer(emissionIndex).data
+      io.memory(i).bits.address := buffer(emissionIndex).address
+      io.memory(i).bits.opcode := buffer(emissionIndex).opcode
+      io.memory(i).bits.function3 := buffer(emissionIndex).function3
+      buffer(emissionIndex).R := false.B
     }
     // tailから送出しない命令までの命令数をカウント
-    nexttail = Mux(EmissionFlag.take(i + 1).fold(true.B)(_ && _), nexttail + 1.U, nexttail)
+    nextTail = Mux(Cat(EmissionFlag.take(i + 1)).andR, nextTail + 1.U, nextTail)
     // printf(p"address(0) = ${Address(0)}\n")
     // printf(p"emissionIndex = ${emissionindex}\n")
     printf(p"Emission(0) = ${EmissionFlag(0)}\n")
     // printf(p"(0) = ${io.memory(i).valid && (((buffer(emissionindex).opcode === "b0000011".U) && buffer(emissionindex).Readyaddress && !Overlap(i) && buffer(emissionindex).R) ||
     //  (buffer(emissionindex).opcode === "b0100011".U && buffer(emissionindex).Readyaddress && buffer(emissionindex).Readydata && buffer(emissionindex).ReadyReorderSign && buffer(emissionindex).R))}\n")
-    printf(p"nexttail = $nexttail\n")
-    printf(p"1 or 0 = ${EmissionFlag.fold(true.B)(_ && _)}\n")
+    printf(p"nexttail = $nextTail\n")
+    printf(p"1 or 0 = ${Cat(EmissionFlag).andR}\n")
 
   }
-  tail := nexttail
+  tail := nextTail
   printf(p"tail = $tail\n\n")
 
   // デバッグ
