@@ -17,6 +17,7 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
     this.setImem(instruction)
     this.setReorderBuffer()
     this.setRegisterFile()
+    this.setLoadStoreQueueReady()
     this.setExecutors()
   }
 
@@ -27,7 +28,6 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
   }
 
   def setReorderBuffer(destinationTag: Int = 0,
-                       isPrediction: Boolean = false,
                        sourceTag1: Option[Int] = None,
                        value1: Option[Int] = None,
                        sourceTag2: Option[Int] = None,
@@ -55,6 +55,10 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
       this.io.executors(i).destinationTag.poke(bypassedValues(i).getOrElse(ExecutorValue(destinationTag = 0, value = 0)).destinationTag)
       this.io.executors(i).value.poke(bypassedValues(i).getOrElse(ExecutorValue(destinationTag = 0, value = 0)).value)
     }
+  }
+
+  def setLoadStoreQueueReady(ready: Boolean = true): Unit = {
+    this.io.loadstorequeue.ready.poke(ready)
   }
 
 
