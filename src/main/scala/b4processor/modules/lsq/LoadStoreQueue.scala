@@ -8,10 +8,10 @@ import chisel3.stage.ChiselStage
 
 class LoadStoreQueue(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val decoders = Vec(params.runParallel, Flipped(new Decoder2LoadStoreQueue()))
+    val decoders = Vec(params.runParallel, Flipped(Decoupled(new Decoder2LoadStoreQueue())))
     val executors = Vec(params.runParallel, Flipped(Output(new Executor2LoadStoreQueue)))
-    val reorderbuffer = new LoadStoreQueue2ReorderBuffer()
-    val memory = Vec(params.maxLSQ2MemoryInstCount, new LoadStoreQueue2Memory)
+    val reorderBuffer = Input(new LoadStoreQueue2ReorderBuffer())
+    val memory = Vec(params.maxRegisterFileCommitCount, new LoadStoreQueue2Memory)
     val isEmpty = Output(Bool())
 
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
@@ -39,8 +39,10 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt)(defaultEntry)))
   var insertIndex = head
 
+  io.isEmpty := head === tail
+
   /** デコードした命令をLSQに加えるかどうか確認し，l or s 命令ならばエンキュー */
-  for (i <- 0 until params.numberOfDecoders) {
+  for (i <- 0 until params.runParallel) {
     val decoder = io.decoders(i)
     io.decoders(i).ready := tail =/= insertIndex + 1.U
     val decodevalid = Mux(io.decoders(i).ready && io.decoders(i).valid && (decoder.bits.opcode === "b0000011".U || decoder.bits.opcode === "b0100011".U), true.B, false.B)
@@ -73,15 +75,15 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   /** オペランドバイパスのタグorPCが対応していた場合は，ALUを読み込む */
 
-  for (i <- 0 until params.numberOfALUs) {
-    val alu = io.alus(i)
+  for (i <- 0 until params.runParallel) {
+    val alu = io.executors(i)
     for (buf <- buffer) {
       when(alu.valid && buf.tag === alu.destinationTag) {
-        when(!buf.Readyaddress && io.alus(i).ProgramCounter === buf.programCounter) {
+        when(!buf.Readyaddress && io.executors(i).programCounter === buf.programCounter) {
           buf.address := alu.value.asSInt
           buf.Readyaddress := true.B
         }
-        when(!buf.Readydata && !(io.alus(i).ProgramCounter === buf.programCounter)) {
+        when(!buf.Readydata && !(io.executors(i).programCounter === buf.programCounter)) {
           // only Store
           buf.data := alu.value.asUInt
           buf.Readydata := true.B
@@ -94,9 +96,9 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   }
 
   for (i <- 0 until params.maxRegisterFileCommitCount) {
-    when(io.reorderbuffer.valid(i)) {
+    when(io.reorderBuffer.valid(i)) {
       for (buf <- buffer) {
-        when(buf.R && (io.reorderbuffer.programCounter(i) === buf.programCounter)) {
+        when(buf.R && (io.reorderBuffer.programCounter(i) === buf.programCounter)) {
           buf.ReadyReorderSign := true.B
         }
       }
@@ -183,6 +185,6 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 }
 
 object LoadStoreQueueElabolate extends App {
-  implicit val params = Parameters(runParallel = 1, maxLSQ2MemoryInstCount = 2, tagWidth = 4)
+  implicit val params = Parameters(runParallel = 1, maxRegisterFileCommitCount = 2, tagWidth = 4)
   (new ChiselStage).emitVerilog(new LoadStoreQueue, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

@@ -58,9 +58,8 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
   }
 
   def setLoadStoreQueueReady(ready: Boolean = true): Unit = {
-    this.io.loadstorequeue.ready.poke(ready)
+    this.io.loadStoreQueue.ready.poke(ready)
   }
-
 
   def expectReorderBuffer(destinationRegister: Int = 0, sourceRegister1: Int = 0, sourceRegister2: Int = 0): Unit = {
     // check rd
@@ -91,7 +90,7 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
  */
 class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "decoder"
-  implicit val testParams = Parameters()
+  implicit val testParams = Parameters(runParallel = 1)
 
   // rs1 rs2 rdが正しくリオーダバッファに渡されているか
   it should "pass rs1 rs2 rd to reorder buffer" in {
@@ -166,7 +165,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // ALUからの値を使える
   it should "do register bypass" in {
-    test(new DecoderWrapper(0)) {
+    test(new DecoderWrapper(0)(testParams.copy(runParallel = 2))) {
       c =>
         // add x1,x2,x3
         c.initialize("x003100b3".U)
