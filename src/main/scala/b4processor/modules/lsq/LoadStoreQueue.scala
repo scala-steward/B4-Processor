@@ -11,7 +11,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     val decoders = Vec(params.numberOfDecoders, Flipped(new Decoder2LoadStoreQueue))
     val alus = Vec(params.numberOfALUs, Flipped(Output(new Execution2LoadStoreQueue())))
     val reorderbuffer = Input(new LoadStoreQueue2ReorderBuffer())
-    val memory = Vec(params.maxLSQ2MemoryinstCount, new LoadStoreQueue2Memory)
+    val memory = Vec(params.maxRegisterFileCommitCount, new LoadStoreQueue2Memory)
 
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
     val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
@@ -65,7 +65,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         entry
       }
     }
-    insertIndex = Mux(insertIndex === (math.pow(2, params.tagWidth).toInt.U-1.U) && decodevalid, 0.U, insertIndex + decodevalid.asUInt)
+    insertIndex = Mux(insertIndex === (math.pow(2, params.tagWidth).toInt.U - 1.U) && decodevalid, 0.U, insertIndex + decodevalid.asUInt)
   }
 
   head := insertIndex
@@ -92,7 +92,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     // 2重構造
   }
 
-  for(i <- 0 until params.maxRegisterFileCommitCount) {
+  for (i <- 0 until params.maxRegisterFileCommitCount) {
     when(io.reorderbuffer.valid(i)) {
       for (buf <- buffer) {
         when(buf.R && (io.reorderbuffer.programCounter(i) === buf.programCounter)) {
@@ -115,9 +115,9 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   // Overlap      : 先行する命令の実効アドレスとの被りがあるかのフラグ (T:あり　F:なし)
   // Address      : 送出対象の命令のアドレスを格納
   // EmissionFlag : LSQから送出するか否かのフラグ
-  val Overlap = WireInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
-  val Address = WireInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(0.S(64.W))))
-  val EmissionFlag = WireInit(VecInit(Seq.fill(params.maxLSQ2MemoryinstCount)(false.B)))
+  val Overlap = WireInit(VecInit(Seq.fill(params.maxRegisterFileCommitCount)(false.B)))
+  val Address = WireInit(VecInit(Seq.fill(params.maxRegisterFileCommitCount)(0.S(64.W))))
+  val EmissionFlag = WireInit(VecInit(Seq.fill(params.maxRegisterFileCommitCount)(false.B)))
 
   // emissionindex : 送出可能か調べるエントリを指すindex
   // nexttail      : 1クロック分の送出確認後，動かすtailのエントリを指すindex
@@ -126,7 +126,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   // カウンタ変数にjは使えない？ & 2重ループforにtailやindexを使えない
   for (i <- 0 until params.maxRegisterFileCommitCount) {
-    emissionindex :=  Mux(emissionindex === (math.pow(2, params.tagWidth).toInt.U-1.U), 0.U, emissionindex + 1.U) // リングバッファ
+    emissionindex := Mux(emissionindex === (math.pow(2, params.tagWidth).toInt.U - 1.U), 0.U, emissionindex + 1.U) // リングバッファ
 
     io.memory(i).valid := io.memory(i).ready && (head =/= tail)
     io.memory(i).bits.address := 0.S
@@ -152,18 +152,18 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       buffer(emissionindex).R := false.B
     }
     // tailから送出しない命令までの命令数をカウント
-    nexttail := Mux(EmissionFlag.fold(true.B)(_ && _), nexttail + 1.U, nexttail)
+    nexttail = Mux(EmissionFlag.take(i + 1).fold(true.B)(_ && _), nexttail + 1.U, nexttail)
     // printf(p"address(0) = ${Address(0)}\n")
     // printf(p"emissionIndex = ${emissionindex}\n")
-     printf(p"Emission(0) = ${EmissionFlag(0)}\n")
+    printf(p"Emission(0) = ${EmissionFlag(0)}\n")
     // printf(p"(0) = ${io.memory(i).valid && (((buffer(emissionindex).opcode === "b0000011".U) && buffer(emissionindex).Readyaddress && !Overlap(i) && buffer(emissionindex).R) ||
     //  (buffer(emissionindex).opcode === "b0100011".U && buffer(emissionindex).Readyaddress && buffer(emissionindex).Readydata && buffer(emissionindex).ReadyReorderSign && buffer(emissionindex).R))}\n")
-    printf(p"nexttail = ${nexttail}\n")
+    printf(p"nexttail = $nexttail\n")
     printf(p"1 or 0 = ${EmissionFlag.fold(true.B)(_ && _)}\n")
 
   }
   tail := nexttail
-  printf(p"tail = ${tail}\n\n")
+  printf(p"tail = $tail\n\n")
 
   // デバッグ
   if (params.debug) {
@@ -181,7 +181,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   }
 }
 
-object  LoadStoreQueueElabolate extends App {
-  implicit val params = Parameters(numberOfDecoders = 1, numberOfALUs = 1, maxLSQ2MemoryinstCount = 2, tagWidth = 4)
+object LoadStoreQueueElabolate extends App {
+  implicit val params = Parameters(numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 2, tagWidth = 4)
   (new ChiselStage).emitVerilog(new LoadStoreQueue, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

@@ -9,7 +9,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue {
 
   def SetExecutor(values: Seq[Option[LSQfromALU]] = Seq.fill(params.numberOfALUs)(None)): Unit = {
-    for(i <- 0 until params.numberOfALUs) {
+    for (i <- 0 until params.numberOfALUs) {
       val alu = this.io.alus(i)
       val value = values(i)
       alu.valid.poke(value.get.valid)
@@ -20,7 +20,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
   }
 
   def SetDecoder(values: Seq[Option[DecodeEnqueue]] = Seq.fill(params.numberOfDecoders)(None)): Unit = {
-    for(i <- 0 until params.numberOfDecoders) {
+    for (i <- 0 until params.numberOfDecoders) {
       val decode = this.io.decoders(i)
       val value = values(i)
       decode.valid.poke(value.isDefined)
@@ -33,7 +33,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
   }
 
   def SetReorderBuffer(ProgramCounters: Seq[Int], valids: Seq[Boolean]): Unit = {
-    for(i <- 0 until params.maxRegisterFileCommitCount) {
+    for (i <- 0 until params.maxRegisterFileCommitCount) {
       val pc = ProgramCounters(i)
       val v = valids(i)
       io.reorderbuffer.programCounter(i).poke(pc)
@@ -42,7 +42,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
   }
 
   def expectMemory(values: Seq[Option[LSQ2Memory]]): Unit = {
-    for(i <- 0 until params.maxLSQ2MemoryinstCount) {
+    for (i <- 0 until params.maxRegisterFileCommitCount) {
       if (values(i).isDefined) {
         this.io.memory(i).valid.expect(values(i).isDefined)
         this.io.memory(i).bits.address.expect(values(i).get.address)
@@ -57,7 +57,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
 
 class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Load Store Queue"
-  implicit val defalutParams = Parameters(tagWidth = 4, numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1, maxLSQ2MemoryinstCount = 1, debug = true)
+  implicit val defaultParams = Parameters(tagWidth = 4, numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1, debug = true)
 
   it should "Both Of Instructions Enqueue LSQ" in {
     test(new LoadStoreQueueWrapper) { c =>
@@ -82,7 +82,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       // c.io.decoders(1).ready.expect(true)
       c.SetDecoder(values =
         Seq(Some(DecodeEnqueue(stag2 = 10, value = 0, opcode = 33, ProgramCounter = 100, function3 = 0)),
-          ))
+        ))
       c.clock.step(1)
       c.io.head.get.expect(0)
       c.io.tail.get.expect(0)
@@ -101,7 +101,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       // 値のセット
       c.SetDecoder(values =
         Seq(Some(DecodeEnqueue(stag2 = 10, value = 0, opcode = 3, ProgramCounter = 100, function3 = 0)),
-          ))
+        ))
       c.clock.step(1)
 
       // 値の確認
@@ -156,8 +156,6 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 123, opcode = 35, function3 = 0))))
 
       c.clock.step(2)
-
-
     }
   }
 
