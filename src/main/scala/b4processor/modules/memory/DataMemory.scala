@@ -1,7 +1,7 @@
 package b4processor.modules.memory
 
 import b4processor.Parameters
-import b4processor.connections.{LoadStoreQueue2Memory, Memory2ReorderBuffer}
+import b4processor.connections.{LoadStoreQueue2Memory, DataMemory2ReorderBuffer}
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
@@ -9,7 +9,7 @@ import chisel3.stage.ChiselStage
 class DataMemory(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val dataIn = Flipped(new LoadStoreQueue2Memory)
-    val dataOut = new Memory2ReorderBuffer
+    val dataOut = new DataMemory2ReorderBuffer
   })
 
   val mem = SyncReadMem(math.pow(2, params.tagWidth).toInt, UInt(64.W))

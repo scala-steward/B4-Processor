@@ -1,11 +1,12 @@
 package b4processor
 
-import b4processor.connections.{DataMemory2Cache, Decoder2NextDecoder, InstructionMemory2Cache}
+import b4processor.connections.{DataMemory2ReorderBuffer, InstructionMemory2Cache, LoadStoreQueue2Memory}
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.decoder.Decoder
 import b4processor.modules.executor.Executor
 import b4processor.modules.fetch.Fetch
 import b4processor.modules.lsq.LoadStoreQueue
+import b4processor.modules.memory.{DataMemory, DataMemoryBuffer}
 import b4processor.modules.registerfile.RegisterFile
 import b4processor.modules.reorderbuffer.ReorderBuffer
 import b4processor.modules.reservationstation.ReservationStation
@@ -16,7 +17,10 @@ import chisel3.stage.ChiselStage
 class B4Processor(implicit params: Parameters) extends Module {
   val io = FlatIO(new Bundle {
     val instructionMemory = Flipped(new InstructionMemory2Cache)
-    val dataMemory = Flipped(new DataMemory2Cache)
+    val dataMemory = new Bundle {
+      val lsq = new LoadStoreQueue2Memory
+      val reorderBuffer = Flipped(new DataMemory2ReorderBuffer)
+    }
 
     val registerFileContents = if (params.debug) Some(Output(Vec(31, UInt(64.W)))) else None
   })
@@ -31,6 +35,7 @@ class B4Processor(implicit params: Parameters) extends Module {
   val reorderBuffer = Module(new ReorderBuffer)
   val registerFile = Module(new RegisterFile)
   val loadStoreQueue = Module(new LoadStoreQueue)
+  val dataMemoryBuffer = Module(new DataMemoryBuffer)
 
   val decoders = (0 until params.runParallel).map(n => Module(new Decoder(n)))
   val reservationStations = Seq.fill(params.runParallel)(Module(new ReservationStation))
@@ -38,9 +43,6 @@ class B4Processor(implicit params: Parameters) extends Module {
 
   /** 命令メモリと命令キャッシュを接続 */
   io.instructionMemory <> instructionCache.io.memory
-
-  /** データキャッシュは現在無効 :TODO */
-  io.dataMemory <> DontCare
 
   /** レジスタのコンテンツをデバッグ時に接続 */
   if (params.debug)
@@ -102,8 +104,16 @@ class B4Processor(implicit params: Parameters) extends Module {
   /** フェッチとリオーダバッファの接続 */
   fetch.io.reorderBufferEmpty := reorderBuffer.io.isEmpty
 
-  /** LSQとリオーダバッファの接続 TODO */
-  // loadStoreQueue.io.reorderBuffer <> reorderBuffer.io.
+  loadStoreQueue.io.reorderBuffer <> reorderBuffer.io.loadStoreQueue
+
+  /** データメモリバッファとLSQ */
+  dataMemoryBuffer.io.dataIn <> loadStoreQueue.io.memory
+
+  /** データメモリとデータメモリバッファ */
+  io.dataMemory.lsq <> dataMemoryBuffer.io.dataOut
+
+  /** データメモリとリオーダバッファ */
+  io.dataMemory.reorderBuffer <> reorderBuffer.io.dataMemory
 
   /** フェッチと分岐予測 TODO */
   fetch.io.prediction <> DontCare
