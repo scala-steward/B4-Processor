@@ -107,7 +107,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     io.registerFile(i).bits.value := buffer(index).value
     io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
 
-
     when(canCommit) {
       buffer(index) := ReorderBufferEntry.default()
     }

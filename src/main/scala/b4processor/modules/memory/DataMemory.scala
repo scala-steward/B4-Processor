@@ -53,6 +53,6 @@ class DataMemory(implicit params: Parameters) extends Module {
 
 
 object DataMemoryElaborate extends App {
-  implicit val params = Parameters(numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1, tagWidth = 4)
+  implicit val params = Parameters(runParallel = 1, maxRegisterFileCommitCount = 1, tagWidth = 4)
   (new ChiselStage).emitVerilog(new DataMemory, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

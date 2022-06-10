@@ -72,6 +72,9 @@ class B4Processor(implicit params: Parameters) extends Module {
     /** デコーダとレジスタファイルの接続 */
     decoders(i).io.registerFile <> registerFile.io.decoders(i)
 
+    /** デコーダとLSQの接続 */
+    decoders(i).io.loadStoreQueue <> loadStoreQueue.io.decoders(i)
+
     /** デコーダと実行ユニットの接続 */
     for ((e, index) <- executors.zipWithIndex)
       decoders(i).io.executors(index) <> e.io.out
@@ -99,11 +102,11 @@ class B4Processor(implicit params: Parameters) extends Module {
   /** フェッチとリオーダバッファの接続 */
   fetch.io.reorderBufferEmpty := reorderBuffer.io.isEmpty
 
+  /** LSQとリオーダバッファの接続 TODO */
+  // loadStoreQueue.io.reorderBuffer <> reorderBuffer.io.
+
   /** フェッチと分岐予測 TODO */
   fetch.io.prediction <> DontCare
-
-  /** LSQとへの接続  TODO */
-  loadStoreQueue.io <> DontCare
 }
 
 object B4Processor extends App {
