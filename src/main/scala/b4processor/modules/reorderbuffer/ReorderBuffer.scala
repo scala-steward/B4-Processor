@@ -110,6 +110,10 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     io.registerFile(i).bits.value := buffer(index).value
     io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
 
+    // LSQにPCを送信, Store命令かどうかでvalidを調整
+    io.loadstorequeue.programCounter(i) := buffer(index).programCounter
+    io.loadstorequeue.valid(i) := buffer(index).storeSign
+
     when(canCommit) {
       buffer(index) := ReorderBufferEntry.default()
     }
@@ -124,6 +128,15 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     when(alu.valid) {
       buffer(alu.destinationTag).value := alu.value
       buffer(alu.destinationTag).valueReady := true.B
+    }
+  }
+
+  // load命令時にロード先のアドレスが入ってしまっていないか?
+  // load
+  io.datamemory.ready := true.B
+  for (buf <- buffer) {
+    when(io.datamemory.valid && buf.destinationRegister === io.datamemory.bits.tag) {
+      buf.value := io.datamemory.bits.data
     }
   }
 
