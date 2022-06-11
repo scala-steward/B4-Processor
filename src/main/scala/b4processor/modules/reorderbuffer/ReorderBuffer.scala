@@ -109,6 +109,10 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     io.registerFile(i).bits.value := buffer(index).value
     io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
 
+    // LSQへストア実行信号
+    io.loadStoreQueue.programCounter(i) := buffer(index).programCounter
+    io.loadStoreQueue.valid(i) := buffer(index).storeSign
+
     when(canCommit) {
       buffer(index) := ReorderBufferEntry.default()
     }
@@ -123,6 +127,15 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     when(alu.valid) {
       buffer(alu.destinationTag).value := alu.value
       buffer(alu.destinationTag).valueReady := true.B
+    }
+  }
+
+  io.dataMemory.ready := true.B
+  // DataMemoryからのロード値の読み込み
+  for (buf <- buffer) {
+    when(io.dataMemory.valid && buf.destinationRegister === io.dataMemory.bits.tag) {
+      buf.value := io.dataMemory.bits.data
+      buf.valueReady := true.B
     }
   }
 
