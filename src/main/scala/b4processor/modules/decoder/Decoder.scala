@@ -80,6 +80,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   io.reorderBuffer.destination.destinationRegister := Mux(destinationIsValid,
     instRd,
     0.U)
+  io.reorderBuffer.destination.storeSign := instOp === "b0100011".U
 
   // レジスタファイルへの入力
   io.registerFile.sourceRegister1 := instRs1

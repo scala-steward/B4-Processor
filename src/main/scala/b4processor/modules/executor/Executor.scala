@@ -148,20 +148,22 @@ class Executor(implicit params: Parameters) extends Module {
    */
 
   // LSQ
-  io.loadStoreQueue.valid := (instructionChecker.output.instruction =/= Instructions.Unknown) ||
-    !io.reservationstation.valid
+  io.loadStoreQueue.valid := instructionChecker.output.instruction =/= Instructions.Unknown &&
+    io.reservationstation.valid
   io.loadStoreQueue.programCounter := io.reservationstation.bits.programCounter
   io.loadStoreQueue.destinationTag := io.reservationstation.bits.destinationTag
   io.loadStoreQueue.value := Mux(instructionChecker.output.instruction === Instructions.Store,
     io.reservationstation.bits.value1 + immediateOrFunction7Extended, Mux(instructionChecker.output.operationWidth === OperationWidth.Word,
-      Mux(destinationRegister(31), Cat(!0.U(32.W), destinationRegister(31, 0)), Cat(0.U(32.W), destinationRegister(31, 0))),
+      Mux(destinationRegister(31), Cat(~0.U(32.W), destinationRegister(31, 0)), Cat(0.U(32.W), destinationRegister(31, 0))),
       destinationRegister))
 
   // reorder Buffer
-  io.out.valid := instructionChecker.output.instruction =/= Instructions.Unknown && io.reservationstation.valid
+  io.out.valid := io.reservationstation.valid &&
+    (instructionChecker.output.instruction =/= Instructions.Unknown ||
+      instructionChecker.output.instruction =/=  Instructions.Load) // load命令の場合, ReorderBufferのvalueはDataMemoryから
   io.out.destinationTag := io.reservationstation.bits.destinationTag
   io.out.value := Mux(instructionChecker.output.operationWidth === OperationWidth.Word,
-    Mux(destinationRegister(31), Cat(!0.U(32.W), destinationRegister(31, 0)), Cat(0.U(32.W), destinationRegister(31, 0))),
+    Mux(destinationRegister(31), Cat(~0.U(32.W), destinationRegister(31, 0)), Cat(0.U(32.W), destinationRegister(31, 0))),
     destinationRegister)
 }
 

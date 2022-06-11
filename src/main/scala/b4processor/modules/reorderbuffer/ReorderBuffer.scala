@@ -48,7 +48,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         entry.valueReady := false.B
         entry.programCounter := decoder.programCounter
         entry.destinationRegister := decoder.destination.destinationRegister
-        entry.commitReady := false.B
+        entry.storeSign := decoder.destination.storeSign
         entry
       }
     }

@@ -17,7 +17,6 @@ class Decoder2ReorderBuffer(implicit params: Parameters) extends Bundle {
   // 全体をDecoupledにするとsource1などがすべてOutputにってしまって、間違っているのでこちらに書く
   val ready = Input(Bool())
   val valid = Output(Bool())
-  val storeSign = Output(Bool())
 
   class SourceRegister extends Bundle {
     val sourceRegister = Output(UInt(5.W))
@@ -28,5 +27,6 @@ class Decoder2ReorderBuffer(implicit params: Parameters) extends Bundle {
   class DestinationRegister extends Bundle {
     val destinationRegister = Output(UInt(5.W))
     val destinationTag = Input(UInt(params.tagWidth.W))
+    val storeSign = Output(Bool())
   }
 }
