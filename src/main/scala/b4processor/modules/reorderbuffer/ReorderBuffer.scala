@@ -1,7 +1,7 @@
 package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
-import b4processor.connections.{BranchPrediction2ReorderBuffer, Decoder2ReorderBuffer, ExecutionRegisterBypass, LoadStoreQueue2ReorderBuffer, Memory2ReorderBuffer, ReorderBuffer2RegisterFile}
+import b4processor.connections.{BranchPrediction2ReorderBuffer, DataMemory2ReorderBuffer, Decoder2ReorderBuffer, ExecutionRegisterBypass, LoadStoreQueue2ReorderBuffer, ReorderBuffer2RegisterFile}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -18,8 +18,8 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val decoders = Vec(params.runParallel, Flipped(new Decoder2ReorderBuffer))
     val executors = Vec(params.runParallel, Flipped(new ExecutionRegisterBypass))
     val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
-    val loadstorequeue = Output(new LoadStoreQueue2ReorderBuffer)
-    val datamemory = Flipped(new Memory2ReorderBuffer)
+    val dataMemory = Flipped(new DataMemory2ReorderBuffer)
+    val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
     val isEmpty = Output(Bool())
     // TODO: 有効化する
     //val loadStoreQueue = Flipped(new LoadStoreQueue2ReorderBuffer)
@@ -49,7 +49,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         entry.programCounter := decoder.programCounter
         entry.destinationRegister := decoder.destination.destinationRegister
         entry.commitReady := false.B
-        entry.storeSign := decoder.storeSign
         entry
       }
     }
@@ -110,10 +109,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     io.registerFile(i).bits.value := buffer(index).value
     io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
 
-    // LSQにPCを送信, Store命令かどうかでvalidを調整
-    io.loadstorequeue.programCounter(i) := buffer(index).programCounter
-    io.loadstorequeue.valid(i) := buffer(index).storeSign
-
     when(canCommit) {
       buffer(index) := ReorderBufferEntry.default()
     }
@@ -128,15 +123,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     when(alu.valid) {
       buffer(alu.destinationTag).value := alu.value
       buffer(alu.destinationTag).valueReady := true.B
-    }
-  }
-
-  // load命令時にロード先のアドレスが入ってしまっていないか?
-  // load
-  io.datamemory.ready := true.B
-  for (buf <- buffer) {
-    when(io.datamemory.valid && buf.destinationRegister === io.datamemory.bits.tag) {
-      buf.value := io.datamemory.bits.data
     }
   }
 

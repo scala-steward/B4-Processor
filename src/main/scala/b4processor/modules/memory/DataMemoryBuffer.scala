@@ -72,8 +72,13 @@ class DataMemoryBuffer(implicit  params: Parameters) extends Module {
     io.dataOut.bits.opcode := 0.U
     io.dataOut.bits.function3 := 0.U
   }
-  tail := Mux(tail === (math.pow(2, params.tagWidth).toInt.U-1.U) && io.dataOut.valid,
+  tail := Mux(tail === (math.pow(2, params.tagWidth).toInt.U - 1.U) && io.dataOut.valid,
     0.U, tail + io.dataOut.valid.asUInt)
+
+  if (params.debug) {
+    io.head.get := head
+    io.tail.get := tail
+  }
 }
 
 object DataMemoryBuffer extends App {
