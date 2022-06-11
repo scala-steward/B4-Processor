@@ -183,6 +183,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     io.reorderBuffer.destination.destinationTag, valueSelector2.io.sourceTag.tag)
   io.loadStoreQueue.bits.value := Mux(io.loadStoreQueue.bits.opcode === "b0000011".U,
     0.U, valueSelector2.io.value.bits)
+  io.loadStoreQueue.bits.dataSign := valueSelector2.io.value.valid
   io.loadStoreQueue.bits.opcode := instOp
   io.loadStoreQueue.bits.function3 := instFunct3
   io.loadStoreQueue.bits.programCounter := io.instructionFetch.bits.programCounter

@@ -16,4 +16,5 @@ class Decoder2LoadStoreQueue(implicit params: Parameters) extends Bundle {
   val stag2 = UInt(params.tagWidth.W)
   val value = UInt(64.W)
   val programCounter = SInt(64.W)
+  val dataSign = Bool()
 }
