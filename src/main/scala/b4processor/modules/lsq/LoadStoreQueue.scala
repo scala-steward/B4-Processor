@@ -58,7 +58,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         entry.opcode := decoder.bits.opcode
         entry.Readyaddress := false.B
         entry.address := 0.S
-        entry.Readydata := false.B
+        entry.Readydata := decoder.bits.dataSign
         entry.tag := decoder.bits.stag2
         entry.data := decoder.bits.value
         entry.function3 := decoder.bits.function3
