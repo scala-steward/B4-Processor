@@ -21,8 +21,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val dataMemory = Flipped(new DataMemory2ReorderBuffer)
     val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
     val isEmpty = Output(Bool())
-    // TODO: 有効化する
-    //val loadStoreQueue = Flipped(new LoadStoreQueue2ReorderBuffer)
 
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
     val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None

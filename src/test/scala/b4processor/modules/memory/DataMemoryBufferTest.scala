@@ -10,7 +10,7 @@ class DataMemoryBufferTestWrapper(implicit params: Parameters) extends DataMemor
 class DataMemoryBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Data Memory Buffer"
 
-  implicit val params = Parameters(maxLSQ2MemoryinstCount = 2, tagWidth = 4)
+  implicit val params = Parameters(maxRegisterFileCommitCount = 2, tagWidth = 4)
 
   it should "enqueue and dequeue" in {
     test(new DataMemoryBufferTestWrapper) { c =>

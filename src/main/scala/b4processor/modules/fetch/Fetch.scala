@@ -30,7 +30,7 @@ class Fetch(implicit params: Parameters) extends Module {
   })
 
   /** プログラムカウンタ */
-  val pc = RegInit(params.pcInit.S(64.W))
+  val pc = RegInit(params.instructionStart.S(64.W))
   /** フェッチの停止と理由 */
   val waiting = RegInit(Waiting.notWaiting())
 

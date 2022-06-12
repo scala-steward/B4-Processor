@@ -1,6 +1,6 @@
 package b4processor
 
-import b4processor.modules.memory.InstructionMemory
+import b4processor.modules.memory.{DataMemory, InstructionMemory}
 import b4processor.utils.InstructionUtil
 import chiseltest._
 import chisel3._
@@ -12,7 +12,10 @@ class B4ProcessorWrapper(instructions: Seq[UInt])(implicit params: Parameters) e
   })
   val core = Module(new B4Processor)
   val instructionMemory = Module(new InstructionMemory(instructions))
+  val dataMemory = Module(new DataMemory)
   core.io.instructionMemory <> instructionMemory.io
+  core.io.dataMemory.lsq <> dataMemory.io.dataIn
+  core.io.dataMemory.reorderBuffer <> dataMemory.io.dataOut
   if (params.debug)
     core.io.registerFileContents.get <> io.registerFileContents.get
 }
@@ -138,4 +141,25 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
       }
   }
 
+  // 単純な値をストアしてロードするプログラム
+  ignore should "run load_store" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/load_store/load_store.32.hex"))(defaultParams.copy(runParallel = 1)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.step(15)
+        c.io.registerFileContents.get(0).expect(10)
+        c.io.registerFileContents.get(1).expect(0x8000_0000L)
+        c.io.registerFileContents.get(2).expect(10)
+      }
+  }
+
+  // 単純な値をストアしてロードするプログラム同時発行数2
+  ignore should "run load_store with 2 parallel" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/load_store/load_store.32.hex"))(defaultParams.copy(runParallel = 2)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.step(15)
+        c.io.registerFileContents.get(0).expect(10)
+        c.io.registerFileContents.get(1).expect(0x8000_0000L)
+        c.io.registerFileContents.get(2).expect(10)
+      }
+  }
 }

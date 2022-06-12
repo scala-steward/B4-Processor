@@ -17,11 +17,12 @@ class DataMemory(implicit params: Parameters) extends Module {
 
   io.dataIn.ready := true.B
   when(io.dataIn.valid) {
-    val rdwrPort = mem(io.dataIn.bits.address.asUInt)
+    // FIXME: アドレスを下位28bitのみ使っている
+    val rdwrPort = mem(io.dataIn.bits.address.asUInt(27, 0))
     when(io.dataIn.bits.opcode === "b0100011".U) {
       // printf(p"dataIn =${io.dataIn.bits.data}\n")
       // Store
-      /** writeの場合，rdwrPortは命令実行時の次クロック立ち上がりでmemoryに書き込み(=ストア命令実行時では値変わらず)*/
+      /** writeの場合，rdwrPortは命令実行時の次クロック立ち上がりでmemoryに書き込み(=ストア命令実行時では値変わらず) */
       rdwrPort := MuxLookup(io.dataIn.bits.function3, 0.U, Seq(
         "b000".U -> Mux(io.dataIn.bits.data(7), Cat(~0.U(56.W), io.dataIn.bits.data(7, 0)), Cat(0.U(56.W), io.dataIn.bits.data(7, 0))),
         "b001".U -> Mux(io.dataIn.bits.data(15), Cat(~0.U(48.W), io.dataIn.bits.data(15, 0)), Cat(0.U(48.W), io.dataIn.bits.data(15, 0))),

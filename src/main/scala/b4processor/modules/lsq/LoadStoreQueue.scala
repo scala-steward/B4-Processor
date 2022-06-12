@@ -158,15 +158,15 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     nextTail = Mux(Cat(EmissionFlag.take(i + 1)).andR, nextTail + 1.U, nextTail)
     // printf(p"address(0) = ${Address(0)}\n")
     // printf(p"emissionIndex = ${emissionindex}\n")
-    printf(p"Emission(0) = ${EmissionFlag(0)}\n")
+    //    printf(p"Emission(0) = ${EmissionFlag(0)}\n")
     // printf(p"(0) = ${io.memory(i).valid && (((buffer(emissionindex).opcode === "b0000011".U) && buffer(emissionindex).Readyaddress && !Overlap(i) && buffer(emissionindex).R) ||
     //  (buffer(emissionindex).opcode === "b0100011".U && buffer(emissionindex).Readyaddress && buffer(emissionindex).Readydata && buffer(emissionindex).ReadyReorderSign && buffer(emissionindex).R))}\n")
-    printf(p"nexttail = $nextTail\n")
-    printf(p"1 or 0 = ${Cat(EmissionFlag).andR}\n")
+    //    printf(p"nexttail = $nextTail\n")
+    //    printf(p"1 or 0 = ${Cat(EmissionFlag).andR}\n")
 
   }
   tail := nextTail
-  printf(p"tail = $tail\n\n")
+  //  printf(p"tail = $tail\n\n")
 
   // デバッグ
   if (params.debug) {
