@@ -66,7 +66,7 @@ class B4Processor(implicit params: Parameters) extends Module {
     decoders(i).io.reservationStation <> reservationStations(i).io.decoder
 
     /** リザベーションステーションと実行ユニットを接続 */
-    reservationStations(i).io.executor <> executors(i).io.reservationstation
+    reservationStations(i).io.executor <> executors(i).io.reservationStation
 
     /** 実行ユニットとリオーダバッファを接続 */
     executors(i).io.out <> reorderBuffer.io.executors(i)
@@ -104,7 +104,8 @@ class B4Processor(implicit params: Parameters) extends Module {
   /** フェッチとリオーダバッファの接続 */
   fetch.io.reorderBufferEmpty := reorderBuffer.io.isEmpty
 
-  loadStoreQueue.io.reorderBuffer <> reorderBuffer.io.loadStoreQueue
+  // TODO:　必要ないはずだけど、確認が必要
+  //  loadStoreQueue.io.reorderBuffer <> reorderBuffer.io.loadStoreQueue
 
   /** データメモリバッファとLSQ */
   dataMemoryBuffer.io.dataIn <> loadStoreQueue.io.memory

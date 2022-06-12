@@ -12,6 +12,9 @@ class DataMemory(implicit params: Parameters) extends Module {
     val dataOut = new DataMemory2ReorderBuffer
   })
 
+  val LOAD = "b0000011".U
+  val STORE = "b0100011".U
+
   val mem = SyncReadMem(math.pow(2, params.tagWidth).toInt, UInt(64.W))
   io.dataOut := DontCare
 
@@ -19,7 +22,7 @@ class DataMemory(implicit params: Parameters) extends Module {
   when(io.dataIn.valid) {
     // FIXME: アドレスを下位28bitのみ使っている
     val rdwrPort = mem(io.dataIn.bits.address.asUInt(27, 0))
-    when(io.dataIn.bits.opcode === "b0100011".U) {
+    when(io.dataIn.bits.opcode === STORE) {
       // printf(p"dataIn =${io.dataIn.bits.data}\n")
       // Store
       /** writeの場合，rdwrPortは命令実行時の次クロック立ち上がりでmemoryに書き込み(=ストア命令実行時では値変わらず) */
@@ -32,7 +35,7 @@ class DataMemory(implicit params: Parameters) extends Module {
     }.otherwise {
       // Load
       /** readの場合，rdwrPortは命令実行時と同クロック立ち上がりでmemoryから読み込み(=ロード命令実行時に値変更) */
-      io.dataOut.bits.data := MuxLookup(io.dataIn.bits.function3, 0.U, Seq(
+      io.dataOut.bits.value := MuxLookup(io.dataIn.bits.function3, 0.U, Seq(
         "b000".U -> Mux(rdwrPort(7), Cat(~0.U(56.W), rdwrPort(7, 0)), Cat(0.U(56.W), rdwrPort(7, 0))),
         "b001".U -> Mux(rdwrPort(15), Cat(~0.U(48.W), rdwrPort(15, 0)), Cat(0.U(48.W), rdwrPort(15, 0))),
         "b010".U -> Mux(rdwrPort(31), Cat(~0.U(32.W), rdwrPort(31, 0)), Cat(0.U(32.W), rdwrPort(31, 0))),
@@ -48,7 +51,7 @@ class DataMemory(implicit params: Parameters) extends Module {
     // printf(p"rdwrPort =${rdwrPort}\n")
     io.dataOut.bits.tag := io.dataIn.bits.tag
   }
-  io.dataOut.valid := io.dataIn.bits.opcode === "b0000011".U
+  io.dataOut.valid := io.dataIn.bits.opcode === LOAD
   // printf(p"mem(io.dataIn.bits.address.asUInt) = ${mem(io.dataIn.bits.address.asUInt)}\n")
 }
 

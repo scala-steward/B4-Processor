@@ -10,7 +10,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val decoders = Vec(params.runParallel, Flipped(Decoupled(new Decoder2LoadStoreQueue())))
     val executors = Vec(params.runParallel, Flipped(Output(new Executor2LoadStoreQueue)))
-    val reorderBuffer = Input(new LoadStoreQueue2ReorderBuffer())
+    //    val reorderBuffer = Input(new LoadStoreQueue2ReorderBuffer())
     val memory = Vec(params.maxRegisterFileCommitCount, new LoadStoreQueue2Memory)
     val isEmpty = Output(Bool())
 
@@ -19,20 +19,9 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     // LSQのエントリ数はこのままでいいのか
   })
 
-  val defaultEntry = {
-    val entry = Wire(new LoadStoreQueueEntry)
-    entry.opcode := 0.U
-    entry.Readyaddress := false.B
-    entry.address := 0.S
-    entry.Readydata := false.B
-    entry.tag := 0.U
-    entry.data := 0.U
-    entry.function3 := 0.U
-    entry.programCounter := 0.S
-    entry.R := false.B // 命令実効済か否か
-    entry.ReadyReorderSign := false.B
-    entry
-  }
+  val defaultEntry = LoadStoreQueueEntry.default
+  val LOAD = "b0000011".U
+  val STORE = "b0100011".U
 
   val head = RegInit(0.U(params.tagWidth.W))
   val tail = RegInit(0.U(params.tagWidth.W))
@@ -45,30 +34,29 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   for (i <- 0 until params.runParallel) {
     val decoder = io.decoders(i)
     io.decoders(i).ready := tail =/= insertIndex + 1.U
-    val decodevalid = Mux(io.decoders(i).ready && io.decoders(i).valid && (decoder.bits.opcode === "b0000011".U || decoder.bits.opcode === "b0100011".U), true.B, false.B)
+    val decoderValid = io.decoders(i).ready && io.decoders(i).valid && (decoder.bits.opcode === BitPat("b0?00011"))
 
     /**
      * 現状，(LSQの最大エントリ数 = リオーダバッファの最大エントリ数)であり，
      * プロセッサで同時実行可能な最大命令数がリオーダバッファのエントリ番号数(dtag数)であることから，
      * エンキュー時の命令待機は必要ないが，LSQのエントリ数を減らした場合，必要
      */
-    when(decodevalid) {
-      buffer(insertIndex) := {
-        val entry = Wire(new LoadStoreQueueEntry)
-        entry.opcode := decoder.bits.opcode
-        entry.Readyaddress := false.B
-        entry.address := 0.S
-        entry.Readydata := decoder.bits.dataSign
-        entry.tag := decoder.bits.stag2
-        entry.data := decoder.bits.value
-        entry.function3 := decoder.bits.function3
-        entry.programCounter := decoder.bits.programCounter
-        entry.R := true.B
-        entry.ReadyReorderSign := false.B
-        entry
-      }
+    when(decoderValid) {
+      // ロードである
+      buffer(insertIndex) := LoadStoreQueueEntry.validEntry(
+        opcode = decoder.bits.opcode,
+        function3 = decoder.bits.function3,
+
+        addressAndStoreResultTag = decoder.bits.addressAndLoadResultTag,
+
+        storeDataTag = decoder.bits.storeDataTag,
+        storeData = decoder.bits.storeData,
+        storeDataValid = decoder.bits.storeDataValid,
+
+        programCounter = decoder.bits.programCounter
+      )
     }
-    insertIndex = Mux(insertIndex === (math.pow(2, params.tagWidth).toInt.U - 1.U) && decodevalid, 0.U, insertIndex + decodevalid.asUInt)
+    insertIndex = Mux(insertIndex === (math.pow(2, params.tagWidth).toInt.U - 1.U) && decoderValid, 0.U, insertIndex + decoderValid.asUInt)
   }
 
   head := insertIndex
@@ -78,15 +66,17 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   for (i <- 0 until params.runParallel) {
     val alu = io.executors(i)
     for (buf <- buffer) {
-      when(alu.valid && buf.tag === alu.destinationTag) {
-        when(!buf.Readyaddress && io.executors(i).programCounter === buf.programCounter) {
+      when(alu.valid && buf.valid) {
+        // !buf.readyAddress && io.executors(i).programCounter === buf.programCounter
+        when(buf.addressAndLoadResultTag === alu.destinationTag && !buf.addressValid) {
           buf.address := alu.value.asSInt
-          buf.Readyaddress := true.B
+          buf.addressValid := true.B
         }
-        when(!buf.Readydata && !(io.executors(i).programCounter === buf.programCounter)) {
+        // !buf.readyData && !(io.executors(i).programCounter === buf.programCounter)
+        when(buf.storeDataTag === alu.destinationTag && !buf.storeDataValid) {
           // only Store
-          buf.data := alu.value.asUInt
-          buf.Readydata := true.B
+          buf.storeData := alu.value.asUInt
+          buf.storeDataValid := true.B
         }
         // printf(p"address = ${buf.address}\n")
         // printf(p"data = ${buf.data}\n")
@@ -95,15 +85,15 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     // 2重構造
   }
 
-  for (i <- 0 until params.maxRegisterFileCommitCount) {
-    when(io.reorderBuffer.valid(i)) {
-      for (buf <- buffer) {
-        when(buf.R && (io.reorderBuffer.programCounter(i) === buf.programCounter)) {
-          buf.ReadyReorderSign := true.B
-        }
-      }
-    }
-  }
+  //  for (i <- 0 until params.maxRegisterFileCommitCount) {
+  //    when(io.reorderBuffer.valid(i)) {
+  //      for (buf <- buffer) {
+  //        when(buf.valid && (io.reorderBuffer.programCounter(i) === buf.programCounter)) {
+  //          buf.readyReorderSign := true.B
+  //        }
+  //      }
+  //    }
+  //  }
 
   /**
    * Ra = 1 && R=0の先行するストア命令と実効アドレスが被っていなければ
@@ -131,7 +121,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   for (i <- 0 until params.maxRegisterFileCommitCount) {
     emissionIndex := Mux(emissionIndex === (math.pow(2, params.tagWidth).toInt.U - 1.U), 0.U, emissionIndex + 1.U) // リングバッファ
 
-    io.memory(i).valid := io.memory(i).ready && (head =/= tail)
+    io.memory(i).valid := false.B // FIXME これはいらないはず io.memory(i).ready && (head =/= tail)
     io.memory(i).bits.address := 0.S
     io.memory(i).bits.tag := 0.U
     io.memory(i).bits.data := 0.U
@@ -142,17 +132,19 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     Overlap(i) := Mux(i.asUInt === 0.U, false.B,
       Cat(Address.map(_ === buffer(emissionIndex).address)).orR)
     // EmissionFlag(i) :=  io.memory(i).ready && ("loadの送出条件" || "storeの送出条件")
-    EmissionFlag(i) := io.memory(i).valid && (((buffer(emissionIndex).opcode === "b0000011".U) && buffer(emissionIndex).Readyaddress && !Overlap(i) && buffer(emissionIndex).R) ||
-      (buffer(emissionIndex).opcode === "b0100011".U && buffer(emissionIndex).Readyaddress && buffer(emissionIndex).Readydata && buffer(emissionIndex).ReadyReorderSign && buffer(emissionIndex).R))
+    EmissionFlag(i) := io.memory(i).ready && (head =/= tail) && buffer(emissionIndex).valid && buffer(emissionIndex).addressValid &&
+      ((buffer(emissionIndex).opcode === LOAD && !Overlap(i)) ||
+        (buffer(emissionIndex).opcode === STORE && buffer(emissionIndex).storeDataValid))
 
     // 送出実行
     when(EmissionFlag(i)) {
-      io.memory(i).bits.tag := buffer(emissionIndex).tag
-      io.memory(i).bits.data := buffer(emissionIndex).data
+      io.memory(i).valid := true.B
+      io.memory(i).bits.tag := buffer(emissionIndex).addressAndLoadResultTag
+      io.memory(i).bits.data := buffer(emissionIndex).storeData
       io.memory(i).bits.address := buffer(emissionIndex).address
       io.memory(i).bits.opcode := buffer(emissionIndex).opcode
       io.memory(i).bits.function3 := buffer(emissionIndex).function3
-      buffer(emissionIndex).R := false.B
+      buffer(emissionIndex) := LoadStoreQueueEntry.default
     }
     // tailから送出しない命令までの命令数をカウント
     nextTail = Mux(Cat(EmissionFlag.take(i + 1)).andR, nextTail + 1.U, nextTail)

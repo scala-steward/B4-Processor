@@ -16,15 +16,15 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   })
 
   val executor = Module(new Executor)
-  executor.io.reservationstation.bits.destinationTag := io.reservationStation.bits.destinationTag
-  executor.io.reservationstation.bits.value1 := io.reservationStation.bits.value1.asUInt
-  executor.io.reservationstation.bits.value2 := io.reservationStation.bits.value2.asUInt
-  executor.io.reservationstation.bits.function3 := io.reservationStation.bits.function3
-  executor.io.reservationstation.bits.immediateOrFunction7 := io.reservationStation.bits.immediateOrFunction7
-  executor.io.reservationstation.bits.opcode := io.reservationStation.bits.opcode
-  executor.io.reservationstation.bits.programCounter := io.reservationStation.bits.programCounter
-  executor.io.reservationstation.valid := io.reservationStation.valid
-  io.reservationStation.ready := executor.io.reservationstation.ready
+  executor.io.reservationStation.bits.destinationTag := io.reservationStation.bits.destinationTag
+  executor.io.reservationStation.bits.value1 := io.reservationStation.bits.value1.asUInt
+  executor.io.reservationStation.bits.value2 := io.reservationStation.bits.value2.asUInt
+  executor.io.reservationStation.bits.function3 := io.reservationStation.bits.function3
+  executor.io.reservationStation.bits.immediateOrFunction7 := io.reservationStation.bits.immediateOrFunction7
+  executor.io.reservationStation.bits.opcode := io.reservationStation.bits.opcode
+  executor.io.reservationStation.bits.programCounter := io.reservationStation.bits.programCounter
+  executor.io.reservationStation.valid := io.reservationStation.valid
+  io.reservationStation.ready := executor.io.reservationStation.ready
 
   io.out.value := executor.io.out.value.asSInt
   io.out.valid := executor.io.out.valid

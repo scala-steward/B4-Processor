@@ -40,7 +40,7 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.dataIn.bits.function3.poke("b011".U)
       c.io.dataIn.bits.opcode.poke("b0000011".U)
       c.io.dataOut.valid.expect(true)
-      c.io.dataOut.bits.data.expect(123)
+      c.io.dataOut.bits.value.expect(123)
       c.io.dataOut.bits.tag.expect(20)
     }
   }
@@ -63,7 +63,7 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.dataIn.bits.function3.poke("b000".U)
       c.io.dataIn.bits.opcode.poke("b0000011".U)
       c.io.dataOut.valid.expect(true)
-      c.io.dataOut.bits.data.expect(3)
+      c.io.dataOut.bits.value.expect(3)
       c.io.dataOut.bits.tag.expect(20)
     }
   }

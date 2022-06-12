@@ -29,7 +29,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 
   val head = RegInit(0.U(params.tagWidth.W))
   val tail = RegInit(0.U(params.tagWidth.W))
-  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt)(ReorderBufferEntry.default())))
+  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt)(ReorderBufferEntry.default)))
 
   // デコーダからの読み取りと書き込み
   var insertIndex = head
@@ -112,7 +112,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     io.loadStoreQueue.valid(i) := buffer(index).storeSign
 
     when(canCommit) {
-      buffer(index) := ReorderBufferEntry.default()
+      buffer(index) := ReorderBufferEntry.default
     }
     lastValid = canCommit
   }
@@ -128,13 +128,11 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     }
   }
 
-  io.dataMemory.ready := true.B
   // DataMemoryからのロード値の読み込み
-  for (buf <- buffer) {
-    when(io.dataMemory.valid && buf.destinationRegister === io.dataMemory.bits.tag) {
-      buf.value := io.dataMemory.bits.data
-      buf.valueReady := true.B
-    }
+  io.dataMemory.ready := true.B
+  when(io.dataMemory.valid) {
+    buffer(io.dataMemory.bits.tag).value := io.dataMemory.bits.value
+    buffer(io.dataMemory.bits.tag).valueReady := true.B
   }
 
   // デバッグ

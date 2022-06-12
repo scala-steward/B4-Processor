@@ -6,5 +6,5 @@ import chisel3.util._
 
 class DataMemory2ReorderBuffer(implicit params: Parameters) extends ReadyValidIO(new Bundle {
   val tag = UInt(params.tagWidth.W)
-  val data = UInt(64.W)
+  val value = UInt(64.W)
 })

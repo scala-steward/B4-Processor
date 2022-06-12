@@ -142,12 +142,12 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   // 単純な値をストアしてロードするプログラム
-  ignore should "run load_store" in {
-    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/load_store/load_store.32.hex"))(defaultParams.copy(runParallel = 1)))
+  it should "run load_store" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/load_store/load_store.32.hex"))(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         c.clock.step(15)
-        c.io.registerFileContents.get(0).expect(10)
-        c.io.registerFileContents.get(1).expect(0x8000_0000L)
+        c.io.registerFileContents.get(0).expect(0x8000_0000L)
+        c.io.registerFileContents.get(1).expect(10)
         c.io.registerFileContents.get(2).expect(10)
       }
   }
@@ -157,8 +157,8 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/load_store/load_store.32.hex"))(defaultParams.copy(runParallel = 2)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         c.clock.step(15)
-        c.io.registerFileContents.get(0).expect(10)
-        c.io.registerFileContents.get(1).expect(0x8000_0000L)
+        c.io.registerFileContents.get(0).expect(0x8000_0000L)
+        c.io.registerFileContents.get(1).expect(10)
         c.io.registerFileContents.get(2).expect(10)
       }
   }
