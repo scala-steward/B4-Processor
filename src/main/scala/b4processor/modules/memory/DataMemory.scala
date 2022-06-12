@@ -31,7 +31,7 @@ class DataMemory(implicit params: Parameters) extends Module {
       ))
     }.otherwise {
       // Load
-      /** readの場合，rdwrPortは命令実行時と同クロック立ち上がりでmemoryから読み込み(=ロード命令実行時に値変更)*/
+      /** readの場合，rdwrPortは命令実行時と同クロック立ち上がりでmemoryから読み込み(=ロード命令実行時に値変更) */
       io.dataOut.bits.data := MuxLookup(io.dataIn.bits.function3, 0.U, Seq(
         "b000".U -> Mux(rdwrPort(7), Cat(~0.U(56.W), rdwrPort(7, 0)), Cat(0.U(56.W), rdwrPort(7, 0))),
         "b001".U -> Mux(rdwrPort(15), Cat(~0.U(48.W), rdwrPort(15, 0)), Cat(0.U(48.W), rdwrPort(15, 0))),

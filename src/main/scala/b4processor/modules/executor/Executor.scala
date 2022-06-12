@@ -160,7 +160,7 @@ class Executor(implicit params: Parameters) extends Module {
   // reorder Buffer
   io.out.valid := io.reservationstation.valid &&
     (instructionChecker.output.instruction =/= Instructions.Unknown ||
-      instructionChecker.output.instruction =/=  Instructions.Load) // load命令の場合, ReorderBufferのvalueはDataMemoryから
+      instructionChecker.output.instruction =/= Instructions.Load) // load命令の場合, ReorderBufferのvalueはDataMemoryから
   io.out.destinationTag := io.reservationstation.bits.destinationTag
   io.out.value := Mux(instructionChecker.output.operationWidth === OperationWidth.Word,
     Mux(destinationRegister(31), Cat(~0.U(32.W), destinationRegister(31, 0)), Cat(0.U(32.W), destinationRegister(31, 0))),

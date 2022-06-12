@@ -11,7 +11,7 @@ import chisel3.util._
  *
  * @param params パラメータ
  */
-class DataMemoryBuffer(implicit  params: Parameters) extends Module {
+class DataMemoryBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val dataIn = Vec(params.maxRegisterFileCommitCount, Flipped(new LoadStoreQueue2Memory))
     val dataOut = new LoadStoreQueue2Memory
@@ -50,7 +50,7 @@ class DataMemoryBuffer(implicit  params: Parameters) extends Module {
         entry
       }
     }
-    insertIndex = Mux(insertIndex === (math.pow(2, params.tagWidth).toInt.U-1.U) && Input.valid, 0.U, insertIndex + Input.valid.asUInt)
+    insertIndex = Mux(insertIndex === (math.pow(2, params.tagWidth).toInt.U - 1.U) && Input.valid, 0.U, insertIndex + Input.valid.asUInt)
   }
 
   head := insertIndex
