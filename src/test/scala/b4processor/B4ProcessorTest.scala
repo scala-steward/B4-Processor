@@ -21,15 +21,20 @@ class B4ProcessorWrapper(instructions: Seq[UInt])(implicit params: Parameters) e
 }
 
 class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "B4Processor"
+
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
   implicit val defaultParams = Parameters(debug = true, tagWidth = 4)
 
+  behavior of "B4Processor connections"
   // コンパイルが通ることを確認（信号をつなぎきれていないとエラーになる）
-  it should "compile" in {
-    test(new B4ProcessorWrapper(Seq(0.U))) { c => }
-  }
+  for (runParallel <- 1 to 3)
+    for (maxCommitCount <- 1 to 3)
+      for (tagWidth <- 2 to 3)
+        it should s"compile runParallel${runParallel} maxCommitCount=${maxCommitCount} tagWidth=${tagWidth}" in {
+          test(new B4ProcessorWrapper(Seq(0.U))(defaultParams.copy(runParallel = runParallel, maxRegisterFileCommitCount = maxCommitCount, tagWidth = tagWidth))) { c => }
+        }
 
+  behavior of "B4Processor"
   // branchプログラムが実行できる
   it should "execute branch with no parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/branch/branch.32.hex"))(defaultParams.copy(runParallel = 1)))
