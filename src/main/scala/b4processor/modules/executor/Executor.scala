@@ -10,7 +10,7 @@ import chisel3.{Mux, _}
 class Executor(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reservationStation = Flipped(new ReservationStation2Executor)
-    val out = new ExecutionRegisterBypass
+    val out = new ExecutorOutput
     val loadStoreQueue = Output(new Executor2LoadStoreQueue)
     val fetch = Output(new Executor2Fetch)
   })

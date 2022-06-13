@@ -8,7 +8,7 @@ import chisel3._
  *
  * @param params パラメータ
  */
-class ExecutionRegisterBypass(implicit params: Parameters) extends Bundle {
+class ExecutorOutput(implicit params: Parameters) extends Bundle {
   val destinationTag = Output(UInt(params.tagWidth.W))
   val value = Output(UInt(64.W))
   val valid = Output(Bool())

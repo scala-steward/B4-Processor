@@ -1,7 +1,7 @@
 package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
-import b4processor.connections.{BranchPrediction2ReorderBuffer, DataMemory2ReorderBuffer, Decoder2ReorderBuffer, ExecutionRegisterBypass, LoadStoreQueue2ReorderBuffer, ReorderBuffer2RegisterFile}
+import b4processor.connections.{BranchPrediction2ReorderBuffer, DataMemory2ReorderBuffer, Decoder2ReorderBuffer, ExecutorOutput, LoadStoreQueue2ReorderBuffer, ReorderBuffer2RegisterFile}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -16,7 +16,7 @@ import scala.math.pow
 class ReorderBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val decoders = Vec(params.runParallel, Flipped(new Decoder2ReorderBuffer))
-    val executors = Vec(params.runParallel, Flipped(new ExecutionRegisterBypass))
+    val executors = Vec(params.runParallel, Flipped(new ExecutorOutput))
     val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
     val dataMemory = Flipped(new DataMemory2ReorderBuffer)
     val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)

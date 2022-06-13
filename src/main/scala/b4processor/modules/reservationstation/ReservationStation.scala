@@ -1,14 +1,14 @@
 package b4processor.modules.reservationstation
 
 import b4processor.Parameters
-import b4processor.connections.{Decoder2ReservationStation, ExecutionRegisterBypass, ReservationStation2Executor}
+import b4processor.connections.{Decoder2ReservationStation, ExecutorOutput, ReservationStation2Executor}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
 
 class ReservationStation(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val bypassValues = Flipped(Vec(params.runParallel, new ExecutionRegisterBypass))
+    val bypassValues = Flipped(Vec(params.runParallel, new ExecutorOutput))
     val executor = new ReservationStation2Executor
     val decoder = Flipped(new Decoder2ReservationStation)
   })

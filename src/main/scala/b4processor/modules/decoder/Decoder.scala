@@ -19,7 +19,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   val io = IO(new Bundle {
     val instructionFetch = Flipped(new Fetch2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer
-    val executors = Vec(params.runParallel, Flipped(new ExecutionRegisterBypass))
+    val executors = Vec(params.runParallel, Flipped(new ExecutorOutput))
     val registerFile = new Decoder2RegisterFile()
 
     val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder))

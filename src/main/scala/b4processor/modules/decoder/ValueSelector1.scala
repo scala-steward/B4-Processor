@@ -1,7 +1,7 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
-import b4processor.connections.ExecutionRegisterBypass
+import b4processor.connections.ExecutorOutput
 import chisel3._
 import chisel3.util._
 
@@ -14,7 +14,7 @@ class ValueSelector1(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reorderBufferValue = Flipped(DecoupledIO(UInt(64.W)))
     val registerFileValue = Input(UInt(64.W))
-    val executorBypassValue = Vec(params.runParallel, Flipped(new ExecutionRegisterBypass))
+    val executorBypassValue = Vec(params.runParallel, Flipped(new ExecutorOutput))
     val sourceTag = Input(new SourceTagInfo)
     val value = DecoupledIO(UInt(64.W))
   })

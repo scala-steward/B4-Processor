@@ -1,7 +1,7 @@
 package b4processor.modules.lsq
 
 import b4processor.Parameters
-import b4processor.connections.{Decoder2LoadStoreQueue, ExecutionRegisterBypass, Executor2LoadStoreQueue, LoadStoreQueue2Memory, LoadStoreQueue2ReorderBuffer}
+import b4processor.connections.{Decoder2LoadStoreQueue, ExecutorOutput, Executor2LoadStoreQueue, LoadStoreQueue2Memory, LoadStoreQueue2ReorderBuffer}
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
