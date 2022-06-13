@@ -183,4 +183,15 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.registerFileContents.get(2).expect(10)
       }
   }
+
+  // 単純な値をストアしてロードするプログラム
+  it should "run fibonacci_c" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"))(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.step(100)
+        c.io.registerFileContents.get(0).expect(0x8000_0000L)
+        c.io.registerFileContents.get(1).expect(10)
+        c.io.registerFileContents.get(2).expect(10)
+      }
+  }
 }

@@ -1,5 +1,5 @@
 export CC := riscv64-unknown-elf-gcc
-export OBJCOPY := riscv64-elf-objcopy
+export OBJCOPY := riscv64-unknown-elf-objcopy
 export CFLAGS := -nodefaultlibs -nostdlib -march=rv64i -mabi=lp64 -no-pie -static
 
 SUBDIRS := fibonacci \
@@ -7,7 +7,8 @@ SUBDIRS := fibonacci \
 			call_ret \
 			many_add \
 			many_add_out_of_order \
-			load_store
+			load_store \
+			fibonacci_c
 
 all: $(SUBDIRS)
 
