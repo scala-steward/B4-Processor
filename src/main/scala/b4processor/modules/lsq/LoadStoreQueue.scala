@@ -121,24 +121,22 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   for (i <- 0 until params.maxRegisterFileCommitCount) {
     emissionIndex := Mux(emissionIndex === (math.pow(2, params.tagWidth).toInt.U - 1.U), 0.U, emissionIndex + 1.U) // リングバッファ
 
-    io.memory(i).valid := false.B // FIXME これはいらないはず io.memory(i).ready && (head =/= tail)
+    Address(i) := buffer(emissionIndex).programCounter
+    Overlap(i) := Mux(i.asUInt === 0.U, false.B,
+      Cat(Address.map(_ === buffer(emissionIndex).address)).orR)
+
+    // io.memory(i).valid :=  io.memory(i).ready && (head =/= tail) && ("loadの送出条件" || "storeの送出条件")
+    io.memory(i).valid := io.memory(i).ready && (head =/= tail) && buffer(emissionIndex).valid && buffer(emissionIndex).addressValid &&
+      ((buffer(emissionIndex).opcode === LOAD && !Overlap(i)) ||
+        (buffer(emissionIndex).opcode === STORE && buffer(emissionIndex).storeDataValid))
     io.memory(i).bits.address := 0.S
     io.memory(i).bits.tag := 0.U
     io.memory(i).bits.data := 0.U
     io.memory(i).bits.opcode := 0.U
     io.memory(i).bits.function3 := 0.U
 
-    Address(i) := buffer(emissionIndex).programCounter
-    Overlap(i) := Mux(i.asUInt === 0.U, false.B,
-      Cat(Address.map(_ === buffer(emissionIndex).address)).orR)
-    // EmissionFlag(i) :=  io.memory(i).ready && ("loadの送出条件" || "storeの送出条件")
-    EmissionFlag(i) := io.memory(i).ready && (head =/= tail) && buffer(emissionIndex).valid && buffer(emissionIndex).addressValid &&
-      ((buffer(emissionIndex).opcode === LOAD && !Overlap(i)) ||
-        (buffer(emissionIndex).opcode === STORE && buffer(emissionIndex).storeDataValid))
-
     // 送出実行
-    when(EmissionFlag(i)) {
-      io.memory(i).valid := true.B
+    when(io.memory(i).valid) {
       io.memory(i).bits.tag := buffer(emissionIndex).addressAndLoadResultTag
       io.memory(i).bits.data := buffer(emissionIndex).storeData
       io.memory(i).bits.address := buffer(emissionIndex).address
