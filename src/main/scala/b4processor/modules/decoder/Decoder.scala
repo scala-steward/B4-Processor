@@ -25,6 +25,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     val decodersAfter = Output(Vec(instructionOffset + 1, new Decoder2NextDecoder))
 
     val reservationStation = new Decoder2ReservationStation
+
+    val loadstorequeue = new Decoder2LoadStoreQueue
   })
 
   // 命令からそれぞれの昨日のブロックを取り出す
@@ -175,6 +177,16 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   rs.value1 := valueSelector1.io.value.bits
   rs.value2 := valueSelector2.io.value.bits
   rs.programCounter := io.instructionFetch.bits.programCounter
+
+  // load or store命令の場合，LSQへ発送
+  io.loadstorequeue.bits.stag2 := Mux(io.loadstorequeue.bits.opcode === "b0000011".U,
+    io.reorderBuffer.destination.destinationTag, valueSelector2.io.sourceTag.bits)
+  io.loadstorequeue.bits.value := Mux(io.loadstorequeue.bits.opcode === "b0000011".U,
+    0.U, valueSelector2.io.value.bits)
+  io.loadstorequeue.bits.opcode := instOp
+  io.loadstorequeue.bits.function3 := instFunct3
+  io.loadstorequeue.bits.programCounter := io.instructionFetch.bits.programCounter
+  io.loadstorequeue.valid := io.loadstorequeue.ready && io.loadstorequeue.bits.opcode === BitPat("b0?00011")
 }
 
 object Decoder extends App {
