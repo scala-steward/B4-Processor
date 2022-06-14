@@ -1,6 +1,6 @@
 package b4processor
 
-import b4processor.connections.{DataMemory2ReorderBuffer, InstructionMemory2Cache, LoadStoreQueue2Memory}
+import b4processor.connections.{DataMemoryOutput, InstructionMemory2Cache, LoadStoreQueue2Memory}
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.decoder.Decoder
 import b4processor.modules.executor.Executor
@@ -19,7 +19,7 @@ class B4Processor(implicit params: Parameters) extends Module {
     val instructionMemory = Flipped(new InstructionMemory2Cache)
     val dataMemory = new Bundle {
       val lsq = new LoadStoreQueue2Memory
-      val reorderBuffer = Flipped(new DataMemory2ReorderBuffer)
+      val output = Flipped(new DataMemoryOutput)
     }
 
     val registerFileContents = if (params.debug) Some(Output(Vec(31, UInt(64.W)))) else None
@@ -68,6 +68,9 @@ class B4Processor(implicit params: Parameters) extends Module {
     /** リザベーションステーションと実行ユニットを接続 */
     reservationStations(i).io.executor <> executors(i).io.reservationStation
 
+    /** リザベーションステーションとデータメモリを接続 */
+    reservationStations(i).io.dataMemoryOutputValue <> io.dataMemory.output
+
     /** 実行ユニットとリオーダバッファを接続 */
     executors(i).io.out <> reorderBuffer.io.executors(i)
 
@@ -81,12 +84,15 @@ class B4Processor(implicit params: Parameters) extends Module {
     for ((e, index) <- executors.zipWithIndex)
       decoders(i).io.executors(index) <> e.io.out
 
+    /** デコーダとデータメモリの接続 */
+    decoders(i).io.dataMemoryOutput <> io.dataMemory.output
+
     /** デコーダとLSQの接続 */
     loadStoreQueue.io.decoders(i) <> decoders(i).io.loadStoreQueue
 
     /** リザベーションステーションと実行ユニットの接続 */
     for ((e, index) <- executors.zipWithIndex)
-      reservationStations(i).io.bypassValues(index) <> e.io.out
+      reservationStations(i).io.executorOutputValues(index) <> e.io.out
 
     /** LSQと実行ユニットの接続 */
     executors(i).io.loadStoreQueue <> loadStoreQueue.io.executors(i)
@@ -114,7 +120,7 @@ class B4Processor(implicit params: Parameters) extends Module {
   io.dataMemory.lsq <> dataMemoryBuffer.io.dataOut
 
   /** データメモリとリオーダバッファ */
-  io.dataMemory.reorderBuffer <> reorderBuffer.io.dataMemory
+  io.dataMemory.output <> reorderBuffer.io.dataMemory
 
   /** フェッチと分岐予測 TODO */
   fetch.io.prediction <> DontCare

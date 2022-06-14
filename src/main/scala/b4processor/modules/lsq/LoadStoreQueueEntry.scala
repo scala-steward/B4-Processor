@@ -21,7 +21,7 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
   val function3 = UInt(3.W)
 
 
-  /** アドレスの計算結果とストアデータが格納されるタグ */
+  /** アドレスの計算結果とロードデータが格納されるタグ */
   val addressAndLoadResultTag = UInt(params.tagWidth.W)
   /** アドレス値 */
   val address = SInt(64.W)

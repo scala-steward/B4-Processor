@@ -1,14 +1,15 @@
 package b4processor.modules.reservationstation
 
 import b4processor.Parameters
-import b4processor.connections.{Decoder2ReservationStation, ExecutorOutput, ReservationStation2Executor}
+import b4processor.connections.{DataMemoryOutput, Decoder2ReservationStation, ExecutorOutput, ReservationStation2Executor}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
 
 class ReservationStation(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val bypassValues = Flipped(Vec(params.runParallel, new ExecutorOutput))
+    val executorOutputValues = Flipped(Vec(params.runParallel, new ExecutorOutput))
+    val dataMemoryOutputValue = Flipped(new DataMemoryOutput)
     val executor = new ReservationStation2Executor
     val decoder = Flipped(new Decoder2ReservationStation)
   })
@@ -33,13 +34,23 @@ class ReservationStation(implicit params: Parameters) extends Module {
     //      printf("no output\n")
   }
   io.executor.valid := hasReady
-  io.executor.bits.opcode := reservation(executeIndex).opcode
-  io.executor.bits.destinationTag := reservation(executeIndex).destinationTag
-  io.executor.bits.value1 := reservation(executeIndex).value1
-  io.executor.bits.value2 := reservation(executeIndex).value2
-  io.executor.bits.programCounter := reservation(executeIndex).programCounter
-  io.executor.bits.function3 := reservation(executeIndex).function3
-  io.executor.bits.immediateOrFunction7 := reservation(executeIndex).immediateOrFunction7
+  when(io.executor.valid) {
+    io.executor.bits.opcode := reservation(executeIndex).opcode
+    io.executor.bits.destinationTag := reservation(executeIndex).destinationTag
+    io.executor.bits.value1 := reservation(executeIndex).value1
+    io.executor.bits.value2 := reservation(executeIndex).value2
+    io.executor.bits.programCounter := reservation(executeIndex).programCounter
+    io.executor.bits.function3 := reservation(executeIndex).function3
+    io.executor.bits.immediateOrFunction7 := reservation(executeIndex).immediateOrFunction7
+  }.otherwise {
+    io.executor.bits.opcode := 0.U
+    io.executor.bits.destinationTag := 0.U
+    io.executor.bits.value1 := 0.U
+    io.executor.bits.value2 := 0.U
+    io.executor.bits.programCounter := 0.S
+    io.executor.bits.function3 := 0.U
+    io.executor.bits.immediateOrFunction7 := 0.U
+  }
 
   // デコーダから
   io.decoder.ready := hasEmpty
@@ -48,7 +59,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
     //    printf(p"stored in $emptyIndex valid=${io.decoder.entry.valid}\n")
   }
 
-  for (value <- io.bypassValues) {
+  for (value <- io.executorOutputValues) {
     when(value.valid) {
       for (entry <- reservation) {
         when(entry.valid) {
@@ -60,6 +71,22 @@ class ReservationStation(implicit params: Parameters) extends Module {
             entry.value2 := value.value
             entry.ready2 := true.B
           }
+        }
+      }
+    }
+  }
+
+  when(io.dataMemoryOutputValue.valid) {
+    val value = io.dataMemoryOutputValue.bits
+    for (entry <- reservation) {
+      when(entry.valid) {
+        when(!entry.ready1 && entry.sourceTag1 === value.tag) {
+          entry.value1 := value.value
+          entry.ready1 := true.B
+        }
+        when(!entry.ready2 && entry.sourceTag2 === value.tag) {
+          entry.value2 := value.value
+          entry.ready2 := true.B
         }
       }
     }

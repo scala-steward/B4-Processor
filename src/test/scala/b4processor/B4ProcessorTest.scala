@@ -15,7 +15,7 @@ class B4ProcessorWrapper(instructions: Seq[UInt])(implicit params: Parameters) e
   val dataMemory = Module(new DataMemory)
   core.io.instructionMemory <> instructionMemory.io
   core.io.dataMemory.lsq <> dataMemory.io.dataIn
-  core.io.dataMemory.reorderBuffer <> dataMemory.io.dataOut
+  core.io.dataMemory.output <> dataMemory.io.dataOut
   if (params.debug)
     core.io.registerFileContents.get <> io.registerFileContents.get
 }
@@ -174,7 +174,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   // 単純な値をストアしてロードするプログラム同時発行数2
-  ignore should "run load_store with 2 parallel" in {
+  it should "run load_store with 2 parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/load_store/load_store.32.hex"))(defaultParams.copy(runParallel = 2)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         c.clock.step(10)

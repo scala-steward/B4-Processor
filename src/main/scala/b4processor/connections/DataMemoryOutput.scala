@@ -4,7 +4,7 @@ import b4processor.Parameters
 import chisel3._
 import chisel3.util._
 
-class DataMemory2ReorderBuffer(implicit params: Parameters) extends ReadyValidIO(new Bundle {
+class DataMemoryOutput(implicit params: Parameters) extends Valid(new Bundle {
   val tag = UInt(params.tagWidth.W)
   val value = UInt(64.W)
 })

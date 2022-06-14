@@ -1,0 +1,19 @@
+package b4processor.modules.fetch
+
+import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
+import chisel3._
+import chisel3.experimental.ChiselEnum
+
+object WaitingReason extends ChiselEnum {
+  /** 分岐なし */
+  val None = Value
+  /** 分岐命令 */
+  val Branch = Value
+  /** JALRによる分岐 */
+  val JALR = Value
+  /** Fenceによる停止 */
+  val Fence = Value
+  /** Fense.iによる停止 */
+  val FenceI = Value
+}
+

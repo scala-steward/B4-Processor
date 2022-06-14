@@ -27,14 +27,22 @@ class Executor(implicit params: Parameters) extends Module {
   instructionChecker.input.function7bits := io.reservationStation.bits.immediateOrFunction7
 
   val destinationRegister = Wire(UInt(64.W))
-  val immediateOrFunction7Extended = Mux(io.reservationStation.bits.immediateOrFunction7(11), (!0.U(64.W)) & io.reservationStation.bits.immediateOrFunction7, 0.U(64.W) | io.reservationStation.bits.immediateOrFunction7)
+  val immediateOrFunction7Extended = io.reservationStation.bits.immediateOrFunction7
   val branchedProgramCounter = io.reservationStation.bits.programCounter + (immediateOrFunction7Extended ## 0.U(1.W)).asSInt
   val nextProgramCounter = io.reservationStation.bits.programCounter + 4.S
+
+  io.fetch.programCounter := 0.S
+  io.fetch.valid := false.B
+  destinationRegister := 0.U
 
   // set destinationRegister
   io.reservationStation.ready := true.B
   when(io.reservationStation.valid) {
+    printf("pc=%x, immediate=%d\n", io.reservationStation.bits.programCounter, immediateOrFunction7Extended.asSInt)
     destinationRegister := MuxCase(0.U, Seq(
+      // ストア
+      (instructionChecker.output.instruction === Instructions.Store)
+        -> (io.reservationStation.bits.value1.asSInt + immediateOrFunction7Extended.asSInt).asUInt,
       // 加算
       (instructionChecker.output.instruction === Instructions.Load ||
         (instructionChecker.output.arithmetic === ArithmeticOperations.Addition))
@@ -96,8 +104,11 @@ class Executor(implicit params: Parameters) extends Module {
         -> (io.reservationStation.bits.value1 >= io.reservationStation.bits.value2)
     ))
 
-    io.fetch.valid := (instructionChecker.output.instruction === Instructions.Branch) || (instructionChecker.output.instruction === Instructions.jal) ||
-      (instructionChecker.output.instruction === Instructions.auipc) || (instructionChecker.output.instruction === Instructions.jalr)
+    io.fetch.valid := (instructionChecker.output.instruction === Instructions.Branch) ||
+      // FIXME 用途がわからないからコメントアウトしたけど必要かもしれない
+      //      (instructionChecker.output.instruction === Instructions.jal) ||
+      //      (instructionChecker.output.instruction === Instructions.auipc) ||
+      (instructionChecker.output.instruction === Instructions.jalr)
     when(io.fetch.valid) {
       io.fetch.programCounter := MuxCase(io.reservationStation.bits.programCounter, Seq(
         // 分岐
@@ -132,14 +143,7 @@ class Executor(implicit params: Parameters) extends Module {
         (instructionChecker.output.instruction === Instructions.jalr)
           -> Cat((io.reservationStation.bits.value1 + io.reservationStation.bits.value2) (63, 1), 0.U).asSInt
       ))
-    }.otherwise {
-      io.fetch.programCounter := nextProgramCounter
     }
-
-  }.otherwise {
-    destinationRegister := 0.U
-    io.fetch.programCounter := nextProgramCounter
-    io.fetch.valid := false.B
   }
 
   /**
@@ -153,12 +157,15 @@ class Executor(implicit params: Parameters) extends Module {
     io.reservationStation.valid
   io.loadStoreQueue.programCounter := io.reservationStation.bits.programCounter
   io.loadStoreQueue.destinationTag := io.reservationStation.bits.destinationTag
-  io.loadStoreQueue.value := Mux(instructionChecker.output.instruction === Instructions.Store,
-    io.reservationStation.bits.value1 + immediateOrFunction7Extended, Mux(instructionChecker.output.operationWidth === OperationWidth.Word,
-      Mux(destinationRegister(31), Cat(~0.U(32.W), destinationRegister(31, 0)), Cat(0.U(32.W), destinationRegister(31, 0))),
-      destinationRegister))
+  io.loadStoreQueue.value := destinationRegister
+  // FIXME このブロックを消したときにWordに変換する作業を完全に省略している気がする
+  //    Mux(instructionChecker.output.instruction === Instructions.Store,
+  //    io.reservationStation.bits.value1 + immediateOrFunction7Extended, Mux(instructionChecker.output.operationWidth === OperationWidth.Word,
+  //      Mux(destinationRegister(31), Cat(~0.U(32.W), destinationRegister(31, 0)), Cat(0.U(32.W), destinationRegister(31, 0))),
+  //      destinationRegister))
 
   // reorder Buffer
+  printf(p"instruction type = ${instructionChecker.output.instruction.asUInt}\n")
   io.out.valid := io.reservationStation.valid &&
     instructionChecker.output.instruction =/= Instructions.Unknown &&
     instructionChecker.output.instruction =/= Instructions.Load // load命令の場合, ReorderBufferのvalueはDataMemoryから

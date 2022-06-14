@@ -3,7 +3,7 @@ package b4processor.modules.decoder
 import b4processor.Parameters
 import b4processor.common.OpcodeFormat
 import b4processor.common.OpcodeFormat._
-import b4processor.connections.ExecutorOutput
+import b4processor.connections.{DataMemoryOutput, ExecutorOutput}
 import chisel3._
 import chisel3.util._
 
@@ -17,7 +17,8 @@ class ValueSelector2(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reorderBufferValue = Flipped(DecoupledIO(UInt(64.W)))
     val registerFileValue = Input(UInt(64.W))
-    val executorBypassValue = Vec(params.runParallel, Flipped(new ExecutorOutput))
+    val executorOutputValue = Vec(params.runParallel, Flipped(new ExecutorOutput))
+    val dataMemoryOutputValue = Flipped(new DataMemoryOutput)
     val immediateValue = Input(SInt(64.W))
     val opcodeFormat = Input(OpcodeFormat())
     val sourceTag = Input(new SourceTagInfo)
@@ -27,7 +28,7 @@ class ValueSelector2(implicit params: Parameters) extends Module {
   io.reorderBufferValue.ready := true.B
 
   val executorMatchingTagExists = Cat((0 until params.runParallel)
-    .map { i => io.executorBypassValue(i).valid && io.executorBypassValue(i).destinationTag === io.sourceTag.tag }).orR
+    .map { i => io.executorOutputValue(i).valid && io.executorOutputValue(i).destinationTag === io.sourceTag.tag }).orR
 
   io.value.valid := MuxCase(false.B,
     Seq(
@@ -45,8 +46,9 @@ class ValueSelector2(implicit params: Parameters) extends Module {
       (io.sourceTag.from === SourceTagFrom.BeforeDecoder) -> 0.U,
       (io.sourceTag.valid && io.reorderBufferValue.valid) -> io.reorderBufferValue.bits,
       (io.sourceTag.valid && executorMatchingTagExists) -> MuxCase(0.U,
-        (0 until params.runParallel).map(i => (io.executorBypassValue(i).valid && io.executorBypassValue(i).destinationTag === io.sourceTag.tag) -> io.executorBypassValue(i).value)
+        (0 until params.runParallel).map(i => (io.executorOutputValue(i).valid && io.executorOutputValue(i).destinationTag === io.sourceTag.tag) -> io.executorOutputValue(i).value)
       ),
+      (io.sourceTag.valid && io.dataMemoryOutputValue.valid && io.dataMemoryOutputValue.bits.tag === io.sourceTag.tag) -> io.dataMemoryOutputValue.bits.value,
       (!io.sourceTag.valid) -> io.registerFileValue,
     ))
 }

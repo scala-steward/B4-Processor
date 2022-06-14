@@ -32,7 +32,7 @@ class Fetch(implicit params: Parameters) extends Module {
   /** プログラムカウンタ */
   val pc = RegInit(params.instructionStart.S(64.W))
   /** フェッチの停止と理由 */
-  val waiting = RegInit(Waiting.notWaiting())
+  val waiting = RegInit(WaitingReason.None)
 
   var nextPC = pc
   var nextWait = waiting
@@ -48,39 +48,39 @@ class Fetch(implicit params: Parameters) extends Module {
       io.branchTypes.get(i) := branch.io.branchType
 
     // キャッシュからの値があり、待つ必要はなく、JAL命令ではない（JALはアドレスを変えるだけとして処理できて、デコーダ以降を使う必要はない）
-    decoder.valid := io.cache(i).output.valid && decoder.ready && !nextWait.isWaiting
+    decoder.valid := io.cache(i).output.valid && decoder.ready && nextWait === WaitingReason.None
     decoder.bits.programCounter := nextPC
     decoder.bits.instruction := cache.output.bits
 
     // 次に停止する必要があるか確認
-    nextWait = Mux(nextWait.isWaiting, nextWait, MuxLookup(branch.io.branchType.asUInt, nextWait, Seq(
-      BranchType.Branch.asUInt -> Waiting.waitFor(BranchType.Branch),
-      BranchType.JALR.asUInt -> Waiting.waitFor(BranchType.JALR),
-      BranchType.Fence.asUInt -> Waiting.waitFor(BranchType.Fence),
-      BranchType.FenceI.asUInt -> Waiting.waitFor(BranchType.FenceI),
+    nextWait = Mux(nextWait =/= WaitingReason.None, nextWait, MuxLookup(branch.io.branchType.asUInt, nextWait, Seq(
+      BranchType.Branch.asUInt -> WaitingReason.Branch,
+      BranchType.JALR.asUInt -> WaitingReason.JALR,
+      BranchType.Fence.asUInt -> WaitingReason.Fence,
+      BranchType.FenceI.asUInt -> WaitingReason.FenceI,
     )))
     // PCの更新を確認
     nextPC = nextPC + MuxCase(4.S, Seq(
       (branch.io.branchType === BranchType.JAL) -> branch.io.offset,
-      (nextWait.isWaiting || !decoder.valid) -> 0.S))
+      (nextWait =/= WaitingReason.None || !decoder.valid) -> 0.S))
 
   }
   pc := nextPC
   waiting := nextWait
 
   // 停止している際の挙動
-  when(waiting.isWaiting) {
-    when(waiting.reason === BranchType.Branch || waiting.reason === BranchType.JALR) {
+  when(waiting =/= WaitingReason.None) {
+    when(waiting === WaitingReason.Branch || waiting === WaitingReason.JALR) {
       for (e <- io.executorBranchResult) {
         when(e.valid) {
-          waiting := Waiting.notWaiting()
+          waiting := WaitingReason.None
           pc := e.programCounter
         }
       }
     }
-    when(waiting.reason === BranchType.Fence || waiting.reason === BranchType.FenceI) {
+    when(waiting === WaitingReason.Fence || waiting === WaitingReason.FenceI) {
       when(io.reorderBufferEmpty && io.loadStoreQueueEmpty) {
-        waiting := Waiting.notWaiting()
+        waiting := WaitingReason.None
         pc := pc + 4.S
       }
     }
