@@ -33,7 +33,7 @@ class ReservationStationWrapper(implicit params: Parameters) extends Reservation
   }
 
   def setExecutors(values: Seq[Option[ExecutorValue]]): Unit = {
-    for ((bypassValue, v) <- io.bypassValues.zip(values)) {
+    for ((bypassValue, v) <- io.executorOutputValues.zip(values)) {
       bypassValue.valid.poke(v.isDefined)
       bypassValue.value.poke(v.getOrElse(ExecutorValue(destinationTag = 0, value = 0)).value)
       bypassValue.destinationTag.poke(v.getOrElse(ExecutorValue(destinationTag = 0, value = 0)).destinationTag)

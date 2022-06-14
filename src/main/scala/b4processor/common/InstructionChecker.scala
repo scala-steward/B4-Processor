@@ -75,7 +75,7 @@ class InstructionChecker extends Module {
   output.arithmetic := Mux(output.instruction === Instructions.Arithmetic || output.instruction === Instructions.ArithmeticImmediate,
     MuxLookup(input.function3bits, ArithmeticOperations.Unknown, Seq(
       0.U -> Mux(output.instruction === Instructions.Arithmetic && input.function7bits(5),
-        ArithmeticOperations.Subtract,
+        ArithmeticOperations.Subtraction,
         ArithmeticOperations.Addition),
       1.U -> ArithmeticOperations.ShiftLeftLogical,
       2.U -> ArithmeticOperations.SetLessThan,
@@ -154,7 +154,7 @@ object ArithmeticOperations extends ChiselEnum {
   /** add, addi */
   val Addition = Value
   /** sub */
-  val Subtract = Value
+  val Subtraction = Value
   /** sll, slli */
   val ShiftLeftLogical = Value
   /** slt, slti */

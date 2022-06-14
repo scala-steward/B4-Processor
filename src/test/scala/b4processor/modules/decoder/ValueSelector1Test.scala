@@ -16,9 +16,9 @@ class ValueSelector1Wrapper(implicit params: Parameters) extends ValueSelector1 
    */
   def initalize(sourceTag: Option[Int] = None, registerFileValue: Int = 0, reorderBufferValue: Option[Int] = None, aluBypassValue: Seq[Option[(Int, Int)]] = Seq.fill(params.runParallel)(None)): Unit = {
     for (i <- aluBypassValue.indices) {
-      this.io.executorBypassValue(i).valid.poke(aluBypassValue(i).isDefined.B)
-      this.io.executorBypassValue(i).destinationTag.poke(aluBypassValue(i).getOrElse((0, 0))._1.U)
-      this.io.executorBypassValue(i).value.poke(aluBypassValue(i).getOrElse((0, 0))._2.U)
+      this.io.executorOutputValue(i).valid.poke(aluBypassValue(i).isDefined.B)
+      this.io.executorOutputValue(i).destinationTag.poke(aluBypassValue(i).getOrElse((0, 0))._1.U)
+      this.io.executorOutputValue(i).value.poke(aluBypassValue(i).getOrElse((0, 0))._2.U)
     }
     this.io.reorderBufferValue.valid.poke(reorderBufferValue.isDefined)
     this.io.reorderBufferValue.bits.poke(reorderBufferValue.getOrElse(0))

@@ -3,7 +3,7 @@ CFLAGS += -T ../linker.ld
 PROGRAMNAME := fibonacci_c
 
 .PHONY:clean
-all: $(PROGRAMNAME).8.hex $(PROGRAMNAME).32.hex $(PROGRAMNAME).o $(PROGRAMNAME).dump
+all: $(PROGRAMNAME).dump $(PROGRAMNAME).8.hex $(PROGRAMNAME).32.hex $(PROGRAMNAME).o
 
 $(PROGRAMNAME).o: entry.S fibonacci.c
 	@echo $(CC) $(CFLAGS)

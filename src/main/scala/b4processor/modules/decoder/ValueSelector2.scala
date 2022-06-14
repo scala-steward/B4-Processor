@@ -37,6 +37,7 @@ class ValueSelector2(implicit params: Parameters) extends Module {
       (io.sourceTag.from === SourceTagFrom.BeforeDecoder) -> false.B,
       (io.sourceTag.valid && io.reorderBufferValue.valid) -> true.B,
       (io.sourceTag.valid && executorMatchingTagExists) -> true.B,
+      (io.sourceTag.valid && io.dataMemoryOutputValue.valid && io.dataMemoryOutputValue.bits.tag === io.sourceTag.tag) -> true.B,
       (!io.sourceTag.valid) -> true.B,
     ))
   io.value.bits := MuxCase(0.U,
