@@ -27,5 +27,6 @@ class Decoder2ReorderBuffer(implicit params: Parameters) extends Bundle {
   class DestinationRegister extends Bundle {
     val destinationRegister = Output(UInt(5.W))
     val destinationTag = Input(UInt(params.tagWidth.W))
+    val storeSign = Output(Bool())
   }
 }

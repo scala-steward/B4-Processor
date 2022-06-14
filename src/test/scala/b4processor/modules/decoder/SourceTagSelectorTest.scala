@@ -7,7 +7,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class SourceTagSelectorWrapper(instruction_offset: Int)(implicit params: Parameters) extends SourceTagSelector(instruction_offset) {
   def initialize(destinationTags: Seq[Option[Int]], reorderBufferValue: Option[Int]): Unit = {
-    this.io.sourceTag.ready.poke(true.B)
     initializeBeforeDestinationTag(destinationTags)
     initializeReorderBuffer(reorderBufferValue)
   }
@@ -27,7 +26,7 @@ class SourceTagSelectorWrapper(instruction_offset: Int)(implicit params: Paramet
   def expect(value: Option[Int]): Unit = {
     this.io.sourceTag.valid.expect(value.isDefined.B, "source tagが出力されていません")
     if (value.isDefined) {
-      this.io.sourceTag.bits.expect(value.get.U, "source tagの値が間違っています")
+      this.io.sourceTag.tag.expect(value.get.U, "source tagの値が間違っています")
     }
   }
 }

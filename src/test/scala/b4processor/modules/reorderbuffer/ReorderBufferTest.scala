@@ -1,7 +1,7 @@
 package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
-import b4processor.utils.{ALUValue, DecoderValue, RegisterFileValue}
+import b4processor.utils.{ExecutorValue, DecoderValue, RegisterFileValue}
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -9,14 +9,14 @@ import scala.util.Random
 
 class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
   def initialize(): Unit = {
-    setALU()
+    setExecutors()
     setDecoder()
   }
 
 
-  def setALU(values: Seq[Option[ALUValue]] = Seq.fill(params.numberOfALUs)(None)): Unit = {
-    for (i <- 0 until params.numberOfALUs) {
-      val alu = this.io.alus(i)
+  def setExecutors(values: Seq[Option[ExecutorValue]] = Seq.fill(params.runParallel)(None)): Unit = {
+    for (i <- 0 until params.runParallel) {
+      val alu = this.io.executors(i)
       val v = values(i)
       alu.valid.poke(v.isDefined)
       if (v.isDefined) {
@@ -27,8 +27,8 @@ class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
   }
 
 
-  def setDecoder(decoderValues: Seq[DecoderValue] = Seq.fill(params.numberOfDecoders)(DecoderValue())): Unit = {
-    for (i <- 0 until params.numberOfDecoders) {
+  def setDecoder(decoderValues: Seq[DecoderValue] = Seq.fill(params.runParallel)(DecoderValue())): Unit = {
+    for (i <- 0 until params.runParallel) {
       val decoder = this.io.decoders(i)
       val values = decoderValues(i)
       decoder.valid.poke(values.valid)
@@ -58,7 +58,7 @@ class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
 
 class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Reorder Buffer"
-  implicit val defaultParams = Parameters(tagWidth = 4, numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1, debug = true)
+  implicit val defaultParams = Parameters(tagWidth = 4, runParallel = 1, maxRegisterFileCommitCount = 1, debug = true)
 
   /** リオーダバッファに値が出力されない */
   it should "output nothing to register file on first clock" in {
@@ -85,7 +85,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "set ready to 0 when full with 4 decoders (reduced tag width to 5 for speed)" in {
-    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfDecoders = 4))) { c =>
+    test(new ReorderBufferWrapper()(defaultParams.copy(runParallel = 4))) { c =>
       c.initialize()
       var loop = 0
       c.io.decoders(0).ready.expect(true)
@@ -106,7 +106,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "set ready to 0 when full with 4 decoders but 2 decoder inputs (reduced tag width to 5 for speed)" in {
-    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfDecoders = 4))) { c =>
+    test(new ReorderBufferWrapper()(defaultParams.copy(runParallel = 4))) { c =>
       c.initialize()
       var loop = 0
       c.io.decoders(0).ready.expect(true)
@@ -135,7 +135,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setDecoder(Seq(
         DecoderValue(valid = true, destination = 1, source1 = 2, source2 = 3),
       ))
-      c.setALU(Seq(Some(ALUValue(destinationTag = 0, value = 3))))
+      c.setExecutors(Seq(Some(ExecutorValue(destinationTag = 0, value = 3))))
       c.clock.step(2)
 
       //      println(c.io.head.get.peek().litValue, c.io.tail.get.peek().litValue)
@@ -163,10 +163,10 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
 
       // 値のセット
       c.setDecoder(Seq(DecoderValue()))
-      c.setALU(Seq(Some(ALUValue(destinationTag = 0, value = 10))))
+      c.setExecutors(Seq(Some(ExecutorValue(destinationTag = 0, value = 10))))
 
       c.clock.step()
-      c.setALU(Seq(None))
+      c.setExecutors(Seq(None))
       // 値の確認
       c.expectRegisterFile(Seq(Some(RegisterFileValue(destinationRegister = 1, value = 10))))
 
@@ -210,7 +210,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   //  }
 
   it should "have an output in register file with 4 of each component" in {
-    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+    test(new ReorderBufferWrapper()(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize()
       c.clock.setTimeout(10)
 
@@ -231,15 +231,15 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
 
       // 値のセット
       c.setDecoder(Seq.fill(4)(DecoderValue()))
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 0, value = 10)),
-        Some(ALUValue(destinationTag = 1, value = 20)),
-        Some(ALUValue(destinationTag = 2, value = 30)),
-        Some(ALUValue(destinationTag = 3, value = 40))
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 0, value = 10)),
+        Some(ExecutorValue(destinationTag = 1, value = 20)),
+        Some(ExecutorValue(destinationTag = 2, value = 30)),
+        Some(ExecutorValue(destinationTag = 3, value = 40))
       ))
 
       c.clock.step()
-      c.setALU(Seq(None, None, None, None))
+      c.setExecutors(Seq(None, None, None, None))
       c.io.registerFile(0).valid.expect(true)
       // 値の確認
       c.expectRegisterFile(Seq(
@@ -254,7 +254,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "have an output in register file with 4 of each component out of order simple" in {
-    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+    test(new ReorderBufferWrapper()(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize()
       c.clock.setTimeout(10)
 
@@ -279,24 +279,24 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
         DecoderValue(valid = true, destination = 7, source1 = 2, source2 = 3, programCounter = 524),
         DecoderValue(valid = true, destination = 8, source1 = 2, source2 = 3, programCounter = 528)
       ))
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 4, value = 50)),
-        Some(ALUValue(destinationTag = 5, value = 60)),
-        Some(ALUValue(destinationTag = 6, value = 70)),
-        Some(ALUValue(destinationTag = 7, value = 80))
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 4, value = 50)),
+        Some(ExecutorValue(destinationTag = 5, value = 60)),
+        Some(ExecutorValue(destinationTag = 6, value = 70)),
+        Some(ExecutorValue(destinationTag = 7, value = 80))
       ))
 
       c.clock.step()
       c.setDecoder()
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 0, value = 10)),
-        Some(ALUValue(destinationTag = 1, value = 20)),
-        Some(ALUValue(destinationTag = 2, value = 30)),
-        Some(ALUValue(destinationTag = 3, value = 40))
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 0, value = 10)),
+        Some(ExecutorValue(destinationTag = 1, value = 20)),
+        Some(ExecutorValue(destinationTag = 2, value = 30)),
+        Some(ExecutorValue(destinationTag = 3, value = 40))
       ))
 
       c.clock.step()
-      c.setALU(Seq(None, None, None, None))
+      c.setExecutors(Seq(None, None, None, None))
       // 値の確認
       c.expectRegisterFile(Seq(
         Some(RegisterFileValue(destinationRegister = 1, value = 10)),
@@ -318,7 +318,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "have an output in register file with 4 of each component out of order complex" in {
-    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+    test(new ReorderBufferWrapper()(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize()
       c.clock.setTimeout(10)
 
@@ -343,25 +343,25 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
         DecoderValue(valid = true, destination = 7, source1 = 2, source2 = 3, programCounter = 524),
         DecoderValue(valid = true, destination = 8, source1 = 2, source2 = 3, programCounter = 528)
       ))
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 1, value = 20)),
-        Some(ALUValue(destinationTag = 5, value = 60)),
-        Some(ALUValue(destinationTag = 7, value = 80)),
-        Some(ALUValue(destinationTag = 2, value = 30)),
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 1, value = 20)),
+        Some(ExecutorValue(destinationTag = 5, value = 60)),
+        Some(ExecutorValue(destinationTag = 7, value = 80)),
+        Some(ExecutorValue(destinationTag = 2, value = 30)),
 
       ))
 
       c.clock.step()
       c.setDecoder()
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 0, value = 10)),
-        Some(ALUValue(destinationTag = 6, value = 70)),
-        Some(ALUValue(destinationTag = 4, value = 50)),
-        Some(ALUValue(destinationTag = 3, value = 40)),
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 0, value = 10)),
+        Some(ExecutorValue(destinationTag = 6, value = 70)),
+        Some(ExecutorValue(destinationTag = 4, value = 50)),
+        Some(ExecutorValue(destinationTag = 3, value = 40)),
       ))
 
       c.clock.step()
-      c.setALU(Seq(None, None, None, None))
+      c.setExecutors(Seq(None, None, None, None))
       // 値の確認
       c.expectRegisterFile(Seq(
         Some(RegisterFileValue(destinationRegister = 1, value = 10)),
@@ -383,7 +383,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "have an output in register file with 4 of each component out of order complex not aligned" in {
-    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+    test(new ReorderBufferWrapper()(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize()
       c.clock.setTimeout(10)
 
@@ -406,11 +406,11 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
         DecoderValue(valid = true, destination = 17, source1 = 2, source2 = 3, programCounter = 524),
         DecoderValue(valid = true, destination = 18, source1 = 2, source2 = 3, programCounter = 528)
       ))
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 0, value = 10)),
-        Some(ALUValue(destinationTag = 1, value = 20)),
-        Some(ALUValue(destinationTag = 5, value = 60)),
-        Some(ALUValue(destinationTag = 4, value = 50)),
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 0, value = 10)),
+        Some(ExecutorValue(destinationTag = 1, value = 20)),
+        Some(ExecutorValue(destinationTag = 5, value = 60)),
+        Some(ExecutorValue(destinationTag = 4, value = 50)),
       ))
 
       c.clock.step()
@@ -423,15 +423,15 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
         None,
       ))
 
-      c.setALU(Seq(
-        Some(ALUValue(destinationTag = 6, value = 70)),
-        Some(ALUValue(destinationTag = 3, value = 40)),
-        Some(ALUValue(destinationTag = 7, value = 80)),
-        Some(ALUValue(destinationTag = 2, value = 30)),
+      c.setExecutors(Seq(
+        Some(ExecutorValue(destinationTag = 6, value = 70)),
+        Some(ExecutorValue(destinationTag = 3, value = 40)),
+        Some(ExecutorValue(destinationTag = 7, value = 80)),
+        Some(ExecutorValue(destinationTag = 2, value = 30)),
       ))
 
       c.clock.step()
-      c.setALU(Seq(None, None, None, None))
+      c.setExecutors(Seq(None, None, None, None))
       // 値の確認
       c.expectRegisterFile(Seq(
         Some(RegisterFileValue(destinationRegister = 13, value = 30)),

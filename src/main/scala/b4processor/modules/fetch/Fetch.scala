@@ -1,7 +1,7 @@
 package b4processor.modules.fetch
 
 import b4processor.Parameters
-import b4processor.connections.{ExecutorBranchResult, Fetch2BranchPrediction, Fetch2Decoder, InstructionCache2Fetch}
+import b4processor.connections.{Executor2Fetch, Fetch2BranchPrediction, Fetch2Decoder, InstructionCache2Fetch}
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
@@ -10,45 +10,47 @@ import chisel3.stage.ChiselStage
 class Fetch(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     /** 命令キャッシュ */
-    val cache = Flipped(Vec(params.numberOfDecoders, new InstructionCache2Fetch))
+    val cache = Flipped(Vec(params.runParallel, new InstructionCache2Fetch))
     /** 分岐予測 */
-    val prediction = Vec(params.numberOfDecoders, new Fetch2BranchPrediction)
+    val prediction = Vec(params.runParallel, new Fetch2BranchPrediction)
     /** リオーダバッファの中身が空である */
     val reorderBufferEmpty = Input(Bool())
     /** ロードストアキューが空である */
     val loadStoreQueueEmpty = Input(Bool())
     /** 実行ユニットから分岐先の計算結果が帰ってきた */
-    val executorBranchResult = Vec(params.numberOfALUs, Input(new ExecutorBranchResult))
+    val executorBranchResult = Vec(params.runParallel, Input(new Executor2Fetch))
 
     /** デコーダ */
-    val decoders = Vec(params.numberOfDecoders, new Fetch2Decoder)
+    val decoders = Vec(params.runParallel, new Fetch2Decoder)
 
     /** デバッグ用 */
     val PC = if (params.debug) Some(Output(SInt(64.W))) else None
     val nextPC = if (params.debug) Some(Output(SInt(64.W))) else None
-    val branchTypes = if (params.debug) Some(Output(Vec(params.numberOfDecoders, new BranchType.Type))) else None
+    val branchTypes = if (params.debug) Some(Output(Vec(params.runParallel, new BranchType.Type))) else None
   })
 
   /** プログラムカウンタ */
-  val pc = RegInit(params.pcInit.S(64.W))
+  val pc = RegInit(params.instructionStart.S(64.W))
   /** フェッチの停止と理由 */
   val waiting = RegInit(Waiting.notWaiting())
 
   var nextPC = pc
   var nextWait = waiting
-  for (i <- 0 until params.numberOfDecoders) {
+  for (i <- 0 until params.runParallel) {
     val decoder = io.decoders(i)
     val cache = io.cache(i)
 
     cache.address := nextPC
-    decoder.valid := io.cache(i).output.valid && !nextWait.isWaiting
-    decoder.bits.programCounter := nextPC
-    decoder.bits.instruction := cache.output.bits
 
     val branch = Module(new CheckBranch)
     branch.io.instruction := io.cache(i).output.bits
     if (params.debug)
       io.branchTypes.get(i) := branch.io.branchType
+
+    // キャッシュからの値があり、待つ必要はなく、JAL命令ではない（JALはアドレスを変えるだけとして処理できて、デコーダ以降を使う必要はない）
+    decoder.valid := io.cache(i).output.valid && decoder.ready && !nextWait.isWaiting
+    decoder.bits.programCounter := nextPC
+    decoder.bits.instruction := cache.output.bits
 
     // 次に停止する必要があるか確認
     nextWait = Mux(nextWait.isWaiting, nextWait, MuxLookup(branch.io.branchType.asUInt, nextWait, Seq(
@@ -58,11 +60,10 @@ class Fetch(implicit params: Parameters) extends Module {
       BranchType.FenceI.asUInt -> Waiting.waitFor(BranchType.FenceI),
     )))
     // PCの更新を確認
-    nextPC = nextPC + Mux(nextWait.isWaiting,
-      0.S,
-      MuxLookup(branch.io.branchType.asUInt, 4.S, Seq(
-        BranchType.JAL.asUInt -> branch.io.offset
-      )))
+    nextPC = nextPC + MuxCase(4.S, Seq(
+      (branch.io.branchType === BranchType.JAL) -> branch.io.offset,
+      (nextWait.isWaiting || !decoder.valid) -> 0.S))
+
   }
   pc := nextPC
   waiting := nextWait
@@ -73,7 +74,7 @@ class Fetch(implicit params: Parameters) extends Module {
       for (e <- io.executorBranchResult) {
         when(e.valid) {
           waiting := Waiting.notWaiting()
-          pc := e.branchAddress
+          pc := e.programCounter
         }
       }
     }

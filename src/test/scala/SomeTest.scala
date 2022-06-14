@@ -11,7 +11,7 @@ class Adder extends Module {
 }
 
 class SomeTest extends AnyFlatSpec with ChiselScalatestTester {
-  it should "aaa" in {
+  it should "10-3=7" in {
     test(new Adder) { c =>
       c.a.poke(10)
       c.b.poke(-3)

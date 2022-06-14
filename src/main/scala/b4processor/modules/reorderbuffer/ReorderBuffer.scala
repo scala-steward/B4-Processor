@@ -1,10 +1,12 @@
 package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
-import b4processor.connections.{BranchPrediction2ReorderBuffer, Decoder2ReorderBuffer, ExecutionRegisterBypass, ReorderBuffer2RegisterFile}
+import b4processor.connections.{BranchPrediction2ReorderBuffer, DataMemory2ReorderBuffer, Decoder2ReorderBuffer, ExecutionRegisterBypass, LoadStoreQueue2ReorderBuffer, ReorderBuffer2RegisterFile}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
+
+import scala.math.pow
 
 /**
  * リオーダバッファ
@@ -13,9 +15,12 @@ import chisel3.util._
  */
 class ReorderBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val decoders = Vec(params.numberOfDecoders, Flipped(new Decoder2ReorderBuffer))
-    val alus = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
+    val decoders = Vec(params.runParallel, Flipped(new Decoder2ReorderBuffer))
+    val executors = Vec(params.runParallel, Flipped(new ExecutionRegisterBypass))
     val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
+    val dataMemory = Flipped(new DataMemory2ReorderBuffer)
+    val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
+    val isEmpty = Output(Bool())
 
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
     val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
@@ -24,12 +29,12 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 
   val head = RegInit(0.U(params.tagWidth.W))
   val tail = RegInit(0.U(params.tagWidth.W))
-  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt)(ReorderBufferEntry.default())))
+  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt)(ReorderBufferEntry.default)))
 
   // デコーダからの読み取りと書き込み
   var insertIndex = head
   var lastReady = true.B
-  for (i <- 0 until params.numberOfDecoders) {
+  for (i <- 0 until params.runParallel) {
     val decoder = io.decoders(i)
     decoder.ready := lastReady && (insertIndex + 1.U) =/= tail
     when(decoder.valid && decoder.ready) {
@@ -41,17 +46,24 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         entry.valueReady := false.B
         entry.programCounter := decoder.programCounter
         entry.destinationRegister := decoder.destination.destinationRegister
-        entry.commitReady := false.B
+        entry.storeSign := decoder.destination.storeSign
         entry
       }
     }
     decoder.destination.destinationTag := insertIndex
     // ソースレジスタに対応するタグ、値の代入
+    val descendingIndex = VecInit((0 until pow(2, params.tagWidth).toInt).map(indexOffset => head - indexOffset.U))
     when(decoder.source1.sourceRegister =/= 0.U) {
-      decoder.source1.matchingTag.valid := buffer.map { entry => entry.destinationRegister === decoder.source1.sourceRegister }.fold(false.B) { (a, b) => a | b }
-      decoder.source1.matchingTag.bits := MuxCase(0.U, buffer.zipWithIndex.map { case (entry, index) => (entry.destinationRegister === decoder.source1.sourceRegister) -> index.U })
-      decoder.source1.value.valid := buffer.map { entry => entry.destinationRegister === decoder.source1.sourceRegister && entry.valueReady }.fold(false.B) { (a, b) => a | b }
-      decoder.source1.value.bits := MuxCase(0.U, buffer.map { entry => (entry.destinationRegister === decoder.source1.sourceRegister && entry.valueReady) -> entry.value })
+      val matchingBits = Cat(buffer.reverse.map(entry => entry.destinationRegister === decoder.source1.sourceRegister))
+        .suggestName(s"matchingBits_d${i}_s1")
+      val hasMatching = matchingBits.orR
+        .suggestName(s"hasMatching_d${i}_s1")
+      val matchingIndex = MuxCase(0.U, descendingIndex.map { index => matchingBits(index).asBool -> index })
+        .suggestName(s"matchingIndex_d${i}_s1")
+      decoder.source1.matchingTag.valid := hasMatching
+      decoder.source1.matchingTag.bits := matchingIndex
+      decoder.source1.value.valid := buffer(matchingIndex).valueReady
+      decoder.source1.value.bits := buffer(matchingIndex).value
     }.otherwise {
       decoder.source1.matchingTag.valid := false.B
       decoder.source1.matchingTag.bits := 0.U
@@ -60,10 +72,14 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     }
 
     when(decoder.source2.sourceRegister =/= 0.U) {
-      decoder.source2.matchingTag.valid := buffer.map { entry => entry.destinationRegister === decoder.source2.sourceRegister }.fold(false.B) { (a, b) => a | b }
-      decoder.source2.matchingTag.bits := MuxCase(0.U, buffer.zipWithIndex.map { case (entry, index) => (entry.destinationRegister === decoder.source2.sourceRegister) -> index.U })
-      decoder.source2.value.valid := buffer.map { entry => entry.destinationRegister === decoder.source2.sourceRegister && entry.valueReady }.fold(false.B) { (a, b) => a | b }
-      decoder.source2.value.bits := MuxCase(0.U, buffer.map { entry => (entry.destinationRegister === decoder.source2.sourceRegister && entry.valueReady) -> entry.value })
+      val matchingBits = Cat(buffer.reverse.map(entry => entry.destinationRegister === decoder.source2.sourceRegister))
+        .suggestName(s"matchingBits_d${i}_s2")
+      val hasMatching = matchingBits.orR
+      val matchingIndex = MuxCase(0.U, descendingIndex.map { index => matchingBits(index).asBool -> index })
+      decoder.source2.matchingTag.valid := hasMatching
+      decoder.source2.matchingTag.bits := matchingIndex
+      decoder.source2.value.valid := buffer(matchingIndex).valueReady
+      decoder.source2.value.bits := buffer(matchingIndex).value
     }.otherwise {
       decoder.source2.matchingTag.valid := false.B
       decoder.source2.matchingTag.bits := 0.U
@@ -91,20 +107,32 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     io.registerFile(i).bits.value := buffer(index).value
     io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
 
+    // LSQへストア実行信号
+    io.loadStoreQueue.programCounter(i) := buffer(index).programCounter
+    io.loadStoreQueue.valid(i) := buffer(index).storeSign
 
     when(canCommit) {
-      buffer(index) := ReorderBufferEntry.default()
+      buffer(index) := ReorderBufferEntry.default
     }
     lastValid = canCommit
   }
   tail := tail + MuxCase(params.maxRegisterFileCommitCount.U, io.registerFile.zipWithIndex.map { case (entry, index) => !entry.valid -> index.U })
 
+  io.isEmpty := head === tail
+
   // ALUの読み込み
-  for (alu <- io.alus) {
+  for (alu <- io.executors) {
     when(alu.valid) {
       buffer(alu.destinationTag).value := alu.value
       buffer(alu.destinationTag).valueReady := true.B
     }
+  }
+
+  // DataMemoryからのロード値の読み込み
+  io.dataMemory.ready := true.B
+  when(io.dataMemory.valid) {
+    buffer(io.dataMemory.bits.tag).value := io.dataMemory.bits.value
+    buffer(io.dataMemory.bits.tag).valueReady := true.B
   }
 
   // デバッグ
@@ -117,6 +145,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 }
 
 object ReorderBuffer extends App {
-  implicit val params = Parameters(numberOfDecoders = 1, numberOfALUs = 1, maxRegisterFileCommitCount = 1, tagWidth = 4)
+  implicit val params = Parameters(runParallel = 1, maxRegisterFileCommitCount = 1, tagWidth = 4)
   (new ChiselStage).emitVerilog(new ReorderBuffer, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

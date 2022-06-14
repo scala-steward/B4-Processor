@@ -1,7 +1,7 @@
 package b4processor.modules.fetch
 
 import b4processor.Parameters
-import b4processor.connections.{ExecutorBranchResult, Fetch2BranchPrediction, Fetch2Decoder}
+import b4processor.connections.{Executor2Fetch, Fetch2BranchPrediction, Fetch2Decoder}
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.memory.InstructionMemory
 import b4processor.utils.InstructionUtil
@@ -16,11 +16,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     /** 分岐予測 */
-    val prediction = Vec(params.numberOfDecoders, new Fetch2BranchPrediction)
+    val prediction = Vec(params.runParallel, new Fetch2BranchPrediction)
     /** 実行ユニットからの分岐先の値 */
-    val executors = Input(Vec(params.numberOfALUs, new ExecutorBranchResult))
+    val executors = Input(Vec(params.runParallel, new Executor2Fetch))
     /** デコーダ */
-    val decoders = Vec(params.numberOfDecoders, new Fetch2Decoder)
+    val decoders = Vec(params.runParallel, new Fetch2Decoder)
     /** ロードストアキューのエントリが空か */
     val loadStoreQueueEmpty = Input(Bool())
     /** リオーダバッファのエントリが空か */
@@ -30,15 +30,15 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
     /** メモリの出力 */
     val memoryOutput = Vec(params.fetchWidth, Output(UInt(64.W)))
     /** キャッシュに要求されているアドレス */
-    val cacheAddress = Vec(params.numberOfDecoders, Output(SInt(64.W)))
+    val cacheAddress = Vec(params.runParallel, Output(SInt(64.W)))
     /** キャッシュからの出力 */
-    val cacheOutput = Vec(params.numberOfDecoders, Valid(UInt(64.W)))
+    val cacheOutput = Vec(params.runParallel, Valid(UInt(64.W)))
     /** プログラムカウンタ */
     val PC = Output(SInt(64.W))
     /** 次のクロックのプログラムカウンタ */
     val nextPC = Output(SInt(64.W))
     /** 各命令のぶん機の種類 */
-    val branchTypes = Output(Vec(params.numberOfDecoders, new BranchType.Type))
+    val branchTypes = Output(Vec(params.runParallel, new BranchType.Type))
   })
 
   val fetch = Module(new Fetch)
@@ -67,21 +67,21 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
 
   /** 初期化 */
   def initialize(): Unit = {
-    this.setPrediction(Seq.fill(params.numberOfDecoders)(false))
+    this.setPrediction(Seq.fill(params.runParallel)(false))
   }
 
   /** 予測をセット */
   def setPrediction(values: Seq[Boolean]): Unit = {
-    for (i <- 0 until params.numberOfDecoders) {
+    for (i <- 0 until params.runParallel) {
       this.io.prediction(i).prediction.poke(values(i))
     }
   }
 
   /** 分岐先をセット */
-  def setExecutorBranchResult(results: Seq[Option[Int]] = Seq.fill(params.numberOfALUs)(None)): Unit = {
+  def setExecutorBranchResult(results: Seq[Option[Int]] = Seq.fill(params.runParallel)(None)): Unit = {
     for ((e, r) <- io.executors.zip(results)) {
       e.valid.poke(r.isDefined)
-      e.branchAddress.poke(r.getOrElse(0))
+      e.programCounter.poke(r.getOrElse(0))
     }
   }
 
@@ -93,7 +93,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
 
 class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Fetch"
-  implicit val defaultParams = Parameters(debug = true, numberOfALUs = 1)
+  implicit val defaultParams = Parameters(debug = true, runParallel = 2, instructionStart = 0x10000000)
 
   // 普通の命令と分岐を区別できるか
   // 書き込む命令
@@ -105,10 +105,10 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new FetchWrapper(InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000463", "00000013")))) { c =>
       c.initialize()
 
-      c.io.memoryAddress.expect(0)
+      c.io.memoryAddress.expect(0x10000000)
       c.expectMemory(Seq("x00000013".U, "x00000463".U))
-      c.io.cacheAddress(0).expect(0)
-      c.io.cacheAddress(1).expect(4)
+      c.io.cacheAddress(0).expect(0x10000000)
+      c.io.cacheAddress(1).expect(0x10000004)
 
       c.io.cacheOutput(0).bits.expect("x00000013".U)
       c.io.cacheOutput(0).valid.expect(true)
@@ -127,16 +127,18 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize()
       c.setPrediction(Seq(true, true))
 
-      c.io.memoryAddress.expect(0)
+      c.io.memoryAddress.expect(0x10000000)
       c.expectMemory(Seq("x00000063".U, "x00000000".U))
-      c.io.cacheAddress(0).expect(0)
-      c.io.cacheAddress(0).expect(0)
+      c.io.cacheAddress(0).expect(0x10000000)
+      c.io.cacheAddress(0).expect(0x10000000)
 
       c.io.cacheOutput(0).bits.expect("x00000063".U)
       c.io.cacheOutput(0).valid.expect(true)
 
       c.io.cacheOutput(1).bits.expect("x00000063".U)
       c.io.cacheOutput(1).valid.expect(true)
+
+      c.clock.step()
     }
   }
 
@@ -149,7 +151,7 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand branch prediction=false" in {
     test(new FetchWrapper(InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000463", "00000013")))) { c =>
       c.initialize()
-      c.io.nextPC.expect(4)
+      c.io.nextPC.expect(0x10000004)
     }
   }
 
@@ -162,7 +164,7 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand branch prediction=true" in {
     test(new FetchWrapper(InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000463", "00000013")))) { c =>
       c.initialize()
-      c.io.nextPC.expect(4)
+      c.io.nextPC.expect(0x10000004)
     }
   }
 
@@ -174,13 +176,13 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand loop to self" in {
     test(new FetchWrapper(InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063")))) { c =>
       c.initialize()
-      c.io.nextPC.expect(4)
+      c.io.nextPC.expect(0x10000004)
 
       c.clock.step()
 
-      c.setExecutorBranchResult(Seq(Some(4)))
+      c.setExecutorBranchResult(Seq(Some(0x10000004)))
 
-      c.io.nextPC.expect(4)
+      c.io.nextPC.expect(0x10000004)
     }
   }
 
@@ -193,14 +195,14 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new FetchWrapper(InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063")))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize()
 
-      c.io.nextPC.expect(4)
+      c.io.nextPC.expect(0x10000004)
       c.clock.step()
 
-      c.setExecutorBranchResult(Seq(Some(0)))
-      c.io.nextPC.expect(4)
+      c.setExecutorBranchResult(Seq(Some(0x10000000)))
+      c.io.nextPC.expect(0x10000004)
       c.clock.step()
 
-      c.io.nextPC.expect(4)
+      c.io.nextPC.expect(0x10000004)
       c.clock.step()
     }
   }
@@ -213,7 +215,7 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand jal loop" in {
     test(new FetchWrapper(InstructionUtil.fromStringSeq32bit(Seq("00000013", "ffdff06f")))) { c =>
       c.initialize()
-      c.io.nextPC.expect(0)
+      c.io.nextPC.expect(0x10000000)
     }
   }
 
@@ -234,10 +236,10 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new FetchWrapper(InstructionUtil.fromStringSeq32bit(
       Seq("00000013", "0180006f", "00000013", "00000013", "00000013", "00000013", "00000013", "00000013", "fe1ff06f")))) { c =>
       c.initialize()
-      c.io.nextPC.expect(28)
+      c.io.nextPC.expect(0x1000001c)
 
       c.clock.step()
-      c.io.nextPC.expect(0)
+      c.io.nextPC.expect(0x10000000)
     }
   }
 
@@ -254,31 +256,29 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.branchTypes(1).expect(BranchType.Fence)
       c.io.decoders(0).valid.expect(true)
       c.io.decoders(1).valid.expect(true)
-      c.io.nextPC.expect(4)
+      c.io.nextPC.expect(0x10000004)
 
       c.clock.step()
-      c.io.nextPC.expect(4)
+      c.io.nextPC.expect(0x10000004)
       c.io.decoders(0).valid.expect(false)
       c.io.decoders(1).valid.expect(false)
 
       c.clock.step()
       c.io.reorderBufferEmpty.poke(true)
-      c.io.nextPC.expect(4)
+      c.io.nextPC.expect(0x10000004)
       c.io.decoders(0).valid.expect(false)
       c.io.decoders(1).valid.expect(false)
 
       c.clock.step()
       c.io.loadStoreQueueEmpty.poke(true)
-      c.io.nextPC.expect(4)
+      c.io.nextPC.expect(0x10000004)
       c.io.decoders(0).valid.expect(false)
       c.io.decoders(1).valid.expect(false)
 
       c.clock.step()
-      c.io.nextPC.expect(16)
+      c.io.nextPC.expect(0x10000010)
       c.io.decoders(0).valid.expect(true)
       c.io.decoders(1).valid.expect(true)
     }
   }
-
-
 }

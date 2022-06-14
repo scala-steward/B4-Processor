@@ -9,7 +9,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 /** メモリをキャッシュを含んだラッパー */
 class MemoryAndCache(memoryInit: => Seq[UInt])(implicit params: Parameters) extends Module {
-  val io = IO(Vec(params.numberOfDecoders, new InstructionCache2Fetch))
+  val io = IO(Vec(params.runParallel, new InstructionCache2Fetch))
 
   val cache = Module(new InstructionMemoryCache)
   val memory = Module(new InstructionMemory(memoryInit))
@@ -20,7 +20,7 @@ class MemoryAndCache(memoryInit: => Seq[UInt])(implicit params: Parameters) exte
 
 class InstructionMemoryCacheTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Instruction Cache"
-  implicit val defaultParams = Parameters()
+  implicit val defaultParams = Parameters(fetchWidth = 2)
 
   /** 命令を読み込む */
   it should "load memory" in {

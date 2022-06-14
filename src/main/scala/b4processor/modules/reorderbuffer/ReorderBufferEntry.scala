@@ -10,17 +10,16 @@ class ReorderBufferEntry extends Bundle {
   val destinationRegister = UInt(5.W)
   /** 命令の処理が完了した（コミットできる） */
   val valueReady = Bool()
-  /** 分岐予測は正しかった */
-  val commitReady = Bool()
   /** 実行結果の値 */
   val value = UInt(64.W)
+  /** 該当のbufferがStore命令かどうか */
+  val storeSign = Bool()
 }
 
 object ReorderBufferEntry {
-  def default(): ReorderBufferEntry = (new ReorderBufferEntry).Lit(
+  def default: ReorderBufferEntry = (new ReorderBufferEntry).Lit(
     _.value -> 0.U,
     _.valueReady -> false.B,
     _.programCounter -> 0.S,
-    _.destinationRegister -> 0.U,
-    _.commitReady -> false.B)
+    _.destinationRegister -> 0.U)
 }

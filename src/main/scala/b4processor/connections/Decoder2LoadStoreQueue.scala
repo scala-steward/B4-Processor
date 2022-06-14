@@ -1,6 +1,7 @@
 package b4processor.connections
 
 import b4processor.Parameters
+import b4processor.modules.decoder.SourceTagInfo
 import chisel3._
 import chisel3.util._
 
@@ -9,10 +10,22 @@ import chisel3.util._
  *
  * @param params パラメータ
  */
-class Decoder2LoadStoreQueue(implicit params: Parameters) extends ReadyValidIO(new Bundle {
+class Decoder2LoadStoreQueue(implicit params: Parameters) extends Bundle {
+  /** オペコード */
   val opcode = UInt(7.W)
-  val stag2 = UInt(params.tagWidth.W)
-  val value = UInt(64.W)
+  /** function3 */
   val function3 = UInt(3.W)
-  val programCounter = SInt((64.W))
-})
+
+  /** アドレスの計算結果とストアデータが格納されるタグ */
+  val addressAndLoadResultTag = UInt(params.tagWidth.W)
+
+  /** ストアデータが保存されるタグ */
+  val storeDataTag = UInt(params.tagWidth.W)
+  /** ストアデータ */
+  val storeData = UInt(64.W)
+  /** ストアデータの値が有効か */
+  val storeDataValid = Bool()
+
+  /** プログラムカウンタ */
+  val programCounter = SInt(64.W)
+}

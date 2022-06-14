@@ -4,6 +4,7 @@ import b4processor.Parameters
 import b4processor.common.OpcodeFormat._
 import b4processor.common.OpcodeFormatChecker
 import b4processor.connections._
+import b4processor.modules.reservationstation.ReservationStationEntry
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -18,7 +19,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   val io = IO(new Bundle {
     val instructionFetch = Flipped(new Fetch2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer
-    val alu = Vec(params.numberOfALUs, Flipped(new ExecutionRegisterBypass))
+    val executors = Vec(params.runParallel, Flipped(new ExecutionRegisterBypass))
     val registerFile = new Decoder2RegisterFile()
 
     val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder))
@@ -26,7 +27,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
 
     val reservationStation = new Decoder2ReservationStation
 
-    val loadstorequeue = new Decoder2LoadStoreQueue
+    val loadStoreQueue = Decoupled(new Decoder2LoadStoreQueue)
   })
 
   // 命令からそれぞれの昨日のブロックを取り出す
@@ -79,6 +80,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   io.reorderBuffer.destination.destinationRegister := Mux(destinationIsValid,
     instRd,
     0.U)
+  io.reorderBuffer.destination.storeSign := instOp === "b0100011".U
 
   // レジスタファイルへの入力
   io.registerFile.sourceRegister1 := instRs1
@@ -87,19 +89,17 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   // リオーダバッファから一致するタグを取得する
   // セレクタ1
   val sourceTagSelector1 = Module(new SourceTagSelector(instructionOffset))
-  sourceTagSelector1.io.sourceTag.ready := true.B
   sourceTagSelector1.io.reorderBufferDestinationTag <> io.reorderBuffer.source1.matchingTag
   for (i <- 0 until instructionOffset) {
     // 前のデコーダから流れてきたdestination tag
     sourceTagSelector1.io.beforeDestinationTag(i).bits := io.decodersBefore(i).destinationTag
     // 前のデコーダから流れてきたdestination registerがsource registerと等しいか
     // (もともとvalidは情報が存在するかという意味で使われているが、ここで一致しているかという意味に変換)
-    sourceTagSelector1.io.beforeDestinationTag(i).valid := io.decodersBefore(i).destinationRegister === instRs1
+    sourceTagSelector1.io.beforeDestinationTag(i).valid := io.decodersBefore(i).destinationRegister === instRs1 && io.decodersBefore(i).valid
   }
   val sourceTag1 = sourceTagSelector1.io.sourceTag
   // セレクタ2
   val sourceTagSelector2 = Module(new SourceTagSelector(instructionOffset))
-  sourceTagSelector2.io.sourceTag.ready := true.B
   sourceTagSelector2.io.reorderBufferDestinationTag <> io.reorderBuffer.source2.matchingTag
   for (i <- 0 until instructionOffset) {
     sourceTagSelector2.io.beforeDestinationTag(i).bits := io.decodersBefore(i).destinationTag
@@ -114,8 +114,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   valueSelector1.io.sourceTag <> sourceTag1
   valueSelector1.io.reorderBufferValue <> io.reorderBuffer.source1.value
   valueSelector1.io.registerFileValue := io.registerFile.value1
-  for (i <- 0 until params.numberOfALUs) {
-    valueSelector1.io.aluBypassValue(i) <> io.alu(i)
+  for (i <- 0 until params.runParallel) {
+    valueSelector1.io.executorBypassValue(i) <> io.executors(i)
   }
   // value2
   val valueSelector2 = Module(new ValueSelector2)
@@ -129,8 +129,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     J.asUInt -> immJExtended
   ))
   valueSelector2.io.opcodeFormat := opcodeFormatChecker.io.format
-  for (i <- 0 until params.numberOfALUs) {
-    valueSelector2.io.aluBypassValue(i) <> io.alu(i)
+  for (i <- 0 until params.runParallel) {
+    valueSelector2.io.executorBypassValue(i) <> io.executors(i)
   }
 
   // 前のデコーダから次のデコーダへ
@@ -138,7 +138,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     io.decodersAfter(i) <> io.decodersBefore(i)
   }
   // 次のデコーダへ伝える情報
-  when(destinationIsValid) {
+  when(destinationIsValid && instRd =/= 0.U) {
     io.decodersAfter(instructionOffset).destinationTag := io.reorderBuffer.destination.destinationTag
     io.decodersAfter(instructionOffset).destinationRegister := instRd
     io.decodersAfter(instructionOffset).valid := true.B
@@ -170,8 +170,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     B.asUInt -> instImmB,
   ))
   rs.destinationTag := io.reorderBuffer.destination.destinationTag
-  rs.sourceTag1 := Mux(valueSelector1.io.value.valid, 0.U, sourceTag1.bits)
-  rs.sourceTag2 := Mux(valueSelector2.io.value.valid, 0.U, sourceTag2.bits)
+  rs.sourceTag1 := Mux(valueSelector1.io.value.valid, 0.U, sourceTag1.tag)
+  rs.sourceTag2 := Mux(valueSelector2.io.value.valid, 0.U, sourceTag2.tag)
   rs.ready1 := valueSelector1.io.value.valid
   rs.ready2 := valueSelector2.io.value.valid
   rs.value1 := valueSelector1.io.value.bits
@@ -179,14 +179,14 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   rs.programCounter := io.instructionFetch.bits.programCounter
 
   // load or store命令の場合，LSQへ発送
-  io.loadstorequeue.bits.stag2 := Mux(io.loadstorequeue.bits.opcode === "b0000011".U,
-    io.reorderBuffer.destination.destinationTag, valueSelector2.io.sourceTag.bits)
-  io.loadstorequeue.bits.value := Mux(io.loadstorequeue.bits.opcode === "b0000011".U,
-    0.U, valueSelector2.io.value.bits)
-  io.loadstorequeue.bits.opcode := instOp
-  io.loadstorequeue.bits.function3 := instFunct3
-  io.loadstorequeue.bits.programCounter := io.instructionFetch.bits.programCounter
-  io.loadstorequeue.valid := io.loadstorequeue.ready && io.loadstorequeue.bits.opcode === BitPat("b0?00011")
+  io.loadStoreQueue.bits.opcode := instOp
+  io.loadStoreQueue.bits.function3 := instFunct3
+  io.loadStoreQueue.bits.addressAndLoadResultTag := io.reorderBuffer.destination.destinationTag
+  io.loadStoreQueue.bits.storeDataTag := valueSelector2.io.sourceTag.tag
+  io.loadStoreQueue.bits.storeData := valueSelector2.io.value.bits
+  io.loadStoreQueue.bits.storeDataValid := valueSelector2.io.value.valid
+  io.loadStoreQueue.bits.programCounter := io.instructionFetch.bits.programCounter
+  io.loadStoreQueue.valid := io.loadStoreQueue.ready && io.loadStoreQueue.bits.opcode === BitPat("b0?00011")
 }
 
 object Decoder extends App {

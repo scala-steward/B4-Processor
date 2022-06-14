@@ -11,9 +11,9 @@ import chisel3.util._
  *
  * @param params パラメータ
  */
-class DataMemoryBuffer(implicit  params: Parameters) extends Module {
+class DataMemoryBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val dataIn = Vec(params.maxLSQ2MemoryinstCount, Flipped(new LoadStoreQueue2Memory))
+    val dataIn = Vec(params.maxRegisterFileCommitCount, Flipped(new LoadStoreQueue2Memory))
     val dataOut = new LoadStoreQueue2Memory
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
     val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
@@ -35,7 +35,7 @@ class DataMemoryBuffer(implicit  params: Parameters) extends Module {
   var insertIndex = head
 
   // enqueue
-  for(i <- 0 until params.maxLSQ2MemoryinstCount) {
+  for (i <- 0 until params.maxRegisterFileCommitCount) {
     val Input = io.dataIn(i)
     Input.ready := true.B
 
@@ -50,7 +50,7 @@ class DataMemoryBuffer(implicit  params: Parameters) extends Module {
         entry
       }
     }
-    insertIndex = Mux(insertIndex === (math.pow(2, params.tagWidth).toInt.U-1.U) && Input.valid, 0.U, insertIndex + Input.valid.asUInt)
+    insertIndex = Mux(insertIndex === (math.pow(2, params.tagWidth).toInt.U - 1.U) && Input.valid, 0.U, insertIndex + Input.valid.asUInt)
   }
 
   head := insertIndex
@@ -72,11 +72,16 @@ class DataMemoryBuffer(implicit  params: Parameters) extends Module {
     io.dataOut.bits.opcode := 0.U
     io.dataOut.bits.function3 := 0.U
   }
-  tail := Mux(tail === (math.pow(2, params.tagWidth).toInt.U-1.U) && io.dataOut.valid,
+  tail := Mux(tail === (math.pow(2, params.tagWidth).toInt.U - 1.U) && io.dataOut.valid,
     0.U, tail + io.dataOut.valid.asUInt)
+
+  if (params.debug) {
+    io.head.get := head
+    io.tail.get := tail
+  }
 }
 
 object DataMemoryBuffer extends App {
-  implicit val params = Parameters(tagWidth = 4, maxLSQ2MemoryinstCount = 2)
+  implicit val params = Parameters(tagWidth = 4, maxRegisterFileCommitCount = 2)
   (new ChiselStage).emitVerilog(new DataMemoryBuffer, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

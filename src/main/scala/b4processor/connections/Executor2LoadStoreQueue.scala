@@ -6,10 +6,11 @@ import chisel3.util._
 
 /**
  * ALUからLSQへデータを送信
+ *
  * @param params パラメータ
  */
 
-class Executor2LoadStoreQueue(implicit val params:Parameters) extends Bundle {
+class Executor2LoadStoreQueue(implicit params: Parameters) extends Bundle {
   val destinationTag = UInt(params.tagWidth.W)
   val value = UInt(64.W)
   val valid = Bool()

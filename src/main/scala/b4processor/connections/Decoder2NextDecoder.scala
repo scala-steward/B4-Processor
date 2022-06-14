@@ -11,6 +11,6 @@ import chisel3._
  */
 class Decoder2NextDecoder(implicit params: Parameters) extends Bundle {
   val valid = Bool()
-  val destinationTag = UInt(5.W)
-  val destinationRegister = UInt(params.tagWidth.W)
+  val destinationTag = UInt(params.tagWidth.W)
+  val destinationRegister = UInt(5.W)
 }
