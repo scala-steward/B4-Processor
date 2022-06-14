@@ -507,8 +507,6 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setALU(values = ReservationValue(valid = true, destinationTag = 10, value1 = 0xFFFF_FFFFL, value2 = 10,
         function3 = 0, immediateOrFunction7 = 0, opcode = 59, programCounter = 100))
 
-      c.clock.step()
-
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 9)))
 
       c.expectLSQ(values = LSQValue(destinationTag = 10, value = 9,
