@@ -1,7 +1,8 @@
 package b4processor.modules.lsq
 
 import b4processor.Parameters
-import b4processor.connections.{Decoder2LoadStoreQueue, ExecutorOutput, Executor2LoadStoreQueue, LoadStoreQueue2Memory, LoadStoreQueue2ReorderBuffer}
+import b4processor.connections.{CollectedOutput, Decoder2LoadStoreQueue, Executor2LoadStoreQueue, LoadStoreQueue2Memory, LoadStoreQueue2ReorderBuffer}
+import b4processor.modules.ourputcollector.OutputCollector
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
@@ -9,7 +10,7 @@ import chisel3.stage.ChiselStage
 class LoadStoreQueue(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val decoders = Vec(params.runParallel, Flipped(Decoupled(new Decoder2LoadStoreQueue())))
-    val executors = Vec(params.runParallel, Flipped(Output(new Executor2LoadStoreQueue)))
+    val outputCollector = Flipped(new CollectedOutput)
     //    val reorderBuffer = Input(new LoadStoreQueue2ReorderBuffer())
     val memory = Vec(params.maxRegisterFileCommitCount, new LoadStoreQueue2Memory)
     val isEmpty = Output(Bool())
@@ -63,19 +64,18 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   /** オペランドバイパスのタグorPCが対応していた場合は，ALUを読み込む */
 
-  for (i <- 0 until params.runParallel) {
-    val alu = io.executors(i)
+  for (output <- io.outputCollector.outputs) {
     for (buf <- buffer) {
-      when(alu.valid && buf.valid) {
+      when((output.validAsResult || output.validAsLoadStoreAddress) && buf.valid) {
         // !buf.readyAddress && io.executors(i).programCounter === buf.programCounter
-        when(buf.addressAndLoadResultTag === alu.destinationTag && !buf.addressValid) {
-          buf.address := alu.value.asSInt
+        when(buf.addressAndLoadResultTag === output.tag && !buf.addressValid) {
+          buf.address := output.value.asSInt
           buf.addressValid := true.B
         }
         // !buf.readyData && !(io.executors(i).programCounter === buf.programCounter)
-        when(buf.storeDataTag === alu.destinationTag && !buf.storeDataValid) {
+        when(buf.storeDataTag === output.tag && !buf.storeDataValid) {
           // only Store
-          buf.storeData := alu.value.asUInt
+          buf.storeData := output.value
           buf.storeDataValid := true.B
         }
         // printf(p"address = ${buf.address}\n")

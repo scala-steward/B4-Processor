@@ -15,7 +15,7 @@ import scala.math.pow
  * @param instructionStart           プログラムカウンタの初期値
  * @param dataMemorySize             データメモリのサイズ
  */
-case class Parameters(tagWidth: Int = 6,
+case class Parameters(tagWidth: Int = 5,
                       runParallel: Int = 2,
                       maxRegisterFileCommitCount: Int = 4,
                       maxDataMemoryCommitCount: Int = 4,

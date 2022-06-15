@@ -1,7 +1,7 @@
 package b4processor.modules.memory
 
 import b4processor.Parameters
-import b4processor.connections.{LoadStoreQueue2Memory, DataMemoryOutput}
+import b4processor.connections.{LoadStoreQueue2Memory, OutputValue}
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
@@ -9,7 +9,7 @@ import chisel3.stage.ChiselStage
 class DataMemory(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val dataIn = Flipped(new LoadStoreQueue2Memory)
-    val dataOut = new DataMemoryOutput
+    val dataOut = new OutputValue
   })
 
   val LOAD = "b0000011".U
@@ -35,7 +35,7 @@ class DataMemory(implicit params: Parameters) extends Module {
     }.otherwise {
       // Load
       /** readの場合，rdwrPortは命令実行時と同クロック立ち上がりでmemoryから読み込み(=ロード命令実行時に値変更) */
-      io.dataOut.bits.value := MuxLookup(io.dataIn.bits.function3, 0.U, Seq(
+      io.dataOut.value := MuxLookup(io.dataIn.bits.function3, 0.U, Seq(
         "b000".U -> Mux(rdwrPort(7), Cat(~0.U(56.W), rdwrPort(7, 0)), Cat(0.U(56.W), rdwrPort(7, 0))),
         "b001".U -> Mux(rdwrPort(15), Cat(~0.U(48.W), rdwrPort(15, 0)), Cat(0.U(48.W), rdwrPort(15, 0))),
         "b010".U -> Mux(rdwrPort(31), Cat(~0.U(32.W), rdwrPort(31, 0)), Cat(0.U(32.W), rdwrPort(31, 0))),
@@ -49,9 +49,10 @@ class DataMemory(implicit params: Parameters) extends Module {
       // printf(p"dataOut = ${io.dataOut.bits.data}\n")
     }
     // printf(p"rdwrPort =${rdwrPort}\n")
-    io.dataOut.bits.tag := io.dataIn.bits.tag
+    io.dataOut.tag := io.dataIn.bits.tag
   }
-  io.dataOut.valid := io.dataIn.bits.opcode === LOAD
+  io.dataOut.validAsResult := io.dataIn.bits.opcode === LOAD
+  io.dataOut.validAsLoadStoreAddress := io.dataIn.bits.opcode === LOAD
   // printf(p"mem(io.dataIn.bits.address.asUInt) = ${mem(io.dataIn.bits.address.asUInt)}\n")
 }
 

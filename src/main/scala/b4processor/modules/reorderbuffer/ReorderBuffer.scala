@@ -1,7 +1,7 @@
 package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
-import b4processor.connections.{BranchPrediction2ReorderBuffer, DataMemoryOutput, Decoder2ReorderBuffer, ExecutorOutput, LoadStoreQueue2ReorderBuffer, ReorderBuffer2RegisterFile}
+import b4processor.connections.{BranchPrediction2ReorderBuffer, CollectedOutput, Decoder2ReorderBuffer, LoadStoreQueue2ReorderBuffer, ReorderBuffer2RegisterFile}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -16,9 +16,8 @@ import scala.math.pow
 class ReorderBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val decoders = Vec(params.runParallel, Flipped(new Decoder2ReorderBuffer))
-    val executors = Vec(params.runParallel, Flipped(new ExecutorOutput))
+    val collectedOutputs = Flipped(new CollectedOutput)
     val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
-    val dataMemory = Flipped(new DataMemoryOutput)
     val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
     val isEmpty = Output(Bool())
 
@@ -120,18 +119,12 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 
   io.isEmpty := head === tail
 
-  // ALUの読み込み
-  for (alu <- io.executors) {
-    when(alu.valid) {
-      buffer(alu.destinationTag).value := alu.value
-      buffer(alu.destinationTag).valueReady := true.B
+  // 出力の読み込み
+  for (output <- io.collectedOutputs.outputs) {
+    when(output.validAsResult) {
+      buffer(output.tag).value := output.value
+      buffer(output.tag).valueReady := true.B
     }
-  }
-
-  // DataMemoryからのロード値の読み込み
-  when(io.dataMemory.valid) {
-    buffer(io.dataMemory.bits.tag).value := io.dataMemory.bits.value
-    buffer(io.dataMemory.bits.tag).valueReady := true.B
   }
 
   // デバッグ
@@ -144,6 +137,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 }
 
 object ReorderBuffer extends App {
-  implicit val params = Parameters(runParallel = 1, maxRegisterFileCommitCount = 1, tagWidth = 4)
+  implicit val params = Parameters(runParallel = 2, maxRegisterFileCommitCount = 8, tagWidth = 5)
   (new ChiselStage).emitVerilog(new ReorderBuffer, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

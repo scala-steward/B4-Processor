@@ -1,15 +1,14 @@
 package b4processor.modules.reservationstation
 
 import b4processor.Parameters
-import b4processor.connections.{DataMemoryOutput, Decoder2ReservationStation, ExecutorOutput, ReservationStation2Executor}
+import b4processor.connections.{CollectedOutput, Decoder2ReservationStation, ReservationStation2Executor}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
 
 class ReservationStation(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val executorOutputValues = Flipped(Vec(params.runParallel, new ExecutorOutput))
-    val dataMemoryOutputValue = Flipped(new DataMemoryOutput)
+    val collectedOutput = Flipped(new CollectedOutput)
     val executor = new ReservationStation2Executor
     val decoder = Flipped(new Decoder2ReservationStation)
   })
@@ -59,34 +58,18 @@ class ReservationStation(implicit params: Parameters) extends Module {
     //    printf(p"stored in $emptyIndex valid=${io.decoder.entry.valid}\n")
   }
 
-  for (value <- io.executorOutputValues) {
-    when(value.valid) {
+  for (output <- io.collectedOutput.outputs) {
+    when(output.validAsResult) {
       for (entry <- reservation) {
         when(entry.valid) {
-          when(!entry.ready1 && entry.sourceTag1 === value.destinationTag) {
-            entry.value1 := value.value
+          when(!entry.ready1 && entry.sourceTag1 === output.tag) {
+            entry.value1 := output.value
             entry.ready1 := true.B
           }
-          when(!entry.ready2 && entry.sourceTag2 === value.destinationTag) {
-            entry.value2 := value.value
+          when(!entry.ready2 && entry.sourceTag2 === output.tag) {
+            entry.value2 := output.value
             entry.ready2 := true.B
           }
-        }
-      }
-    }
-  }
-
-  when(io.dataMemoryOutputValue.valid) {
-    val value = io.dataMemoryOutputValue.bits
-    for (entry <- reservation) {
-      when(entry.valid) {
-        when(!entry.ready1 && entry.sourceTag1 === value.tag) {
-          entry.value1 := value.value
-          entry.ready1 := true.B
-        }
-        when(!entry.ready2 && entry.sourceTag2 === value.tag) {
-          entry.value2 := value.value
-          entry.ready2 := true.B
         }
       }
     }

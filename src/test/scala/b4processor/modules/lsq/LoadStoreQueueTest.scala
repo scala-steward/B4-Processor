@@ -15,14 +15,15 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
     this.setReorderBuffer()
   }
 
-  def setExecutor(values: Seq[Option[LSQfromALU]] = Seq.fill(params.runParallel)(None)): Unit = {
-    for (i <- 0 until params.runParallel) {
-      val executor = this.io.executors(i)
+  def setExecutor(values: Seq[Option[LSQfromALU]] = Seq.fill(params.runParallel + 1)(None)): Unit = {
+    for (i <- 0 until params.runParallel + 1) {
+      val output = this.io.outputCollector.outputs(i)
       val value = values(i)
-      executor.valid.poke(value.exists(_.valid))
-      executor.value.poke(value.map(_.value).getOrElse(0))
-      executor.destinationTag.poke(value.map(_.destinationtag).getOrElse(0))
-      executor.programCounter.poke(value.map(_.ProgramCounter).getOrElse(0))
+      output.validAsResult.poke(value.exists(_.valid))
+      output.validAsLoadStoreAddress.poke(value.exists(_.valid))
+      output.value.poke(value.map(_.value).getOrElse(0))
+      output.tag.poke(value.map(_.destinationtag).getOrElse(0))
+      //      output.programCounter.poke(value.map(_.ProgramCounter).getOrElse(0))
     }
   }
 
@@ -119,8 +120,9 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
       // 値の確認
       c.setExecutor(values = Seq(
-        Some(LSQfromALU(valid = true, destinationtag = 10, value = 150, ProgramCounter = 100)
-        )))
+        Some(LSQfromALU(valid = true, destinationtag = 10, value = 150, ProgramCounter = 100)),
+        None
+      ))
       c.io.head.get.expect(1)
       c.expectMemory(Seq(None))
 
@@ -158,15 +160,17 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
       // 値の確認
       c.setExecutor(values = Seq(
-        Some(LSQfromALU(valid = true, destinationtag = 5, value = 123, ProgramCounter = 80)
-        )))
+        Some(LSQfromALU(valid = true, destinationtag = 5, value = 123, ProgramCounter = 80)),
+        None
+      ))
       c.io.head.get.expect(1)
 
       c.clock.step(1)
 
       c.setExecutor(values = Seq(
-        Some(LSQfromALU(valid = true, destinationtag = 10, value = 150, ProgramCounter = 100)
-        )))
+        Some(LSQfromALU(valid = true, destinationtag = 10, value = 150, ProgramCounter = 100)),
+        None
+      ))
       c.setReorderBuffer(valids = Seq(true), ProgramCounters = Seq(100))
       c.io.head.get.expect(2)
       c.expectMemory(Seq(None))

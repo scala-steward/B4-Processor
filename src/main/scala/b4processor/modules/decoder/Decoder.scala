@@ -19,8 +19,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   val io = IO(new Bundle {
     val instructionFetch = Flipped(new Fetch2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer
-    val executors = Vec(params.runParallel, Flipped(new ExecutorOutput))
-    val dataMemoryOutput = Flipped(new DataMemoryOutput)
+    val outputCollector = Flipped(new CollectedOutput())
     val registerFile = new Decoder2RegisterFile()
 
     val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder))
@@ -115,8 +114,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   valueSelector1.io.sourceTag <> sourceTag1
   valueSelector1.io.reorderBufferValue <> io.reorderBuffer.source1.value
   valueSelector1.io.registerFileValue := io.registerFile.value1
-  valueSelector1.io.executorOutputValue <> io.executors
-  valueSelector1.io.dataMemoryOutputValue <> io.dataMemoryOutput
+  valueSelector1.io.outputCollector <> io.outputCollector
   // value2
   val valueSelector2 = Module(new ValueSelector2)
   valueSelector2.io.value.ready := true.B
@@ -129,8 +127,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     J.asUInt -> immJExtended
   ))
   valueSelector2.io.opcodeFormat := opcodeFormatChecker.io.format
-  valueSelector2.io.executorOutputValue <> io.executors
-  valueSelector2.io.dataMemoryOutputValue <> io.dataMemoryOutput
+  valueSelector2.io.outputCollector <> io.outputCollector
 
 
   // 前のデコーダから次のデコーダへ

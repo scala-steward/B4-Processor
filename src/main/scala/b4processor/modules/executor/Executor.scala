@@ -10,8 +10,8 @@ import chisel3.{Mux, _}
 class Executor(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reservationStation = Flipped(new ReservationStation2Executor)
-    val out = new ExecutorOutput
-    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
+    val out = new OutputValue
+    //    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
     val fetch = Output(new Executor2Fetch)
   })
 
@@ -149,9 +149,11 @@ class Executor(implicit params: Parameters) extends Module {
 
   val executionResultSized = Wire(UInt(64.W))
   executionResultSized := Mux(
-    instructionChecker.output.operationWidth === OperationWidth.DoubleWord,
-    executionResult64bit.asSInt,
-    executionResult64bit(31, 0).asSInt).asUInt
+    !(instructionChecker.output.instruction === Instructions.Load ||
+      instructionChecker.output.instruction === Instructions.Store)
+      && instructionChecker.output.operationWidth === OperationWidth.Word,
+    executionResult64bit(31, 0).asSInt,
+    executionResult64bit.asSInt).asUInt
 
   //  printf("original %d\nsized %d\n", executionResult64bit, executionResultSized)
 
@@ -161,30 +163,35 @@ class Executor(implicit params: Parameters) extends Module {
    * (レジスタ挿入の可能性あり)
    */
 
-  // LSQ
-  io.loadStoreQueue.valid := instructionChecker.output.instruction =/= Instructions.Unknown &&
-    io.reservationStation.valid
-  when(io.loadStoreQueue.valid) {
-    io.loadStoreQueue.programCounter := io.reservationStation.bits.programCounter
-    io.loadStoreQueue.destinationTag := io.reservationStation.bits.destinationTag
-    io.loadStoreQueue.value := executionResultSized
-  }.otherwise {
-    io.loadStoreQueue.programCounter := 0.S
-    io.loadStoreQueue.destinationTag := 0.U
-    io.loadStoreQueue.value := 0.U
-  }
+  // LSQ fixme 出力を統一してしまえばいらないと思う
+  //  io.loadStoreQueue.valid := instructionChecker.output.instruction =/= Instructions.Unknown &&
+  //    io.reservationStation.valid
+  //  when(io.loadStoreQueue.valid) {
+  //    io.loadStoreQueue.programCounter := io.reservationStation.bits.programCounter
+  //    io.loadStoreQueue.destinationTag := io.reservationStation.bits.destinationTag
+  //    io.loadStoreQueue.value := executionResultSized
+  //  }.otherwise {
+  //    io.loadStoreQueue.programCounter := 0.S
+  //    io.loadStoreQueue.destinationTag := 0.U
+  //    io.loadStoreQueue.value := 0.U
+  //  }
 
   // reorder Buffer
   //  printf(p"instruction type = ${instructionChecker.output.instruction.asUInt}\n")
-  io.out.valid := io.reservationStation.valid &&
+  io.out.validAsResult := io.reservationStation.valid &&
     instructionChecker.output.instruction =/= Instructions.Unknown &&
     instructionChecker.output.instruction =/= Instructions.Load && // load命令の場合, ReorderBufferのvalueはDataMemoryから
     instructionChecker.output.instruction =/= Instructions.Store // Store命令の場合、リオーダバッファでエントリは無視される
-  when(io.out.valid) {
-    io.out.destinationTag := io.reservationStation.bits.destinationTag
+  io.out.validAsLoadStoreAddress := instructionChecker.output.instruction =/= Instructions.Unknown &&
+    io.reservationStation.valid
+  when(io.out.validAsResult) {
+    assert(io.out.validAsLoadStoreAddress, "executor output should be valid for load store address when valid as result.")
+  }
+  when(io.out.validAsResult || io.out.validAsLoadStoreAddress) {
+    io.out.tag := io.reservationStation.bits.destinationTag
     io.out.value := executionResultSized
   }.otherwise {
-    io.out.destinationTag := 0.U
+    io.out.tag := 0.U
     io.out.value := 0.U
   }
 }

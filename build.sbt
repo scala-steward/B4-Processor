@@ -10,7 +10,7 @@ scalacOptions ++= Seq(
   "-deprecation",
   "-feature",
   "-Xcheckinit",
-  "-P:chiselplugin:genBundleElements",
+  "-P:chiselplugin:genBundleElements"
 )
 
 scalaVersion := "2.13.8"

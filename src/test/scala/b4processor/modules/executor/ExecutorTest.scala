@@ -11,7 +11,6 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reservationStation = Flipped(new ReservationStation2ExecutorForTest)
     val out = new ExecutionRegisterBypassForTest
-    val loadStoreQueue = Output(new Executor2LoadStoreQueueForTest)
     val fetch = Output(new Executor2Fetch)
   })
 
@@ -27,13 +26,9 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   io.reservationStation.ready := executor.io.reservationStation.ready
 
   io.out.value := executor.io.out.value.asSInt
-  io.out.valid := executor.io.out.valid
-  io.out.destinationTag := executor.io.out.destinationTag
-
-  io.loadStoreQueue.value := executor.io.loadStoreQueue.value.asSInt
-  io.loadStoreQueue.valid := executor.io.loadStoreQueue.valid
-  io.loadStoreQueue.programCounter := executor.io.loadStoreQueue.programCounter
-  io.loadStoreQueue.destinationTag := executor.io.loadStoreQueue.destinationTag
+  io.out.validAsResult := executor.io.out.validAsResult
+  io.out.validAsLoadStoreAddress := executor.io.out.validAsLoadStoreAddress
+  io.out.destinationTag := executor.io.out.tag
 
   executor.io.fetch <> io.fetch
 
@@ -54,19 +49,20 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
 
   def expectout(values: Option[ExecutorValue]): Unit = {
     val out = this.io.out
-    out.valid.expect(values.isDefined)
+    out.validAsResult.expect(values.isDefined)
     if (values.isDefined) {
       out.destinationTag.expect(values.get.destinationTag)
       out.value.expect(values.get.value)
     }
   }
 
-  def expectLSQ(values: LSQValue): Unit = {
-    val loadStoreQueue = this.io.loadStoreQueue
-    loadStoreQueue.destinationTag.expect(values.destinationTag)
-    loadStoreQueue.value.expect(values.value)
-    loadStoreQueue.valid.expect(values.valid)
-    loadStoreQueue.programCounter.expect(values.programCounter)
+  def expectLSQ(values: Option[ExecutorValue]): Unit = {
+    val out = this.io.out
+    out.validAsLoadStoreAddress.expect(values.isDefined)
+    if (values.isDefined) {
+      out.destinationTag.expect(values.get.destinationTag)
+      out.value.expect(values.get.value)
+    }
   }
 
   def expectFetch(values: FetchValue): Unit = {
@@ -89,8 +85,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 16)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, 16,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, 16)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -104,8 +99,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 16)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 16,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 16)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -119,8 +113,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 104)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 104,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 104)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -134,8 +127,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 104)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 104,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 104)))
 
       c.expectFetch(values = FetchValue(valid = true, programCounter = 56))
     }
@@ -149,8 +141,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectFetch(values = FetchValue(valid = true, programCounter = 104))
     }
@@ -164,8 +155,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
     }
@@ -179,8 +169,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectFetch(values = FetchValue(valid = true, programCounter = 104))
     }
@@ -194,8 +183,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
     }
@@ -209,8 +197,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectFetch(values = FetchValue(valid = true, programCounter = 104))
     }
@@ -224,8 +211,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
     }
@@ -239,8 +225,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectFetch(values = FetchValue(valid = true, programCounter = 104))
     }
@@ -254,8 +239,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
     }
@@ -269,8 +253,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectFetch(values = FetchValue(valid = true, programCounter = 104))
     }
@@ -284,8 +267,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
     }
@@ -299,8 +281,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectFetch(values = FetchValue(valid = true, programCounter = 104))
     }
@@ -314,8 +295,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
     }
@@ -329,8 +309,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = None)
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -344,8 +323,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = None)
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -359,8 +337,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = None)
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -374,8 +351,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = None)
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -389,8 +365,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = None)
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -404,8 +379,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = None)
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -419,8 +393,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = None)
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -434,8 +407,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = None)
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 240,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 240)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -449,8 +421,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = None)
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 240,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 240)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -464,8 +435,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = None)
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 240,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 240)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -479,8 +449,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = None)
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 240,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 240)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -494,8 +463,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -509,8 +477,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 9)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 9,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 9)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -526,8 +493,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = -5)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = -5,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = -5)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -541,8 +507,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -556,8 +521,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -571,8 +535,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -586,8 +549,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -601,8 +563,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -616,8 +577,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 24)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 24,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 24)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -631,8 +591,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 26)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 26,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 26)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -646,8 +605,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 2)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 2,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 2)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -661,8 +619,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 40)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 40,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 40)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -676,8 +633,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 8)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 8,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 8)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -691,8 +647,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -706,8 +661,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = -31)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = -31,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = -31)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -721,8 +675,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 70,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -736,8 +689,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 10)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 10,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 10)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -751,8 +703,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 40)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 40,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 40)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -766,8 +717,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -781,8 +731,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -796,8 +745,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 0,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -811,8 +759,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 1,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -826,8 +773,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 24)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 24,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 24)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -842,8 +788,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 8)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 8,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 8)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -857,8 +802,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 2)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 2,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 2)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -872,8 +816,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = -25)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = -25,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = -25)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -887,8 +830,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 26)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 26,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 26)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
@@ -902,8 +844,7 @@ class ExecutorTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 2)))
 
-      c.expectLSQ(values = LSQValue(destinationTag = 10, value = 2,
-        valid = true, programCounter = 100))
+      c.expectLSQ(values = Some(ExecutorValue(destinationTag = 10, value = 2)))
 
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
