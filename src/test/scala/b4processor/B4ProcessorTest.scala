@@ -20,7 +20,7 @@ class B4ProcessorWrapper(instructions: Seq[UInt])(implicit params: Parameters) e
     core.io.registerFileContents.get <> io.registerFileContents.get
 }
 
-class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
+class B4ProcessorCompileTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
   implicit val defaultParams = Parameters(debug = true, tagWidth = 4)
@@ -33,13 +33,22 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
         it should s"compile runParallel${runParallel} maxCommitCount=${maxCommitCount} tagWidth=${tagWidth}" in {
           test(new B4ProcessorWrapper(Seq(0.U))(defaultParams.copy(runParallel = runParallel, maxRegisterFileCommitCount = maxCommitCount, tagWidth = tagWidth))) { c => }
         }
+}
 
+class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "B4Processor"
+  // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
+  implicit val defaultParams = Parameters(debug = true, tagWidth = 4)
+
   // branchプログラムが実行できる
   it should "execute branch with no parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/branch/branch.32.hex"))(defaultParams.copy(runParallel = 1)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.step(20)
+        c.clock.setTimeout(20)
+        while (c.io.registerFileContents.get(12).peekInt() != 20)
+          c.clock.step()
+        c.io.registerFileContents.get(12).expect(20)
+        c.clock.step()
       }
   }
 
@@ -51,6 +60,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
         while (c.io.registerFileContents.get(5).peekInt() != 55)
           c.clock.step()
         c.io.registerFileContents.get(5).expect(55)
+        c.clock.step()
       }
   }
 
@@ -62,6 +72,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
         while (c.io.registerFileContents.get(5).peekInt() != 55)
           c.clock.step()
         c.io.registerFileContents.get(5).expect(55)
+        c.clock.step()
       }
   }
 
@@ -73,6 +84,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
         while (c.io.registerFileContents.get(5).peekInt() != 55)
           c.clock.step()
         c.io.registerFileContents.get(5).expect(55)
+        c.clock.step()
       }
   }
 
@@ -95,6 +107,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
         while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
         c.io.registerFileContents.get(0).expect(8)
+        c.clock.step()
       }
   }
 
@@ -106,6 +119,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
         while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
         c.io.registerFileContents.get(0).expect(8)
+        c.clock.step()
       }
   }
 
@@ -117,6 +131,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
         while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
         c.io.registerFileContents.get(0).expect(8)
+        c.clock.step()
       }
   }
 
@@ -128,6 +143,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
         while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
         c.io.registerFileContents.get(0).expect(8)
+        c.clock.step()
       }
   }
 
@@ -139,6 +155,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
         while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
         c.io.registerFileContents.get(0).expect(8)
+        c.clock.step()
       }
   }
 
@@ -188,10 +205,11 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run fibonacci_c" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"))(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.step(200)
-        c.io.registerFileContents.get(0).expect(0x8000_0000L)
-        c.io.registerFileContents.get(1).expect(10)
-        c.io.registerFileContents.get(2).expect(10)
+        c.clock.setTimeout(300)
+        while (c.io.registerFileContents.get(9).peekInt() != 89)
+          c.clock.step()
+        c.io.registerFileContents.get(9).expect(89)
+        c.clock.step()
       }
   }
 }

@@ -1,8 +1,14 @@
 int fibonacci(int n){
-    if (n < 2)return n;
-    return fibonacci(n-1) + fibonacci(n-2);
+    int a = 1;
+    int b = 1;
+    for (int i = 0; i < n;i++){
+        int c = a+b;
+        a = b;
+        b = c;
+    }
+    return a;
 }
 
 int main(){
-    return fibonacci(5);
+    return fibonacci(10);
 }

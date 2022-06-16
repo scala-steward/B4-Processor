@@ -7,7 +7,7 @@ all: $(PROGRAMNAME).dump $(PROGRAMNAME).8.hex $(PROGRAMNAME).32.hex $(PROGRAMNAM
 
 $(PROGRAMNAME).o: entry.S fibonacci.c
 	@echo $(CC) $(CFLAGS)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) -O $^ -o $@
 
 $(PROGRAMNAME).binary: $(PROGRAMNAME).o
 	$(OBJCOPY) -O binary -j .text $< $@

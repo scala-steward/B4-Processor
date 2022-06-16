@@ -18,7 +18,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val decoders = Vec(params.runParallel, Flipped(new Decoder2ReorderBuffer))
     val collectedOutputs = Flipped(new CollectedOutput)
     val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
-    val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
+//    val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
     val isEmpty = Output(Bool())
 
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
@@ -103,12 +103,17 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val canCommit = lastValid && index =/= head && instructionOk
 
     io.registerFile(i).valid := canCommit
-    io.registerFile(i).bits.value := buffer(index).value
-    io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
+    when(canCommit) {
+      io.registerFile(i).bits.value := buffer(index).value
+      io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
+    }.otherwise {
+      io.registerFile(i).bits.value := 0.U
+      io.registerFile(i).bits.destinationRegister := 0.U
+    }
 
-    // LSQへストア実行信号
-    io.loadStoreQueue.programCounter(i) := buffer(index).programCounter
-    io.loadStoreQueue.valid(i) := buffer(index).storeSign
+    //    // LSQへストア実行信号
+    //    io.loadStoreQueue.programCounter(i) := buffer(index).programCounter
+    //    io.loadStoreQueue.valid(i) := buffer(index).storeSign
 
     when(canCommit) {
       buffer(index) := ReorderBufferEntry.default
