@@ -158,7 +158,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   }
   tail := nextTail
-  //  printf(p"tail = $tail\n\n")
+  // printf(p"tail = $tail\n\n")
 
   // デバッグ
   if (params.debug) {
