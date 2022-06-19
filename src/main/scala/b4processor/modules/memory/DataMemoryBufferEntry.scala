@@ -8,6 +8,6 @@ class DataMemoryBufferEntry(implicit params: Parameters) extends Bundle {
   val address = SInt(64.W)
   val tag = UInt(params.tagWidth.W)
   val data = UInt(64.W)
-  val opcode = UInt(7.W)
+  val opcode = Bool()
   val function3 = UInt(3.W)
 }

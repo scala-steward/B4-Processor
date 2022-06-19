@@ -16,16 +16,13 @@ class Decoder2LoadStoreQueue(implicit params: Parameters) extends Bundle {
   /** function3 */
   val function3 = UInt(3.W)
 
-  /** アドレスの計算結果とストアデータが格納されるタグ */
+  /** 命令自体を識別するためのタグ(Destination Tag) */
   val addressAndLoadResultTag = UInt(params.tagWidth.W)
 
-  /** ストアデータが保存されるタグ */
+  /** ストアに使用するデータが格納されるタグ(SourceRegister2 Tag) */
   val storeDataTag = UInt(params.tagWidth.W)
   /** ストアデータ */
   val storeData = UInt(64.W)
   /** ストアデータの値が有効か */
   val storeDataValid = Bool()
-
-  /** プログラムカウンタ */
-  val programCounter = SInt(64.W)
 }

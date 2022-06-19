@@ -19,12 +19,13 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
     val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
   })
 
+  // opcode = 1(load), 0(store) (bit数削減)
   val defaultEntry = {
     val entry = Wire(new DataMemoryBufferEntry)
     entry.address := 0.S
     entry.tag := 0.U
     entry.data := 0.U
-    entry.opcode := 0.U
+    entry.opcode := false.B
     entry.function3 := 0.U
     entry
   }
@@ -69,7 +70,7 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
     io.dataOut.bits.address := 0.S
     io.dataOut.bits.tag := 0.U
     io.dataOut.bits.data := 0.U
-    io.dataOut.bits.opcode := 0.U
+    io.dataOut.bits.opcode := false.B
     io.dataOut.bits.function3 := 0.U
   }
   tail := Mux(tail === (math.pow(2, params.tagWidth).toInt.U - 1.U) && io.dataOut.valid,

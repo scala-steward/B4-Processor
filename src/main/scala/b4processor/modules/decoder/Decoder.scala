@@ -185,7 +185,6 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   io.loadStoreQueue.bits.storeDataTag := valueSelector2.io.sourceTag.tag
   io.loadStoreQueue.bits.storeData := valueSelector2.io.value.bits
   io.loadStoreQueue.bits.storeDataValid := valueSelector2.io.value.valid
-  io.loadStoreQueue.bits.programCounter := io.instructionFetch.bits.programCounter
   io.loadStoreQueue.valid := io.loadStoreQueue.ready && io.loadStoreQueue.bits.opcode === BitPat("b0?00011")
 }
 

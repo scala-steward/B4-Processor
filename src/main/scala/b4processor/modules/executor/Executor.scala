@@ -149,9 +149,8 @@ class Executor(implicit params: Parameters) extends Module {
    */
 
   // LSQ
-  io.loadStoreQueue.valid := instructionChecker.output.instruction =/= Instructions.Unknown &&
-    io.reservationStation.valid
-  io.loadStoreQueue.programCounter := io.reservationStation.bits.programCounter
+  io.loadStoreQueue.valid :=
+    instructionChecker.output.instruction =/= Instructions.Unknown && io.reservationStation.valid
   io.loadStoreQueue.destinationTag := io.reservationStation.bits.destinationTag
   io.loadStoreQueue.value := Mux(instructionChecker.output.instruction === Instructions.Store,
     io.reservationStation.bits.value1 + immediateOrFunction7Extended, Mux(instructionChecker.output.operationWidth === OperationWidth.Word,

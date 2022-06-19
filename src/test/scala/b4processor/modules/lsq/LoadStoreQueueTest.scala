@@ -4,6 +4,7 @@ import b4processor.Parameters
 import b4processor.utils.{DecodeEnqueue, LSQ2Memory, LSQfromALU}
 import b4processor.utils.ExecutorValue
 import chisel3._
+import chisel3.util.BitPat
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -22,7 +23,6 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
       executor.valid.poke(value.exists(_.valid))
       executor.value.poke(value.map(_.value).getOrElse(0))
       executor.destinationTag.poke(value.map(_.destinationtag).getOrElse(0))
-      executor.programCounter.poke(value.map(_.ProgramCounter).getOrElse(0))
     }
   }
 
@@ -36,7 +36,6 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
       decoder.bits.storeData.poke(value.flatMap(_.storeData).getOrElse(0L))
       decoder.bits.storeDataValid.poke(value.map(_.storeData).exists(_.isDefined))
       decoder.bits.opcode.poke(value.map(_.opcode).getOrElse(0))
-      decoder.bits.programCounter.poke(value.map(_.ProgramCounter).getOrElse(0))
       decoder.bits.function3.poke(value.map(_.function3).getOrElse(0))
     }
   }
@@ -67,7 +66,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
 
 class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Load Store Queue"
-  implicit val defaultParams = Parameters(tagWidth = 4, runParallel = 1, maxRegisterFileCommitCount = 1, debug = true)
+  implicit val defaultParams = Parameters(tagWidth = 4, runParallel = 2, maxRegisterFileCommitCount = 2, debug = true)
 
   it should "Both Of Instructions Enqueue LSQ" in {
     test(new LoadStoreQueueWrapper) { c =>
@@ -75,33 +74,44 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.head.get.expect(0)
       c.io.tail.get.expect(0)
       c.io.decoders(0).ready.expect(true)
-      // c.io.decoders(1).ready.expect(true)
+      c.io.decoders(1).ready.expect(true)
       c.setDecoder(values =
-        Seq(Some(DecodeEnqueue(addressTag = 10, storeDataTag = 5, storeData = None, opcode = 3, ProgramCounter = 100, function3 = 0)),
-          Some(DecodeEnqueue(addressTag = 11, storeDataTag = 6, storeData = None, opcode = 3, ProgramCounter = 104, function3 = 0))))
+        Seq(Some(DecodeEnqueue(addressTag = 10, storeDataTag = 5, storeData = None, opcode = 3, function3 = 0)),
+          Some(DecodeEnqueue(addressTag = 11, storeDataTag = 6, storeData = None, opcode = 3, function3 = 0))))
       c.clock.step(1)
-      c.io.head.get.expect(1)
+
+      c.setDecoder()
+      c.io.head.get.expect(2)
       c.io.tail.get.expect(0)
+
+      c.clock.step(2)
     }
   }
 
   it should "invalid enqueue" in {
     test(new LoadStoreQueueWrapper) { c =>
       c.initialize()
+      // 初期化
       c.io.head.get.expect(0)
       c.io.tail.get.expect(0)
       c.io.decoders(0).ready.expect(true)
-      // c.io.decoders(1).ready.expect(true)
+      c.io.decoders(1).ready.expect(true)
+
       c.setDecoder(values =
-        Seq(Some(DecodeEnqueue(addressTag = 10, storeDataTag = 5, storeData = None, opcode = 33, ProgramCounter = 100, function3 = 0)),
-        ))
+        Seq(Some(DecodeEnqueue(addressTag = 10, storeDataTag = 5, storeData = None, opcode = 30, function3 = 0)),
+          Some(DecodeEnqueue(addressTag = 11, storeDataTag = 6, storeData = None, opcode = 3, function3 = 0))))
       c.clock.step(1)
-      c.io.head.get.expect(0)
+      c.setDecoder()
+
+      c.io.head.get.expect(1)
       c.io.tail.get.expect(0)
+
+      c.clock.step(2)
     }
   }
 
   it should "load check" in {
+    // runParallel = 1, maxRegisterFileCommitCount = 1
     test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize()
       // 初期化
@@ -113,21 +123,22 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
       // 値のセット
       c.setDecoder(values =
-        Seq(Some(DecodeEnqueue(addressTag = 10, storeDataTag = 5, storeData = Some(0), opcode = 3, ProgramCounter = 100, function3 = 0)),
+        Seq(Some(DecodeEnqueue(addressTag = 10, storeDataTag = 5, storeData = Some(0), opcode = 3, function3 = 0)),
         ))
+
       c.clock.step(1)
 
-      // 値の確認
+      c.setDecoder()
       c.setExecutor(values = Seq(
-        Some(LSQfromALU(valid = true, destinationtag = 10, value = 150, ProgramCounter = 100)
+        Some(LSQfromALU(valid = true, destinationtag = 10, value = 150)
         )))
       c.io.head.get.expect(1)
       c.expectMemory(Seq(None))
 
       c.clock.step(1)
-
+      // 値の確認
       c.expectMemory(values =
-        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 0, opcode = 3, function3 = 0))))
+        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 0, opcode = true, function3 = 0))))
       c.io.tail.get.expect(0)
 
       c.clock.step()
@@ -140,6 +151,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "store check" in {
+    // runParallel = 1, maxRegisterFileCommitCount = 1
     test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize()
       // 初期化
@@ -151,30 +163,30 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
       // 値のセット
       c.setDecoder(values =
-        Seq(Some(DecodeEnqueue(addressTag = 10, storeDataTag = 5, storeData = None, opcode = 35, ProgramCounter = 100, function3 = 0)),
+        Seq(Some(DecodeEnqueue(addressTag = 10, storeDataTag = 5, storeData = None, opcode = 35, function3 = 0)),
         ))
 
       c.clock.step(1)
 
-      // 値の確認
+      c.setDecoder()
       c.setExecutor(values = Seq(
-        Some(LSQfromALU(valid = true, destinationtag = 5, value = 123, ProgramCounter = 80)
+        Some(LSQfromALU(valid = true, destinationtag = 5, value = 123)
         )))
       c.io.head.get.expect(1)
 
       c.clock.step(1)
 
       c.setExecutor(values = Seq(
-        Some(LSQfromALU(valid = true, destinationtag = 10, value = 150, ProgramCounter = 100)
+        Some(LSQfromALU(valid = true, destinationtag = 10, value = 150)
         )))
       c.setReorderBuffer(valids = Seq(true), ProgramCounters = Seq(100))
-      c.io.head.get.expect(2)
       c.expectMemory(Seq(None))
 
       c.clock.step(1)
 
+      // 値の確認
       c.expectMemory(values =
-        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 123, opcode = 35, function3 = 0))))
+        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 123, opcode = false, function3 = 0))))
       c.io.tail.get.expect(0)
 
       c.clock.step()
@@ -182,6 +194,87 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.tail.get.expect(1)
 
       c.clock.step(2)
+    }
+  }
+
+  it should "2 Parallel load check" in {
+    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize()
+      // 初期化
+      c.io.head.get.expect(0)
+      c.io.tail.get.expect(0)
+      c.io.decoders(0).ready.expect(true)
+      c.io.decoders(1).ready.expect(true)
+      c.io.memory(0).ready.poke(true)
+      c.io.memory(1).ready.poke(true)
+      c.expectMemory(Seq(None, None))
+
+      // 値のセット
+      c.setDecoder(values =
+        Seq(Some(DecodeEnqueue(addressTag = 10, storeDataTag = 5, storeData = None, opcode = 3, function3 = 0)),
+          Some(DecodeEnqueue(addressTag = 11, storeDataTag = 6, storeData = None, opcode = 3, function3 = 0))))
+      c.clock.step(1)
+
+      c.setDecoder()
+      c.io.head.get.expect(2)
+      c.io.tail.get.expect(0)
+      c.setExecutor(values =
+        Seq(Some(LSQfromALU(valid = true, destinationtag = 10, value = 150)),
+          Some(LSQfromALU(valid = true, destinationtag = 11, value = 100))))
+      c.clock.step(1)
+
+      // 値の確認
+      c.setExecutor()
+      c.expectMemory(values =
+        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 0, opcode = true, function3 = 0)),
+          Some(LSQ2Memory(address = 100, tag = 11, data = 0, opcode = true, function3 = 0))))
+      c.clock.step(2)
+
+    }
+  }
+
+  it should "2 Parallel check (1 clock wait)" in {
+    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize()
+      // 初期化
+      c.io.head.get.expect(0)
+      c.io.tail.get.expect(0)
+      c.io.decoders(0).ready.expect(true)
+      c.io.decoders(1).ready.expect(true)
+      c.io.memory(0).ready.poke(true)
+      c.io.memory(1).ready.poke(true)
+      c.expectMemory(Seq(None, None))
+
+      // 値のセット
+      c.setDecoder(values =
+        Seq(Some(DecodeEnqueue(addressTag = 10, storeDataTag = 5, storeData = None, opcode = 3, function3 = 0)),
+          Some(DecodeEnqueue(addressTag = 11, storeDataTag = 6, storeData = None, opcode = 35, function3 = 0))))
+      // load instruction + store instruction
+      c.clock.step(1)
+
+      c.setDecoder(values =
+        Seq(Some(DecodeEnqueue(addressTag = 12, storeDataTag = 10, storeData = None, opcode = 100, function3 = 0)),
+          Some(DecodeEnqueue(addressTag = 13, storeDataTag = 15, storeData = None, opcode = 3, function3 = 0))))
+      // invalid instruction + load instruction
+      c.io.head.get.expect(2)
+      c.io.tail.get.expect(0)
+      c.setExecutor(values =
+        Seq(Some(LSQfromALU(valid = true, destinationtag = 10, value = 150)),
+          Some(LSQfromALU(valid = true, destinationtag = 11, value = 100))))
+      c.clock.step(1)
+
+      // 値の確認
+      c.setDecoder()
+      c.setExecutor(values =
+        Seq(Some(LSQfromALU(valid = true, destinationtag = 12, value = 123)),
+          Some(LSQfromALU(valid = true, destinationtag = 13, value = 100))))
+      c.expectMemory(values =
+        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 0, opcode = true, function3 = 0)), None))
+      c.clock.step(1)
+
+      c.expectMemory(Seq(None, None))
+      c.clock.step(2)
+
     }
   }
 
