@@ -177,6 +177,6 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 }
 
 object LoadStoreQueueElabolate extends App {
-  implicit val params = Parameters(runParallel = 1, maxRegisterFileCommitCount = 2, tagWidth = 4)
+  implicit val params = Parameters(maxRegisterFileCommitCount = 2, tagWidth = 4)
   (new ChiselStage).emitVerilog(new LoadStoreQueue, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }
