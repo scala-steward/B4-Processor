@@ -9,7 +9,7 @@ import chisel3._
  * @param params パラメータ
  */
 class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
-  /** エントリが有効である FIXME　命令実効済か否か？ */
+  /** エントリが有効である */
   val valid = Bool()
   /** 命令がリオーダバッファでコミットされたか */
   val readyReorderSign = Bool()
@@ -17,15 +17,12 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
   val opcode = Bool()
   /** function3 */
   val function3 = UInt(3.W)
-
-
   /** 命令自体を識別するためのタグ(Destination Tag) */
   val addressAndLoadResultTag = UInt(params.tagWidth.W)
   /** アドレス値 */
   val address = SInt(64.W)
   /** アドレス値が有効である */
   val addressValid = Bool()
-
   /** ストアに使用するデータが格納されるタグ(SourceRegister2 Tag) */
   val storeDataTag = UInt(params.tagWidth.W)
   /** ストアデータ */
