@@ -11,10 +11,8 @@ import chisel3._
 class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
   /** エントリが有効である FIXME　命令実効済か否か？ */
   val valid = Bool()
-  /** FIXME これが何に使われているかわからない */
+  /** 命令がリオーダバッファでコミットされたか */
   val readyReorderSign = Bool()
-
-  // ロードストアの判別用？これより減らせるのでは？ FIXME
   /** オペコード */
   val opcode = Bool()
   /** function3 */

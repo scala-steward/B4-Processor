@@ -10,7 +10,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val decoders = Vec(params.runParallel, Flipped(Decoupled(new Decoder2LoadStoreQueue())))
     val executors = Vec(params.runParallel, Flipped(Output(new Executor2LoadStoreQueue)))
-    //    val reorderBuffer = Input(new LoadStoreQueue2ReorderBuffer())
+    val reorderBuffer = Input(new LoadStoreQueue2ReorderBuffer())
     val memory = Vec(params.maxRegisterFileCommitCount, new LoadStoreQueue2Memory)
     //    val memory = Vec(math.pow(2, params.tagWidth).toInt, new LoadStoreQueue2Memory)
 
@@ -67,33 +67,29 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     val alu = io.executors(i)
     for (buf <- buffer) {
       when(alu.valid && buf.valid) {
-        // !buf.readyAddress && io.executors(i).programCounter === buf.programCounter
         when(buf.addressAndLoadResultTag === alu.destinationTag && !buf.addressValid) {
           buf.address := alu.value.asSInt
           buf.addressValid := true.B
         }
-        // !buf.readyData && !(io.executors(i).programCounter === buf.programCounter)
         when(buf.storeDataTag === alu.destinationTag && !buf.storeDataValid) {
           // only Store
           buf.storeData := alu.value.asUInt
           buf.storeDataValid := true.B
         }
-        // printf(p"address = ${buf.address}\n")
-        // printf(p"data = ${buf.data}\n")
       }
     }
     // 2重構造
   }
 
-  //  for (i <- 0 until params.maxRegisterFileCommitCount) {
-  //    when(io.reorderBuffer.valid(i)) {
-  //      for (buf <- buffer) {
-  //        when(buf.valid && (io.reorderBuffer.programCounter(i) === buf.programCounter)) {
-  //          buf.readyReorderSign := true.B
-  //        }
-  //      }
-  //    }
-  //  }
+  for (i <- 0 until params.maxRegisterFileCommitCount) {
+    when(io.reorderBuffer.valid(i)) {
+      for (buf <- buffer) {
+        when(buf.valid && (io.reorderBuffer.destinationTag(i) === buf.addressAndLoadResultTag)) {
+          buf.readyReorderSign := true.B
+        }
+      }
+    }
+  }
 
   /**
    * Ra = 1 && R=0の先行するストア命令と実効アドレスが被っていなければ
@@ -104,13 +100,10 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
    * Ra = Rd = 1 && リオーダバッファから命令送出信号が来れば
    * ストア命令をメモリに送出 送出後, R=1
    */
-  // val opcodeFormatChecker = Module(new OpcodeFormatChecker)
-  // Overlap      : 先行する命令の実効アドレスとの被りがあるかのフラグ (T:あり　F:なし)
-  // Address      : 送出対象の命令のアドレスを格納
-  // EmissionFlag : LSQから送出するか否かのフラグ
+  // Overlap : 先行する命令の実効アドレスとの被りがあるかのフラグ (T:あり　F:なし)
+  // Address : 送出対象の命令のアドレスを格納
   val Overlap = WireInit(VecInit(Seq.fill(params.maxRegisterFileCommitCount)(false.B)))
   val Address = WireInit(VecInit(Seq.fill(params.maxRegisterFileCommitCount)(0.S(64.W))))
-  // val EmissionFlag = WireInit(VecInit(Seq.fill(params.maxRegisterFileCommitCount)(false.B)))
 
   // emissionindex : 送出可能か調べるエントリを指すindex
   // nexttail      : 1クロック分の送出確認後，動かすtailのエントリを指すindex
@@ -118,7 +111,6 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   var nextTail = tail
 
   for (i <- 0 until params.maxRegisterFileCommitCount) {
-
     emissionIndex = Mux(emissionIndex === (math.pow(2, params.tagWidth).toInt.U - 1.U), 0.U, emissionIndex + 1.U) // リングバッファ
     io.memory(i).bits.address := 0.S
     io.memory(i).bits.tag := 0.U
@@ -129,6 +121,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     when(buffer(emissionIndex).valid) {
       Address(i) := buffer(emissionIndex).address
       Overlap(i) := false.B
+      // 先行する命令が持つアドレスの中に被りがある場合，Overlap(i) := true.B
       when(i.U =/= 0.U) {
         for (j <- 0 until i) {
           when(Address(j) === buffer(emissionIndex).address) {
@@ -136,10 +129,11 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
           }
         }
       }
+
       // io.memory(i).valid :=  io.memory(i).ready && (head =/= tail) && ("loadの送出条件" || "storeの送出条件")
       io.memory(i).valid := io.memory(i).ready && (head =/= tail) && buffer(emissionIndex).valid && buffer(emissionIndex).addressValid &&
         ((buffer(emissionIndex).opcode && !Overlap(i)) ||
-          (!buffer(emissionIndex).opcode && buffer(emissionIndex).storeDataValid))
+          (!buffer(emissionIndex).opcode && buffer(emissionIndex).storeDataValid && buffer(emissionIndex).readyReorderSign))
 
       // 送出実行
       when(io.memory(i).valid) {
@@ -155,24 +149,30 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     }
 
     // tailから送出しない命令までの命令数をカウント
-    nextTail = Mux((i.U === (nextTail - tail)) && io.memory(i).valid, nextTail + 1.U, nextTail)
+    nextTail = Mux((i.U === (nextTail - tail)) &&
+      (io.memory(i).valid || (head =/= tail && !buffer(emissionIndex).valid)), nextTail + 1.U, nextTail)
   }
   tail := nextTail
-//    printf(p"io.memory(0) = ${io.memory(0).valid}\n")
-  //    printf(p"io.memory(1) = ${io.memory(1).valid}\n")
-  //    printf(p"buffer(0).valid = ${buffer(0).valid}\n")
-  //    printf(p"buffer(1).valid = ${buffer(1).valid}\n")
-  //    printf(p"Address(0) = ${Address(0)}\n")
-  //    printf(p"Address(1) = ${Address(1)}\n")
-  //    printf(p"Overlap(0) = ${Overlap(0)}\n")
-  //    printf(p"Overlap(1) = ${Overlap(1)}\n")
-  //    printf(p"head = $head\n")
-  //    printf(p"tail = $tail\n\n")
+
 
   // デバッグ
   if (params.debug) {
     io.head.get := head
     io.tail.get := tail
+    //    printf(p"io.memory(0) = ${io.memory(0).valid}\n")
+    //    printf(p"io.memory(1) = ${io.memory(1).valid}\n")
+    //    printf(p"buffer(0).valid = ${buffer(0).valid}\n")
+    //    printf(p"buffer(1).valid = ${buffer(1).valid}\n")
+    //    printf(p"buffer(0).storeDataValid = ${buffer(0).storeDataValid}\n")
+    //    printf(p"buffer(1).storeDataValid = ${buffer(1).storeDataValid}\n")
+    //    printf(p"buffer(0).readyReorderSign = ${buffer(0).readyReorderSign}\n")
+    //    printf(p"buffer(1).readyReorderSign = ${buffer(1).readyReorderSign}\n")
+    //    printf(p"Address(0) = ${Address(0)}\n")
+    //    printf(p"Address(1) = ${Address(1)}\n")
+    //    printf(p"Overlap(0) = ${Overlap(0)}\n")
+    //    printf(p"Overlap(1) = ${Overlap(1)}\n")
+    //    printf(p"head = $head\n")
+    //    printf(p"tail = $tail\n\n")
   }
 }
 
