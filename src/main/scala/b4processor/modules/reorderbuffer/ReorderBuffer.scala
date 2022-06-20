@@ -107,11 +107,11 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     io.registerFile(i).bits.value := buffer(index).value
     io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
 
-    // LSQへストア実行信号
-    io.loadStoreQueue.destinationTag(i) := index
-    io.loadStoreQueue.valid(i) := buffer(index).storeSign
-
     when(canCommit) {
+      // LSQへストア実行信号
+      io.loadStoreQueue.destinationTag(i) := index
+      io.loadStoreQueue.valid(i) := buffer(index).storeSign
+
       buffer(index) := ReorderBufferEntry.default
     }
     lastValid = canCommit
