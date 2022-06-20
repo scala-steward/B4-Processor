@@ -16,8 +16,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
     val isEmpty = Output(Bool())
 
-    val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
-    val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
+    val head = if (params.debug) Some(Output(UInt((params.tagWidth - 2).W))) else None
+    val tail = if (params.debug) Some(Output(UInt((params.tagWidth - 2).W))) else None
     // LSQのエントリ数はこのままでいいのか
   })
 
@@ -25,9 +25,9 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   val LOAD = "b0000011".U
   val STORE = "b0100011".U
 
-  val head = RegInit(0.U(params.tagWidth.W))
-  val tail = RegInit(0.U(params.tagWidth.W))
-  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt)(defaultEntry)))
+  val head = RegInit(0.U((params.tagWidth - 2).W))
+  val tail = RegInit(0.U((params.tagWidth - 2).W))
+  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth - 2).toInt)(defaultEntry)))
   var insertIndex = head
 
   io.isEmpty := head === tail
@@ -37,6 +37,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     val decoder = io.decoders(i)
     io.decoders(i).ready := tail =/= insertIndex + 1.U
     val decoderValid = io.decoders(i).ready && io.decoders(i).valid && decoder.bits.opcode === BitPat("b0?00011")
+    // TODO decoderのvalidと機能が一部被っている　
 
     /**
      * 現状，(LSQの最大エントリ数 = リオーダバッファの最大エントリ数)であり，
