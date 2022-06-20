@@ -33,20 +33,21 @@ class DataMemory(implicit params: Parameters) extends Module {
         "b011".U -> io.dataIn.bits.data
       ))
     }.otherwise {
+      assert(io.dataIn.bits.data === 0.U)
       // Load
       /** readの場合，rdwrPortは命令実行時と同クロック立ち上がりでmemoryから読み込み(=ロード命令実行時に値変更) */
-      io.dataOut.value := Mux(RegNext(io.dataIn.bits.opcode === LOAD),
-        MuxLookup(io.dataIn.bits.function3, 0.U, Seq(
+      when(RegNext(io.dataIn.bits.opcode === LOAD)) {
+        io.dataOut.value := MuxLookup(io.dataIn.bits.function3, 0.U, Seq(
           "b000".U -> Mux(rdwrPort(7), Cat(~0.U(56.W), rdwrPort(7, 0)), Cat(0.U(56.W), rdwrPort(7, 0))),
           "b001".U -> Mux(rdwrPort(15), Cat(~0.U(48.W), rdwrPort(15, 0)), Cat(0.U(48.W), rdwrPort(15, 0))),
           "b010".U -> Mux(rdwrPort(31), Cat(~0.U(32.W), rdwrPort(31, 0)), Cat(0.U(32.W), rdwrPort(31, 0))),
           "b011".U -> rdwrPort,
-          "b100".U -> Cat(0.U(56.W), rdwrPort(7, 0)),
-          "b101".U -> Cat(0.U(48.W), rdwrPort(15, 0)),
-          "b110".U -> Cat(0.U(32.W), rdwrPort(31, 0))
-        )),
-        0.U
-      )
+          "b100".U -> rdwrPort(7, 0),
+          "b101".U -> rdwrPort(15, 0),
+          "b110".U -> rdwrPort(31, 0),
+        ))
+      }
+
       // printf(p"rdwrPort(7) = ${rdwrPort(7)}\n")
       // printf(p"rdwrPort(7, 0) = ${rdwrPort(7, 0)}\n")
       // printf(p"dataOut = ${io.dataOut.bits.data}\n")

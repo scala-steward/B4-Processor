@@ -1,7 +1,8 @@
 package b4processor.modules.fetch
 
 import b4processor.Parameters
-import b4processor.connections.{Executor2Fetch, Fetch2BranchPrediction, Fetch2Decoder, InstructionCache2Fetch}
+import b4processor.connections.{BranchOutput, Fetch2BranchPrediction, Fetch2Decoder, InstructionCache2Fetch}
+import b4processor.modules.branch_output_collector.CollectedBranchAddresses
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
@@ -18,7 +19,7 @@ class Fetch(implicit params: Parameters) extends Module {
     /** ロードストアキューが空である */
     val loadStoreQueueEmpty = Input(Bool())
     /** 実行ユニットから分岐先の計算結果が帰ってきた */
-    val executorBranchResult = Vec(params.runParallel, Input(new Executor2Fetch))
+    val collectedBranchAddresses = Flipped(new CollectedBranchAddresses)
 
     /** デコーダ */
     val decoders = Vec(params.runParallel, new Fetch2Decoder)
@@ -58,6 +59,9 @@ class Fetch(implicit params: Parameters) extends Module {
       BranchType.JALR.asUInt -> WaitingReason.JALR,
       BranchType.Fence.asUInt -> WaitingReason.Fence,
       BranchType.FenceI.asUInt -> WaitingReason.FenceI,
+      BranchType.JAL.asUInt -> Mux(branch.io.offset === 0.S,
+        WaitingReason.BusyLoop,
+        WaitingReason.None)
     )))
     // PCの更新を確認
     nextPC = nextPC + MuxCase(4.S, Seq(
@@ -71,7 +75,7 @@ class Fetch(implicit params: Parameters) extends Module {
   // 停止している際の挙動
   when(waiting =/= WaitingReason.None) {
     when(waiting === WaitingReason.Branch || waiting === WaitingReason.JALR) {
-      for (e <- io.executorBranchResult) {
+      for (e <- io.collectedBranchAddresses.addresses) {
         when(e.valid) {
           waiting := WaitingReason.None
           pc := e.programCounter
@@ -83,6 +87,10 @@ class Fetch(implicit params: Parameters) extends Module {
         waiting := WaitingReason.None
         pc := pc + 4.S
       }
+    }
+    when(waiting === WaitingReason.BusyLoop) {
+      /** 1クロック遅らせるだけ */
+      waiting := WaitingReason.None
     }
   }
 

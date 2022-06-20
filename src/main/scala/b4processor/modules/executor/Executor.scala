@@ -12,7 +12,7 @@ class Executor(implicit params: Parameters) extends Module {
     val reservationStation = Flipped(new ReservationStation2Executor)
     val out = new OutputValue
     //    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
-    val fetch = Output(new Executor2Fetch)
+    val fetch = Output(new BranchOutput)
   })
 
   /**

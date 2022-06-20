@@ -10,5 +10,5 @@ int fibonacci(int n){
 }
 
 int main(){
-    return fibonacci(10);
+    return fibonacci(4);
 }

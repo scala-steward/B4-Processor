@@ -6,6 +6,7 @@ import scala.math.pow
  * プロセッサを生成する際のパラメータ
  *
  * @param tagWidth                   リオーダバッファで使用するタグのビット数
+ * @param loadStoreQueueIndexWidth   ロードストアキューに使うインデックスのビット幅
  * @param runParallel                同時実行数
  * @param maxRegisterFileCommitCount リオーダバッファからレジスタファイルに1クロックでコミットする命令の数(Max)
  * @param maxDataMemoryCommitCount   メモリバッファに出力する最大数
@@ -16,12 +17,13 @@ import scala.math.pow
  * @param dataMemorySize             データメモリのサイズ
  */
 case class Parameters(tagWidth: Int = 5,
+                      loadStoreQueueIndexWidth: Int = 3,
                       runParallel: Int = 2,
                       maxRegisterFileCommitCount: Int = 4,
                       maxDataMemoryCommitCount: Int = 4,
                       fetchWidth: Int = 4,
                       branchPredictionWidth: Int = 4,
-                      instructionStart: Long = 0x4000_0000,
-                      ramStart: Long = 0x8000_0000,
+                      instructionStart: Long = 0x4000_0000L,
+                      ramStart: Long = 0x8000_0000L,
                       debug: Boolean = false,
                       dataMemorySize: Long = pow(2, 10).toInt)

@@ -14,3 +14,6 @@ Disassembly of section .text:
 
 0000000040000018 <LABEL>:
     40000018:	01400693          	addi	x13,x0,20
+
+000000004000001c <END>:
+    4000001c:	0000006f          	jal	x0,4000001c <END>

@@ -1,7 +1,7 @@
 package b4processor.modules.executor
 
 import b4processor.Parameters
-import b4processor.connections.Executor2Fetch
+import b4processor.connections.BranchOutput
 import b4processor.utils.{ExecutorValue, FetchValue, LSQValue, ReservationValue}
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -11,7 +11,7 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reservationStation = Flipped(new ReservationStation2ExecutorForTest)
     val out = new ExecutionRegisterBypassForTest
-    val fetch = Output(new Executor2Fetch)
+    val fetch = Output(new BranchOutput)
   })
 
   val executor = Module(new Executor)

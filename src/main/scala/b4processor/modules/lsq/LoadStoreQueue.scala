@@ -15,8 +15,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     val memory = Vec(params.maxRegisterFileCommitCount, new LoadStoreQueue2Memory)
     val isEmpty = Output(Bool())
 
-    val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
-    val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
+    val head = if (params.debug) Some(Output(UInt(params.loadStoreQueueIndexWidth.W))) else None
+    val tail = if (params.debug) Some(Output(UInt(params.loadStoreQueueIndexWidth.W))) else None
     // LSQのエントリ数はこのままでいいのか
   })
 
@@ -24,9 +24,9 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   val LOAD = "b0000011".U
   val STORE = "b0100011".U
 
-  val head = RegInit(0.U(params.tagWidth.W))
-  val tail = RegInit(0.U(params.tagWidth.W))
-  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt)(defaultEntry)))
+  val head = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
+  val tail = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
+  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.loadStoreQueueIndexWidth).toInt)(defaultEntry)))
   var insertIndex = head
 
   io.isEmpty := head === tail
@@ -43,7 +43,6 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
      * エンキュー時の命令待機は必要ないが，LSQのエントリ数を減らした場合，必要
      */
     when(decoderValid) {
-      // ロードである
       buffer(insertIndex) := LoadStoreQueueEntry.validEntry(
         opcode = decoder.bits.opcode,
         function3 = decoder.bits.function3,
@@ -57,7 +56,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         programCounter = decoder.bits.programCounter
       )
     }
-    insertIndex = Mux(insertIndex === (math.pow(2, params.tagWidth).toInt.U - 1.U) && decoderValid, 0.U, insertIndex + decoderValid.asUInt)
+    insertIndex = insertIndex + Mux(decoderValid, 1.U, 0.U)
   }
 
   head := insertIndex
@@ -119,7 +118,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   // カウンタ変数にjは使えない？ & 2重ループforにtailやindexを使えない
   for (i <- 0 until params.maxRegisterFileCommitCount) {
-    emissionIndex := Mux(emissionIndex === (math.pow(2, params.tagWidth).toInt.U - 1.U), 0.U, emissionIndex + 1.U) // リングバッファ
+    emissionIndex = emissionIndex + 1.U // リングバッファ
 
     io.memory(i).valid := false.B // FIXME これはいらないはず io.memory(i).ready && (head =/= tail)
     io.memory(i).bits.address := 0.S

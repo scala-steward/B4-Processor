@@ -103,7 +103,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute many_add with no parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex"))(defaultParams.copy(runParallel = 1)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.setTimeout(20)
+        c.clock.setTimeout(40)
         while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
         c.io.registerFileContents.get(0).expect(8)
@@ -115,7 +115,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute many_add with 2 parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex"))(defaultParams.copy(fetchWidth = 8)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.setTimeout(20)
+        c.clock.setTimeout(40)
         while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
         c.io.registerFileContents.get(0).expect(8)
@@ -127,7 +127,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute many_add with 4 parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex"))(defaultParams.copy(runParallel = 4, fetchWidth = 8)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.setTimeout(20)
+        c.clock.setTimeout(40)
         while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
         c.io.registerFileContents.get(0).expect(8)
@@ -139,7 +139,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute many_add with 4 parallel with very low tag width" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex"))(defaultParams.copy(runParallel = 4, fetchWidth = 8, tagWidth = 2)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.setTimeout(20)
+        c.clock.setTimeout(40)
         while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
         c.io.registerFileContents.get(0).expect(8)
@@ -149,7 +149,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // 並列実行できそうな大量のadd命令を同時発行数8で試す
   it should "execute many_add with 8 parallel" in {
-    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex"))(defaultParams.copy(runParallel = 8, fetchWidth = 8)))
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex"))(defaultParams.copy(runParallel = 8, fetchWidth = 8, maxRegisterFileCommitCount = 10)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         c.clock.setTimeout(20)
         while (c.io.registerFileContents.get(0).peekInt() != 8)
@@ -183,10 +183,14 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run load_store" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/load_store/load_store.32.hex"))(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.step(10)
+        c.clock.setTimeout(40)
+        while (c.io.registerFileContents.get(2).peekInt() != 10)
+          c.clock.step()
         c.io.registerFileContents.get(0).expect(0x8000_0000L)
         c.io.registerFileContents.get(1).expect(10)
         c.io.registerFileContents.get(2).expect(10)
+
+        c.clock.step()
       }
   }
 
@@ -203,7 +207,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // 単純な値をストアしてロードするプログラム
   it should "run fibonacci_c" in {
-    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"))(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1)))
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"))(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1, loadStoreQueueIndexWidth = 2)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         c.clock.setTimeout(300)
         while (c.io.registerFileContents.get(9).peekInt() != 89)

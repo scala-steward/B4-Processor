@@ -11,7 +11,7 @@ class OutputCollector(implicit params: Parameters) extends Module {
     val dataMemory = Flipped(new OutputValue)
   })
   for (i <- 0 until params.runParallel) {
-    io.outputs.outputs(i) := io.executor(i)
+    io.outputs.outputs(i) := RegNext(io.executor(i))
   }
-  io.outputs.outputs(params.runParallel) := io.dataMemory
+  io.outputs.outputs(params.runParallel) := RegNext(io.dataMemory)
 }

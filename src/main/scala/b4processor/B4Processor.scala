@@ -1,6 +1,7 @@
 package b4processor
 
 import b4processor.connections.{InstructionMemory2Cache, LoadStoreQueue2Memory, OutputValue}
+import b4processor.modules.branch_output_collector.BranchOutputCollector
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.decoder.Decoder
 import b4processor.modules.executor.Executor
@@ -37,7 +38,9 @@ class B4Processor(implicit params: Parameters) extends Module {
   val registerFile = Module(new RegisterFile)
   val loadStoreQueue = Module(new LoadStoreQueue)
   val dataMemoryBuffer = Module(new DataMemoryBuffer)
+
   val outputCollector = Module(new OutputCollector)
+  val branchAddressCollector = Module(new BranchOutputCollector)
 
   val decoders = (0 until params.runParallel).map(n => Module(new Decoder(n)))
   val reservationStations = Seq.fill(params.runParallel)(Module(new ReservationStation))
@@ -92,10 +95,14 @@ class B4Processor(implicit params: Parameters) extends Module {
     /** リザベーションステーションと実行ユニットの接続 */
     reservationStations(i).io.collectedOutput <> outputCollector.io.outputs
 
+    /** 分岐結果コレクタと実行ユニットの接続 */
+    branchAddressCollector.io.executor(i) := executors(i).io.fetch
 
-    /** フェッチと実行ユニットの接続 */
-    fetch.io.executorBranchResult(i) <> executors(i).io.fetch
+
   }
+
+  /** フェッチと分岐結果の接続 */
+  fetch.io.collectedBranchAddresses := branchAddressCollector.io.fetch
 
   /** LSQと出力コレクタ */
   loadStoreQueue.io.outputCollector := outputCollector.io.outputs

@@ -9,4 +9,6 @@ _start:
     beq zero,zero,END
 LABEL:
     li a3,20
+
 END:
+    j .

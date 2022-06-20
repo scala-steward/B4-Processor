@@ -20,6 +20,4 @@ Disassembly of section .text:
     40000030:	003080b3          	add	x1,x1,x3
     40000034:	007282b3          	add	x5,x5,x7
     40000038:	005080b3          	add	x1,x1,x5
-
-000000004000003c <END>:
-    4000003c:	0000006f          	jal	x0,4000003c <END>
+    4000003c:	0000006f          	jal	x0,4000003c <_start+0x3c>

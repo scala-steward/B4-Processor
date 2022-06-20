@@ -1,7 +1,5 @@
 package b4processor.modules.fetch
 
-import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
-import chisel3._
 import chisel3.experimental.ChiselEnum
 
 object WaitingReason extends ChiselEnum {
@@ -15,5 +13,7 @@ object WaitingReason extends ChiselEnum {
   val Fence = Value
   /** Fense.iによる停止 */
   val FenceI = Value
+  /** JAL命令で同じ場所を移動していると、ReservationStationが圧迫されてしまうので遅延させる */
+  val BusyLoop = Value
 }
 

@@ -10,4 +10,4 @@ foo:
     ret
 
 end:
-    j end
+    j .
