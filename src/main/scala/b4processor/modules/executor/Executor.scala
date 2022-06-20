@@ -11,7 +11,7 @@ class Executor(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reservationStation = Flipped(new ReservationStation2Executor)
     val out = new OutputValue
-    //    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
+    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
     val fetch = Output(new BranchOutput)
   })
 
@@ -163,18 +163,12 @@ class Executor(implicit params: Parameters) extends Module {
    * (レジスタ挿入の可能性あり)
    */
 
-  // LSQ fixme 出力を統一してしまえばいらないと思う
-  //  io.loadStoreQueue.valid := instructionChecker.output.instruction =/= Instructions.Unknown &&
-  //    io.reservationStation.valid
-  //  when(io.loadStoreQueue.valid) {
-  //    io.loadStoreQueue.programCounter := io.reservationStation.bits.programCounter
-  //    io.loadStoreQueue.destinationTag := io.reservationStation.bits.destinationTag
-  //    io.loadStoreQueue.value := executionResultSized
-  //  }.otherwise {
-  //    io.loadStoreQueue.programCounter := 0.S
-  //    io.loadStoreQueue.destinationTag := 0.U
-  //    io.loadStoreQueue.value := 0.U
-  //  }
+  // LSQ TODO 必要か確認
+//  io.loadStoreQueue.valid :=
+//    instructionChecker.output.instruction =/= Instructions.Unknown && io.reservationStation.valid
+//  io.loadStoreQueue.destinationTag := io.reservationStation.bits.destinationTag
+//  io.loadStoreQueue.value := Mux(instructionChecker.output.instruction === Instructions.Store,
+//    io.reservationStation.bits.value1 + immediateOrFunction7Extended, executionResultSized)
 
   // reorder Buffer
   //  printf(p"instruction type = ${instructionChecker.output.instruction.asUInt}\n")

@@ -22,7 +22,7 @@ class DataMemory(implicit params: Parameters) extends Module {
   when(io.dataIn.valid) {
     // FIXME: アドレスを下位28bitのみ使っている
     val rdwrPort = mem(io.dataIn.bits.address.asUInt(27, 0))
-    when(io.dataIn.bits.opcode === STORE) {
+    when(!io.dataIn.bits.opcode) {
       // printf(p"dataIn =${io.dataIn.bits.data}\n")
       // Store
       /** writeの場合，rdwrPortは命令実行時の次クロック立ち上がりでmemoryに書き込み(=ストア命令実行時では値変わらず) */
@@ -54,9 +54,9 @@ class DataMemory(implicit params: Parameters) extends Module {
     }
     // printf(p"rdwrPort =${rdwrPort}\n")
   }
-  io.dataOut.tag := RegNext(Mux(io.dataIn.bits.opcode === LOAD, io.dataIn.bits.tag, 0.U))
-  io.dataOut.validAsResult := RegNext(io.dataIn.bits.opcode === LOAD)
-  io.dataOut.validAsLoadStoreAddress := RegNext(io.dataIn.bits.opcode === LOAD)
+  io.dataOut.tag := RegNext(Mux(io.dataIn.bits.opcode, io.dataIn.bits.tag, 0.U))
+  io.dataOut.validAsResult := RegNext(io.dataIn.bits.opcode)
+  io.dataOut.validAsLoadStoreAddress := RegNext(io.dataIn.bits.opcode)
   // printf(p"mem(io.dataIn.bits.address.asUInt) = ${mem(io.dataIn.bits.address.asUInt)}\n")
 }
 

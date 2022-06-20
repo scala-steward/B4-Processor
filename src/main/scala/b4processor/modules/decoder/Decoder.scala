@@ -189,7 +189,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     io.loadStoreQueue.bits.storeDataValid := true.B
   }
   io.loadStoreQueue.bits.programCounter := io.instructionFetch.bits.programCounter
-  io.loadStoreQueue.valid := io.loadStoreQueue.ready && instOp === BitPat("b0?00011")
+  io.loadStoreQueue.valid := io.loadStoreQueue.ready && io.loadStoreQueue.bits.opcode === BitPat("b0?00011")
 }
 
 object Decoder extends App {
