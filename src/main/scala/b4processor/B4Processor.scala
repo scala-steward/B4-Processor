@@ -128,6 +128,9 @@ class B4Processor(implicit params: Parameters) extends Module {
   /** リオーダバッファと出力コレクタ */
   reorderBuffer.io.collectedOutputs := outputCollector.io.outputs
 
+  /** リオーダバッファとLSQ */
+  reorderBuffer.io.loadStoreQueue <> loadStoreQueue.io.reorderBuffer
+
   /** フェッチと分岐予測 TODO */
   fetch.io.prediction <> DontCare
 }

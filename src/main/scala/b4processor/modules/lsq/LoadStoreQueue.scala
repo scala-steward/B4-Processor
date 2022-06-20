@@ -147,9 +147,11 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       io.memory(i).valid := false.B
     }
 
-    // tailから送出しない命令までの命令数をカウント
-    nextTail = Mux((i.U === (nextTail - tail)) &&
-      (io.memory(i).valid || (head =/= tail && !buffer(emissionIndex).valid)), nextTail + 1.U, nextTail)
+    // nextTailの更新
+    printf("%b && (%b || (%b && %b)) = %b\n", i.U === (nextTail - tail), io.memory(i).valid, head =/= tail, !buffer(emissionIndex).valid, (i.U === (nextTail - tail)) &&
+      (io.memory(i).valid || (head =/= tail && !buffer(emissionIndex).valid)))
+    nextTail = nextTail + Mux((i.U === (nextTail - tail)) &&
+      (io.memory(i).valid || (head =/= tail && !buffer(emissionIndex).valid)), 1.U, 0.U)
   }
   tail := nextTail
 

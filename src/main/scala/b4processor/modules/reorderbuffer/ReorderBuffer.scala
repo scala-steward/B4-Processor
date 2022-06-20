@@ -115,9 +115,10 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       // LSQへストア実行信号
       io.loadStoreQueue.destinationTag(i) := index
       io.loadStoreQueue.valid(i) := buffer(index).storeSign
-
-    when(canCommit) {
       buffer(index) := ReorderBufferEntry.default
+    }.otherwise {
+      io.loadStoreQueue.destinationTag(i) := 0.U
+      io.loadStoreQueue.valid(i) := false.B
     }
     lastValid = canCommit
   }

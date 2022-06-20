@@ -78,7 +78,6 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.dataIn.bits.tag.poke(20)
       c.io.dataIn.bits.function3.poke("b000".U)
       c.io.dataIn.bits.opcode.poke(true)
-      c.io.dataIn.bits.opcode.poke("b0000011".U)
       c.io.dataIn.valid.poke(true)
 
       c.clock.step(1)

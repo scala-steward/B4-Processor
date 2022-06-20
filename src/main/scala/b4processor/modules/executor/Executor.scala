@@ -11,7 +11,7 @@ class Executor(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reservationStation = Flipped(new ReservationStation2Executor)
     val out = new OutputValue
-    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
+//    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
     val fetch = Output(new BranchOutput)
   })
 
