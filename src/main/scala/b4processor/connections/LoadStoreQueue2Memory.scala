@@ -11,6 +11,6 @@ class LoadStoreQueue2Memory(implicit params: Parameters) extends ReadyValidIO(ne
   val address = SInt(64.W)
   val tag = UInt(params.tagWidth.W)
   val data = UInt(64.W)
-  val opcode = Bool()
+  val opcode = Bool() // 1: LOAD  0: STORE
   val function3 = UInt(3.W)
 })
