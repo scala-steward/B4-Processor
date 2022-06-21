@@ -151,7 +151,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
     // tailから送出しない命令までの命令数をカウント
     nextTail = Mux((i.U === (nextTail - tail)) &&
-      (io.memory(i).valid || (head =/= tail && !buffer(emissionIndex).valid)), nextTail + 1.U, nextTail)
+      (io.memory(i).valid || (head =/= nextTail && !buffer(emissionIndex).valid)), nextTail + 1.U, nextTail)
   }
   tail := nextTail
 
@@ -160,20 +160,20 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   if (params.debug) {
     io.head.get := head
     io.tail.get := tail
-    //    printf(p"io.memory(0) = ${io.memory(0).valid}\n")
-    //    printf(p"io.memory(1) = ${io.memory(1).valid}\n")
-    //    printf(p"buffer(0).valid = ${buffer(0).valid}\n")
-    //    printf(p"buffer(1).valid = ${buffer(1).valid}\n")
-    //    printf(p"buffer(0).storeDataValid = ${buffer(0).storeDataValid}\n")
-    //    printf(p"buffer(1).storeDataValid = ${buffer(1).storeDataValid}\n")
-    //    printf(p"buffer(0).readyReorderSign = ${buffer(0).readyReorderSign}\n")
-    //    printf(p"buffer(1).readyReorderSign = ${buffer(1).readyReorderSign}\n")
-    //    printf(p"Address(0) = ${Address(0)}\n")
-    //    printf(p"Address(1) = ${Address(1)}\n")
-    //    printf(p"Overlap(0) = ${Overlap(0)}\n")
-    //    printf(p"Overlap(1) = ${Overlap(1)}\n")
-    //    printf(p"head = $head\n")
-    //    printf(p"tail = $tail\n\n")
+    printf(p"io.memory(0) = ${io.memory(0).valid}\n")
+    printf(p"io.memory(1) = ${io.memory(1).valid}\n")
+    printf(p"buffer(0).valid = ${buffer(0).valid}\n")
+    printf(p"buffer(1).valid = ${buffer(1).valid}\n")
+    printf(p"buffer(0).storeDataValid = ${buffer(0).storeDataValid}\n")
+    printf(p"buffer(1).storeDataValid = ${buffer(1).storeDataValid}\n")
+    printf(p"buffer(0).readyReorderSign = ${buffer(0).readyReorderSign}\n")
+    printf(p"buffer(1).readyReorderSign = ${buffer(1).readyReorderSign}\n")
+    printf(p"Address(0) = ${Address(0)}\n")
+    printf(p"Address(1) = ${Address(1)}\n")
+    printf(p"Overlap(0) = ${Overlap(0)}\n")
+    printf(p"Overlap(1) = ${Overlap(1)}\n")
+    printf(p"head = $head\n")
+    printf(p"tail = $tail\n\n")
   }
 }
 

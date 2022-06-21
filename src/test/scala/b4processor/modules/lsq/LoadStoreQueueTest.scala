@@ -237,7 +237,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectMemory(values =
         Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 0, opcode = true, function3 = 0)),
           Some(LSQ2Memory(address = 100, tag = 11, data = 0, opcode = true, function3 = 0))))
-      c.clock.step(2)
+      c.clock.step(3)
 
     }
   }
@@ -264,20 +264,19 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.head.get.expect(2)
       c.io.tail.get.expect(0)
       c.setExecutor(values =
-        Seq(Some(LSQfromALU(valid = true, destinationtag = 10, value = 150)),
-          Some(LSQfromALU(valid = true, destinationtag = 5, value = 100))))
+        Seq(Some(LSQfromALU(valid = true, destinationtag = 10, value = 150)), // 1st store address
+          Some(LSQfromALU(valid = true, destinationtag = 5, value = 100)))) // 1st store data
       c.clock.step(1)
 
       c.setExecutor(values =
-        Seq(Some(LSQfromALU(valid = true, destinationtag = 8, value = 456)),
-          Some(LSQfromALU(valid = true, destinationtag = 11, value = 789))))
-
-      c.setReorderBuffer(valids = Seq(false, true), DestinationTags = Seq(1, 10))
+        Seq(Some(LSQfromALU(valid = true, destinationtag = 8, value = 456)), // invalid
+          Some(LSQfromALU(valid = true, destinationtag = 11, value = 789)))) // 2nd store address
+      c.setReorderBuffer(valids = Seq(false, true), DestinationTags = Seq(1, 10)) // 1st store RB Sign
       c.clock.step(1)
 
       // 値の確認
       c.setExecutor()
-      c.setReorderBuffer(valids = Seq(true, false), DestinationTags = Seq(11, 15))
+      c.setReorderBuffer(valids = Seq(true, false), DestinationTags = Seq(11, 15)) // 2nd store RB Sign
       c.expectMemory(values =
         Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 100, opcode = false, function3 = 0)), None))
       c.clock.step(1)
