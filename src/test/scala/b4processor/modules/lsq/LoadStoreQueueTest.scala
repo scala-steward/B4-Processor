@@ -195,16 +195,18 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       ))
       c.setReorderBuffer(valids = Seq(true, false))
       c.io.head.get.expect(1)
-      c.io.head.get.expect(0)
+      c.io.tail.get.expect(0)
       c.expectMemory(Seq(None, None))
       c.clock.step(1)
 
       // 値の確認
       c.expectMemory(values =
         Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 123, opcode = false, function3 = 0)), None))
+      c.io.head.get.expect(1)
       c.io.tail.get.expect(0)
       c.clock.step()
 
+      c.io.head.get.expect(1)
       c.io.tail.get.expect(1)
       c.clock.step(2)
     }
