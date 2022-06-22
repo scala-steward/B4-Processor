@@ -42,9 +42,9 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
     }
   }
 
-  def setReorderBuffer(DestinationTags: Seq[Int] = Seq.fill(params.runParallel)(0),
-                       valids: Seq[Boolean] = Seq.fill(params.runParallel)(false)): Unit = {
-    for (i <- 0 until params.runParallel) {
+  def setReorderBuffer(DestinationTags: Seq[Int] = Seq.fill(params.maxRegisterFileCommitCount)(0),
+                       valids: Seq[Boolean] = Seq.fill(params.maxRegisterFileCommitCount)(false)): Unit = {
+    for (i <- 0 until params.maxRegisterFileCommitCount) {
       val tag = DestinationTags(i)
       val v = valids(i)
       io.reorderBuffer.destinationTag(i).poke(tag)
@@ -185,6 +185,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         None
       ))
       c.io.head.get.expect(1)
+      c.io.tail.get.expect(0)
       c.clock.step(1)
 
       c.setOutputs(values = Seq(
@@ -192,14 +193,15 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         None,
         None
       ))
-      c.setReorderBuffer(valids = Seq(true))
-      c.io.head.get.expect(2)
-      c.expectMemory(Seq(None))
+      c.setReorderBuffer(valids = Seq(true, false))
+      c.io.head.get.expect(1)
+      c.io.head.get.expect(0)
+      c.expectMemory(Seq(None, None))
       c.clock.step(1)
 
       // 値の確認
       c.expectMemory(values =
-        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 123, opcode = false, function3 = 0))))
+        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 123, opcode = false, function3 = 0)), None))
       c.io.tail.get.expect(0)
       c.clock.step()
 

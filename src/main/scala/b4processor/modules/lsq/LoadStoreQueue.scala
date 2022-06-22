@@ -133,6 +133,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       io.memory(i).valid := io.memory(i).ready && (head =/= tail) && buffer(emissionIndex).valid && buffer(emissionIndex).addressValid &&
         ((buffer(emissionIndex).opcode && !Overlap(i)) ||
           (!buffer(emissionIndex).opcode && buffer(emissionIndex).storeDataValid && buffer(emissionIndex).readyReorderSign))
+      printf("memory valid = %d\n", io.memory(i).valid)
 
       // 送出実行
       when(io.memory(i).valid) {
@@ -148,10 +149,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     }
 
     // nextTailの更新
-    printf("%b && (%b || (%b && %b)) = %b\n", i.U === (nextTail - tail), io.memory(i).valid, head =/= tail, !buffer(emissionIndex).valid, (i.U === (nextTail - tail)) &&
-      (io.memory(i).valid || (head =/= tail && !buffer(emissionIndex).valid)))
-    nextTail = nextTail + Mux((i.U === (nextTail - tail)) &&
-      (io.memory(i).valid || (head =/= tail && !buffer(emissionIndex).valid)), 1.U, 0.U)
+    nextTail = Mux((i.U === (nextTail - tail)) &&
+      (io.memory(i).valid || (head =/= nextTail && !buffer(emissionIndex).valid)), nextTail + 1.U, nextTail)
   }
   tail := nextTail
 
