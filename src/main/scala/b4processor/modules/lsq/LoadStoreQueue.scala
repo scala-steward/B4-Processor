@@ -133,7 +133,6 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       io.memory(i).valid := io.memory(i).ready && (head =/= tail) && buffer(emissionIndex).valid && buffer(emissionIndex).addressValid &&
         ((buffer(emissionIndex).opcode && !Overlap(i)) ||
           (!buffer(emissionIndex).opcode && buffer(emissionIndex).storeDataValid && buffer(emissionIndex).readyReorderSign))
-      printf("memory valid = %d\n", io.memory(i).valid)
 
       // 送出実行
       when(io.memory(i).valid) {
@@ -149,8 +148,10 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     }
 
     // nextTailの更新
-    nextTail = Mux((i.U === (nextTail - tail)) &&
-      (io.memory(i).valid || (head =/= nextTail && !buffer(emissionIndex).valid)), nextTail + 1.U, nextTail)
+    printf("%b && (%b || (%b && %b)) = %b\n", i.U === (nextTail - tail), io.memory(i).valid, head =/= nextTail, !buffer(emissionIndex).valid, (i.U === (nextTail - tail)) &&
+      (io.memory(i).valid || (head =/= nextTail && !buffer(emissionIndex).valid)))
+    nextTail = nextTail + Mux((i.U === (nextTail - tail)) &&
+      (io.memory(i).valid || (head =/= nextTail && !buffer(emissionIndex).valid)), 1.U, 0.U)
   }
   tail := nextTail
 
@@ -159,18 +160,18 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   if (params.debug) {
     io.head.get := head
     io.tail.get := tail
-    //    printf(p"io.memory(0) = ${io.memory(0).valid}\n")
-    //    printf(p"io.memory(1) = ${io.memory(1).valid}\n")
-    //    printf(p"buffer(0).valid = ${buffer(0).valid}\n")
-    //    printf(p"buffer(1).valid = ${buffer(1).valid}\n")
-    //    printf(p"buffer(0).storeDataValid = ${buffer(0).storeDataValid}\n")
-    //    printf(p"buffer(1).storeDataValid = ${buffer(1).storeDataValid}\n")
-    //    printf(p"buffer(0).readyReorderSign = ${buffer(0).readyReorderSign}\n")
-    //    printf(p"buffer(1).readyReorderSign = ${buffer(1).readyReorderSign}\n")
-    //    printf(p"Address(0) = ${Address(0)}\n")
-    //    printf(p"Address(1) = ${Address(1)}\n")
-    //    printf(p"Overlap(0) = ${Overlap(0)}\n")
-    //    printf(p"Overlap(1) = ${Overlap(1)}\n")
+    //        printf(p"io.memory(0) = ${io.memory(0).valid}\n")
+    //        printf(p"io.memory(1) = ${io.memory(1).valid}\n")
+    //        printf(p"buffer(0).valid = ${buffer(0).valid}\n")
+    //        printf(p"buffer(1).valid = ${buffer(1).valid}\n")
+    //        printf(p"buffer(0).storeDataValid = ${buffer(0).storeDataValid}\n")
+    //        printf(p"buffer(1).storeDataValid = ${buffer(1).storeDataValid}\n")
+    //        printf(p"buffer(0).readyReorderSign = ${buffer(0).readyReorderSign}\n")
+    //        printf(p"buffer(1).readyReorderSign = ${buffer(1).readyReorderSign}\n")
+    //        printf(p"Address(0) = ${Address(0)}\n")
+    //        printf(p"Address(1) = ${Address(1)}\n")
+    //        printf(p"Overlap(0) = ${Overlap(0)}\n")
+    //        printf(p"Overlap(1) = ${Overlap(1)}\n")
     //    printf(p"head = $head\n")
     //    printf(p"tail = $tail\n\n")
   }

@@ -169,6 +169,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.tail.get.expect(0)
       c.io.decoders(0).ready.expect(true)
       c.io.memory(0).ready.poke(true)
+      c.io.memory(1).ready.poke(true)
       // c.io.memory(1).ready.poke(true) (if runParallel = 2)
       c.expectMemory(Seq(None, None))
       // c.expectMemory(Seq(None, None)) (if runParallel = 2)
@@ -193,7 +194,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         None,
         None
       ))
-      c.setReorderBuffer(valids = Seq(true, false))
+      c.setReorderBuffer(valids = Seq(true, false), DestinationTags = Seq(10, 1))
       c.io.head.get.expect(1)
       c.io.tail.get.expect(0)
       c.expectMemory(Seq(None, None))
@@ -204,11 +205,11 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 123, opcode = false, function3 = 0)), None))
       c.io.head.get.expect(1)
       c.io.tail.get.expect(0)
-      c.clock.step()
+      c.clock.step(1)
 
       c.io.head.get.expect(1)
       c.io.tail.get.expect(1)
-      c.clock.step(2)
+      c.clock.step(1)
     }
   }
   // (if runParallel = 2)
@@ -290,7 +291,6 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(Some(LSQfromALU(valid = true, destinationtag = 8, value = 456)),
           Some(LSQfromALU(valid = true, destinationtag = 11, value = 789)),
           None))
-
       c.setReorderBuffer(valids = Seq(false, true), DestinationTags = Seq(1, 10))
       c.clock.step(1)
 
