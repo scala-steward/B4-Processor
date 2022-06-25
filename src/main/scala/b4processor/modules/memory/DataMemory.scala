@@ -25,7 +25,7 @@ class DataMemory(implicit params: Parameters) extends Module {
   when(io.dataIn.valid || nextLoad) {
     // FIXME: アドレスを下位28bitのみ使っている
     val rdwrPort = mem(io.dataIn.bits.address.asUInt(27, 0))
-    when(!io.dataIn.bits.isLoad) {
+    when(io.dataIn.valid && !io.dataIn.bits.isLoad) {
       // printf(p"dataIn =${io.dataIn.bits.data}\n")
       // Store
       /** writeの場合，rdwrPortは命令実行時の次クロック立ち上がりでmemoryに書き込み(=ストア命令実行時では値変わらず) */

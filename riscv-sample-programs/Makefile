@@ -10,7 +10,8 @@ SUBDIRS := fibonacci \
 			many_add \
 			many_add_out_of_order \
 			load_store \
-			fibonacci_c
+			fibonacci_c \
+			many_load_store
 
 all: $(SUBDIRS)
 

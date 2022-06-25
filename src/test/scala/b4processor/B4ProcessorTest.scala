@@ -207,11 +207,43 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
       }
   }
 
-  // 単純な値をストアしてロードするプログラム
   it should "run fibonacci_c" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"))(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1, loadStoreQueueIndexWidth = 2)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         c.clock.setTimeout(1000)
+        while (c.io.registerFileContents.get(2).peekInt() != 13)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(13)
+        c.clock.step()
+      }
+  }
+
+  it should "run fibonacci_c with 2 parallel" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"))(defaultParams.copy(runParallel = 2, maxRegisterFileCommitCount = 4, loadStoreQueueIndexWidth = 4)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.setTimeout(500)
+        while (c.io.registerFileContents.get(2).peekInt() != 13)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(13)
+        c.clock.step()
+      }
+  }
+
+  it should "run many_load_store" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_load_store/many_load_store.32.hex"))(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1, loadStoreQueueIndexWidth = 2)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.setTimeout(100)
+        while (c.io.registerFileContents.get(2).peekInt() != 13)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(13)
+        c.clock.step()
+      }
+  }
+
+  it should "run many_load_store with 4 parallel" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_load_store/many_load_store.32.hex"))(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4, loadStoreQueueIndexWidth = 2)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.setTimeout(100)
         while (c.io.registerFileContents.get(2).peekInt() != 13)
           c.clock.step()
         c.io.registerFileContents.get(2).expect(13)
