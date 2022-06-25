@@ -211,7 +211,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run fibonacci_c" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"))(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1, loadStoreQueueIndexWidth = 2)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.setTimeout(300)
+        c.clock.setTimeout(1000)
         while (c.io.registerFileContents.get(2).peekInt() != 13)
           c.clock.step()
         c.io.registerFileContents.get(2).expect(13)

@@ -44,6 +44,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
      * エンキュー時の命令待機は必要ないが，LSQのエントリ数を減らした場合，必要
      */
     when(decoderValid) {
+//      printf("isLoad = %d\n", decoder.bits.opcode === LOAD)
       buffer(insertIndex) := LoadStoreQueueEntry.validEntry(
         // opcode = 1(load), 0(store) (bit数削減)
         isLoad = decoder.bits.opcode === LOAD,
