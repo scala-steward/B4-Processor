@@ -46,7 +46,7 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
         entry.address := Input.bits.address
         entry.tag := Input.bits.tag
         entry.data := Input.bits.data
-        entry.opcode := Input.bits.opcode
+        entry.opcode := Input.bits.isLoad
         entry.function3 := Input.bits.function3
         entry
       }
@@ -63,14 +63,14 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
     io.dataOut.bits.address := buffer(tail).address
     io.dataOut.bits.tag := buffer(tail).tag
     io.dataOut.bits.data := buffer(tail).data
-    io.dataOut.bits.opcode := buffer(tail).opcode
+    io.dataOut.bits.isLoad := buffer(tail).opcode
     io.dataOut.bits.function3 := buffer(tail).function3
   }.otherwise {
     io.dataOut.valid := false.B
     io.dataOut.bits.address := 0.S
     io.dataOut.bits.tag := 0.U
     io.dataOut.bits.data := 0.U
-    io.dataOut.bits.opcode := false.B
+    io.dataOut.bits.isLoad := false.B
     io.dataOut.bits.function3 := 0.U
   }
   tail := Mux(tail === (math.pow(2, params.tagWidth).toInt.U - 1.U) && io.dataOut.valid,

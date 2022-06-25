@@ -115,7 +115,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     io.memory(i).bits.address := 0.S
     io.memory(i).bits.tag := 0.U
     io.memory(i).bits.data := 0.U
-    io.memory(i).bits.opcode := false.B
+    io.memory(i).bits.isLoad := false.B
     io.memory(i).bits.function3 := 0.U
 
     when(buffer(emissionIndex).valid) {
@@ -140,7 +140,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         io.memory(i).bits.tag := buffer(emissionIndex).addressAndLoadResultTag
         io.memory(i).bits.data := buffer(emissionIndex).storeData
         io.memory(i).bits.address := buffer(emissionIndex).address
-        io.memory(i).bits.opcode := buffer(emissionIndex).isLoad
+        io.memory(i).bits.isLoad := buffer(emissionIndex).isLoad
         io.memory(i).bits.function3 := buffer(emissionIndex).function3
         buffer(emissionIndex) := LoadStoreQueueEntry.default
       }

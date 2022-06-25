@@ -58,7 +58,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
       if (values(i).isDefined) {
         this.io.memory(i).bits.address.expect(values(i).get.address)
         this.io.memory(i).bits.tag.expect(values(i).get.tag)
-        this.io.memory(i).bits.opcode.expect(values(i).get.opcode)
+        this.io.memory(i).bits.isLoad.expect(values(i).get.opcode)
         this.io.memory(i).bits.function3.expect(values(i).get.function3)
         this.io.memory(i).bits.data.expect(values(i).get.data)
       }

@@ -20,7 +20,7 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.dataIn.bits.data.poke(123)
       c.io.dataIn.bits.tag.poke(10)
       c.io.dataIn.bits.function3.poke("b011".U)
-      c.io.dataIn.bits.opcode.poke(false)
+      c.io.dataIn.bits.isLoad.poke(false)
       c.io.dataIn.valid.poke(true)
 
       c.clock.step(1)
@@ -29,7 +29,7 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.dataIn.bits.data.poke(1000)
       c.io.dataIn.bits.tag.poke(30)
       c.io.dataIn.bits.function3.poke("b011".U)
-      c.io.dataIn.bits.opcode.poke(false)
+      c.io.dataIn.bits.isLoad.poke(false)
       c.io.dataIn.valid.poke(true)
 
       c.clock.step(2)
@@ -38,16 +38,22 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.dataIn.bits.data.poke(0)
       c.io.dataIn.bits.tag.poke(20)
       c.io.dataIn.bits.function3.poke("b011".U)
-      c.io.dataIn.bits.opcode.poke(true)
+      c.io.dataIn.bits.isLoad.poke(true)
 
       c.clock.step()
+      c.io.dataIn.bits.address.poke(0)
+      c.io.dataIn.bits.data.poke(0)
+      c.io.dataIn.bits.tag.poke(0)
+      c.io.dataIn.bits.function3.poke("b011".U)
+      c.io.dataIn.bits.isLoad.poke(false)
+      c.io.dataIn.valid.poke(false)
 
       c.io.dataOut.validAsResult.expect(true)
       c.io.dataOut.validAsLoadStoreAddress.expect(true)
       c.io.dataOut.value.expect(123)
       c.io.dataOut.tag.expect(20)
 
-      c.clock.step()
+      c.clock.step(5)
     }
   }
 
@@ -58,7 +64,7 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.dataIn.bits.data.poke("b10000000011".U)
       c.io.dataIn.bits.tag.poke(10)
       c.io.dataIn.bits.function3.poke("b011".U)
-      c.io.dataIn.bits.opcode.poke(false)
+      c.io.dataIn.bits.isLoad.poke(false)
       c.io.dataIn.valid.poke(true)
 
       c.clock.step()
@@ -68,7 +74,7 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.dataIn.bits.data.poke(0)
       c.io.dataIn.bits.tag.poke(0)
       c.io.dataIn.bits.function3.poke(0)
-      c.io.dataIn.bits.opcode.poke(0)
+      c.io.dataIn.bits.isLoad.poke(0)
       c.io.dataIn.valid.poke(false)
 
       c.clock.step(2)
@@ -77,10 +83,16 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.dataIn.bits.data.poke(0)
       c.io.dataIn.bits.tag.poke(20)
       c.io.dataIn.bits.function3.poke("b000".U)
-      c.io.dataIn.bits.opcode.poke(true)
+      c.io.dataIn.bits.isLoad.poke(true)
       c.io.dataIn.valid.poke(true)
 
       c.clock.step(1)
+      c.io.dataIn.bits.address.poke(0)
+      c.io.dataIn.bits.data.poke(0)
+      c.io.dataIn.bits.tag.poke(0)
+      c.io.dataIn.bits.function3.poke("b011".U)
+      c.io.dataIn.bits.isLoad.poke(false)
+      c.io.dataIn.valid.poke(false)
 
       c.io.dataOut.validAsResult.expect(true)
       c.io.dataOut.validAsLoadStoreAddress.expect(true)
