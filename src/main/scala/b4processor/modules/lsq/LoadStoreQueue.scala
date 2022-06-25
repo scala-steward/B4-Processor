@@ -46,7 +46,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     when(decoderValid) {
       buffer(insertIndex) := LoadStoreQueueEntry.validEntry(
         // opcode = 1(load), 0(store) (bit数削減)
-        opcode = decoder.bits.opcode === LOAD,
+        isLoad = decoder.bits.opcode === LOAD,
         function3 = decoder.bits.function3,
 
         addressAndStoreResultTag = decoder.bits.addressAndLoadResultTag,
@@ -121,7 +121,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       Address(i) := buffer(emissionIndex).address
       Overlap(i) := false.B
       // 先行する命令が持つアドレスの中に被りがある場合，Overlap(i) := true.B
-      when(i.U =/= 0.U) {
+      if (i != 0) {
         for (j <- 0 until i) {
           when(Address(j) === buffer(emissionIndex).address) {
             Overlap(i) := true.B
@@ -131,15 +131,15 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
       // io.memory(i).valid :=  io.memory(i).ready && (head =/= tail) && ("loadの送出条件" || "storeの送出条件")
       io.memory(i).valid := io.memory(i).ready && (head =/= tail) && buffer(emissionIndex).valid && buffer(emissionIndex).addressValid &&
-        ((buffer(emissionIndex).opcode && !Overlap(i)) ||
-          (!buffer(emissionIndex).opcode && buffer(emissionIndex).storeDataValid && buffer(emissionIndex).readyReorderSign))
+        ((buffer(emissionIndex).isLoad && !Overlap(i)) ||
+          (!buffer(emissionIndex).isLoad && buffer(emissionIndex).storeDataValid && buffer(emissionIndex).readyReorderSign))
 
       // 送出実行
       when(io.memory(i).valid) {
         io.memory(i).bits.tag := buffer(emissionIndex).addressAndLoadResultTag
         io.memory(i).bits.data := buffer(emissionIndex).storeData
         io.memory(i).bits.address := buffer(emissionIndex).address
-        io.memory(i).bits.opcode := buffer(emissionIndex).opcode
+        io.memory(i).bits.opcode := buffer(emissionIndex).isLoad
         io.memory(i).bits.function3 := buffer(emissionIndex).function3
         buffer(emissionIndex) := LoadStoreQueueEntry.default
       }
@@ -148,8 +148,9 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     }
 
     // nextTailの更新
-    printf("%b && (%b || (%b && %b)) = %b\n", i.U === (nextTail - tail), io.memory(i).valid, head =/= nextTail, !buffer(emissionIndex).valid, (i.U === (nextTail - tail)) &&
-      (io.memory(i).valid || (head =/= nextTail && !buffer(emissionIndex).valid)))
+    //    printf("%b && (%b || (%b && %b)) = %b\n", i.U === (nextTail - tail), io.memory(i).valid, head =/= nextTail, !buffer(emissionIndex).valid, (i.U === (nextTail - tail)) &&
+    //    (io.memory(i).valid || (head =/= nextTail && !buffer(emissionIndex).valid))
+    //    )
     nextTail = nextTail + Mux((i.U === (nextTail - tail)) &&
       (io.memory(i).valid || (head =/= nextTail && !buffer(emissionIndex).valid)), 1.U, 0.U)
   }

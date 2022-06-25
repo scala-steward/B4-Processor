@@ -7,4 +7,6 @@ _start:
 
     call main
 
+    mv x3,a0
+
     j .

@@ -14,7 +14,7 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
   /** 命令がリオーダバッファでコミットされたか */
   val readyReorderSign = Bool()
   /** オペコード */
-  val opcode = Bool()
+  val isLoad = Bool()
   /** function3 */
   val function3 = UInt(3.W)
   /** 命令自体を識別するためのタグ(Destination Tag) */
@@ -32,14 +32,14 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
 }
 
 object LoadStoreQueueEntry {
-  def validEntry(opcode: Bool, function3: UInt,
+  def validEntry(isLoad: Bool, function3: UInt,
                  addressAndStoreResultTag: UInt,
                  storeDataTag: UInt, storeData: UInt, storeDataValid: Bool)
                 (implicit params: Parameters): LoadStoreQueueEntry = {
     val entry = LoadStoreQueueEntry.default
     entry.valid := true.B
 
-    entry.opcode := opcode
+    entry.isLoad := isLoad
     entry.function3 := function3
 
     entry.addressAndLoadResultTag := addressAndStoreResultTag
@@ -58,7 +58,7 @@ object LoadStoreQueueEntry {
     entry.valid := false.B
     entry.readyReorderSign := false.B
 
-    entry.opcode := false.B
+    entry.isLoad := false.B
     entry.function3 := 0.U
 
     entry.addressAndLoadResultTag := 0.U

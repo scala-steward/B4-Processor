@@ -99,7 +99,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   for (i <- 0 until params.maxRegisterFileCommitCount) {
     val index = tail + i.U
 
-    val instructionOk = buffer(index).valueReady
+    val instructionOk = buffer(index).valueReady || buffer(index).storeSign
     val canCommit = lastValid && index =/= head && instructionOk
 
     io.registerFile(i).valid := canCommit
