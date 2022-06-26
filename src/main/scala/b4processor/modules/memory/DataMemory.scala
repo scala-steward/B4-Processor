@@ -19,9 +19,9 @@ class DataMemory(implicit params: Parameters) extends Module {
   val mem = SyncReadMem(params.dataMemorySize, UInt(64.W))
   io.dataOut := DontCare
 
-  io.dataIn.ready := RegNext(io.dataIn.bits.isLoad)
   io.dataOut.value := 0.U
   val nextLoad = RegNext(io.dataIn.valid && io.dataIn.bits.isLoad)
+  io.dataIn.ready := !nextLoad
   when(io.dataIn.valid || nextLoad) {
     // FIXME: アドレスを下位28bitのみ使っている
     val rdwrPort = mem(io.dataIn.bits.address.asUInt(27, 0))
@@ -54,9 +54,9 @@ class DataMemory(implicit params: Parameters) extends Module {
         "b110".U -> rdwrPort(31, 0),
       ))
     }
-    printf(p"rdwrPort =${rdwrPort}\n")
+    //printf(p"rdwrPort =${rdwrPort}\n")
     // printf(p"rdwrPort(7, 0) = ${rdwrPort(7, 0)}\n")
-    printf(p"dataOut = ${io.dataOut.value}\n")
+    //printf(p"dataOut = ${io.dataOut.value}\n")
   }
   printf(p"io.dataOut.validasResult = ${io.dataOut.validAsResult}\n")
   printf(p"io.dataOut.tag = ${io.dataOut.tag}\n")
