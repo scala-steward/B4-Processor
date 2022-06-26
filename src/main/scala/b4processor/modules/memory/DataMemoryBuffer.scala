@@ -49,7 +49,7 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
   io.dataOut.bits.function3 := 0.U
   io.dataOut.valid := io.dataOut.ready && tail =/= head
   // dequeue
-  when(io.dataOut.valid) {
+  when(tail =/= head) {
     io.dataOut.bits.address := buffer(tail).address
     io.dataOut.bits.tag := buffer(tail).tag
     io.dataOut.bits.data := buffer(tail).data
@@ -64,15 +64,15 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
   if (params.debug) {
     io.head.get := head
     io.tail.get := tail
-    //  printf(p"io.dataIn(0).valid = ${io.dataIn(0).valid}\n")
-    //  printf(p"io.dataIn(1).valid = ${io.dataIn(1).valid}\n")
-    //  printf(p"io.dataOut.ready = ${io.dataOut.ready}\n")
-    //  printf(p"buffer(0).tag = ${buffer(0).tag}\n")
-    //  printf(p"buffer(1).tag = ${buffer(1).tag}\n")
-    //  printf(p"io.dataOut.valid = ${io.dataOut.valid}\n")
-    //  printf(p"io.dataOut.tag = ${io.dataOut.bits.tag}\n")
-    //  printf(p"head = ${head}\n")
-    //  printf(p"tail = ${tail}\n\n")
+      printf(p"io.dataIn(0).valid = ${io.dataIn(0).valid}\n")
+      printf(p"io.dataIn(1).valid = ${io.dataIn(1).valid}\n")
+      printf(p"io.dataOut.ready = ${io.dataOut.ready}\n")
+      printf(p"buffer(0).tag = ${buffer(0).tag}\n")
+      printf(p"buffer(1).tag = ${buffer(1).tag}\n")
+      printf(p"io.dataOut.valid = ${io.dataOut.valid}\n")
+      printf(p"io.dataOut.tag = ${io.dataOut.bits.tag}\n")
+      printf(p"head = ${head}\n")
+      printf(p"tail = ${tail}\n\n")
   }
 }
 
