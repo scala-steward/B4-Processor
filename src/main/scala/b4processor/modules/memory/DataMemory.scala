@@ -40,8 +40,8 @@ class DataMemory(implicit params: Parameters) extends Module {
 
       /** readの場合，rdwrPortは命令実行時と同クロック立ち上がりでmemoryから読み込み(=ロード命令実行時に値変更) */
       // printf(p"rdwrPort(7) = ${rdwrPort(7)}\n")
-      // printf(p"rdwrPort(7, 0) = ${rdwrPort(7, 0)}\n")
-      // printf(p"dataOut = ${io.dataOut.bits.data}\n")
+      printf(p"rdwrPort(7, 0) = ${rdwrPort(7, 0)}\n")
+      printf(p"dataOut = ${io.dataOut.value}\n\n")
     }
     // Load 出てくる出力が1クロック遅れているのでRegNextを使う
     when(RegNext(io.dataIn.bits.isLoad)) {
@@ -57,6 +57,7 @@ class DataMemory(implicit params: Parameters) extends Module {
     }
     // printf(p"rdwrPort =${rdwrPort}\n")
   }
+  printf("ok\n\n")
   io.dataOut.tag := RegNext(Mux(io.dataIn.bits.isLoad, io.dataIn.bits.tag, 0.U))
   io.dataOut.validAsResult := RegNext(io.dataIn.bits.isLoad)
   io.dataOut.validAsLoadStoreAddress := RegNext(io.dataIn.bits.isLoad)
