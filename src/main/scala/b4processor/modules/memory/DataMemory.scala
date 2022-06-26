@@ -19,7 +19,7 @@ class DataMemory(implicit params: Parameters) extends Module {
   val mem = SyncReadMem(params.dataMemorySize, UInt(64.W))
   io.dataOut := DontCare
 
-  io.dataIn.ready := true.B
+  io.dataIn.ready := RegNext(io.dataIn.bits.isLoad)
   io.dataOut.value := 0.U
   val nextLoad = RegNext(io.dataIn.valid && io.dataIn.bits.isLoad)
   when(io.dataIn.valid || nextLoad) {
@@ -36,12 +36,11 @@ class DataMemory(implicit params: Parameters) extends Module {
         "b011".U -> io.dataIn.bits.data
       ))
     }.otherwise {
-      assert(io.dataIn.bits.data === 0.U)
+
 
       /** readの場合，rdwrPortは命令実行時と同クロック立ち上がりでmemoryから読み込み(=ロード命令実行時に値変更) */
       // printf(p"rdwrPort(7) = ${rdwrPort(7)}\n")
-      printf(p"rdwrPort(7, 0) = ${rdwrPort(7, 0)}\n")
-      printf(p"dataOut = ${io.dataOut.value}\n\n")
+
     }
     // Load 出てくる出力が1クロック遅れているのでRegNextを使う
     when(RegNext(io.dataIn.bits.isLoad)) {
@@ -55,8 +54,13 @@ class DataMemory(implicit params: Parameters) extends Module {
         "b110".U -> rdwrPort(31, 0),
       ))
     }
-    // printf(p"rdwrPort =${rdwrPort}\n")
+    printf(p"rdwrPort =${rdwrPort}\n")
+    // printf(p"rdwrPort(7, 0) = ${rdwrPort(7, 0)}\n")
+    printf(p"dataOut = ${io.dataOut.value}\n")
   }
+  printf(p"io.dataOut.validasResult = ${io.dataOut.validAsResult}\n")
+  printf(p"io.dataOut.tag = ${io.dataOut.tag}\n")
+  printf(p"io.dataOut.value = ${io.dataOut.value}\n")
   printf("ok\n\n")
   io.dataOut.tag := RegNext(Mux(io.dataIn.bits.isLoad, io.dataIn.bits.tag, 0.U))
   io.dataOut.validAsResult := RegNext(io.dataIn.bits.isLoad)

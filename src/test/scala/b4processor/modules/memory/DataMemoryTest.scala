@@ -79,7 +79,7 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
       c.clock.step(1)
 
       // STORE
-      c.io.dataIn.bits.address.poke(100)
+      c.io.dataIn.bits.address.poke(20)
       c.io.dataIn.bits.data.poke(456)
       c.io.dataIn.bits.tag.poke(15)
       c.io.dataIn.bits.function3.poke("b011".U)
@@ -94,12 +94,12 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
       c.clock.step(1)
 
       // LOAD
-      c.io.dataIn.bits.address.poke(100)
-      c.io.dataIn.bits.data.poke(456)
+      c.io.dataIn.bits.address.poke(20)
+      c.io.dataIn.bits.data.poke(0)
       c.io.dataIn.bits.tag.poke(25)
       c.io.dataIn.bits.function3.poke("b011".U)
       c.io.dataIn.bits.isLoad.poke(true)
-      c.clock.step(2)
+      c.clock.step(5)
     }
   }
 
