@@ -57,7 +57,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         storeDataValid = decoder.bits.storeDataValid
       )
     }
-    insertIndex = Mux(insertIndex === (math.pow(2, params.tagWidth).toInt.U - 1.U) && decoderValid, 0.U, insertIndex + decoderValid.asUInt)
+    insertIndex = Mux(insertIndex === (math.pow(2, params.loadStoreQueueIndexWidth).toInt.U - 1.U) && decoderValid, 0.U, insertIndex + decoderValid.asUInt)
   }
 
   head := insertIndex
@@ -111,7 +111,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   var nextTail = tail
 
   for (i <- 0 until params.maxRegisterFileCommitCount) {
-    emissionIndex = Mux(emissionIndex === (math.pow(2, params.tagWidth).toInt.U - 1.U), 0.U, emissionIndex + 1.U) // リングバッファ
+    emissionIndex = Mux(emissionIndex === (math.pow(2, params.loadStoreQueueIndexWidth).toInt.U - 1.U), 0.U, emissionIndex + 1.U) // リングバッファ
     io.memory(i).bits.address := 0.S
     io.memory(i).bits.tag := 0.U
     io.memory(i).bits.data := 0.U
