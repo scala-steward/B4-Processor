@@ -44,7 +44,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
      * エンキュー時の命令待機は必要ないが，LSQのエントリ数を減らした場合，必要
      */
     when(decoderValid) {
-//      printf("isLoad = %d\n", decoder.bits.opcode === LOAD)
+      //      printf("isLoad = %d\n", decoder.bits.opcode === LOAD)
       buffer(insertIndex) := LoadStoreQueueEntry.validEntry(
         // opcode = 1(load), 0(store) (bit数削減)
         isLoad = decoder.bits.opcode === LOAD,
@@ -104,6 +104,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   // Address : 送出対象の命令のアドレスを格納
   val Overlap = WireInit(VecInit(Seq.fill(params.maxRegisterFileCommitCount)(false.B)))
   val Address = WireInit(VecInit(Seq.fill(params.maxRegisterFileCommitCount)(0.S(64.W))))
+  val AddressValid = WireInit(VecInit(Seq.fill(params.maxRegisterFileCommitCount)(false.B)))
 
   // emissionindex : 送出可能か調べるエントリを指すindex
   // nexttail      : 1クロック分の送出確認後，動かすtailのエントリを指すindex
@@ -117,14 +118,16 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     io.memory(i).bits.data := 0.U
     io.memory(i).bits.isLoad := false.B
     io.memory(i).bits.function3 := 0.U
+    io.memory(i).valid := false.B
 
     when(buffer(emissionIndex).valid) {
       Address(i) := buffer(emissionIndex).address
-      Overlap(i) := false.B
+      AddressValid(i) := buffer(emissionIndex).addressValid
+      //      Overlap(i) := false.B
       // 先行する命令が持つアドレスの中に被りがある場合，Overlap(i) := true.B
       if (i != 0) {
         for (j <- 0 until i) {
-          when(Address(j) === buffer(emissionIndex).address) {
+          when(Address(j) === buffer(emissionIndex).address || !AddressValid(j)) {
             Overlap(i) := true.B
           }
         }
@@ -162,7 +165,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   if (params.debug) {
     io.head.get := head
     io.tail.get := tail
-//            printf(p"io.memory(0) = ${io.memory(0).valid}\n")
+    //            printf(p"io.memory(0) = ${io.memory(0).valid}\n")
     //                printf(p"io.memory(1) = ${io.memory(1).valid}\n")
     //                printf(p"buffer(0).valid = ${buffer(0).valid}\n")
     //                printf(p"buffer(1).valid = ${buffer(1).valid}\n")

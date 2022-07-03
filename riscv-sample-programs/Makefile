@@ -11,7 +11,8 @@ SUBDIRS := fibonacci \
 			many_add_out_of_order \
 			load_store \
 			fibonacci_c \
-			many_load_store
+			many_load_store \
+			load_plus_arithmetic
 
 all: $(SUBDIRS)
 

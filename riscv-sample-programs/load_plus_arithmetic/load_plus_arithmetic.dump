@@ -1,0 +1,16 @@
+
+load_plus_arithmetic.o:     file format elf64-littleriscv
+
+
+Disassembly of section .text:
+
+0000000040000000 <_start>:
+    40000000:	00100093          	addi	x1,x0,1
+    40000004:	01f09093          	slli	x1,x1,0x1f
+    40000008:	00a00113          	addi	x2,x0,10
+    4000000c:	ff000193          	addi	x3,x0,-16
+    40000010:	0020b023          	sd	x2,0(x1)
+    40000014:	0000b203          	ld	x4,0(x1)
+    40000018:	003101b3          	add	x3,x2,x3
+    4000001c:	00410133          	add	x2,x2,x4
+    40000020:	0000006f          	jal	x0,40000020 <_start+0x20>

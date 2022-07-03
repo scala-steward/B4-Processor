@@ -58,7 +58,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters) extends LoadStoreQueue 
       if (values(i).isDefined) {
         this.io.memory(i).bits.address.expect(values(i).get.address)
         this.io.memory(i).bits.tag.expect(values(i).get.tag)
-        this.io.memory(i).bits.isLoad.expect(values(i).get.opcode)
+        this.io.memory(i).bits.isLoad.expect(values(i).get.isLoad)
         this.io.memory(i).bits.function3.expect(values(i).get.function3)
         this.io.memory(i).bits.data.expect(values(i).get.data)
       }
@@ -138,7 +138,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
       // 値の確認
       c.expectMemory(values =
-        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 0, opcode = true, function3 = 0)), None))
+        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 0, isLoad = true, function3 = 0)), None))
       c.io.tail.get.expect(0)
       c.io.head.get.expect(1)
       c.clock.step(1)
@@ -202,7 +202,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
       // 値の確認
       c.expectMemory(values =
-        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 123, opcode = false, function3 = 0)), None))
+        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 123, isLoad = false, function3 = 0)), None))
       c.io.head.get.expect(1)
       c.io.tail.get.expect(0)
       c.clock.step(1)
@@ -253,8 +253,8 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       // 値の確認
       c.setOutputs()
       c.expectMemory(values =
-        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 0, opcode = true, function3 = 0)),
-          Some(LSQ2Memory(address = 100, tag = 11, data = 0, opcode = true, function3 = 0))))
+        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 0, isLoad = true, function3 = 0)),
+          Some(LSQ2Memory(address = 100, tag = 11, data = 0, isLoad = true, function3 = 0))))
       c.clock.step(2)
 
     }
@@ -298,12 +298,12 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setOutputs()
       c.setReorderBuffer(valids = Seq(true, false), DestinationTags = Seq(11, 15))
       c.expectMemory(values =
-        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 100, opcode = false, function3 = 0)), None))
+        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 100, isLoad = false, function3 = 0)), None))
       c.clock.step(1)
 
       c.setReorderBuffer()
       c.expectMemory(values =
-        Seq(Some(LSQ2Memory(address = 789, tag = 11, data = 123, opcode = false, function3 = 0)), None))
+        Seq(Some(LSQ2Memory(address = 789, tag = 11, data = 123, isLoad = false, function3 = 0)), None))
       c.clock.step(2)
 
     }
@@ -349,7 +349,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
           Some(LSQfromALU(valid = true, destinationtag = 13, value = 500)),
           None)) // 2nd load address
       c.expectMemory(values =
-        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 0, opcode = true, function3 = 0)), None))
+        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 0, isLoad = true, function3 = 0)), None))
       c.clock.step(1)
 
       c.setOutputs(values =
@@ -358,7 +358,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
           None))
       // store命令を飛び越えてload命令を送出
       c.expectMemory(values =
-        Seq(None, Some(LSQ2Memory(address = 500, tag = 13, data = 0, opcode = true, function3 = 0))))
+        Seq(None, Some(LSQ2Memory(address = 500, tag = 13, data = 0, isLoad = true, function3 = 0))))
       c.clock.step(1)
 
       c.setReorderBuffer(valids = Seq(false, true), DestinationTags = Seq(1, 11))
@@ -367,8 +367,78 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.clock.step(1)
 
       c.expectMemory(values =
-        Seq(Some(LSQ2Memory(address = 100, tag = 11, data = 456, opcode = false, function3 = 0)), None))
+        Seq(Some(LSQ2Memory(address = 100, tag = 11, data = 456, isLoad = false, function3 = 0)), None))
       c.clock.step(2)
+    }
+  }
+
+  // ロードがストアを追い越さないようにチェック
+  // ストアのアドレスが確定したいないときにOverlap=falseとしてしまっていたバグのチェック
+  it should "wait load for the overlapping store" in {
+    // runParallel = 1, maxRegisterFileCommitCount = 1
+    test(new LoadStoreQueueWrapper()(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize()
+      // 初期化
+      c.io.head.get.expect(0)
+      c.io.tail.get.expect(0)
+      c.io.decoders(0).ready.expect(true)
+      c.io.memory(0).ready.poke(true)
+      // c.io.memory(1).ready.poke(true) (if runParallel = 2)
+      c.expectMemory(Seq(None))
+      // c.expectMemory(Seq(None, None)) (if runParallel = 2)
+
+      // ストア命令を追加
+      c.setDecoder(values =
+        Seq(Some(DecodeEnqueue(addressTag = 10, storeDataTag = 5, storeData = None, opcode = 35, function3 = 0))))
+
+      c.clock.step()
+      //ロード命令の追加
+      c.setDecoder(values =
+        Seq(Some(DecodeEnqueue(addressTag = 11, storeDataTag = 0, storeData = None, opcode = 3, function3 = 0))))
+      c.io.head.get.expect(1)
+      c.io.tail.get.expect(0)
+
+
+      c.clock.step()
+      c.initialize()
+      c.io.head.get.expect(2)
+      c.io.tail.get.expect(0)
+
+      c.clock.step(2)
+      // ロード命令のアドレス値を先に指定
+      c.setOutputs(values = Seq(
+        Some(LSQfromALU(valid = true, destinationtag = 11, value = 150)), None))
+      c.expectMemory(Seq(None))
+
+      c.clock.step()
+      c.initialize()
+      // まだ出力はない
+      c.expectMemory(Seq(None))
+
+      c.clock.step()
+      // ストア命令の値確定
+      c.setOutputs(values = Seq(
+        Some(LSQfromALU(valid = true, destinationtag = 10, value = 150)),
+        Some(LSQfromALU(valid = true, destinationtag = 5, value = 300))))
+      c.setReorderBuffer(Seq(10), Seq(true))
+
+      c.clock.step()
+      c.initialize()
+      // ストア命令送出
+      c.expectMemory(values =
+        Seq(Some(LSQ2Memory(address = 150, tag = 10, data = 300, isLoad = false, function3 = 0))))
+
+      c.clock.step()
+      // ロード命令送出
+      c.expectMemory(values =
+        Seq(Some(LSQ2Memory(address = 150, tag = 11, data = 0, isLoad = true, function3 = 0))))
+
+      c.clock.step()
+
+      c.io.tail.get.expect(2)
+      c.io.head.get.expect(2)
+
+      c.clock.step(3)
     }
   }
 
