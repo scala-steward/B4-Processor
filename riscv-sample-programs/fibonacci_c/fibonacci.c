@@ -2,7 +2,7 @@ int fibonacci(int n){
     int a = 1;
     int b = 1;
     for (int i = 0; i < n;i++){
-        int c = a+b;
+        int c = a + b;
         a = b;
         b = c;
     }
@@ -10,5 +10,6 @@ int fibonacci(int n){
 }
 
 int main(){
-    return fibonacci(7);
+    int r = fibonacci(7);
+    return r;
 }

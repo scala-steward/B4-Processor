@@ -71,6 +71,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
           buf.address := output.value.asSInt
           buf.addressValid := true.B
         }
+      }
+      when(output.validAsResult && buf.valid) {
         when(buf.storeDataTag === output.tag && !buf.storeDataValid) {
           // only Store
           buf.storeData := output.value

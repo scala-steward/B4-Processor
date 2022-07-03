@@ -219,7 +219,7 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "run fibonacci_c with 2 parallel" in {
-    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"))(defaultParams.copy(runParallel = 2, maxRegisterFileCommitCount = 4, loadStoreQueueIndexWidth = 4)))
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"))(defaultParams.copy(runParallel = 2, maxRegisterFileCommitCount = 4, loadStoreQueueIndexWidth = 3)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         c.clock.setTimeout(500)
         while (c.io.registerFileContents.get(2).peekInt() == 0)
@@ -277,12 +277,23 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "run loop_c" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/loop_c/loop_c.32.hex"))(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1, loadStoreQueueIndexWidth = 2)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.setTimeout(400)
+        while (c.io.registerFileContents.get(2).peekInt() != 30)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(30)
+        c.clock.step()
+      }
+  }
+
+  it should "run loop_c with 4 parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/loop_c/loop_c.32.hex"))(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4, loadStoreQueueIndexWidth = 2)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.setTimeout(100)
-        while (c.io.registerFileContents.get(2).peekInt() != 15)
+        c.clock.setTimeout(400)
+        while (c.io.registerFileContents.get(2).peekInt() != 30)
           c.clock.step()
-        c.io.registerFileContents.get(2).expect(15)
+        c.io.registerFileContents.get(2).expect(30)
         c.clock.step()
       }
   }
