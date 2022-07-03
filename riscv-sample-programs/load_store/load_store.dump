@@ -1,0 +1,13 @@
+
+load_store.o:     file format elf64-littleriscv
+
+
+Disassembly of section .text:
+
+0000000040000000 <_start>:
+    40000000:	00100093          	addi	x1,x0,1
+    40000004:	01f09093          	slli	x1,x1,0x1f
+    40000008:	00a00113          	addi	x2,x0,10
+    4000000c:	0020b023          	sd	x2,0(x1)
+    40000010:	0000b183          	ld	x3,0(x1)
+    40000014:	0000006f          	jal	x0,40000014 <_start+0x14>

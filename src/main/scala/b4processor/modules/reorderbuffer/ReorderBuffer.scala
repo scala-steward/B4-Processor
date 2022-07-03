@@ -1,7 +1,7 @@
 package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
-import b4processor.connections.{BranchPrediction2ReorderBuffer, DataMemory2ReorderBuffer, Decoder2ReorderBuffer, ExecutionRegisterBypass, LoadStoreQueue2ReorderBuffer, ReorderBuffer2RegisterFile}
+import b4processor.connections.{BranchPrediction2ReorderBuffer, CollectedOutput, Decoder2ReorderBuffer, LoadStoreQueue2ReorderBuffer, ReorderBuffer2RegisterFile}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -16,9 +16,8 @@ import scala.math.pow
 class ReorderBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val decoders = Vec(params.runParallel, Flipped(new Decoder2ReorderBuffer))
-    val executors = Vec(params.runParallel, Flipped(new ExecutionRegisterBypass))
+    val collectedOutputs = Flipped(new CollectedOutput)
     val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
-    val dataMemory = Flipped(new DataMemory2ReorderBuffer)
     val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
     val isEmpty = Output(Bool())
 
@@ -100,19 +99,26 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   for (i <- 0 until params.maxRegisterFileCommitCount) {
     val index = tail + i.U
 
-    val instructionOk = buffer(index).valueReady
+    val instructionOk = buffer(index).valueReady || buffer(index).storeSign
     val canCommit = lastValid && index =/= head && instructionOk
 
     io.registerFile(i).valid := canCommit
-    io.registerFile(i).bits.value := buffer(index).value
-    io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
-
-    // LSQへストア実行信号
-    io.loadStoreQueue.programCounter(i) := buffer(index).programCounter
-    io.loadStoreQueue.valid(i) := buffer(index).storeSign
+    when(canCommit) {
+      io.registerFile(i).bits.value := buffer(index).value
+      io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
+    }.otherwise {
+      io.registerFile(i).bits.value := 0.U
+      io.registerFile(i).bits.destinationRegister := 0.U
+    }
 
     when(canCommit) {
+      // LSQへストア実行信号
+      io.loadStoreQueue.destinationTag(i) := index
+      io.loadStoreQueue.valid(i) := buffer(index).storeSign
       buffer(index) := ReorderBufferEntry.default
+    }.otherwise {
+      io.loadStoreQueue.destinationTag(i) := 0.U
+      io.loadStoreQueue.valid(i) := false.B
     }
     lastValid = canCommit
   }
@@ -120,19 +126,12 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 
   io.isEmpty := head === tail
 
-  // ALUの読み込み
-  for (alu <- io.executors) {
-    when(alu.valid) {
-      buffer(alu.destinationTag).value := alu.value
-      buffer(alu.destinationTag).valueReady := true.B
+  // 出力の読み込み
+  for (output <- io.collectedOutputs.outputs) {
+    when(output.validAsResult) {
+      buffer(output.tag).value := output.value
+      buffer(output.tag).valueReady := true.B
     }
-  }
-
-  // DataMemoryからのロード値の読み込み
-  io.dataMemory.ready := true.B
-  when(io.dataMemory.valid) {
-    buffer(io.dataMemory.bits.tag).value := io.dataMemory.bits.value
-    buffer(io.dataMemory.bits.tag).valueReady := true.B
   }
 
   // デバッグ
@@ -145,6 +144,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 }
 
 object ReorderBuffer extends App {
-  implicit val params = Parameters(runParallel = 1, maxRegisterFileCommitCount = 1, tagWidth = 4)
+  implicit val params = Parameters(runParallel = 2, maxRegisterFileCommitCount = 8, tagWidth = 5)
   (new ChiselStage).emitVerilog(new ReorderBuffer, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
 }

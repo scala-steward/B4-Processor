@@ -21,5 +21,6 @@ object ReorderBufferEntry {
     _.value -> 0.U,
     _.valueReady -> false.B,
     _.programCounter -> 0.S,
-    _.destinationRegister -> 0.U)
+    _.destinationRegister -> 0.U,
+    _.storeSign -> false.B)
 }

@@ -19,7 +19,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   val io = IO(new Bundle {
     val instructionFetch = Flipped(new Fetch2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer
-    val executors = Vec(params.runParallel, Flipped(new ExecutionRegisterBypass))
+    val outputCollector = Flipped(new CollectedOutput())
     val registerFile = new Decoder2RegisterFile()
 
     val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder))
@@ -114,9 +114,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   valueSelector1.io.sourceTag <> sourceTag1
   valueSelector1.io.reorderBufferValue <> io.reorderBuffer.source1.value
   valueSelector1.io.registerFileValue := io.registerFile.value1
-  for (i <- 0 until params.runParallel) {
-    valueSelector1.io.executorBypassValue(i) <> io.executors(i)
-  }
+  valueSelector1.io.outputCollector <> io.outputCollector
   // value2
   val valueSelector2 = Module(new ValueSelector2)
   valueSelector2.io.value.ready := true.B
@@ -129,9 +127,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     J.asUInt -> immJExtended
   ))
   valueSelector2.io.opcodeFormat := opcodeFormatChecker.io.format
-  for (i <- 0 until params.runParallel) {
-    valueSelector2.io.executorBypassValue(i) <> io.executors(i)
-  }
+  valueSelector2.io.outputCollector <> io.outputCollector
+
 
   // 前のデコーダから次のデコーダへ
   for (i <- 0 until instructionOffset) {
@@ -155,7 +152,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   io.reorderBuffer.source2.value.ready := true.B
 
   // 命令をデコードするのはリオーダバッファにエントリの空きがあり、リザベーションステーションにも空きがあるとき
-  io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready
+  io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready
   // リオーダバッファやリザベーションステーションに新しいエントリを追加するのは命令がある時
   io.reorderBuffer.valid := io.instructionFetch.valid
   io.reservationStation.entry.valid := io.instructionFetch.valid
@@ -179,14 +176,28 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   rs.programCounter := io.instructionFetch.bits.programCounter
 
   // load or store命令の場合，LSQへ発送
-  io.loadStoreQueue.bits.opcode := instOp
-  io.loadStoreQueue.bits.function3 := instFunct3
-  io.loadStoreQueue.bits.addressAndLoadResultTag := io.reorderBuffer.destination.destinationTag
-  io.loadStoreQueue.bits.storeDataTag := valueSelector2.io.sourceTag.tag
-  io.loadStoreQueue.bits.storeData := valueSelector2.io.value.bits
-  io.loadStoreQueue.bits.storeDataValid := valueSelector2.io.value.valid
-  io.loadStoreQueue.bits.programCounter := io.instructionFetch.bits.programCounter
-  io.loadStoreQueue.valid := io.loadStoreQueue.ready && io.loadStoreQueue.bits.opcode === BitPat("b0?00011")
+  io.loadStoreQueue.valid := io.loadStoreQueue.ready && instOp === BitPat("b0?00011") && io.instructionFetch.valid
+  when(io.loadStoreQueue.valid) {
+    io.loadStoreQueue.bits.opcode := instOp
+    io.loadStoreQueue.bits.function3 := instFunct3
+    io.loadStoreQueue.bits.addressAndLoadResultTag := rs.destinationTag
+    when(instOp === "b0100011".U) {
+      io.loadStoreQueue.bits.storeDataTag := valueSelector2.io.sourceTag.tag
+      io.loadStoreQueue.bits.storeData := valueSelector2.io.value.bits
+      io.loadStoreQueue.bits.storeDataValid := valueSelector2.io.value.valid
+    }.otherwise {
+      io.loadStoreQueue.bits.storeDataTag := 0.U
+      io.loadStoreQueue.bits.storeData := 0.U
+      io.loadStoreQueue.bits.storeDataValid := true.B
+    }
+  }.otherwise {
+    io.loadStoreQueue.bits.opcode := 0.U
+    io.loadStoreQueue.bits.function3 := 0.U
+    io.loadStoreQueue.bits.addressAndLoadResultTag := 0.U
+    io.loadStoreQueue.bits.storeDataTag := 0.U
+    io.loadStoreQueue.bits.storeData := 0.U
+    io.loadStoreQueue.bits.storeDataValid := false.B
+  }
 }
 
 object Decoder extends App {

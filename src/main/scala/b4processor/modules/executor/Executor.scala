@@ -10,9 +10,9 @@ import chisel3.{Mux, _}
 class Executor(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reservationStation = Flipped(new ReservationStation2Executor)
-    val out = new ExecutionRegisterBypass
-    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
-    val fetch = Output(new Executor2Fetch)
+    val out = new OutputValue
+//    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
+    val fetch = Output(new BranchOutput)
   })
 
   /**
@@ -26,21 +26,30 @@ class Executor(implicit params: Parameters) extends Module {
   instructionChecker.input.function3bits := io.reservationStation.bits.function3
   instructionChecker.input.function7bits := io.reservationStation.bits.immediateOrFunction7
 
-  val destinationRegister = Wire(UInt(64.W))
-  val immediateOrFunction7Extended = Mux(io.reservationStation.bits.immediateOrFunction7(11), (!0.U(64.W)) & io.reservationStation.bits.immediateOrFunction7, 0.U(64.W) | io.reservationStation.bits.immediateOrFunction7)
+  val executionResult64bit = Wire(UInt(64.W))
+  val immediateOrFunction7Extended = io.reservationStation.bits.immediateOrFunction7
   val branchedProgramCounter = io.reservationStation.bits.programCounter + (immediateOrFunction7Extended ## 0.U(1.W)).asSInt
   val nextProgramCounter = io.reservationStation.bits.programCounter + 4.S
+
+  io.fetch.programCounter := 0.S
+  io.fetch.valid := false.B
+  executionResult64bit := 0.U
 
   // set destinationRegister
   io.reservationStation.ready := true.B
   when(io.reservationStation.valid) {
-    destinationRegister := MuxCase(0.U, Seq(
+    //    printf("pc=%x, immediate=%d\n", io.reservationStation.bits.programCounter, immediateOrFunction7Extended.asSInt)
+    //    printf("a = %d b = %d\n", io.reservationStation.bits.value1, io.reservationStation.bits.value2)
+    executionResult64bit := MuxCase(0.U, Seq(
+      // ストア
+      (instructionChecker.output.instruction === Instructions.Store)
+        -> (io.reservationStation.bits.value1.asSInt + immediateOrFunction7Extended.asSInt).asUInt,
       // 加算
       (instructionChecker.output.instruction === Instructions.Load ||
         (instructionChecker.output.arithmetic === ArithmeticOperations.Addition))
         -> (io.reservationStation.bits.value1 + io.reservationStation.bits.value2),
       // 減算
-      (instructionChecker.output.arithmetic === ArithmeticOperations.Subtract)
+      (instructionChecker.output.arithmetic === ArithmeticOperations.Subtraction)
         -> (io.reservationStation.bits.value1 - io.reservationStation.bits.value2),
       // 論理積
       (instructionChecker.output.arithmetic === ArithmeticOperations.And)
@@ -96,8 +105,11 @@ class Executor(implicit params: Parameters) extends Module {
         -> (io.reservationStation.bits.value1 >= io.reservationStation.bits.value2)
     ))
 
-    io.fetch.valid := (instructionChecker.output.instruction === Instructions.Branch) || (instructionChecker.output.instruction === Instructions.jal) ||
-      (instructionChecker.output.instruction === Instructions.auipc) || (instructionChecker.output.instruction === Instructions.jalr)
+    io.fetch.valid := (instructionChecker.output.instruction === Instructions.Branch) ||
+      // FIXME 用途がわからないからコメントアウトしたけど必要かもしれない
+      //      (instructionChecker.output.instruction === Instructions.jal) ||
+      //      (instructionChecker.output.instruction === Instructions.auipc) ||
+      (instructionChecker.output.instruction === Instructions.jalr)
     when(io.fetch.valid) {
       io.fetch.programCounter := MuxCase(io.reservationStation.bits.programCounter, Seq(
         // 分岐
@@ -132,15 +144,18 @@ class Executor(implicit params: Parameters) extends Module {
         (instructionChecker.output.instruction === Instructions.jalr)
           -> Cat((io.reservationStation.bits.value1 + io.reservationStation.bits.value2) (63, 1), 0.U).asSInt
       ))
-    }.otherwise {
-      io.fetch.programCounter := nextProgramCounter
     }
-
-  }.otherwise {
-    destinationRegister := 0.U
-    io.fetch.programCounter := nextProgramCounter
-    io.fetch.valid := false.B
   }
+
+  val executionResultSized = Wire(UInt(64.W))
+  executionResultSized := Mux(
+    !(instructionChecker.output.instruction === Instructions.Load ||
+      instructionChecker.output.instruction === Instructions.Store)
+      && instructionChecker.output.operationWidth === OperationWidth.Word,
+    executionResult64bit(31, 0).asSInt,
+    executionResult64bit.asSInt).asUInt
+
+  //  printf("original %d\nsized %d\n", executionResult64bit, executionResultSized)
 
   /**
    * 実行結果をリオーダバッファ,デコーダに送信
@@ -148,24 +163,31 @@ class Executor(implicit params: Parameters) extends Module {
    * (レジスタ挿入の可能性あり)
    */
 
-  // LSQ
-  io.loadStoreQueue.valid := instructionChecker.output.instruction =/= Instructions.Unknown &&
-    io.reservationStation.valid
-  io.loadStoreQueue.programCounter := io.reservationStation.bits.programCounter
-  io.loadStoreQueue.destinationTag := io.reservationStation.bits.destinationTag
-  io.loadStoreQueue.value := Mux(instructionChecker.output.instruction === Instructions.Store,
-    io.reservationStation.bits.value1 + immediateOrFunction7Extended, Mux(instructionChecker.output.operationWidth === OperationWidth.Word,
-      Mux(destinationRegister(31), Cat(~0.U(32.W), destinationRegister(31, 0)), Cat(0.U(32.W), destinationRegister(31, 0))),
-      destinationRegister))
+  // LSQ TODO 必要か確認
+//  io.loadStoreQueue.valid :=
+//    instructionChecker.output.instruction =/= Instructions.Unknown && io.reservationStation.valid
+//  io.loadStoreQueue.destinationTag := io.reservationStation.bits.destinationTag
+//  io.loadStoreQueue.value := Mux(instructionChecker.output.instruction === Instructions.Store,
+//    io.reservationStation.bits.value1 + immediateOrFunction7Extended, executionResultSized)
 
   // reorder Buffer
-  io.out.valid := io.reservationStation.valid &&
+  //  printf(p"instruction type = ${instructionChecker.output.instruction.asUInt}\n")
+  io.out.validAsResult := io.reservationStation.valid &&
     instructionChecker.output.instruction =/= Instructions.Unknown &&
-    instructionChecker.output.instruction =/= Instructions.Load // load命令の場合, ReorderBufferのvalueはDataMemoryから
-  io.out.destinationTag := io.reservationStation.bits.destinationTag
-  io.out.value := Mux(instructionChecker.output.operationWidth === OperationWidth.Word,
-    Mux(destinationRegister(31), Cat(~0.U(32.W), destinationRegister(31, 0)), Cat(0.U(32.W), destinationRegister(31, 0))),
-    destinationRegister)
+    instructionChecker.output.instruction =/= Instructions.Load && // load命令の場合, ReorderBufferのvalueはDataMemoryから
+    instructionChecker.output.instruction =/= Instructions.Store // Store命令の場合、リオーダバッファでエントリは無視される
+  io.out.validAsLoadStoreAddress := instructionChecker.output.instruction =/= Instructions.Unknown &&
+    io.reservationStation.valid
+  when(io.out.validAsResult) {
+    assert(io.out.validAsLoadStoreAddress, "executor output should be valid for load store address when valid as result.")
+  }
+  when(io.out.validAsResult || io.out.validAsLoadStoreAddress) {
+    io.out.tag := io.reservationStation.bits.destinationTag
+    io.out.value := executionResultSized
+  }.otherwise {
+    io.out.tag := 0.U
+    io.out.value := 0.U
+  }
 }
 
 object ExecutorElaborate extends App {

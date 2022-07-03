@@ -12,5 +12,4 @@ addi x10,x9,1
 addi x11,x10,1
 addi x12,x11,1
 
-END:
-j END
+j .

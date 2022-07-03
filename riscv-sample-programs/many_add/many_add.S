@@ -15,5 +15,4 @@ add x1,x1,x3
 add x5,x5,x7
 add x1,x1,x5
 
-END:
-j END
+j .

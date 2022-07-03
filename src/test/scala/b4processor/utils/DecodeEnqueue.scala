@@ -4,5 +4,4 @@ case class DecodeEnqueue(opcode: Int,
                          function3: Int,
                          addressTag: Int,
                          storeDataTag: Int,
-                         storeData: Option[Long],
-                         ProgramCounter: Int)
+                         storeData: Option[Long])

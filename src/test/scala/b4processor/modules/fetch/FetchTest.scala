@@ -1,7 +1,8 @@
 package b4processor.modules.fetch
 
 import b4processor.Parameters
-import b4processor.connections.{Executor2Fetch, Fetch2BranchPrediction, Fetch2Decoder}
+import b4processor.connections.{BranchOutput, Fetch2BranchPrediction, Fetch2Decoder}
+import b4processor.modules.branch_output_collector.CollectedBranchAddresses
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.memory.InstructionMemory
 import b4processor.utils.InstructionUtil
@@ -18,7 +19,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
     /** 分岐予測 */
     val prediction = Vec(params.runParallel, new Fetch2BranchPrediction)
     /** 実行ユニットからの分岐先の値 */
-    val executors = Input(Vec(params.runParallel, new Executor2Fetch))
+    val collectedBranchAddresses = Flipped(new CollectedBranchAddresses)
     /** デコーダ */
     val decoders = Vec(params.runParallel, new Fetch2Decoder)
     /** ロードストアキューのエントリが空か */
@@ -47,7 +48,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
 
   fetch.io.prediction <> io.prediction
   fetch.io.decoders <> io.decoders
-  fetch.io.executorBranchResult <> io.executors
+  fetch.io.collectedBranchAddresses <> io.collectedBranchAddresses
   fetch.io.reorderBufferEmpty <> io.reorderBufferEmpty
   fetch.io.loadStoreQueueEmpty <> io.loadStoreQueueEmpty
   fetch.io.branchTypes.get <> io.branchTypes
@@ -79,7 +80,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
 
   /** 分岐先をセット */
   def setExecutorBranchResult(results: Seq[Option[Int]] = Seq.fill(params.runParallel)(None)): Unit = {
-    for ((e, r) <- io.executors.zip(results)) {
+    for ((e, r) <- io.collectedBranchAddresses.addresses.zip(results)) {
       e.valid.poke(r.isDefined)
       e.programCounter.poke(r.getOrElse(0))
     }

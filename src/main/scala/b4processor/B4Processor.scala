@@ -1,12 +1,14 @@
 package b4processor
 
-import b4processor.connections.{DataMemory2ReorderBuffer, InstructionMemory2Cache, LoadStoreQueue2Memory}
+import b4processor.connections.{InstructionMemory2Cache, LoadStoreQueue2Memory, OutputValue}
+import b4processor.modules.branch_output_collector.BranchOutputCollector
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.decoder.Decoder
 import b4processor.modules.executor.Executor
 import b4processor.modules.fetch.Fetch
 import b4processor.modules.lsq.LoadStoreQueue
 import b4processor.modules.memory.{DataMemory, DataMemoryBuffer}
+import b4processor.modules.ourputcollector.OutputCollector
 import b4processor.modules.registerfile.RegisterFile
 import b4processor.modules.reorderbuffer.ReorderBuffer
 import b4processor.modules.reservationstation.ReservationStation
@@ -19,7 +21,7 @@ class B4Processor(implicit params: Parameters) extends Module {
     val instructionMemory = Flipped(new InstructionMemory2Cache)
     val dataMemory = new Bundle {
       val lsq = new LoadStoreQueue2Memory
-      val reorderBuffer = Flipped(new DataMemory2ReorderBuffer)
+      val output = Flipped(new OutputValue)
     }
 
     val registerFileContents = if (params.debug) Some(Output(Vec(31, UInt(64.W)))) else None
@@ -37,9 +39,15 @@ class B4Processor(implicit params: Parameters) extends Module {
   val loadStoreQueue = Module(new LoadStoreQueue)
   val dataMemoryBuffer = Module(new DataMemoryBuffer)
 
+  val outputCollector = Module(new OutputCollector)
+  val branchAddressCollector = Module(new BranchOutputCollector)
+
   val decoders = (0 until params.runParallel).map(n => Module(new Decoder(n)))
   val reservationStations = Seq.fill(params.runParallel)(Module(new ReservationStation))
   val executors = Seq.fill(params.runParallel)(Module(new Executor))
+
+  /** 出力コレクタとデータメモリ */
+  outputCollector.io.dataMemory := io.dataMemory.output
 
   /** 命令メモリと命令キャッシュを接続 */
   io.instructionMemory <> instructionCache.io.memory
@@ -68,32 +76,36 @@ class B4Processor(implicit params: Parameters) extends Module {
     /** リザベーションステーションと実行ユニットを接続 */
     reservationStations(i).io.executor <> executors(i).io.reservationStation
 
-    /** 実行ユニットとリオーダバッファを接続 */
-    executors(i).io.out <> reorderBuffer.io.executors(i)
-
     /** デコーダとレジスタファイルの接続 */
     decoders(i).io.registerFile <> registerFile.io.decoders(i)
 
     /** デコーダとLSQの接続 */
     decoders(i).io.loadStoreQueue <> loadStoreQueue.io.decoders(i)
 
-    /** デコーダと実行ユニットの接続 */
+    /** 出力コレクタと実行ユニットの接続 */
     for ((e, index) <- executors.zipWithIndex)
-      decoders(i).io.executors(index) <> e.io.out
+      outputCollector.io.executor(index) := e.io.out
+
+    /** デコーダと出力コレクタ */
+    decoders(i).io.outputCollector := outputCollector.io.outputs
 
     /** デコーダとLSQの接続 */
     loadStoreQueue.io.decoders(i) <> decoders(i).io.loadStoreQueue
 
     /** リザベーションステーションと実行ユニットの接続 */
-    for ((e, index) <- executors.zipWithIndex)
-      reservationStations(i).io.bypassValues(index) <> e.io.out
+    reservationStations(i).io.collectedOutput <> outputCollector.io.outputs
 
-    /** LSQと実行ユニットの接続 */
-    executors(i).io.loadStoreQueue <> loadStoreQueue.io.executors(i)
+    /** 分岐結果コレクタと実行ユニットの接続 */
+    branchAddressCollector.io.executor(i) := executors(i).io.fetch
 
-    /** フェッチと実行ユニットの接続 */
-    fetch.io.executorBranchResult(i) <> executors(i).io.fetch
+
   }
+
+  /** フェッチと分岐結果の接続 */
+  fetch.io.collectedBranchAddresses := branchAddressCollector.io.fetch
+
+  /** LSQと出力コレクタ */
+  loadStoreQueue.io.outputCollector := outputCollector.io.outputs
 
   /** レジスタファイルとリオーダバッファ */
   registerFile.io.reorderBuffer <> reorderBuffer.io.registerFile
@@ -113,8 +125,11 @@ class B4Processor(implicit params: Parameters) extends Module {
   /** データメモリとデータメモリバッファ */
   io.dataMemory.lsq <> dataMemoryBuffer.io.dataOut
 
-  /** データメモリとリオーダバッファ */
-  io.dataMemory.reorderBuffer <> reorderBuffer.io.dataMemory
+  /** リオーダバッファと出力コレクタ */
+  reorderBuffer.io.collectedOutputs := outputCollector.io.outputs
+
+  /** リオーダバッファとLSQ */
+  reorderBuffer.io.loadStoreQueue <> loadStoreQueue.io.reorderBuffer
 
   /** フェッチと分岐予測 TODO */
   fetch.io.prediction <> DontCare

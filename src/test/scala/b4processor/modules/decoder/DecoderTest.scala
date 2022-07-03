@@ -18,7 +18,7 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
     this.setReorderBuffer()
     this.setRegisterFile()
     this.setLoadStoreQueueReady()
-    this.setExecutors()
+    this.setOutputs()
   }
 
   def setImem(instruction: UInt, isPrediction: Boolean = false): Unit = {
@@ -49,11 +49,11 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
     this.io.registerFile.value2.poke(value2)
   }
 
-  def setExecutors(bypassedValues: Seq[Option[ExecutorValue]] = Seq.fill(params.runParallel)(None)): Unit = {
-    for (i <- bypassedValues.indices) {
-      this.io.executors(i).valid.poke(bypassedValues(i).isDefined)
-      this.io.executors(i).destinationTag.poke(bypassedValues(i).getOrElse(ExecutorValue(destinationTag = 0, value = 0)).destinationTag)
-      this.io.executors(i).value.poke(bypassedValues(i).getOrElse(ExecutorValue(destinationTag = 0, value = 0)).value)
+  def setOutputs(bypassedValues: Seq[Option[ExecutorValue]] = Seq.fill(params.runParallel + 1)(None)): Unit = {
+    for (i <- 0 until params.runParallel + 1) {
+      this.io.outputCollector.outputs(i).validAsResult.poke(bypassedValues(i).isDefined)
+      this.io.outputCollector.outputs(i).tag.poke(bypassedValues(i).getOrElse(ExecutorValue(destinationTag = 0, value = 0)).destinationTag)
+      this.io.outputCollector.outputs(i).value.poke(bypassedValues(i).getOrElse(ExecutorValue(destinationTag = 0, value = 0)).value)
     }
   }
 
@@ -165,15 +165,14 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // ALUからの値を使える
   it should "do register bypass" in {
-    test(new DecoderWrapper(0)(testParams.copy(runParallel = 2))) {
-      c =>
-        // add x1,x2,x3
-        c.initialize("x003100b3".U)
-        c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
-        c.setExecutors(Seq(Some(ExecutorValue(6, 20)), Some(ExecutorValue(7, 21))))
+    test(new DecoderWrapper(0)(testParams.copy(runParallel = 2))) { c =>
+      // add x1,x2,x3
+      c.initialize("x003100b3".U)
+      c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
+      c.setOutputs(Seq(Some(ExecutorValue(6, 20)), Some(ExecutorValue(7, 21)), None))
 
-        c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
-        c.expectReservationStation(destinationTag = 5, value1 = 20, value2 = 21)
+      c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
+      c.expectReservationStation(destinationTag = 5, value1 = 20, value2 = 21)
     }
   }
 
