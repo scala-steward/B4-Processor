@@ -12,7 +12,12 @@ SUBDIRS := fibonacci \
 			load_store \
 			fibonacci_c \
 			many_load_store \
-			load_plus_arithmetic
+			load_plus_arithmetic \
+			load_after_store \
+			enter_c \
+			calculation_c \
+			loop_c \
+			load_store_cross
 
 all: $(SUBDIRS)
 

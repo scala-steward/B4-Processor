@@ -243,24 +243,98 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
       }
   }
 
-  ignore should "run many_load_store" in {
-    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_load_store/many_load_store.32.hex"))(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1, loadStoreQueueIndexWidth = 2)))
+  it should "run load_after_store" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/load_after_store/load_after_store.32.hex"))(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4, loadStoreQueueIndexWidth = 2)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.setTimeout(100)
-        while (c.io.registerFileContents.get(2).peekInt() != 13)
+        c.clock.setTimeout(50)
+        while (c.io.registerFileContents.get(2).peekInt() != 10)
           c.clock.step()
-        c.io.registerFileContents.get(2).expect(13)
+        c.io.registerFileContents.get(2).expect(10)
         c.clock.step()
       }
   }
 
-  ignore should "run many_load_store with 4 parallel" in {
+  it should "run enter_c" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/enter_c/enter_c.32.hex"))(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4, loadStoreQueueIndexWidth = 2)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.setTimeout(50)
+        while (c.io.registerFileContents.get(2).peekInt() != 5)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(5)
+        c.clock.step()
+      }
+  }
+
+  it should "run calculation_c" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/calculation_c/calculation_c.32.hex"))(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4, loadStoreQueueIndexWidth = 2)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.setTimeout(200)
+        while (c.io.registerFileContents.get(2).peekInt() != 18)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(18)
+        c.clock.step()
+      }
+  }
+
+  it should "run loop_c" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/loop_c/loop_c.32.hex"))(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4, loadStoreQueueIndexWidth = 2)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.setTimeout(200)
+        while (c.io.registerFileContents.get(2).peekInt() != 45)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(45)
+        c.clock.step()
+      }
+  }
+
+  it should "run many_load_store" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_load_store/many_load_store.32.hex"))(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1, loadStoreQueueIndexWidth = 2)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.setTimeout(100)
+        while (c.io.registerFileContents.get(1).peekInt() != 36)
+          c.clock.step()
+        c.io.registerFileContents.get(1).expect(36)
+        c.clock.step()
+      }
+  }
+
+  it should "run many_load_store with 4 parallel" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/many_load_store/many_load_store.32.hex"))(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4, loadStoreQueueIndexWidth = 2)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         c.clock.setTimeout(100)
-        while (c.io.registerFileContents.get(2).peekInt() != 13)
+        while (c.io.registerFileContents.get(1).peekInt() != 36)
           c.clock.step()
-        c.io.registerFileContents.get(2).expect(13)
+        c.io.registerFileContents.get(1).expect(36)
+        c.clock.step()
+      }
+  }
+
+  it should "run load_store_cross" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/load_store_cross/load_store_cross.32.hex"))(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1, loadStoreQueueIndexWidth = 2)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.setTimeout(50)
+        while (c.io.registerFileContents.get(1).peekInt() != 101)
+          c.clock.step()
+        c.io.registerFileContents.get(1).expect(101)
+
+        while (c.io.registerFileContents.get(2).peekInt() != 201)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(201)
+        c.clock.step()
+      }
+  }
+
+  it should "run load_store_cross with 4 parallel" in {
+    test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/load_store_cross/load_store_cross.32.hex"))(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4, loadStoreQueueIndexWidth = 2)))
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.clock.setTimeout(50)
+        while (c.io.registerFileContents.get(1).peekInt() != 101)
+          c.clock.step()
+        c.io.registerFileContents.get(1).expect(101)
+
+        while (c.io.registerFileContents.get(2).peekInt() != 201)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(201)
         c.clock.step()
       }
   }

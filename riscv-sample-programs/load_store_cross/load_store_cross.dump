@@ -1,0 +1,18 @@
+
+load_store_cross.o:     file format elf64-littleriscv
+
+
+Disassembly of section .text:
+
+0000000040000000 <_start>:
+    40000000:	00100093          	addi	x1,x0,1
+    40000004:	01f09093          	slli	x1,x1,0x1f
+    40000008:	06400113          	addi	x2,x0,100
+    4000000c:	0c800193          	addi	x3,x0,200
+    40000010:	0020b023          	sd	x2,0(x1)
+    40000014:	0080b103          	ld	x2,8(x1)
+    40000018:	0030b423          	sd	x3,8(x1)
+    4000001c:	0000b183          	ld	x3,0(x1)
+    40000020:	00110113          	addi	x2,x2,1
+    40000024:	00118193          	addi	x3,x3,1
+    40000028:	0000006f          	jal	x0,40000028 <_start+0x28>

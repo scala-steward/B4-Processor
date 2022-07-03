@@ -40,7 +40,7 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
         data = Input.bits.data, isLoad = Input.bits.isLoad,
         function3 = Input.bits.function3)
     }
-    insertIndex = Mux(insertIndex === (math.pow(2, params.tagWidth - 2).toInt.U - 1.U) && Input.valid, 0.U, insertIndex + Input.valid.asUInt)
+    insertIndex = insertIndex + Input.valid.asUInt
   }
   head := insertIndex
 
@@ -51,7 +51,7 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
   io.dataOut.bits.function3 := 0.U
   io.dataOut.valid := io.dataOut.ready && tail =/= head
   // dequeue
-  when(tail =/= head) {
+  when(io.dataOut.valid) {
     io.dataOut.bits.address := buffer(tail).address
     io.dataOut.bits.tag := buffer(tail).tag
     io.dataOut.bits.data := buffer(tail).data
@@ -60,8 +60,7 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
     buffer(tail) := DataMemoryBufferEntry.default
   }
 
-  tail := Mux(tail === (math.pow(2, params.loadStoreQueueIndexWidth).toInt.U - 1.U) && io.dataOut.valid,
-    0.U, tail + io.dataOut.valid.asUInt)
+  tail := tail + io.dataOut.valid.asUInt
 
   if (params.debug) {
     io.head.get := head
