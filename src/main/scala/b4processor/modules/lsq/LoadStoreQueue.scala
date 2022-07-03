@@ -26,16 +26,16 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   val head = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
   val tail = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
+  io.isEmpty := head === tail
+
   val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.loadStoreQueueIndexWidth).toInt)(defaultEntry)))
   var insertIndex = head
-
-  io.isEmpty := head === tail
 
   /** デコードした命令をLSQに加えるかどうか確認し，l or s 命令ならばエンキュー */
   for (i <- 0 until params.runParallel) {
     val decoder = io.decoders(i)
-    io.decoders(i).ready := tail =/= insertIndex + 1.U
-    val decoderValid = io.decoders(i).ready && io.decoders(i).valid && decoder.bits.opcode === BitPat("b0?00011")
+    decoder.ready := tail =/= insertIndex + 1.U
+    val decoderValid = decoder.ready && decoder.valid && decoder.bits.opcode === BitPat("b0?00011")
     // TODO decoderのvalidと機能が一部被っている　
 
     /**
@@ -57,7 +57,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         storeDataValid = decoder.bits.storeDataValid
       )
     }
-    insertIndex = Mux(insertIndex === (math.pow(2, params.loadStoreQueueIndexWidth).toInt.U - 1.U) && decoderValid, 0.U, insertIndex + decoderValid.asUInt)
+    insertIndex = insertIndex + decoderValid.asUInt
   }
 
   head := insertIndex
@@ -112,7 +112,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   var nextTail = tail
 
   for (i <- 0 until params.maxRegisterFileCommitCount) {
-    emissionIndex = Mux(emissionIndex === (math.pow(2, params.loadStoreQueueIndexWidth).toInt.U - 1.U), 0.U, emissionIndex + 1.U) // リングバッファ
+    emissionIndex = emissionIndex + 1.U // リングバッファ
     io.memory(i).bits.address := 0.S
     io.memory(i).bits.tag := 0.U
     io.memory(i).bits.data := 0.U

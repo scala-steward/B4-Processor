@@ -66,17 +66,17 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
   if (params.debug) {
     io.head.get := head
     io.tail.get := tail
-    for (i <- 0 until params.maxRegisterFileCommitCount) {
-      printf(p"io.dataIn(${i}).valid = ${io.dataIn(i).valid}\n")
-    }
-    for (i <- 0 until pow(2, params.loadStoreQueueIndexWidth).toInt) {
-      printf(p"buffer(${i}).tag = ${buffer(i).tag}\n")
-    }
-    printf(p"io.dataOut.ready = ${io.dataOut.ready}\n")
-    printf(p"io.dataOut.valid = ${io.dataOut.valid}\n")
-    printf(p"io.dataOut.tag = ${io.dataOut.bits.tag}\n")
-    printf(p"head = ${head}\n")
-    printf(p"tail = ${tail}\n\n")
+    //    for (i <- 0 until params.maxRegisterFileCommitCount) {
+    //      printf(p"io.dataIn(${i}).valid = ${io.dataIn(i).valid}\n")
+    //    }
+    //    for (i <- 0 until pow(2, params.loadStoreQueueIndexWidth).toInt) {
+    //      printf(p"buffer(${i}).tag = ${buffer(i).tag}\n")
+    //    }
+    //    printf(p"io.dataOut.ready = ${io.dataOut.ready}\n")
+    //    printf(p"io.dataOut.valid = ${io.dataOut.valid}\n")
+    //    printf(p"io.dataOut.tag = ${io.dataOut.bits.tag}\n")
+    //    printf(p"head = ${head}\n")
+    //    printf(p"tail = ${tail}\n\n")
   }
 }
 

@@ -58,9 +58,9 @@ class DataMemory(implicit params: Parameters) extends Module {
     // printf(p"rdwrPort(7, 0) = ${rdwrPort(7, 0)}\n")
     //printf(p"dataOut = ${io.dataOut.value}\n")
   }
-  printf(p"io.dataOut.validasResult = ${io.dataOut.validAsResult}\n")
-  printf(p"io.dataOut.tag = ${io.dataOut.tag}\n")
-  printf(p"io.dataOut.value = ${io.dataOut.value}\n\n")
+  //  printf(p"io.dataOut.validasResult = ${io.dataOut.validAsResult}\n")
+  //  printf(p"io.dataOut.tag = ${io.dataOut.tag}\n")
+  //  printf(p"io.dataOut.value = ${io.dataOut.value}\n\n")
   io.dataOut.tag := RegNext(Mux(io.dataIn.bits.isLoad, io.dataIn.bits.tag, 0.U))
   io.dataOut.validAsResult := RegNext(io.dataIn.bits.isLoad)
   io.dataOut.validAsLoadStoreAddress := RegNext(io.dataIn.bits.isLoad)

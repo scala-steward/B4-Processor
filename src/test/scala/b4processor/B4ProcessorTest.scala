@@ -232,10 +232,13 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run load_plus_arithmetic" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/load_plus_arithmetic/load_plus_arithmetic.32.hex"))(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4, loadStoreQueueIndexWidth = 2)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.setTimeout(40)
+        c.clock.setTimeout(50)
         while (c.io.registerFileContents.get(1).peekInt() != 20)
           c.clock.step()
         c.io.registerFileContents.get(1).expect(20)
+        while (c.io.registerFileContents.get(2).peekInt() != 1)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(1)
         c.clock.step()
       }
   }
