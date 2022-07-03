@@ -19,7 +19,7 @@ import chisel3.util._
 class Decoder(instructionOffset: Int)(implicit params: Parameters)
     extends Module {
   val io = IO(new Bundle {
-    val instructionFetch = Flipped(new Fetch2Decoder())
+    val instructionFetch = Flipped(new FetchBuffer2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer
     val outputCollector = Flipped(new CollectedOutput())
     val registerFile = new Decoder2RegisterFile()

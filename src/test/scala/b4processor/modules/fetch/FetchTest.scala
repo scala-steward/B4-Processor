@@ -1,7 +1,7 @@
 package b4processor.modules.fetch
 
 import b4processor.Parameters
-import b4processor.connections.{BranchOutput, Fetch2BranchPrediction, Fetch2Decoder}
+import b4processor.connections.{BranchOutput, Fetch2BranchPrediction, FetchBuffer2Decoder}
 import b4processor.modules.branch_output_collector.CollectedBranchAddresses
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.memory.InstructionMemory
@@ -21,7 +21,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
     /** 実行ユニットからの分岐先の値 */
     val collectedBranchAddresses = Flipped(new CollectedBranchAddresses)
     /** デコーダ */
-    val decoders = Vec(params.runParallel, new Fetch2Decoder)
+    val decoders = Vec(params.runParallel, new FetchBuffer2Decoder)
     /** ロードストアキューのエントリが空か */
     val loadStoreQueueEmpty = Input(Bool())
     /** リオーダバッファのエントリが空か */
@@ -47,7 +47,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
   val memory = Module(new InstructionMemory(memoryInit))
 
   fetch.io.prediction <> io.prediction
-  fetch.io.decoders <> io.decoders
+  fetch.io.fetchBuffer <> io.decoders
   fetch.io.collectedBranchAddresses <> io.collectedBranchAddresses
   fetch.io.reorderBufferEmpty <> io.reorderBufferEmpty
   fetch.io.loadStoreQueueEmpty <> io.loadStoreQueueEmpty
@@ -64,7 +64,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters) extend
   io.PC := fetch.io.PC.get
   io.nextPC := fetch.io.nextPC.get
 
-  fetch.io.decoders.foreach(_.ready := true.B)
+  fetch.io.fetchBuffer.ready := true.B
 
   /** 初期化 */
   def initialize(): Unit = {
