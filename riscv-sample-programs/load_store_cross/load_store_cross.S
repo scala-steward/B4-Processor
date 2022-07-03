@@ -14,15 +14,18 @@ _start:
     #ld x2, 0(x1)
     #ld x3, 8(x1)
 
+    sd x2, 0(x1)
+    sd x3, 8(x1)
+    ld x2, 8(x1)
+    ld x2, 0(x1)
+    ld x3, 0(x1)
+    ld x3, 8(x1)
+
+
     #sd x2, 0(x1)
     #sd x3, 8(x1)
     #ld x2, 8(x1)
     #ld x3, 0(x1)
-
-    sd x2, 0(x1)
-    ld x2, 8(x1)
-    sd x3, 8(x1)
-    ld x3, 0(x1)
 
     #sd x2, 0(x1)
     #ld x2, 0(x1)

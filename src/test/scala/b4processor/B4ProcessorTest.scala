@@ -279,10 +279,10 @@ class B4ProcessorTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run loop_c" in {
     test(new B4ProcessorWrapper(InstructionUtil.fromFile32bit("riscv-sample-programs/loop_c/loop_c.32.hex"))(defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4, loadStoreQueueIndexWidth = 2)))
       .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-        c.clock.setTimeout(200)
-        while (c.io.registerFileContents.get(2).peekInt() != 45)
+        c.clock.setTimeout(100)
+        while (c.io.registerFileContents.get(2).peekInt() != 15)
           c.clock.step()
-        c.io.registerFileContents.get(2).expect(45)
+        c.io.registerFileContents.get(2).expect(15)
         c.clock.step()
       }
   }
