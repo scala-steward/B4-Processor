@@ -4,11 +4,11 @@ import b4processor.Parameters
 import chisel3._
 import chisel3.util._
 
-/**
- * デコーダとリオーダバッファをつなぐ
- *
- * @param params パラメータ
- */
+/** デコーダとリオーダバッファをつなぐ
+  *
+  * @param params
+  *   パラメータ
+  */
 class Decoder2ReorderBuffer(implicit params: Parameters) extends Bundle {
   val source1 = new SourceRegister()
   val source2 = new SourceRegister()

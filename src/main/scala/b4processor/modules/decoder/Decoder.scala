@@ -9,13 +9,15 @@ import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
 
-/**
- * デコーダ
- *
- * @param instructionOffset 同時に扱う命令のうちいくつ目の命令を担当するか
- * @param params            パラメータ
- */
-class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Module {
+/** デコーダ
+  *
+  * @param instructionOffset
+  *   同時に扱う命令のうちいくつ目の命令を担当するか
+  * @param params
+  *   パラメータ
+  */
+class Decoder(instructionOffset: Int)(implicit params: Parameters)
+    extends Module {
   val io = IO(new Bundle {
     val instructionFetch = Flipped(new Fetch2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer
@@ -23,7 +25,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
     val registerFile = new Decoder2RegisterFile()
 
     val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder))
-    val decodersAfter = Output(Vec(instructionOffset + 1, new Decoder2NextDecoder))
+    val decodersAfter =
+      Output(Vec(instructionOffset + 1, new Decoder2NextDecoder))
 
     val reservationStation = new Decoder2ReservationStation
 
@@ -38,10 +41,23 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   val instFunct7 = io.instructionFetch.bits.instruction(31, 25)
   val instOp = io.instructionFetch.bits.instruction(6, 0)
   val instImmI = io.instructionFetch.bits.instruction(31, 20)
-  val instImmS = Cat(io.instructionFetch.bits.instruction(31, 25), io.instructionFetch.bits.instruction(11, 7))
-  val instImmB = Cat(io.instructionFetch.bits.instruction(31), io.instructionFetch.bits.instruction(7), io.instructionFetch.bits.instruction(30, 25), io.instructionFetch.bits.instruction(11, 8))
+  val instImmS = Cat(
+    io.instructionFetch.bits.instruction(31, 25),
+    io.instructionFetch.bits.instruction(11, 7)
+  )
+  val instImmB = Cat(
+    io.instructionFetch.bits.instruction(31),
+    io.instructionFetch.bits.instruction(7),
+    io.instructionFetch.bits.instruction(30, 25),
+    io.instructionFetch.bits.instruction(11, 8)
+  )
   val instImmU = io.instructionFetch.bits.instruction(31, 12)
-  val instImmJ = Cat(io.instructionFetch.bits.instruction(31), io.instructionFetch.bits.instruction(19, 12), io.instructionFetch.bits.instruction(20), io.instructionFetch.bits.instruction(30, 21))
+  val instImmJ = Cat(
+    io.instructionFetch.bits.instruction(31),
+    io.instructionFetch.bits.instruction(19, 12),
+    io.instructionFetch.bits.instruction(20),
+    io.instructionFetch.bits.instruction(30, 21)
+  )
 
   // 即値を64bitに符号拡張
   val immIExtended = instImmI.asSInt
@@ -71,15 +87,13 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
 
   // リオーダバッファへの入力
   io.reorderBuffer.programCounter := io.instructionFetch.bits.programCounter
-  io.reorderBuffer.source1.sourceRegister := Mux(source1IsValid,
-    instRs1,
-    0.U)
-  io.reorderBuffer.source2.sourceRegister := Mux(source2IsValid,
-    instRs2,
-    0.U)
-  io.reorderBuffer.destination.destinationRegister := Mux(destinationIsValid,
+  io.reorderBuffer.source1.sourceRegister := Mux(source1IsValid, instRs1, 0.U)
+  io.reorderBuffer.source2.sourceRegister := Mux(source2IsValid, instRs2, 0.U)
+  io.reorderBuffer.destination.destinationRegister := Mux(
+    destinationIsValid,
     instRd,
-    0.U)
+    0.U
+  )
   io.reorderBuffer.destination.storeSign := instOp === "b0100011".U
 
   // レジスタファイルへの入力
@@ -92,18 +106,26 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   sourceTagSelector1.io.reorderBufferDestinationTag <> io.reorderBuffer.source1.matchingTag
   for (i <- 0 until instructionOffset) {
     // 前のデコーダから流れてきたdestination tag
-    sourceTagSelector1.io.beforeDestinationTag(i).bits := io.decodersBefore(i).destinationTag
+    sourceTagSelector1.io.beforeDestinationTag(i).bits := io
+      .decodersBefore(i)
+      .destinationTag
     // 前のデコーダから流れてきたdestination registerがsource registerと等しいか
     // (もともとvalidは情報が存在するかという意味で使われているが、ここで一致しているかという意味に変換)
-    sourceTagSelector1.io.beforeDestinationTag(i).valid := io.decodersBefore(i).destinationRegister === instRs1 && io.decodersBefore(i).valid
+    sourceTagSelector1.io.beforeDestinationTag(i).valid := io
+      .decodersBefore(i)
+      .destinationRegister === instRs1 && io.decodersBefore(i).valid
   }
   val sourceTag1 = sourceTagSelector1.io.sourceTag
   // セレクタ2
   val sourceTagSelector2 = Module(new SourceTagSelector(instructionOffset))
   sourceTagSelector2.io.reorderBufferDestinationTag <> io.reorderBuffer.source2.matchingTag
   for (i <- 0 until instructionOffset) {
-    sourceTagSelector2.io.beforeDestinationTag(i).bits := io.decodersBefore(i).destinationTag
-    sourceTagSelector2.io.beforeDestinationTag(i).valid := io.decodersBefore(i).destinationRegister === instRs2
+    sourceTagSelector2.io.beforeDestinationTag(i).bits := io
+      .decodersBefore(i)
+      .destinationTag
+    sourceTagSelector2.io
+      .beforeDestinationTag(i)
+      .valid := io.decodersBefore(i).destinationRegister === instRs2
   }
   val sourceTag2 = sourceTagSelector2.io.sourceTag
 
@@ -121,14 +143,17 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   valueSelector2.io.sourceTag <> sourceTag2
   valueSelector2.io.reorderBufferValue <> io.reorderBuffer.source2.value
   valueSelector2.io.registerFileValue := io.registerFile.value2
-  valueSelector2.io.immediateValue := MuxLookup(opcodeFormatChecker.io.format.asUInt, 0.S, Seq(
-    I.asUInt -> immIExtended,
-    U.asUInt -> immUExtended,
-    J.asUInt -> immJExtended
-  ))
+  valueSelector2.io.immediateValue := MuxLookup(
+    opcodeFormatChecker.io.format.asUInt,
+    0.S,
+    Seq(
+      I.asUInt -> immIExtended,
+      U.asUInt -> immUExtended,
+      J.asUInt -> immJExtended
+    )
+  )
   valueSelector2.io.opcodeFormat := opcodeFormatChecker.io.format
   valueSelector2.io.outputCollector <> io.outputCollector
-
 
   // 前のデコーダから次のデコーダへ
   for (i <- 0 until instructionOffset) {
@@ -136,7 +161,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   }
   // 次のデコーダへ伝える情報
   when(destinationIsValid && instRd =/= 0.U) {
-    io.decodersAfter(instructionOffset).destinationTag := io.reorderBuffer.destination.destinationTag
+    io.decodersAfter(instructionOffset)
+      .destinationTag := io.reorderBuffer.destination.destinationTag
     io.decodersAfter(instructionOffset).destinationRegister := instRd
     io.decodersAfter(instructionOffset).valid := true.B
   } otherwise {
@@ -161,11 +187,15 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   val rs = io.reservationStation.entry
   rs.opcode := instOp
   rs.function3 := instFunct3
-  rs.immediateOrFunction7 := MuxLookup(opcodeFormatChecker.io.format.asUInt, 0.U, Seq(
-    R.asUInt -> Cat("b000000".U, instFunct7),
-    S.asUInt -> instImmS,
-    B.asUInt -> instImmB,
-  ))
+  rs.immediateOrFunction7 := MuxLookup(
+    opcodeFormatChecker.io.format.asUInt,
+    0.U,
+    Seq(
+      R.asUInt -> Cat("b000000".U, instFunct7),
+      S.asUInt -> instImmS,
+      B.asUInt -> instImmB
+    )
+  )
   rs.destinationTag := io.reorderBuffer.destination.destinationTag
   rs.sourceTag1 := Mux(valueSelector1.io.value.valid, 0.U, sourceTag1.tag)
   rs.sourceTag2 := Mux(valueSelector2.io.value.valid, 0.U, sourceTag2.tag)
@@ -176,7 +206,9 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters) extends Modul
   rs.programCounter := io.instructionFetch.bits.programCounter
 
   // load or store命令の場合，LSQへ発送
-  io.loadStoreQueue.valid := io.loadStoreQueue.ready && instOp === BitPat("b0?00011") && io.instructionFetch.valid
+  io.loadStoreQueue.valid := io.loadStoreQueue.ready && instOp === BitPat(
+    "b0?00011"
+  ) && io.instructionFetch.valid
   when(io.loadStoreQueue.valid) {
     io.loadStoreQueue.bits.opcode := instOp
     io.loadStoreQueue.bits.function3 := instFunct3

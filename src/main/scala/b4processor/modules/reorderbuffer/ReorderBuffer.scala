@@ -1,34 +1,46 @@
 package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
-import b4processor.connections.{BranchPrediction2ReorderBuffer, CollectedOutput, Decoder2ReorderBuffer, LoadStoreQueue2ReorderBuffer, ReorderBuffer2RegisterFile}
+import b4processor.connections.{
+  BranchPrediction2ReorderBuffer,
+  CollectedOutput,
+  Decoder2ReorderBuffer,
+  LoadStoreQueue2ReorderBuffer,
+  ReorderBuffer2RegisterFile
+}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
 
 import scala.math.pow
 
-/**
- * リオーダバッファ
- *
- * @param params パラメータ
- */
+/** リオーダバッファ
+  *
+  * @param params
+  *   パラメータ
+  */
 class ReorderBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val decoders = Vec(params.runParallel, Flipped(new Decoder2ReorderBuffer))
     val collectedOutputs = Flipped(new CollectedOutput)
-    val registerFile = Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
+    val registerFile =
+      Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
     val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
     val isEmpty = Output(Bool())
 
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
     val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
-    val bufferIndex0 = if (params.debug) Some(Output(new ReorderBufferEntry)) else None
+    val bufferIndex0 =
+      if (params.debug) Some(Output(new ReorderBufferEntry)) else None
   })
 
   val head = RegInit(0.U(params.tagWidth.W))
   val tail = RegInit(0.U(params.tagWidth.W))
-  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.tagWidth).toInt)(ReorderBufferEntry.default)))
+  val buffer = RegInit(
+    VecInit(
+      Seq.fill(math.pow(2, params.tagWidth).toInt)(ReorderBufferEntry.default)
+    )
+  )
 
   // デコーダからの読み取りと書き込み
   var insertIndex = head
@@ -51,13 +63,24 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     }
     decoder.destination.destinationTag := insertIndex
     // ソースレジスタに対応するタグ、値の代入
-    val descendingIndex = VecInit((0 until pow(2, params.tagWidth).toInt).map(indexOffset => head - indexOffset.U))
+    val descendingIndex = VecInit(
+      (0 until pow(2, params.tagWidth).toInt).map(indexOffset =>
+        head - indexOffset.U
+      )
+    )
     when(decoder.source1.sourceRegister =/= 0.U) {
-      val matchingBits = Cat(buffer.reverse.map(entry => entry.destinationRegister === decoder.source1.sourceRegister))
+      val matchingBits = Cat(
+        buffer.reverse.map(entry =>
+          entry.destinationRegister === decoder.source1.sourceRegister
+        )
+      )
         .suggestName(s"matchingBits_d${i}_s1")
       val hasMatching = matchingBits.orR
         .suggestName(s"hasMatching_d${i}_s1")
-      val matchingIndex = MuxCase(0.U, descendingIndex.map { index => matchingBits(index).asBool -> index })
+      val matchingIndex = MuxCase(
+        0.U,
+        descendingIndex.map { index => matchingBits(index).asBool -> index }
+      )
         .suggestName(s"matchingIndex_d${i}_s1")
       decoder.source1.matchingTag.valid := hasMatching
       decoder.source1.matchingTag.bits := matchingIndex
@@ -71,10 +94,17 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     }
 
     when(decoder.source2.sourceRegister =/= 0.U) {
-      val matchingBits = Cat(buffer.reverse.map(entry => entry.destinationRegister === decoder.source2.sourceRegister))
+      val matchingBits = Cat(
+        buffer.reverse.map(entry =>
+          entry.destinationRegister === decoder.source2.sourceRegister
+        )
+      )
         .suggestName(s"matchingBits_d${i}_s2")
       val hasMatching = matchingBits.orR
-      val matchingIndex = MuxCase(0.U, descendingIndex.map { index => matchingBits(index).asBool -> index })
+      val matchingIndex = MuxCase(
+        0.U,
+        descendingIndex.map { index => matchingBits(index).asBool -> index }
+      )
       decoder.source2.matchingTag.valid := hasMatching
       decoder.source2.matchingTag.bits := matchingIndex
       decoder.source2.value.valid := buffer(matchingIndex).valueReady
@@ -85,7 +115,6 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       decoder.source2.value.valid := false.B
       decoder.source2.value.bits := 0.U
     }
-
 
     // 次のループで使用するinserIndexとlastReadyを変える
     // わざと:=ではなく=を利用している
@@ -105,7 +134,9 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     io.registerFile(i).valid := canCommit
     when(canCommit) {
       io.registerFile(i).bits.value := buffer(index).value
-      io.registerFile(i).bits.destinationRegister := buffer(index).destinationRegister
+      io.registerFile(i).bits.destinationRegister := buffer(
+        index
+      ).destinationRegister
     }.otherwise {
       io.registerFile(i).bits.value := 0.U
       io.registerFile(i).bits.destinationRegister := 0.U
@@ -122,7 +153,12 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     }
     lastValid = canCommit
   }
-  tail := tail + MuxCase(params.maxRegisterFileCommitCount.U, io.registerFile.zipWithIndex.map { case (entry, index) => !entry.valid -> index.U })
+  tail := tail + MuxCase(
+    params.maxRegisterFileCommitCount.U,
+    io.registerFile.zipWithIndex.map { case (entry, index) =>
+      !entry.valid -> index.U
+    }
+  )
 
   io.isEmpty := head === tail
 
@@ -144,6 +180,12 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 }
 
 object ReorderBuffer extends App {
-  implicit val params = Parameters(runParallel = 2, maxRegisterFileCommitCount = 8, tagWidth = 5)
-  (new ChiselStage).emitVerilog(new ReorderBuffer, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
+  implicit val params =
+    Parameters(runParallel = 2, maxRegisterFileCommitCount = 8, tagWidth = 5)
+  (new ChiselStage).emitVerilog(
+    new ReorderBuffer,
+    args = Array(
+      "--emission-options=disableMemRandomization,disableRegisterRandomization"
+    )
+  )
 }

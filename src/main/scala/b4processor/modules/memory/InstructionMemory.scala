@@ -6,7 +6,9 @@ import chisel3._
 import chisel3.util._
 
 /** 命令メモリ */
-class InstructionMemory(memoryInit: => Seq[UInt])(implicit params: Parameters) extends Module {
+class InstructionMemory(memoryInit: => Seq[UInt])(implicit params: Parameters)
+    extends Module {
+
   /** キャッシュへの接続 */
   val io = IO(new InstructionMemory2Cache)
 

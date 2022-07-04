@@ -4,11 +4,11 @@ import b4processor.Parameters
 import b4processor.connections.Fetch2Decoder
 import chisel3._
 
-/**
- * 複数のデコーダをつなげるモジュール
- *
- * @param params パラメータ
- */
+/** 複数のデコーダをつなげるモジュール
+  *
+  * @param params
+  *   パラメータ
+  */
 class MultipleDecoder(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val instructions = Vec(params.runParallel, new Fetch2Decoder)
