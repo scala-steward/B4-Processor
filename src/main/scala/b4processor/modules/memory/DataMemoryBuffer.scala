@@ -8,17 +8,22 @@ import chisel3.util._
 
 import scala.math.pow
 
-/**
- * from LSQ toDataMemory のためのバッファ
- *
- * @param params パラメータ
- */
+/** from LSQ toDataMemory のためのバッファ
+  *
+  * @param params
+  *   パラメータ
+  */
 class DataMemoryBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val dataIn = Vec(params.maxRegisterFileCommitCount, Flipped(new LoadStoreQueue2Memory))
+    val dataIn =
+      Vec(params.maxRegisterFileCommitCount, Flipped(new LoadStoreQueue2Memory))
     val dataOut = new LoadStoreQueue2Memory
-    val head = if (params.debug) Some(Output(UInt(params.loadStoreQueueIndexWidth.W))) else None
-    val tail = if (params.debug) Some(Output(UInt(params.loadStoreQueueIndexWidth.W))) else None
+    val head =
+      if (params.debug) Some(Output(UInt(params.loadStoreQueueIndexWidth.W)))
+      else None
+    val tail =
+      if (params.debug) Some(Output(UInt(params.loadStoreQueueIndexWidth.W)))
+      else None
   })
 
   // isLoad = 1(load), 0(store) (bit数削減)
@@ -26,7 +31,11 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
 
   val head = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
   val tail = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
-  val buffer = RegInit(VecInit(Seq.fill(math.pow(2, params.loadStoreQueueIndexWidth).toInt)(defaultEntry)))
+  val buffer = RegInit(
+    VecInit(
+      Seq.fill(math.pow(2, params.loadStoreQueueIndexWidth).toInt)(defaultEntry)
+    )
+  )
 
   var insertIndex = head
   // enqueue
@@ -36,9 +45,12 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
 
     when(Input.valid) {
       buffer(insertIndex) := DataMemoryBufferEntry.validEntry(
-        address = Input.bits.address, tag = Input.bits.tag,
-        data = Input.bits.data, isLoad = Input.bits.isLoad,
-        function3 = Input.bits.function3)
+        address = Input.bits.address,
+        tag = Input.bits.tag,
+        data = Input.bits.data,
+        isLoad = Input.bits.isLoad,
+        function3 = Input.bits.function3
+      )
     }
     insertIndex = insertIndex + Input.valid.asUInt
   }
@@ -81,5 +93,10 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
 
 object DataMemoryBuffer extends App {
   implicit val params = Parameters(tagWidth = 4, maxRegisterFileCommitCount = 2)
-  (new ChiselStage).emitVerilog(new DataMemoryBuffer, args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
+  (new ChiselStage).emitVerilog(
+    new DataMemoryBuffer,
+    args = Array(
+      "--emission-options=disableMemRandomization,disableRegisterRandomization"
+    )
+  )
 }

@@ -5,16 +5,20 @@ import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util._
 
-/**
- * sourceTag選択回路
- *
- * @param instructionOffset 基準から何個目の命令を処理しているか
- * @param params            パラメータ
- */
-class SourceTagSelector(instructionOffset: Int)(implicit params: Parameters) extends Module {
+/** sourceTag選択回路
+  *
+  * @param instructionOffset
+  *   基準から何個目の命令を処理しているか
+  * @param params
+  *   パラメータ
+  */
+class SourceTagSelector(instructionOffset: Int)(implicit params: Parameters)
+    extends Module {
   val io = IO(new Bundle {
-    val beforeDestinationTag = Vec(instructionOffset, Flipped(DecoupledIO(UInt(params.tagWidth.W))))
-    val reorderBufferDestinationTag = Flipped(DecoupledIO(UInt(params.tagWidth.W)))
+    val beforeDestinationTag =
+      Vec(instructionOffset, Flipped(DecoupledIO(UInt(params.tagWidth.W))))
+    val reorderBufferDestinationTag =
+      Flipped(DecoupledIO(UInt(params.tagWidth.W)))
     val sourceTag = Output(new SourceTagInfo) // 選択したsource tagを格納
   })
 
@@ -24,16 +28,21 @@ class SourceTagSelector(instructionOffset: Int)(implicit params: Parameters) ext
   }
   io.reorderBufferDestinationTag.ready := true.B
 
-
   // reorderBufferのvalidビットを別変数に取り出しておく
   val reorderBufferValid = io.reorderBufferDestinationTag.valid
   // beforeのdestinationTagのvalidビット全てにORをかけたものを取り出す
-  val beforeDestinationRegisterValid = Cat(io.beforeDestinationTag.map { d => d.valid }).orR
+  val beforeDestinationRegisterValid = Cat(io.beforeDestinationTag.map { d =>
+    d.valid
+  }).orR
   // MuxCaseでソースタグが見つからない -> 値がレジスタファイルに存在している -> valid = 0
   // (otherwise =（beforeDestinationRegisterValid or reorderBufferValidにsource tagが存在している）-> valid = 1)
   // 1になる条件だけで記述できる
   io.sourceTag.valid := beforeDestinationRegisterValid || reorderBufferValid
-  io.sourceTag.from := Mux(beforeDestinationRegisterValid, SourceTagFrom.BeforeDecoder, SourceTagFrom.ReorderBuffer)
+  io.sourceTag.from := Mux(
+    beforeDestinationRegisterValid,
+    SourceTagFrom.BeforeDecoder,
+    SourceTagFrom.ReorderBuffer
+  )
 
   // valid=1 ならば，Muxでsource tagを選択
   when(io.sourceTag.valid) {
@@ -44,9 +53,12 @@ class SourceTagSelector(instructionOffset: Int)(implicit params: Parameters) ext
       MuxCase(
         0.U, // デフォルト値0
         // これまでのdestinationTagを遡っていき(reverse)、validなものを選ぶ
-        (0 until instructionOffset).reverse.map(i => io.beforeDestinationTag(i).valid -> io.beforeDestinationTag(i).bits)),
+        (0 until instructionOffset).reverse.map(i =>
+          io.beforeDestinationTag(i).valid -> io.beforeDestinationTag(i).bits
+        )
+      ),
       // リオーダバッファの値
-      io.reorderBufferDestinationTag.bits,
+      io.reorderBufferDestinationTag.bits
     )
     // 最大発行命令数(i)を増やすならばMux -> MuxCase に変更
   }.otherwise { // valid = 0

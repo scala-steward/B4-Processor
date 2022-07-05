@@ -4,11 +4,11 @@ import b4processor.Parameters
 import chisel3._
 import chisel3.util._
 
-/**
- * ALUからLSQへデータを送信
- *
- * @param params パラメータ
- */
+/** ALUからLSQへデータを送信
+  *
+  * @param params
+  *   パラメータ
+  */
 
 class Executor2LoadStoreQueue(implicit params: Parameters) extends Bundle {
   val destinationTag = UInt(params.tagWidth.W)

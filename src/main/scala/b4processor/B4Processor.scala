@@ -1,6 +1,10 @@
 package b4processor
 
-import b4processor.connections.{InstructionMemory2Cache, LoadStoreQueue2Memory, OutputValue}
+import b4processor.connections.{
+  InstructionMemory2Cache,
+  LoadStoreQueue2Memory,
+  OutputValue
+}
 import b4processor.modules.branch_output_collector.BranchOutputCollector
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.decoder.Decoder
@@ -24,13 +28,17 @@ class B4Processor(implicit params: Parameters) extends Module {
       val output = Flipped(new OutputValue)
     }
 
-    val registerFileContents = if (params.debug) Some(Output(Vec(31, UInt(64.W)))) else None
+    val registerFileContents =
+      if (params.debug) Some(Output(Vec(31, UInt(64.W)))) else None
   })
 
   require(params.runParallel >= 1, "同時発行数は1以上である必要があります。")
   require(params.tagWidth >= 1, "タグ幅は1以上である必要があります。")
   require(params.fetchWidth >= 1, "フェッチ幅は1以上である必要があります。")
-  require(params.maxRegisterFileCommitCount >= 1, "レジスタファイルへのコミット数は1以上である必要があります。")
+  require(
+    params.maxRegisterFileCommitCount >= 1,
+    "レジスタファイルへのコミット数は1以上である必要があります。"
+  )
 
   val instructionCache = Module(new InstructionMemoryCache)
   val fetch = Module(new Fetch)
@@ -43,7 +51,8 @@ class B4Processor(implicit params: Parameters) extends Module {
   val branchAddressCollector = Module(new BranchOutputCollector)
 
   val decoders = (0 until params.runParallel).map(n => Module(new Decoder(n)))
-  val reservationStations = Seq.fill(params.runParallel)(Module(new ReservationStation))
+  val reservationStations =
+    Seq.fill(params.runParallel)(Module(new ReservationStation))
   val executors = Seq.fill(params.runParallel)(Module(new Executor))
 
   /** 出力コレクタとデータメモリ */
@@ -64,6 +73,7 @@ class B4Processor(implicit params: Parameters) extends Module {
   instructionCache.io.fetch <> fetch.io.cache
 
   for (i <- 0 until params.runParallel) {
+
     /** フェッチとデコーダの接続 */
     decoders(i).io.instructionFetch <> fetch.io.decoders(i)
 
@@ -97,7 +107,6 @@ class B4Processor(implicit params: Parameters) extends Module {
 
     /** 分岐結果コレクタと実行ユニットの接続 */
     branchAddressCollector.io.executor(i) := executors(i).io.fetch
-
 
   }
 
@@ -137,5 +146,10 @@ class B4Processor(implicit params: Parameters) extends Module {
 
 object B4Processor extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitVerilog(new B4Processor(), args = Array("--emission-options=disableMemRandomization,disableRegisterRandomization"))
+  (new ChiselStage).emitVerilog(
+    new B4Processor(),
+    args = Array(
+      "--emission-options=disableMemRandomization,disableRegisterRandomization"
+    )
+  )
 }

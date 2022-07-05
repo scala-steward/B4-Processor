@@ -5,14 +5,16 @@ import b4processor.modules.decoder.SourceTagInfo
 import chisel3._
 import chisel3.util._
 
-/**
- * デコーダとLSQをつなぐ
- *
- * @param params パラメータ
- */
+/** デコーダとLSQをつなぐ
+  *
+  * @param params
+  *   パラメータ
+  */
 class Decoder2LoadStoreQueue(implicit params: Parameters) extends Bundle {
+
   /** オペコード */
   val opcode = UInt(7.W)
+
   /** function3 */
   val function3 = UInt(3.W)
 
@@ -21,8 +23,10 @@ class Decoder2LoadStoreQueue(implicit params: Parameters) extends Bundle {
 
   /** ストアに使用するデータが格納されるタグ(SourceRegister2 Tag) */
   val storeDataTag = UInt(params.tagWidth.W)
+
   /** ストアデータ */
   val storeData = UInt(64.W)
+
   /** ストアデータの値が有効か */
   val storeDataValid = Bool()
 }
