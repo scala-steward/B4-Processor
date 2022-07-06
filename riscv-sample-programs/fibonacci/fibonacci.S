@@ -17,6 +17,4 @@ L2:
   j L2
 L3:
   mv x6,x3
-
-END:
-j END
+  j .
