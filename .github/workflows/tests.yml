@@ -88,7 +88,7 @@ jobs:
         run: sbt "testOnly *B4ProcessorProgramTest"
 
   test-riscv-tests:
-    name: プログラムの動作テスト
+    name: RISC-Vテスト
     needs: [test-programs]
 
     runs-on: ubuntu-latest
