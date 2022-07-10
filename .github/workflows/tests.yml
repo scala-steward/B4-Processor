@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: すべてのテストを実行
+  test-components:
+    name: 各モジュールのテスト
 
     runs-on: ubuntu-latest
 
@@ -32,4 +32,85 @@ jobs:
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
 
       - name: Run tests
-        run: sbt test
+        run: sbt "testOnly *modules*"
+
+  test-compilation:
+    name: B4プロセッサのコンパイルチェック
+    needs: [test-components]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache SBT
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
+
+      - name: Run tests
+        run: sbt "testOnly *B4ProcessorCompileTest"
+
+  test-programs:
+    name: プログラムの動作テスト
+    needs: [test-compilation]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache SBT
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
+
+      - name: install verilator
+        run: apt update && apt install verilator
+
+      - name: Run tests
+        run: sbt "testOnly *B4ProcessorProgramTest"
+
+  test-riscv-tests:
+    name: プログラムの動作テスト
+    needs: [test-programs]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache SBT
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
+
+      - name: install verilator
+        run: apt update && apt install verilator
+
+      - name: Run tests
+        run: sbt "testOnly *B4ProcessorRISCVTest"

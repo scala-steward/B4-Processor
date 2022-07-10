@@ -72,7 +72,7 @@ class Fetch(implicit params: Parameters) extends Module {
 
     // 次に停止する必要があるか確認
     nextWait = Mux(
-      nextWait =/= WaitingReason.None,
+      nextWait =/= WaitingReason.None || !decoder.valid,
       nextWait,
       MuxLookup(
         branch.io.branchType.asUInt,
@@ -94,8 +94,9 @@ class Fetch(implicit params: Parameters) extends Module {
     nextPC = nextPC + MuxCase(
       4.S,
       Seq(
+        !decoder.valid -> 0.S,
         (branch.io.branchType === BranchType.JAL) -> branch.io.offset,
-        (nextWait =/= WaitingReason.None || !decoder.valid) -> 0.S
+        (nextWait =/= WaitingReason.None) -> 0.S
       )
     )
 

@@ -2,6 +2,7 @@ name: check source formatting
 
 on:
   push:
+    branches: [ main ]
   pull_request:
 
 permissions:
