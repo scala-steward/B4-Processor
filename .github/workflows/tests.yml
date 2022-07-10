@@ -82,7 +82,7 @@ jobs:
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
 
       - name: install verilator
-        run: apt update && apt install verilator
+        run: sudo apt update && sudo apt install verilator
 
       - name: Run tests
         run: sbt "testOnly *B4ProcessorProgramTest"
@@ -110,7 +110,7 @@ jobs:
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
 
       - name: install verilator
-        run: apt update && apt install verilator
+        run: sudo apt update && sudo apt install verilator
 
       - name: Run tests
         run: sbt "testOnly *B4ProcessorRISCVTest"
