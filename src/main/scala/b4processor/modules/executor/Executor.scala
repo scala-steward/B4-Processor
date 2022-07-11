@@ -92,7 +92,7 @@ class Executor(implicit params: Parameters) extends Module {
           -> (io.reservationStation.bits.programCounter.asUInt + 4.U),
         // lui
         (instructionChecker.output.instruction === Instructions.lui)
-          -> io.reservationStation.bits.value2,
+          -> (io.reservationStation.bits.value2.asSInt).asUInt,
         // auipc
         (instructionChecker.output.instruction === Instructions.auipc)
           -> (io.reservationStation.bits.value2 + io.reservationStation.bits.programCounter.asUInt),

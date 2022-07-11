@@ -25,10 +25,10 @@ class B4ProcessorWithMemory(instructions: Seq[UInt])(implicit
 object B4ProcessorWithMemory extends App {
   implicit val params = Parameters(
     debug = true,
-    runParallel = 1,
-    maxRegisterFileCommitCount = 2,
-    tagWidth = 4,
-    loadStoreQueueIndexWidth = 2
+    runParallel = 2,
+    maxRegisterFileCommitCount = 4,
+    tagWidth = 5,
+    loadStoreQueueIndexWidth = 3
   )
   (new ChiselStage).emitVerilog(
     new B4ProcessorWithMemory(
