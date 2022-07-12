@@ -12,15 +12,12 @@ import chisel3.util._
   */
 class ValueSelector1(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val reorderBufferValue = Flipped(DecoupledIO(UInt(64.W)))
+    val reorderBufferValue = Flipped(Valid(UInt(64.W)))
     val registerFileValue = Input(UInt(64.W))
     val outputCollector = Flipped(new CollectedOutput)
     val sourceTag = Input(new SourceTagInfo)
-    val value = DecoupledIO(UInt(64.W))
+    val value = Valid(UInt(64.W))
   })
-
-  // 各種DecaoupledIOをreadyにする
-  io.reorderBufferValue.ready := true.B
 
   // ALUからバイパスされた値のうち、destination tagと一致するsource tagを持っている
   val outputMatching = Cat(
