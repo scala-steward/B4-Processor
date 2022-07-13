@@ -158,7 +158,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
     io.decodersAfter(i) <> io.decodersBefore(i)
   }
   // 次のデコーダへ伝える情報
-  when(destinationIsValid && instRd =/= 0.U) {
+  when(destinationIsValid && instRd =/= 0.U && io.instructionFetch.valid) {
     io.decodersAfter(instructionOffset)
       .destinationTag := io.reorderBuffer.destination.destinationTag
     io.decodersAfter(instructionOffset).destinationRegister := instRd

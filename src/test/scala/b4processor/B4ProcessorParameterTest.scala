@@ -9,7 +9,7 @@ class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
   implicit val defaultParams = Parameters(debug = true)
 
-  for (runParallel <- 2 to 4)
+  for (runParallel <- 1 to 4)
     for (maxCommitCount <- 1 to 3)
       for (tagWidth <- 2 to 5)
         for (lsqWidth <- 2 to 5)
