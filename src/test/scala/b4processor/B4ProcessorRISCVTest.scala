@@ -24,12 +24,15 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
     Parameters(
       debug = true,
       runParallel = 1,
-      tagWidth = 4,
+      tagWidth = 3,
       loadStoreQueueIndexWidth = 2,
       maxRegisterFileCommitCount = 2
     )
 
-  def riscv_test(test_name: String): Unit = {
+  behavior of s"RISC-V tests rv64i"
+
+  def riscv_test(test_name: String, timeout: Int = 1000): Unit = {
+
     it should s"run risc-v test ${test_name}" in {
       test(
         new B4ProcessorRISCVTestWrapper(
@@ -39,12 +42,11 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
       )
         .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
           c =>
-            c.clock.setTimeout(1000)
+            c.clock.setTimeout(timeout)
             c.riscv_test()
         }
     }
   }
-  behavior of "RISC-V tests rv64i"
 
   riscv_test("add")
   riscv_test("addi")
@@ -74,7 +76,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
   riscv_test("or")
   riscv_test("ori")
   riscv_test("sb")
-  riscv_test("sd")
+  riscv_test("sd", timeout = 2000)
   riscv_test("sh")
   riscv_test("sll")
   riscv_test("slli")

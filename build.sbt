@@ -11,6 +11,9 @@ scalacOptions ++= Seq(
   "-P:chiselplugin:genBundleElements"
 )
 
+Test / logBuffered := false
+Test / parallelExecution := false
+
 scalaVersion := "2.13.8"
 
 addCompilerPlugin(

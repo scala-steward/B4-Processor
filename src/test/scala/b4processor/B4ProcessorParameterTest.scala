@@ -5,15 +5,15 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "B4Processor"
+  behavior of "B4Processor with many parameters"
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
   implicit val defaultParams = Parameters(debug = true)
 
-  for (runParallel <- 1 to 4)
-    for (maxCommitCount <- 1 to 3)
+  for (runParallel <- 1 to 3)
+    for (maxCommitCount <- 1 to 2)
       for (tagWidth <- 2 to 5)
-        for (lsqWidth <- 2 to 5)
-          it should s"compile runParallel${runParallel} maxCommitCount=${maxCommitCount} tagWidth=${tagWidth} lsqWidth=${lsqWidth}" in {
+        for (lsqWidth <- 3 to 4)
+          it should s"run fibonacci runParallel${runParallel} maxCommitCount=${maxCommitCount} tagWidth=${tagWidth} lsqWidth=${lsqWidth}" in {
             test(
               new B4ProcessorWithMemory(
                 InstructionUtil
