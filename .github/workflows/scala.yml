@@ -1,0 +1,164 @@
+name: scala-CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    name: ソースコードのフォーマット確認
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache SBT
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
+
+      - name: Check formatting
+        run: sbt scalafmtCheck
+
+  test-components:
+    name: 各モジュールのテスト
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache SBT
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
+
+      - name: Run tests
+        run: sbt "testOnly *modules*"
+
+      # コンパイルされたファイルを共有するためにtargetをアップロードする
+      - uses: actions/upload-artifact@v2
+        with:
+          name: sbt-target
+          path: target
+
+  test-compilation:
+    name: B4プロセッサのコンパイルチェック
+    needs: [ test-components ]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache SBT
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: sbt-target
+
+      - name: Run tests
+        run: sbt "testOnly *B4ProcessorCompileTest"
+
+  test-programs:
+    name: プログラムの動作テスト
+    needs: [ test-compilation ]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache SBT
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: sbt-target
+
+      - name: install verilator
+        run: sudo apt update && sudo apt install verilator
+
+      - name: Run tests
+        run: sbt "testOnly *B4ProcessorProgramTest"
+
+  test-parameters:
+    name: パラメータのテスト
+    needs: [ test-compilation ]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache SBT
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: sbt-target
+
+      - name: install verilator
+        run: sudo apt update && sudo apt install verilator
+
+      - name: Run tests
+        run: sbt "testOnly *B4ProcessorParameterTest"

@@ -20,8 +20,8 @@ class Decoder2ReorderBuffer(implicit params: Parameters) extends Bundle {
 
   class SourceRegister extends Bundle {
     val sourceRegister = Output(UInt(5.W))
-    val matchingTag = Flipped(DecoupledIO(UInt(params.tagWidth.W)))
-    val value = Flipped(DecoupledIO(UInt(64.W)))
+    val matchingTag = Flipped(Valid(UInt(params.tagWidth.W)))
+    val value = Flipped(Valid(UInt(64.W)))
   }
 
   class DestinationRegister extends Bundle {

@@ -33,7 +33,7 @@ object B4ProcessorWithMemory extends App {
   (new ChiselStage).emitVerilog(
     new B4ProcessorWithMemory(
       InstructionUtil
-        .fromFile32bit("riscv-sample-programs/fibonacci/fibonacci.32.hex")
+        .fromFile32bit("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex")
     )
   )
 }

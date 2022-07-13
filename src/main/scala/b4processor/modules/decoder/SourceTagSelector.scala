@@ -16,17 +16,11 @@ class SourceTagSelector(instructionOffset: Int)(implicit params: Parameters)
     extends Module {
   val io = IO(new Bundle {
     val beforeDestinationTag =
-      Vec(instructionOffset, Flipped(DecoupledIO(UInt(params.tagWidth.W))))
+      Vec(instructionOffset, Flipped(Valid(UInt(params.tagWidth.W))))
     val reorderBufferDestinationTag =
-      Flipped(DecoupledIO(UInt(params.tagWidth.W)))
+      Flipped(Valid(UInt(params.tagWidth.W)))
     val sourceTag = Output(new SourceTagInfo) // 選択したsource tagを格納
   })
-
-  // すべての入力をReadyにする
-  for (i <- 0 until instructionOffset) {
-    io.beforeDestinationTag(i).ready := true.B
-  }
-  io.reorderBufferDestinationTag.ready := true.B
 
   // reorderBufferのvalidビットを別変数に取り出しておく
   val reorderBufferValid = io.reorderBufferDestinationTag.valid
