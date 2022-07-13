@@ -16,6 +16,7 @@ concurrency:
 jobs:
   format:
     name: ソースコードのフォーマット確認
+    timeout-minutes: 5
 
     runs-on: ubuntu-latest
 
@@ -40,6 +41,7 @@ jobs:
 
   test-components:
     name: 各モジュールのテスト
+    timeout-minutes: 10
 
     runs-on: ubuntu-latest
 
@@ -73,6 +75,7 @@ jobs:
   test-compilation:
     name: B4プロセッサのコンパイルチェック
     needs: [ test-components ]
+    timeout-minutes: 10
 
     runs-on: ubuntu-latest
 
@@ -102,6 +105,8 @@ jobs:
   test-programs:
     name: プログラムの動作テスト
     needs: [ test-compilation ]
+    timeout-minutes: 20
+    if: github.event.pull_request.draft == false
 
     runs-on: ubuntu-latest
 
@@ -134,6 +139,8 @@ jobs:
   test-parameters:
     name: パラメータのテスト
     needs: [ test-compilation ]
+    timeout-minutes: 20
+    if: github.event.pull_request.draft == false
 
     runs-on: ubuntu-latest
 
