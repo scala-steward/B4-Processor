@@ -2,7 +2,7 @@ package b4processor.common
 
 import chisel3._
 import chisel3.experimental.ChiselEnum
-import chisel3.util.{MuxCase, MuxLookup}
+import chisel3.util.{BitPat, MuxCase, MuxLookup}
 
 /** 命令の種類のチェック */
 class InstructionChecker extends Module {
@@ -85,8 +85,8 @@ class InstructionChecker extends Module {
     MuxCase(
       OperationWidth.Unknown,
       Seq(
-        (input.opcode === "b0010011".U || input.opcode === "b0110011".U) -> OperationWidth.DoubleWord,
-        (input.opcode === "b0011011".U || input.opcode === "b0111011".U) -> OperationWidth.Word
+        (input.opcode === BitPat("b0?10011")) -> OperationWidth.DoubleWord,
+        (input.opcode === BitPat("b0?11011")) -> OperationWidth.Word
       )
     )
   )
