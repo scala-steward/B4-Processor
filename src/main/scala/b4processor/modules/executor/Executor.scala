@@ -71,19 +71,32 @@ class Executor(implicit params: Parameters) extends Module {
           -> (io.reservationStation.bits.value1 ^ io.reservationStation.bits.value2),
         // 左シフト
         (instructionChecker.output.arithmetic === ArithmeticOperations.ShiftLeftLogical)
-          -> Mux(instructionChecker.output.operationWidth === OperationWidth.Word,
-          io.reservationStation.bits.value1(31, 0) << io.reservationStation.bits.value2(4, 0),
-          io.reservationStation.bits.value1 << io.reservationStation.bits.value2(5, 0)),
+          -> Mux(
+            instructionChecker.output.operationWidth === OperationWidth.Word,
+            io.reservationStation.bits
+              .value1(31, 0) << io.reservationStation.bits.value2(4, 0),
+            io.reservationStation.bits.value1 << io.reservationStation.bits
+              .value2(5, 0)
+          ),
         // 右シフト(論理)
         (instructionChecker.output.arithmetic === ArithmeticOperations.ShiftRightLogical)
-          -> Mux(instructionChecker.output.operationWidth === OperationWidth.Word,
-          io.reservationStation.bits.value1(31, 0) >> io.reservationStation.bits.value2(4, 0),
-          io.reservationStation.bits.value1 >> io.reservationStation.bits.value2(5, 0)),
+          -> Mux(
+            instructionChecker.output.operationWidth === OperationWidth.Word,
+            io.reservationStation.bits
+              .value1(31, 0) >> io.reservationStation.bits.value2(4, 0),
+            io.reservationStation.bits.value1 >> io.reservationStation.bits
+              .value2(5, 0)
+          ),
         // 右シフト(算術)
         (instructionChecker.output.arithmetic === ArithmeticOperations.ShiftRightArithmetic)
-          -> Mux(instructionChecker.output.operationWidth === OperationWidth.Word,
-          (io.reservationStation.bits.value1(31, 0).asSInt >> io.reservationStation.bits.value2(4, 0)).asUInt,
-          (io.reservationStation.bits.value1.asSInt >> io.reservationStation.bits.value2(5, 0)).asUInt),
+          -> Mux(
+            instructionChecker.output.operationWidth === OperationWidth.Word,
+            (io.reservationStation.bits
+              .value1(31, 0)
+              .asSInt >> io.reservationStation.bits.value2(4, 0)).asUInt,
+            (io.reservationStation.bits.value1.asSInt >> io.reservationStation.bits
+              .value2(5, 0)).asUInt
+          ),
         // 比較(格納先：rd)(符号付き)
         (instructionChecker.output.arithmetic === ArithmeticOperations.SetLessThan)
           -> (io.reservationStation.bits.value1.asSInt < io.reservationStation.bits.value2.asSInt).asUInt,
@@ -121,7 +134,10 @@ class Executor(implicit params: Parameters) extends Module {
       )
     )
 
-    if((instructionChecker.output.operationWidth == OperationWidth.Word) && !io.reservationStation.bits.value2(5) == 1.U){
+    if (
+      (instructionChecker.output.operationWidth == OperationWidth.Word) && !io.reservationStation.bits
+        .value2(5) == 1.U
+    ) {
       printf(p"dtag = ${io.reservationStation.bits.destinationTag}\n")
     }
 
