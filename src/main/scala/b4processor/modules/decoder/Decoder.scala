@@ -60,7 +60,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
   )
 
   // 即値を64bitに符号拡張
-  val immIExtended = instImmI.asSInt
+  val immIExtended =
+    instImmI.asSInt // FIXME 結果は変わらないが，正確性のため，srai, srliの場合のみ，特別処理を入れるべきか？
   val immUExtended = Cat(instImmU, 0.U(12.W)).asSInt
   val immJExtended = Cat(instImmJ, 0.U(1.W)).asSInt
 
@@ -179,13 +180,17 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
   val rs = io.reservationStation.entry
   rs.opcode := instOp
   rs.function3 := instFunct3
-  rs.immediateOrFunction7 := MuxLookup(
-    opcodeFormatChecker.io.format.asUInt,
-    0.U,
-    Seq(
-      R.asUInt -> Cat("b000000".U, instFunct7),
-      S.asUInt -> instImmS,
-      B.asUInt -> instImmB
+  rs.immediateOrFunction7 := Mux(
+    instOp === "b0010011".U && instFunct3 === "b101".U, // "srai" or "srli"
+    Cat(io.instructionFetch.bits.instruction(31, 26), 0.U(1.W)),
+    MuxLookup(
+      opcodeFormatChecker.io.format.asUInt,
+      0.U,
+      Seq(
+        R.asUInt -> Cat("b000000".U, instFunct7),
+        S.asUInt -> instImmS,
+        B.asUInt -> instImmB
+      )
     )
   )
   rs.destinationTag := io.reorderBuffer.destination.destinationTag
