@@ -181,7 +181,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
   rs.opcode := instOp
   rs.function3 := instFunct3
   rs.immediateOrFunction7 := Mux(
-    instOp === "b0010011".U && instFunct3 === "b101".U, // "srai" or "srli"
+    instOp === BitPat("b001?011") && instFunct3 === "b101".U, // "srai(w)" or "srli(w)"
     Cat(io.instructionFetch.bits.instruction(31, 26), 0.U(1.W)),
     MuxLookup(
       opcodeFormatChecker.io.format.asUInt,
