@@ -134,13 +134,6 @@ class Executor(implicit params: Parameters) extends Module {
       )
     )
 
-    if (
-      (instructionChecker.output.operationWidth == OperationWidth.Word) && !io.reservationStation.bits
-        .value2(5) == 1.U
-    ) {
-      printf(p"dtag = ${io.reservationStation.bits.destinationTag}\n")
-    }
-
     io.fetch.valid := (instructionChecker.output.instruction === Instructions.Branch) ||
       // FIXME 用途がわからないからコメントアウトしたけど必要かもしれない
       //      (instructionChecker.output.instruction === Instructions.jal) ||
