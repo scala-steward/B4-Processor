@@ -172,8 +172,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
   // 命令をデコードするのはリオーダバッファにエントリの空きがあり、リザベーションステーションにも空きがあるとき
   io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready
   // リオーダバッファやリザベーションステーションに新しいエントリを追加するのは命令がある時
-  io.reorderBuffer.valid := io.instructionFetch.valid
-  io.reservationStation.entry.valid := io.instructionFetch.valid
+  io.reorderBuffer.valid := io.instructionFetch.ready && io.instructionFetch.valid
+  io.reservationStation.entry.valid := io.instructionFetch.ready && io.instructionFetch.valid
 
   // RSへの出力を埋める
   val rs = io.reservationStation.entry
@@ -200,7 +200,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
   // load or store命令の場合，LSQへ発送
   io.loadStoreQueue.valid := io.loadStoreQueue.ready && instOp === BitPat(
     "b0?00011"
-  ) && io.instructionFetch.valid
+  ) && io.instructionFetch.ready && io.instructionFetch.valid
+
   when(io.loadStoreQueue.valid) {
     io.loadStoreQueue.bits.opcode := instOp
     io.loadStoreQueue.bits.function3 := instFunct3

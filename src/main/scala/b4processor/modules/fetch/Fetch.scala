@@ -1,7 +1,11 @@
 package b4processor.modules.fetch
 
 import b4processor.Parameters
-import b4processor.connections.{BranchOutput, Fetch2BranchPrediction, Fetch2FetchBuffer, FetchBuffer2Decoder, InstructionCache2Fetch}
+import b4processor.connections.{
+  Fetch2BranchPrediction,
+  Fetch2FetchBuffer,
+  InstructionCache2Fetch
+}
 import b4processor.modules.branch_output_collector.CollectedBranchAddresses
 import chisel3._
 import chisel3.util._
@@ -61,13 +65,13 @@ class Fetch(implicit params: Parameters) extends Module {
     decoder.valid := io
       .cache(i)
       .output
-      .valid && io.fetchBuffer.ready && nextWait === WaitingReason.None
+      .valid && nextWait === WaitingReason.None
     decoder.bits.programCounter := nextPC
     decoder.bits.instruction := cache.output.bits
 
     // 次に停止する必要があるか確認
     nextWait = Mux(
-      nextWait =/= WaitingReason.None || !decoder.valid,
+      nextWait =/= WaitingReason.None || !decoder.ready || !decoder.valid,
       nextWait,
       MuxLookup(
         branch.io.branchType.asUInt,
@@ -89,7 +93,7 @@ class Fetch(implicit params: Parameters) extends Module {
     nextPC = nextPC + MuxCase(
       4.S,
       Seq(
-        !decoder.valid -> 0.S,
+        (!decoder.ready || !decoder.valid) -> 0.S,
         (branch.io.branchType === BranchType.JAL) -> branch.io.offset,
         (nextWait =/= WaitingReason.None) -> 0.S
       )
