@@ -17,7 +17,7 @@ class B4ProcessorCompileTest extends AnyFlatSpec with ChiselScalatestTester {
       for (tagWidth <- 2 to 3)
         it should s"compile runParallel${runParallel} maxCommitCount=${maxCommitCount} tagWidth=${tagWidth}" in {
           test(
-            new B4ProcessorWithMemory(Seq(0.U))(
+            new B4ProcessorWithMemory("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex")(
               defaultParams.copy(
                 runParallel = runParallel,
                 maxRegisterFileCommitCount = maxCommitCount,

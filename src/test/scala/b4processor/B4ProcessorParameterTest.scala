@@ -16,10 +16,7 @@ class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
           it should s"run fibonacci runParallel${runParallel} maxCommitCount=${maxCommitCount} tagWidth=${tagWidth} lsqWidth=${lsqWidth}" in {
             test(
               new B4ProcessorWithMemory(
-                InstructionUtil
-                  .fromFile32bit(
-                    "riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"
-                  )
+                "riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"
               )(
                 defaultParams.copy(
                   runParallel = runParallel,

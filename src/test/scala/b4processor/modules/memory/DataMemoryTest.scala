@@ -1,12 +1,15 @@
 package b4processor.modules.memory
 
 import b4processor.Parameters
-import b4processor.utils.DataMemoryValue
+import b4processor.utils.{DataMemoryValue, InstructionUtil}
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class DataMemoryTestWrapper(implicit params: Parameters) extends DataMemory {}
+class DataMemoryTestWrapper(implicit params: Parameters)
+    extends DataMemory(
+      instructions = "riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"
+    ) {}
 
 class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Data Memory"
@@ -104,48 +107,49 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "load a byte value" in {
-    test(new DataMemoryTestWrapper).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-      // 0アドレスへのストア
-      c.io.dataIn.bits.address.poke(20)
-      c.io.dataIn.bits.data.poke("b10000000011".U)
-      c.io.dataIn.bits.tag.poke(10)
-      c.io.dataIn.bits.function3.poke("b011".U)
-      c.io.dataIn.bits.isLoad.poke(false)
-      c.io.dataIn.valid.poke(true)
+    test(new DataMemoryTestWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
+      c =>
+        // 0アドレスへのストア
+        c.io.dataIn.bits.address.poke(20)
+        c.io.dataIn.bits.data.poke("b10000000011".U)
+        c.io.dataIn.bits.tag.poke(10)
+        c.io.dataIn.bits.function3.poke("b011".U)
+        c.io.dataIn.bits.isLoad.poke(false)
+        c.io.dataIn.valid.poke(true)
 
-      c.clock.step()
+        c.clock.step()
 
-      //書き込みを止める
-      c.io.dataIn.bits.address.poke(0)
-      c.io.dataIn.bits.data.poke(0)
-      c.io.dataIn.bits.tag.poke(0)
-      c.io.dataIn.bits.function3.poke(0)
-      c.io.dataIn.bits.isLoad.poke(0)
-      c.io.dataIn.valid.poke(false)
+        // 書き込みを止める
+        c.io.dataIn.bits.address.poke(0)
+        c.io.dataIn.bits.data.poke(0)
+        c.io.dataIn.bits.tag.poke(0)
+        c.io.dataIn.bits.function3.poke(0)
+        c.io.dataIn.bits.isLoad.poke(0)
+        c.io.dataIn.valid.poke(false)
 
-      c.clock.step(2)
-      // 0アドレスからのロード
-      c.io.dataIn.bits.address.poke(20)
-      c.io.dataIn.bits.data.poke(0)
-      c.io.dataIn.bits.tag.poke(20)
-      c.io.dataIn.bits.function3.poke("b000".U)
-      c.io.dataIn.bits.isLoad.poke(true)
-      c.io.dataIn.valid.poke(true)
+        c.clock.step(2)
+        // 0アドレスからのロード
+        c.io.dataIn.bits.address.poke(20)
+        c.io.dataIn.bits.data.poke(0)
+        c.io.dataIn.bits.tag.poke(20)
+        c.io.dataIn.bits.function3.poke("b000".U)
+        c.io.dataIn.bits.isLoad.poke(true)
+        c.io.dataIn.valid.poke(true)
 
-      c.clock.step(1)
-      c.io.dataIn.bits.address.poke(0)
-      c.io.dataIn.bits.data.poke(0)
-      c.io.dataIn.bits.tag.poke(0)
-      c.io.dataIn.bits.function3.poke("b011".U)
-      c.io.dataIn.bits.isLoad.poke(false)
-      c.io.dataIn.valid.poke(false)
+        c.clock.step(1)
+        c.io.dataIn.bits.address.poke(0)
+        c.io.dataIn.bits.data.poke(0)
+        c.io.dataIn.bits.tag.poke(0)
+        c.io.dataIn.bits.function3.poke("b011".U)
+        c.io.dataIn.bits.isLoad.poke(false)
+        c.io.dataIn.valid.poke(false)
 
-      c.io.dataOut.validAsResult.expect(true)
-      c.io.dataOut.validAsLoadStoreAddress.expect(true)
-      c.io.dataOut.value.expect(3)
-      c.io.dataOut.tag.expect(20)
+        c.io.dataOut.validAsResult.expect(true)
+        c.io.dataOut.validAsLoadStoreAddress.expect(true)
+        c.io.dataOut.value.expect(3)
+        c.io.dataOut.tag.expect(20)
 
-      c.clock.step(2)
+        c.clock.step(2)
     }
   }
 }

@@ -155,11 +155,12 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand I" in {
     test(new DecoderWrapper(0)) { c =>
       // addi x1,x2,20
-      c.initialize("x01410093".U)
+      c.initialize("x40215093".U)
       c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
 
       c.expectReorderBuffer(1, sourceRegister1 = 2)
-      c.expectReservationStation(destinationTag = 5, sourceTag1 = 6, value2 = 20)
+      c.expectReservationStation(destinationTag = 5, sourceTag1 = 6, value2 = 2)
+      c.clock.step(1)
     }
   }
 
@@ -199,7 +200,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  // U形式を認識
+  // U形式を認識 (edge case: "x0007b1b7".U)
   it should "understand U format" in {
     test(new DecoderWrapper(0)(testParams)) { c =>
       // lui x3, 123

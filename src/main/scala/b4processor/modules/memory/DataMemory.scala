@@ -2,11 +2,14 @@ package b4processor.modules.memory
 
 import b4processor.Parameters
 import b4processor.connections.{LoadStoreQueue2Memory, OutputValue}
+import b4processor.utils.InstructionUtil
 import chisel3.{RegNext, _}
 import chisel3.util._
 import chisel3.stage.ChiselStage
+import chisel3.util.experimental.loadMemoryFromFileInline
 
-class DataMemory(implicit params: Parameters) extends Module {
+class DataMemory(instructions: String)(implicit params: Parameters)
+    extends Module {
   val io = IO(new Bundle {
     val dataIn = Flipped(new LoadStoreQueue2Memory)
     val dataOut = new OutputValue
@@ -16,6 +19,11 @@ class DataMemory(implicit params: Parameters) extends Module {
   val STORE = "b0100011".U
 
   val mem = SyncReadMem(params.dataMemorySize, UInt(64.W))
+
+  // Initialize memory
+  if (instructions.trim().nonEmpty)
+    loadMemoryFromFileInline(mem, instructions)
+
   io.dataOut := DontCare
 
   io.dataOut.value := 0.U
@@ -101,7 +109,9 @@ object DataMemoryElaborate extends App {
   implicit val params =
     Parameters(runParallel = 1, maxRegisterFileCommitCount = 1, tagWidth = 4)
   (new ChiselStage).emitVerilog(
-    new DataMemory,
+    new DataMemory(
+      instructions = "riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"
+    ),
     args = Array(
       "--emission-options=disableMemRandomization,disableRegisterRandomization"
     )

@@ -5,7 +5,7 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class B4ProcessorRISCVTestWrapper(instructions: Seq[UInt])(implicit
+class B4ProcessorRISCVTestWrapper(instructions: String)(implicit
   params: Parameters
 ) extends B4ProcessorWithMemory(instructions) {
   def riscv_test(): Unit = {
@@ -34,10 +34,9 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
   def riscv_test(test_name: String, timeout: Int = 1000): Unit = {
 
     it should s"run risc-v test ${test_name}" in {
-      test(
+      test( // FIXME fromFile8bit
         new B4ProcessorRISCVTestWrapper(
-          InstructionUtil
-            .fromFile8bit(s"riscv-tests-files/rv64ui-p-${test_name}.text.hex")
+          s"riscv-tests-files/rv64ui-p-${test_name}.text.hex"
         )
       )
         .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
