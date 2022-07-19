@@ -7,6 +7,8 @@ import chisel3.{RegNext, _}
 import chisel3.util._
 import chisel3.stage.ChiselStage
 import chisel3.util.experimental.loadMemoryFromFileInline
+import chisel3.experimental.{ChiselAnnotation, annotate}
+import firrtl.annotations.{Annotation, MemorySynthInit}
 
 class DataMemory(instructions: String)(implicit params: Parameters)
     extends Module {
@@ -17,6 +19,11 @@ class DataMemory(instructions: String)(implicit params: Parameters)
 
   val LOAD = "b0000011".U
   val STORE = "b0100011".U
+
+  // Notice the annotation below
+  annotate(new ChiselAnnotation {
+    override def toFirrtl = MemorySynthInit
+  })
 
   val mem = SyncReadMem(params.dataMemorySize, UInt(64.W))
 
