@@ -36,7 +36,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
     it should s"run risc-v test ${test_name}" in {
       test( // FIXME fromFile8bit
         new B4ProcessorRISCVTestWrapper(
-          s"riscv-tests-files/rv64ui-p-${test_name}.text.hex"
+          s"riscv-tests-files/rv64ui-p-${test_name}"
         )
       )
         .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {

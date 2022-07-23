@@ -37,7 +37,7 @@ default: all
 RISCV_PREFIX ?= riscv$(XLEN)-unknown-elf-
 RISCV_GCC ?= $(RISCV_PREFIX)gcc
 RISCV_GCC_OPTS ?= -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles
-RISCV_OBJDUMP ?= $(RISCV_PREFIX)objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data
+RISCV_OBJDUMP ?= $(RISCV_PREFIX)objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data -M numeric -M noalias
 RISCV_SIM ?= spike
 
 vpath %.S $(src_dir)
@@ -55,18 +55,21 @@ vpath %.S $(src_dir)
 	$(RISCV_SIM) --isa=rv32gc_zfh_svnapot $< 2> $@
 
 %.text.binary: %
-	riscv64-unknown-elf-objcopy -O binary -j .text.init $< $@
+	riscv64-unknown-elf-objcopy -O binary -j .text $< $@
 
 %.data.binary: %
 	riscv64-unknown-elf-objcopy -O binary -j .data $< $@
 
-%.hex: %.binary
+%.text.hex: %.text.binary
 	od -An -t x1 $< -w1 -v | tr -d " " > $@
+
+%.data.hex: %.data.binary
+	od -An -t x8 $< -w8 -v | tr -d " " > $@
 
 define compile_template
 
 $$($(1)_p_tests): $(1)-p-%: $(1)/%.S
-	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) -I$(src_dir)/../env/p -I$(src_dir)/macros/scalar -T$(src_dir)/../env/p/link.ld $$< -o $$@
+	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) -I$(src_dir)/../env/p -I$(src_dir)/macros/scalar -T../riscv-sample-programs/linker.ld $$< -o $$@
 $(1)_tests += $$($(1)_p_tests)
 
 $$($(1)_v_tests): $(1)-v-%: $(1)/%.S
