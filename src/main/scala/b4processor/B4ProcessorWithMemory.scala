@@ -34,6 +34,9 @@ object B4ProcessorWithMemory extends App {
     new B4ProcessorWithMemory(
       InstructionUtil
         .fromFile32bit("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex")
+    ),
+    args = Array(
+      "--emission-options=disableMemRandomization,disableRegisterRandomization"
     )
   )
 }
