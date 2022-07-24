@@ -17,7 +17,7 @@ class B4ProcessorWithMemory(instructions: String)(implicit params: Parameters)
       InstructionUtil.fromFile8bit(s"${instructions}.text.hex")
     )
   )
-  val dataMemory = Module(new DataMemory(s"${instructions}.data.hex"))
+  val dataMemory = Module(new DataMemory(instructions))
   core.io.instructionMemory <> instructionMemory.io
   core.io.dataMemory.lsq <> dataMemory.io.dataIn
   core.io.dataMemory.output <> dataMemory.io.dataOut

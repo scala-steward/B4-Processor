@@ -2,6 +2,8 @@ package b4processor.modules.memory
 
 import b4processor.Parameters
 import b4processor.connections.{LoadStoreQueue2Memory, OutputValue}
+import b4processor.structures.memoryAccess.MemoryAccessType._
+import b4processor.structures.memoryAccess.MemoryAccessWidth.{DoubleWord, _}
 import b4processor.utils.InstructionUtil
 import chisel3.{RegNext, _}
 import chisel3.util._
@@ -17,87 +19,119 @@ class DataMemory(instructions: String)(implicit params: Parameters)
     val dataOut = new OutputValue
   })
 
-  val LOAD = "b0000011".U
-  val STORE = "b0100011".U
-
   // Notice the annotation below
   annotate(new ChiselAnnotation {
     override def toFirrtl = MemorySynthInit
   })
 
-  val mem = SyncReadMem(params.dataMemorySize, UInt(64.W))
+  val mem = Seq.fill(8)(SyncReadMem(params.dataMemorySize / 8, UInt(8.W)))
 
   // Initialize memory
-  if (instructions.trim().nonEmpty)
-    loadMemoryFromFileInline(mem, instructions)
+  if (instructions.trim().nonEmpty) {
+    for ((m, i) <- mem.zipWithIndex)
+      loadMemoryFromFileInline(m, s"${instructions}.data_${i}.hex")
+  }
 
-  io.dataOut := DontCare
+  io.dataOut.value := DontCare
 
-  io.dataOut.value := 0.U
-  val nextLoad = RegNext(io.dataIn.valid && io.dataIn.bits.isLoad)
-  io.dataIn.ready := !nextLoad
-  when(io.dataIn.valid || nextLoad) {
+  val isLoad = io.dataIn.valid && io.dataIn.bits.accessInfo.accessType === Load
+  val waitForLoad = RegInit(false.B)
+  waitForLoad := isLoad && !waitForLoad
+  io.dataIn.ready := !waitForLoad
+  val input = Mux(waitForLoad, RegNext(io.dataIn.bits), io.dataIn.bits)
+  val willOutput = WireDefault(false.B)
+  when(io.dataIn.valid || waitForLoad) {
     // FIXME: アドレスを下位28bitのみ使っている
-    val rdwrPort = mem(io.dataIn.bits.address.asUInt(27, 0))
-    when(io.dataIn.valid && !io.dataIn.bits.isLoad) {
-      // printf(p"dataIn =${io.dataIn.bits.data}\n")
-      // Store
-      /** writeの場合，rdwrPortは命令実行時の次クロック立ち上がりでmemoryに書き込み(=ストア命令実行時では値変わらず) */
-      rdwrPort := MuxLookup(
-        io.dataIn.bits.function3,
-        0.U,
-        Seq(
-          "b000".U -> Mux(
-            io.dataIn.bits.data(7),
-            Cat(~0.U(56.W), io.dataIn.bits.data(7, 0)),
-            Cat(0.U(56.W), io.dataIn.bits.data(7, 0))
-          ),
-          "b001".U -> Mux(
-            io.dataIn.bits.data(15),
-            Cat(~0.U(48.W), io.dataIn.bits.data(15, 0)),
-            Cat(0.U(48.W), io.dataIn.bits.data(15, 0))
-          ),
-          "b010".U -> Mux(
-            io.dataIn.bits.data(31),
-            Cat(~0.U(32.W), io.dataIn.bits.data(31, 0)),
-            Cat(0.U(32.W), io.dataIn.bits.data(31, 0))
-          ),
-          "b011".U -> io.dataIn.bits.data
-        )
-      )
-    }.otherwise {
-
-      /** readの場合，rdwrPortは命令実行時と同クロック立ち上がりでmemoryから読み込み(=ロード命令実行時に値変更) */
-      // printf(p"rdwrPort(7) = ${rdwrPort(7)}\n")
-
+    val address = input.address
+    val rdwrPort = mem.map(m => m(address(27, 3)))
+    when(io.dataIn.valid && input.accessInfo.accessType === Store) {
+      val storeData = input.data
+      when(input.accessInfo.accessWidth === DoubleWord) {
+        for (j <- 0 until 8)
+          rdwrPort(j) := storeData((j + 1) * 8 - 1, j * 8)
+      }.elsewhen(input.accessInfo.accessWidth === Word) {
+        for (i <- 0 until 2)
+          when(address(2) === i.U) {
+            for (j <- 0 until 4)
+              rdwrPort(i * 4 + j) := storeData((j + 1) * 8 - 1, j * 8)
+          }
+      }.elsewhen(input.accessInfo.accessWidth === HalfWord) {
+        for (i <- 0 until 4)
+          when(address(2, 1) === i.U) {
+            for (j <- 0 until 2)
+              rdwrPort(i * 2 + j) := storeData((j + 1) * 8 - 1, j * 8)
+          }
+      }.elsewhen(input.accessInfo.accessWidth === Byte) {
+        for (i <- 0 until 8)
+          when(address(2, 0) === i.U) {
+            rdwrPort(i) := storeData(7, 0)
+          }
+      }
     }
     // Load 出てくる出力が1クロック遅れているのでRegNextを使う
-    when(RegNext(io.dataIn.bits.isLoad)) {
-      io.dataOut.value := MuxLookup(
-        RegNext(io.dataIn.bits.function3),
+    when(waitForLoad) {
+      willOutput := true.B
+      val outUnsigned: UInt = MuxLookup(
+        input.accessInfo.accessWidth.asUInt,
         0.U,
         Seq(
-          "b000".U -> Mux(
-            rdwrPort(7),
-            Cat(~0.U(56.W), rdwrPort(7, 0)),
-            Cat(0.U(56.W), rdwrPort(7, 0))
+          Byte.asUInt -> MuxLookup(
+            address(2, 0),
+            0.U,
+            (0 until 8).map(i => i.U -> rdwrPort(i))
           ),
-          "b001".U -> Mux(
-            rdwrPort(15),
-            Cat(~0.U(48.W), rdwrPort(15, 0)),
-            Cat(0.U(48.W), rdwrPort(15, 0))
+          HalfWord.asUInt -> MuxLookup(
+            address(2, 1),
+            0.U,
+            (0 until 4).map(i => i.U -> rdwrPort(i * 2 + 1) ## rdwrPort(i * 2))
           ),
-          "b010".U -> Mux(
-            rdwrPort(31),
-            Cat(~0.U(32.W), rdwrPort(31, 0)),
-            Cat(0.U(32.W), rdwrPort(31, 0))
+          Word.asUInt -> MuxLookup(
+            address(2),
+            0.U,
+            (0 until 2).map(i =>
+              i.U -> rdwrPort(i * 4 + 3) ##
+                rdwrPort(i * 4 + 2) ##
+                rdwrPort(i * 4 + 1) ##
+                rdwrPort(i * 4)
+            )
           ),
-          "b011".U -> rdwrPort,
-          "b100".U -> rdwrPort(7, 0),
-          "b101".U -> rdwrPort(15, 0),
-          "b110".U -> rdwrPort(31, 0)
+          DoubleWord.asUInt -> rdwrPort(7) ##
+            rdwrPort(6) ##
+            rdwrPort(5) ##
+            rdwrPort(4) ##
+            rdwrPort(3) ##
+            rdwrPort(2) ##
+            rdwrPort(1) ##
+            rdwrPort(0)
         )
       )
+
+      when(input.accessInfo.accessWidth === HalfWord) {
+        assert(address(0) === 0.U, "half-word not aligned")
+      }
+      when(input.accessInfo.accessWidth === Word) {
+        assert(address(1, 0) === 0.U, "word not aligned")
+      }
+      when(input.accessInfo.accessWidth === DoubleWord) {
+        assert(address(2, 0) === 0.U, "double-word not aligned")
+      }
+
+      val outExtended = Wire(SInt(64.W))
+      outExtended := Mux(
+        !input.accessInfo.signed,
+        outUnsigned.asSInt,
+        MuxLookup(
+          input.accessInfo.accessWidth.asUInt,
+          outUnsigned.asSInt,
+          Seq(
+            Byte.asUInt -> outUnsigned(7, 0).asSInt,
+            HalfWord.asUInt -> outUnsigned(15, 0).asSInt,
+            Word.asUInt -> outUnsigned(31, 0).asSInt
+          )
+        )
+      )
+
+      io.dataOut.value := outExtended.asUInt
     }
     // printf(p"rdwrPort =${rdwrPort}\n")
     // printf(p"rdwrPort(7, 0) = ${rdwrPort(7, 0)}\n")
@@ -106,18 +140,18 @@ class DataMemory(instructions: String)(implicit params: Parameters)
   //  printf(p"io.dataOut.validasResult = ${io.dataOut.validAsResult}\n")
   //  printf(p"io.dataOut.tag = ${io.dataOut.tag}\n")
   //  printf(p"io.dataOut.value = ${io.dataOut.value}\n\n")
-  io.dataOut.tag := RegNext(Mux(io.dataIn.bits.isLoad, io.dataIn.bits.tag, 0.U))
-  io.dataOut.validAsResult := RegNext(io.dataIn.bits.isLoad)
-  io.dataOut.validAsLoadStoreAddress := RegNext(io.dataIn.bits.isLoad)
+  io.dataOut.tag := Mux(willOutput, input.tag, 0.U)
+  io.dataOut.validAsResult := willOutput
+  io.dataOut.validAsLoadStoreAddress := false.B
   // printf(p"mem(io.dataIn.bits.address.asUInt) = ${mem(io.dataIn.bits.address.asUInt)}\n")
 }
 
-object DataMemoryElaborate extends App {
+object DataMemory extends App {
   implicit val params =
     Parameters(runParallel = 1, maxRegisterFileCommitCount = 1, tagWidth = 4)
   (new ChiselStage).emitVerilog(
     new DataMemory(
-      instructions = "riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex"
+      instructions = "riscv-sample-programs/fibonacci_c/fibonacci_c.data.hex"
     ),
     args = Array(
       "--emission-options=disableMemRandomization,disableRegisterRandomization"

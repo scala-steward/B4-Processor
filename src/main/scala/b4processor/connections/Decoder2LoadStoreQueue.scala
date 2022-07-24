@@ -1,9 +1,8 @@
 package b4processor.connections
 
 import b4processor.Parameters
-import b4processor.modules.decoder.SourceTagInfo
+import b4processor.structures.memoryAccess.MemoryAccessInfo
 import chisel3._
-import chisel3.util._
 
 /** デコーダとLSQをつなぐ
   *
@@ -12,11 +11,8 @@ import chisel3.util._
   */
 class Decoder2LoadStoreQueue(implicit params: Parameters) extends Bundle {
 
-  /** オペコード */
-  val opcode = UInt(7.W)
-
-  /** function3 */
-  val function3 = UInt(3.W)
+  /** メモリアクセスの情報 */
+  val accessInfo = new MemoryAccessInfo()
 
   /** 命令自体を識別するためのタグ(Destination Tag) */
   val addressAndLoadResultTag = UInt(params.tagWidth.W)

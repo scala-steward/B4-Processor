@@ -7,7 +7,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "register file"
 
-  implicit val detfaultParams = Parameters(runParallel = 1, maxRegisterFileCommitCount = 1)
+  implicit val detfaultParams =
+    Parameters(runParallel = 1, maxRegisterFileCommitCount = 1)
 
   it should "save a value" in {
     test(new RegisterFile) { c =>
@@ -36,7 +37,9 @@ class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "resolve multiple inputs and outputs" in {
-    test(new RegisterFile()(detfaultParams.copy(maxRegisterFileCommitCount = 2))) { c =>
+    test(
+      new RegisterFile()(detfaultParams.copy(maxRegisterFileCommitCount = 2))
+    ) { c =>
       c.io.reorderBuffer(0).valid.poke(true)
       c.io.reorderBuffer(0).bits.value.poke(123)
       c.io.reorderBuffer(0).bits.destinationRegister.poke(1)
@@ -54,7 +57,9 @@ class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "resolve multiple inputs overlapping" in {
-    test(new RegisterFile()(detfaultParams.copy(maxRegisterFileCommitCount = 2))) { c =>
+    test(
+      new RegisterFile()(detfaultParams.copy(maxRegisterFileCommitCount = 2))
+    ) { c =>
       c.io.reorderBuffer(0).valid.poke(true)
       c.io.reorderBuffer(0).bits.value.poke(123)
       c.io.reorderBuffer(0).bits.destinationRegister.poke(1)

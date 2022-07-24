@@ -9,7 +9,7 @@ int fibonacci(int n){
     return a;
 }
 
-int main(){
-    int r = fibonacci(7);
+int main(int loop_count){
+    int r = fibonacci(loop_count);
     return r;
 }

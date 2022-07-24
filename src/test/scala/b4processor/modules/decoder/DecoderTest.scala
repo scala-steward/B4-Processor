@@ -6,13 +6,15 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-/**
- * デコーダをテストしやすくするためにラップしたもの
- *
- * @param instructionOffset 同時に扱う命令のうちいくつ目の命令を担当するか
- * @param params            パラメータ
- */
-class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) extends Decoder(instructionOffset)(params) {
+/** デコーダをテストしやすくするためにラップしたもの
+  *
+  * @param instructionOffset
+  *   同時に扱う命令のうちいくつ目の命令を担当するか
+  * @param params
+  *   パラメータ
+  */
+class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
+    extends Decoder(instructionOffset)(params) {
   def initialize(instruction: UInt): Unit = {
     this.setImem(instruction)
     this.setReorderBuffer()
@@ -27,11 +29,13 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
     this.io.instructionFetch.valid.poke(true)
   }
 
-  def setReorderBuffer(destinationTag: Int = 0,
-                       sourceTag1: Option[Int] = None,
-                       value1: Option[Int] = None,
-                       sourceTag2: Option[Int] = None,
-                       value2: Option[Int] = None): Unit = {
+  def setReorderBuffer(
+    destinationTag: Int = 0,
+    sourceTag1: Option[Int] = None,
+    value1: Option[Int] = None,
+    sourceTag2: Option[Int] = None,
+    value2: Option[Int] = None
+  ): Unit = {
     this.io.reorderBuffer.destination.destinationTag.poke(destinationTag)
     this.io.reorderBuffer.source1.matchingTag.valid.poke(sourceTag1.isDefined)
     this.io.reorderBuffer.source1.matchingTag.bits.poke(sourceTag1.getOrElse(0))
@@ -49,11 +53,31 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
     this.io.registerFile.value2.poke(value2)
   }
 
-  def setOutputs(bypassedValues: Seq[Option[ExecutorValue]] = Seq.fill(params.runParallel + 1)(None)): Unit = {
+  def setOutputs(
+    bypassedValues: Seq[Option[ExecutorValue]] =
+      Seq.fill(params.runParallel + 1)(None)
+  ): Unit = {
     for (i <- 0 until params.runParallel + 1) {
-      this.io.outputCollector.outputs(i).validAsResult.poke(bypassedValues(i).isDefined)
-      this.io.outputCollector.outputs(i).tag.poke(bypassedValues(i).getOrElse(ExecutorValue(destinationTag = 0, value = 0)).destinationTag)
-      this.io.outputCollector.outputs(i).value.poke(bypassedValues(i).getOrElse(ExecutorValue(destinationTag = 0, value = 0)).value)
+      this.io.outputCollector
+        .outputs(i)
+        .validAsResult
+        .poke(bypassedValues(i).isDefined)
+      this.io.outputCollector
+        .outputs(i)
+        .tag
+        .poke(
+          bypassedValues(i)
+            .getOrElse(ExecutorValue(destinationTag = 0, value = 0))
+            .destinationTag
+        )
+      this.io.outputCollector
+        .outputs(i)
+        .value
+        .poke(
+          bypassedValues(i)
+            .getOrElse(ExecutorValue(destinationTag = 0, value = 0))
+            .value
+        )
     }
   }
 
@@ -61,33 +85,42 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters) ex
     this.io.loadStoreQueue.ready.poke(ready)
   }
 
-  def expectReorderBuffer(destinationRegister: Int = 0, sourceRegister1: Int = 0, sourceRegister2: Int = 0): Unit = {
+  def expectReorderBuffer(
+    destinationRegister: Int = 0,
+    sourceRegister1: Int = 0,
+    sourceRegister2: Int = 0
+  ): Unit = {
     // check rd
-    this.io.reorderBuffer.destination.destinationRegister.expect(destinationRegister, "rdの値が間違っています")
+    this.io.reorderBuffer.destination.destinationRegister
+      .expect(destinationRegister, "rdの値が間違っています")
     // check rs1
-    this.io.reorderBuffer.source1.sourceRegister.expect(sourceRegister1, "rs1 doesn't match")
+    this.io.reorderBuffer.source1.sourceRegister
+      .expect(sourceRegister1, "rs1 doesn't match")
     // check rs2
-    this.io.reorderBuffer.source2.sourceRegister.expect(sourceRegister2, "rs2 doesn't match")
+    this.io.reorderBuffer.source2.sourceRegister
+      .expect(sourceRegister2, "rs2 doesn't match")
   }
 
-  def expectReservationStation(destinationTag: Int = 0,
-                               sourceTag1: Int = 0,
-                               sourceTag2: Int = 0,
-                               value1: Int = 0,
-                               value2: Int = 0,
-                               immediateOrFunction7: Int = 0): Unit = {
+  def expectReservationStation(
+    destinationTag: Int = 0,
+    sourceTag1: Int = 0,
+    sourceTag2: Int = 0,
+    value1: Int = 0,
+    value2: Int = 0,
+    immediateOrFunction7: Int = 0
+  ): Unit = {
     this.io.reservationStation.entry.destinationTag.expect(destinationTag)
     this.io.reservationStation.entry.sourceTag1.expect(sourceTag1)
     this.io.reservationStation.entry.sourceTag2.expect(sourceTag2)
     this.io.reservationStation.entry.value1.expect(value1)
     this.io.reservationStation.entry.value2.expect(value2)
-    this.io.reservationStation.entry.immediateOrFunction7.expect(immediateOrFunction7)
+    this.io.reservationStation.entry.immediateOrFunction7
+      .expect(immediateOrFunction7)
   }
 }
 
-/**
- * デコーダのテスト
- */
+/** デコーダのテスト
+  */
 class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "decoder"
   implicit val testParams = Parameters(runParallel = 1)
@@ -97,7 +130,11 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new DecoderWrapper(0)) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
-      c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
+      c.expectReorderBuffer(
+        destinationRegister = 1,
+        sourceRegister1 = 2,
+        sourceRegister2 = 3
+      )
     }
   }
 
@@ -108,7 +145,11 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize("x003100b3".U)
       c.setRegisterFile(value1 = 10, value2 = 20)
 
-      c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
+      c.expectReorderBuffer(
+        destinationRegister = 1,
+        sourceRegister1 = 2,
+        sourceRegister2 = 3
+      )
       c.expectReservationStation(value1 = 10, value2 = 20)
     }
   }
@@ -118,36 +159,54 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new DecoderWrapper(0)) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
-      c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
+      c.setReorderBuffer(
+        destinationTag = 5,
+        sourceTag1 = Some(6),
+        sourceTag2 = Some(7)
+      )
 
-      c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
-      c.expectReservationStation(destinationTag = 5, sourceTag1 = 6, sourceTag2 = 7)
+      c.expectReorderBuffer(
+        destinationRegister = 1,
+        sourceRegister1 = 2,
+        sourceRegister2 = 3
+      )
+      c.expectReservationStation(
+        destinationTag = 5,
+        sourceTag1 = 6,
+        sourceTag2 = 7
+      )
     }
   }
 
   // stagと値をリオーダバッファから取得できているか
   it should "get source tags and values from reorder buffer" in {
-    test(new DecoderWrapper(0)) {
-      c =>
-        // add x1,x2,x3
-        c.initialize("x003100b3".U)
-        c.setReorderBuffer(
-          destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7), value1 = Some(20), value2 = Some(21))
+    test(new DecoderWrapper(0)) { c =>
+      // add x1,x2,x3
+      c.initialize("x003100b3".U)
+      c.setReorderBuffer(
+        destinationTag = 5,
+        sourceTag1 = Some(6),
+        sourceTag2 = Some(7),
+        value1 = Some(20),
+        value2 = Some(21)
+      )
 
-        c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
-        c.expectReservationStation(
-          destinationTag = 5, value1 = 20, value2 = 21)
+      c.expectReorderBuffer(
+        destinationRegister = 1,
+        sourceRegister1 = 2,
+        sourceRegister2 = 3
+      )
+      c.expectReservationStation(destinationTag = 5, value1 = 20, value2 = 21)
     }
   }
 
   // sd命令を認識できる
   it should "understand sd" in {
-    test(new DecoderWrapper(0)) {
-      c =>
-        // sd x1,10(x2)
-        c.initialize("x00113523".U)
-        c.expectReorderBuffer(sourceRegister1 = 2, sourceRegister2 = 1)
-        c.expectReservationStation(immediateOrFunction7 = 10)
+    test(new DecoderWrapper(0)) { c =>
+      // sd x1,10(x2)
+      c.initialize("x00113523".U)
+      c.expectReorderBuffer(sourceRegister1 = 2, sourceRegister2 = 1)
+      c.expectReservationStation(immediateOrFunction7 = 10)
     }
   }
 
@@ -155,11 +214,19 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand I" in {
     test(new DecoderWrapper(0)) { c =>
       // addi x1,x2,20
-      c.initialize("x40215093".U)
-      c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
+      c.initialize("x01410093".U)
+      c.setReorderBuffer(
+        destinationTag = 5,
+        sourceTag1 = Some(6),
+        sourceTag2 = Some(7)
+      )
 
       c.expectReorderBuffer(1, sourceRegister1 = 2)
-      c.expectReservationStation(destinationTag = 5, sourceTag1 = 6, value2 = 2)
+      c.expectReservationStation(
+        destinationTag = 5,
+        sourceTag1 = 6,
+        value2 = 20
+      )
       c.clock.step(1)
     }
   }
@@ -169,10 +236,20 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new DecoderWrapper(0)(testParams.copy(runParallel = 2))) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
-      c.setReorderBuffer(destinationTag = 5, sourceTag1 = Some(6), sourceTag2 = Some(7))
-      c.setOutputs(Seq(Some(ExecutorValue(6, 20)), Some(ExecutorValue(7, 21)), None))
+      c.setReorderBuffer(
+        destinationTag = 5,
+        sourceTag1 = Some(6),
+        sourceTag2 = Some(7)
+      )
+      c.setOutputs(
+        Seq(Some(ExecutorValue(6, 20)), Some(ExecutorValue(7, 21)), None)
+      )
 
-      c.expectReorderBuffer(destinationRegister = 1, sourceRegister1 = 2, sourceRegister2 = 3)
+      c.expectReorderBuffer(
+        destinationRegister = 1,
+        sourceRegister1 = 2,
+        sourceRegister2 = 3
+      )
       c.expectReservationStation(destinationTag = 5, value1 = 20, value2 = 21)
     }
   }
@@ -190,13 +267,12 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // imemがvalid=0のときRSとRBでvalid=0と表示されている
   it should "say the data is invalid when imem invalid" in {
-    test(new DecoderWrapper(0)) {
-      c =>
-        c.initialize(0.U)
-        c.io.instructionFetch.valid.poke(false.B)
+    test(new DecoderWrapper(0)) { c =>
+      c.initialize(0.U)
+      c.io.instructionFetch.valid.poke(false.B)
 
-        c.io.reorderBuffer.valid.expect(false.B)
-        c.io.reservationStation.entry.valid.expect(false.B)
+      c.io.reorderBuffer.valid.expect(false.B)
+      c.io.reservationStation.entry.valid.expect(false.B)
     }
   }
 

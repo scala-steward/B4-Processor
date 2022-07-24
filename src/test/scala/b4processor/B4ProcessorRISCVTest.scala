@@ -1,7 +1,5 @@
 package b4processor
 
-import b4processor.utils.InstructionUtil
-import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -61,7 +59,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
   riscv_test("bltu")
   riscv_test("bne")
   // Fenceのテストは命令メモリとデータメモリが同じ空間にあることを前提にしていて、データメモリ上に命令を書き出してジャンプするので、今回はテストできない。
-  riscv_test("fence_i")
+//  riscv_test("fence_i")
   riscv_test("jal")
   riscv_test("jalr")
   riscv_test("lb")

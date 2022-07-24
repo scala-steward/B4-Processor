@@ -5,6 +5,11 @@ import b4processor.common.OpcodeFormat._
 import b4processor.common.OpcodeFormatChecker
 import b4processor.connections._
 import b4processor.modules.reservationstation.ReservationStationEntry
+import b4processor.structures.memoryAccess.{
+  MemoryAccessInfo,
+  MemoryAccessType,
+  MemoryAccessWidth
+}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -209,8 +214,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
     "b0?00011"
   ) && io.instructionFetch.valid
   when(io.loadStoreQueue.valid) {
-    io.loadStoreQueue.bits.opcode := instOp
-    io.loadStoreQueue.bits.function3 := instFunct3
+    io.loadStoreQueue.bits.accessInfo := MemoryAccessInfo(instOp, instFunct3)
     io.loadStoreQueue.bits.addressAndLoadResultTag := rs.destinationTag
     when(instOp === "b0100011".U) {
       io.loadStoreQueue.bits.storeDataTag := valueSelector2.io.sourceTag.tag
@@ -222,12 +226,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
       io.loadStoreQueue.bits.storeDataValid := true.B
     }
   }.otherwise {
-    io.loadStoreQueue.bits.opcode := 0.U
-    io.loadStoreQueue.bits.function3 := 0.U
-    io.loadStoreQueue.bits.addressAndLoadResultTag := 0.U
-    io.loadStoreQueue.bits.storeDataTag := 0.U
-    io.loadStoreQueue.bits.storeData := 0.U
-    io.loadStoreQueue.bits.storeDataValid := false.B
+    io.loadStoreQueue.bits := DontCare
   }
 }
 

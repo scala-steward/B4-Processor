@@ -230,14 +230,10 @@ class Executor(implicit params: Parameters) extends Module {
     instructionChecker.output.instruction =/= Instructions.Unknown &&
     instructionChecker.output.instruction =/= Instructions.Load && // load命令の場合, ReorderBufferのvalueはDataMemoryから
     instructionChecker.output.instruction =/= Instructions.Store // Store命令の場合、リオーダバッファでエントリは無視される
-  io.out.validAsLoadStoreAddress := instructionChecker.output.instruction =/= Instructions.Unknown &&
-    io.reservationStation.valid
-  when(io.out.validAsResult) {
-    assert(
-      io.out.validAsLoadStoreAddress,
-      "executor output should be valid for load store address when valid as result."
-    )
-  }
+  io.out.validAsLoadStoreAddress := io.reservationStation.valid &&
+    (instructionChecker.output.instruction === Instructions.Load ||
+      instructionChecker.output.instruction === Instructions.Store)
+
   when(io.out.validAsResult || io.out.validAsLoadStoreAddress) {
     io.out.tag := io.reservationStation.bits.destinationTag
     io.out.value := executionResultSized

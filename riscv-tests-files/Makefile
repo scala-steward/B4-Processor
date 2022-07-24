@@ -63,8 +63,32 @@ vpath %.S $(src_dir)
 %.text.hex: %.text.binary
 	od -An -t x1 $< -w1 -v | tr -d " " > $@
 
-%.data.hex: %.data.binary
-	od -An -t x8 $< -w8 -v | tr -d " " > $@
+#%.data.hex: %.data.binary
+#	od -An -t x8 $< -w8 -v | tr -d " " > $@
+
+%.data_0.hex: %.data.binary
+	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==0" > $@
+
+%.data_1.hex: %.data.binary
+	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==1" > $@
+
+%.data_2.hex: %.data.binary
+	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==2" > $@
+
+%.data_3.hex: %.data.binary
+	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==3" > $@
+
+%.data_4.hex: %.data.binary
+	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==4" > $@
+
+%.data_5.hex: %.data.binary
+	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==5" > $@
+
+%.data_6.hex: %.data.binary
+	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==6" > $@
+
+%.data_7.hex: %.data.binary
+	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==7" > $@
 
 define compile_template
 
@@ -90,31 +114,38 @@ endif
 
 endef
 
-$(eval $(call compile_template,rv32ui,-march=rv32g -mabi=ilp32))
-$(eval $(call compile_template,rv32uc,-march=rv32g -mabi=ilp32))
-$(eval $(call compile_template,rv32um,-march=rv32g -mabi=ilp32))
-$(eval $(call compile_template,rv32ua,-march=rv32g -mabi=ilp32))
-$(eval $(call compile_template,rv32uf,-march=rv32g -mabi=ilp32))
-$(eval $(call compile_template,rv32ud,-march=rv32g -mabi=ilp32))
-$(eval $(call compile_template,rv32uzfh,-march=rv32g_zfh -mabi=ilp32))
-$(eval $(call compile_template,rv32si,-march=rv32g -mabi=ilp32))
-$(eval $(call compile_template,rv32mi,-march=rv32g -mabi=ilp32))
+#$(eval $(call compile_template,rv32ui,-march=rv32g -mabi=ilp32))
+#$(eval $(call compile_template,rv32uc,-march=rv32g -mabi=ilp32))
+#$(eval $(call compile_template,rv32um,-march=rv32g -mabi=ilp32))
+#$(eval $(call compile_template,rv32ua,-march=rv32g -mabi=ilp32))
+#$(eval $(call compile_template,rv32uf,-march=rv32g -mabi=ilp32))
+#$(eval $(call compile_template,rv32ud,-march=rv32g -mabi=ilp32))
+#$(eval $(call compile_template,rv32uzfh,-march=rv32g_zfh -mabi=ilp32))
+#$(eval $(call compile_template,rv32si,-march=rv32g -mabi=ilp32))
+#$(eval $(call compile_template,rv32mi,-march=rv32g -mabi=ilp32))
 ifeq ($(XLEN),64)
 $(eval $(call compile_template,rv64ui,-march=rv64g -mabi=lp64))
-$(eval $(call compile_template,rv64uc,-march=rv64g -mabi=lp64))
-$(eval $(call compile_template,rv64um,-march=rv64g -mabi=lp64))
-$(eval $(call compile_template,rv64ua,-march=rv64g -mabi=lp64))
-$(eval $(call compile_template,rv64uf,-march=rv64g -mabi=lp64))
-$(eval $(call compile_template,rv64ud,-march=rv64g -mabi=lp64))
-$(eval $(call compile_template,rv64uzfh,-march=rv64g_zfh -mabi=lp64))
-$(eval $(call compile_template,rv64si,-march=rv64g -mabi=lp64))
-$(eval $(call compile_template,rv64ssvnapot,-march=rv64g -mabi=lp64))
-$(eval $(call compile_template,rv64mi,-march=rv64g -mabi=lp64))
+#$(eval $(call compile_template,rv64uc,-march=rv64g -mabi=lp64))
+#$(eval $(call compile_template,rv64um,-march=rv64g -mabi=lp64))
+#$(eval $(call compile_template,rv64ua,-march=rv64g -mabi=lp64))
+#$(eval $(call compile_template,rv64uf,-march=rv64g -mabi=lp64))
+#$(eval $(call compile_template,rv64ud,-march=rv64g -mabi=lp64))
+#$(eval $(call compile_template,rv64uzfh,-march=rv64g_zfh -mabi=lp64))
+#$(eval $(call compile_template,rv64si,-march=rv64g -mabi=lp64))
+#$(eval $(call compile_template,rv64ssvnapot,-march=rv64g -mabi=lp64))
+#$(eval $(call compile_template,rv64mi,-march=rv64g -mabi=lp64))
 endif
 
 tests_dump = $(addsuffix .dump, $(tests))
 tests_text_hex = $(addsuffix .text.hex, $(tests))
-tests_data_hex = $(addsuffix .data.hex, $(tests))
+tests_data_hex = $(addsuffix .data_0.hex, $(tests)) \
+					$(addsuffix .data_1.hex, $(tests)) \
+					$(addsuffix .data_2.hex, $(tests)) \
+					$(addsuffix .data_3.hex, $(tests)) \
+					$(addsuffix .data_4.hex, $(tests)) \
+					$(addsuffix .data_5.hex, $(tests)) \
+					$(addsuffix .data_6.hex, $(tests)) \
+					$(addsuffix .data_7.hex, $(tests))
 tests_out = $(addsuffix .out, $(filter rv64%,$(tests)))
 tests32_out = $(addsuffix .out32, $(filter rv32%,$(tests)))
 

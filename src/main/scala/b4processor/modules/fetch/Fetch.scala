@@ -122,8 +122,8 @@ class Fetch(implicit params: Parameters) extends Module {
     }
     when(waiting === WaitingReason.BusyLoop) {
 
-      /** 1クロック遅らせるだけ */
-      waiting := WaitingReason.None
+//      /** 1クロック遅らせるだけ */
+//      waiting := WaitingReason.None
     }
   }
 

@@ -4,9 +4,8 @@ import b4processor.Parameters
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class MultipleDecoderWrapper(implicit params: Parameters) extends MultipleDecoder {
-
-}
+class MultipleDecoderWrapper(implicit params: Parameters)
+    extends MultipleDecoder {}
 
 class MultipleDecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "multiple decoders"
