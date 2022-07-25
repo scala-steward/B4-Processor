@@ -71,16 +71,32 @@ class Executor(implicit params: Parameters) extends Module {
           -> (io.reservationStation.bits.value1 ^ io.reservationStation.bits.value2),
         // 左シフト
         (instructionChecker.output.arithmetic === ArithmeticOperations.ShiftLeftLogical)
-          -> (io.reservationStation.bits.value1 << io.reservationStation.bits
-            .value2(5, 0)),
+          -> Mux(
+            instructionChecker.output.operationWidth === OperationWidth.Word,
+            io.reservationStation.bits
+              .value1(31, 0) << io.reservationStation.bits.value2(4, 0),
+            io.reservationStation.bits.value1 << io.reservationStation.bits
+              .value2(5, 0)
+          ),
         // 右シフト(論理)
         (instructionChecker.output.arithmetic === ArithmeticOperations.ShiftRightLogical)
-          -> (io.reservationStation.bits.value1 >> io.reservationStation.bits
-            .value2(5, 0)),
+          -> Mux(
+            instructionChecker.output.operationWidth === OperationWidth.Word,
+            io.reservationStation.bits
+              .value1(31, 0) >> io.reservationStation.bits.value2(4, 0),
+            io.reservationStation.bits.value1 >> io.reservationStation.bits
+              .value2(5, 0)
+          ),
         // 右シフト(算術)
         (instructionChecker.output.arithmetic === ArithmeticOperations.ShiftRightArithmetic)
-          -> (io.reservationStation.bits.value1.asSInt >> io.reservationStation.bits
-            .value2(5, 0)).asUInt,
+          -> Mux(
+            instructionChecker.output.operationWidth === OperationWidth.Word,
+            (io.reservationStation.bits
+              .value1(31, 0)
+              .asSInt >> io.reservationStation.bits.value2(4, 0)).asUInt,
+            (io.reservationStation.bits.value1.asSInt >> io.reservationStation.bits
+              .value2(5, 0)).asUInt
+          ),
         // 比較(格納先：rd)(符号付き)
         (instructionChecker.output.arithmetic === ArithmeticOperations.SetLessThan)
           -> (io.reservationStation.bits.value1.asSInt < io.reservationStation.bits.value2.asSInt).asUInt,
@@ -92,7 +108,7 @@ class Executor(implicit params: Parameters) extends Module {
           -> (io.reservationStation.bits.programCounter.asUInt + 4.U),
         // lui
         (instructionChecker.output.instruction === Instructions.lui)
-          -> io.reservationStation.bits.value2,
+          -> (io.reservationStation.bits.value2.asSInt).asUInt,
         // auipc
         (instructionChecker.output.instruction === Instructions.auipc)
           -> (io.reservationStation.bits.value2 + io.reservationStation.bits.programCounter.asUInt),
@@ -214,14 +230,10 @@ class Executor(implicit params: Parameters) extends Module {
     instructionChecker.output.instruction =/= Instructions.Unknown &&
     instructionChecker.output.instruction =/= Instructions.Load && // load命令の場合, ReorderBufferのvalueはDataMemoryから
     instructionChecker.output.instruction =/= Instructions.Store // Store命令の場合、リオーダバッファでエントリは無視される
-  io.out.validAsLoadStoreAddress := instructionChecker.output.instruction =/= Instructions.Unknown &&
-    io.reservationStation.valid
-  when(io.out.validAsResult) {
-    assert(
-      io.out.validAsLoadStoreAddress,
-      "executor output should be valid for load store address when valid as result."
-    )
-  }
+  io.out.validAsLoadStoreAddress := io.reservationStation.valid &&
+    (instructionChecker.output.instruction === Instructions.Load ||
+      instructionChecker.output.instruction === Instructions.Store)
+
   when(io.out.validAsResult || io.out.validAsLoadStoreAddress) {
     io.out.tag := io.reservationStation.bits.destinationTag
     io.out.value := executionResultSized

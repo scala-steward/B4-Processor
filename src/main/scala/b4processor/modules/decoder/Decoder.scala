@@ -5,6 +5,11 @@ import b4processor.common.OpcodeFormat._
 import b4processor.common.OpcodeFormatChecker
 import b4processor.connections._
 import b4processor.modules.reservationstation.ReservationStationEntry
+import b4processor.structures.memoryAccess.{
+  MemoryAccessInfo,
+  MemoryAccessType,
+  MemoryAccessWidth
+}
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -60,7 +65,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
   )
 
   // 即値を64bitに符号拡張
-  val immIExtended = instImmI.asSInt
+  val immIExtended =
+    instImmI.asSInt // FIXME 結果は変わらないが，正確性のため，srai, srliの場合のみ，特別処理を入れるべきか？
   val immUExtended = Cat(instImmU, 0.U(12.W)).asSInt
   val immJExtended = Cat(instImmJ, 0.U(1.W)).asSInt
 
@@ -179,13 +185,19 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
   val rs = io.reservationStation.entry
   rs.opcode := instOp
   rs.function3 := instFunct3
-  rs.immediateOrFunction7 := MuxLookup(
-    opcodeFormatChecker.io.format.asUInt,
-    0.U,
-    Seq(
-      R.asUInt -> Cat("b000000".U, instFunct7),
-      S.asUInt -> instImmS,
-      B.asUInt -> instImmB
+  rs.immediateOrFunction7 := Mux(
+    instOp === BitPat(
+      "b001?011"
+    ) && instFunct3 === "b101".U, // "srai(w)" or "srli(w)"
+    Cat(io.instructionFetch.bits.instruction(31, 26), 0.U(1.W)),
+    MuxLookup(
+      opcodeFormatChecker.io.format.asUInt,
+      0.U,
+      Seq(
+        R.asUInt -> Cat("b000000".U, instFunct7),
+        S.asUInt -> instImmS,
+        B.asUInt -> instImmB
+      )
     )
   )
   rs.destinationTag := io.reorderBuffer.destination.destinationTag
@@ -203,8 +215,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
   ) && io.instructionFetch.ready && io.instructionFetch.valid
 
   when(io.loadStoreQueue.valid) {
-    io.loadStoreQueue.bits.opcode := instOp
-    io.loadStoreQueue.bits.function3 := instFunct3
+    io.loadStoreQueue.bits.accessInfo := MemoryAccessInfo(instOp, instFunct3)
     io.loadStoreQueue.bits.addressAndLoadResultTag := rs.destinationTag
     when(instOp === "b0100011".U) {
       io.loadStoreQueue.bits.storeDataTag := valueSelector2.io.sourceTag.tag
@@ -216,12 +227,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
       io.loadStoreQueue.bits.storeDataValid := true.B
     }
   }.otherwise {
-    io.loadStoreQueue.bits.opcode := 0.U
-    io.loadStoreQueue.bits.function3 := 0.U
-    io.loadStoreQueue.bits.addressAndLoadResultTag := 0.U
-    io.loadStoreQueue.bits.storeDataTag := 0.U
-    io.loadStoreQueue.bits.storeData := 0.U
-    io.loadStoreQueue.bits.storeDataValid := false.B
+    io.loadStoreQueue.bits := DontCare
   }
 }
 

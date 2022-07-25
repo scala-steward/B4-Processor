@@ -228,6 +228,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
         sourceTag1 = 6,
         value2 = 20
       )
+      c.clock.step(1)
     }
   }
 
@@ -278,7 +279,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  // U形式を認識
+  // U形式を認識 (edge case: "x0007b1b7".U)
   it should "understand U format" in {
     test(new DecoderWrapper(0)(testParams)) { c =>
       // lui x3, 123

@@ -1,7 +1,11 @@
 package b4processor.modules.fetch
 
 import b4processor.Parameters
-import b4processor.connections.{Fetch2BranchPrediction, Fetch2FetchBuffer}
+import b4processor.connections.{
+  BranchOutput,
+  Fetch2BranchPrediction,
+  Fetch2FetchBuffer
+}
 import b4processor.modules.branch_output_collector.CollectedBranchAddresses
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.memory.InstructionMemory
@@ -27,7 +31,6 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
 
     /** デコーダ */
     val decoders = new Fetch2FetchBuffer
-
     /** ロードストアキューのエントリが空か */
     val loadStoreQueueEmpty = Input(Bool())
 
