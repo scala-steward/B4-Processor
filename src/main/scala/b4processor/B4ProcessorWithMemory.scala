@@ -34,6 +34,9 @@ object B4ProcessorWithMemory extends App {
     loadStoreQueueIndexWidth = 3
   )
   (new ChiselStage).emitVerilog(
-    new B4ProcessorWithMemory("riscv-sample-programs/fibonacci_c/fibonacci_c")
+    new B4ProcessorWithMemory("riscv-sample-programs/fibonacci_c/fibonacci_c"),
+    args = Array(
+      "--emission-options=disableMemRandomization,disableRegisterRandomization"
+    )
   )
 }

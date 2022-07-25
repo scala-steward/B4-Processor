@@ -4,7 +4,7 @@ import b4processor.Parameters
 import b4processor.connections.{
   BranchOutput,
   Fetch2BranchPrediction,
-  Fetch2Decoder
+  Fetch2FetchBuffer
 }
 import b4processor.modules.branch_output_collector.CollectedBranchAddresses
 import b4processor.modules.cache.InstructionMemoryCache
@@ -30,8 +30,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
     val collectedBranchAddresses = Flipped(new CollectedBranchAddresses)
 
     /** デコーダ */
-    val decoders = Vec(params.runParallel, new Fetch2Decoder)
-
+    val decoders = new Fetch2FetchBuffer
     /** ロードストアキューのエントリが空か */
     val loadStoreQueueEmpty = Input(Bool())
 
@@ -65,7 +64,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
   val memory = Module(new InstructionMemory(memoryInit))
 
   fetch.io.prediction <> io.prediction
-  fetch.io.decoders <> io.decoders
+  fetch.io.fetchBuffer <> io.decoders
   fetch.io.collectedBranchAddresses <> io.collectedBranchAddresses
   fetch.io.reorderBufferEmpty <> io.reorderBufferEmpty
   fetch.io.loadStoreQueueEmpty <> io.loadStoreQueueEmpty
@@ -82,7 +81,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
   io.PC := fetch.io.PC.get
   io.nextPC := fetch.io.nextPC.get
 
-  fetch.io.decoders.foreach(_.ready := true.B)
+  fetch.io.fetchBuffer.decoder.foreach(v => v.ready := true.B)
 
   /** 初期化 */
   def initialize(): Unit = {
@@ -328,31 +327,31 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize()
       c.io.branchTypes(0).expect(BranchType.None)
       c.io.branchTypes(1).expect(BranchType.Fence)
-      c.io.decoders(0).valid.expect(true)
-      c.io.decoders(1).valid.expect(true)
+      c.io.decoders.decoder(0).valid.expect(true)
+      c.io.decoders.decoder(1).valid.expect(true)
       c.io.nextPC.expect(0x10000004)
 
       c.clock.step()
       c.io.nextPC.expect(0x10000004)
-      c.io.decoders(0).valid.expect(false)
-      c.io.decoders(1).valid.expect(false)
+      c.io.decoders.decoder(0).valid.expect(false)
+      c.io.decoders.decoder(1).valid.expect(false)
 
       c.clock.step()
       c.io.reorderBufferEmpty.poke(true)
       c.io.nextPC.expect(0x10000004)
-      c.io.decoders(0).valid.expect(false)
-      c.io.decoders(1).valid.expect(false)
+      c.io.decoders.decoder(0).valid.expect(false)
+      c.io.decoders.decoder(1).valid.expect(false)
 
       c.clock.step()
       c.io.loadStoreQueueEmpty.poke(true)
       c.io.nextPC.expect(0x10000004)
-      c.io.decoders(0).valid.expect(false)
-      c.io.decoders(1).valid.expect(false)
+      c.io.decoders.decoder(0).valid.expect(false)
+      c.io.decoders.decoder(1).valid.expect(false)
 
       c.clock.step()
       c.io.nextPC.expect(0x10000010)
-      c.io.decoders(0).valid.expect(true)
-      c.io.decoders(1).valid.expect(true)
+      c.io.decoders.decoder(0).valid.expect(true)
+      c.io.decoders.decoder(1).valid.expect(true)
     }
   }
 }

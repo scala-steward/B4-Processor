@@ -9,7 +9,7 @@ import b4processor.modules.branch_output_collector.BranchOutputCollector
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.decoder.Decoder
 import b4processor.modules.executor.Executor
-import b4processor.modules.fetch.Fetch
+import b4processor.modules.fetch.{Fetch, FetchBuffer}
 import b4processor.modules.lsq.LoadStoreQueue
 import b4processor.modules.memory.{DataMemory, DataMemoryBuffer}
 import b4processor.modules.ourputcollector.OutputCollector
@@ -42,6 +42,7 @@ class B4Processor(implicit params: Parameters) extends Module {
 
   val instructionCache = Module(new InstructionMemoryCache)
   val fetch = Module(new Fetch)
+  val fetchBuffer = Module(new FetchBuffer)
   val reorderBuffer = Module(new ReorderBuffer)
   val registerFile = Module(new RegisterFile)
   val loadStoreQueue = Module(new LoadStoreQueue)
@@ -61,6 +62,9 @@ class B4Processor(implicit params: Parameters) extends Module {
   /** 命令メモリと命令キャッシュを接続 */
   io.instructionMemory <> instructionCache.io.memory
 
+  /** フェッチとフェッチバッファの接続 */
+  fetch.io.fetchBuffer <> fetchBuffer.io.fetch
+
   /** レジスタのコンテンツをデバッグ時に接続 */
   if (params.debug)
     io.registerFileContents.get <> registerFile.io.values.get
@@ -75,7 +79,7 @@ class B4Processor(implicit params: Parameters) extends Module {
   for (i <- 0 until params.runParallel) {
 
     /** フェッチとデコーダの接続 */
-    decoders(i).io.instructionFetch <> fetch.io.decoders(i)
+    decoders(i).io.instructionFetch <> fetchBuffer.io.decoders(i)
 
     /** デコーダとリオーダバッファを接続 */
     decoders(i).io.reorderBuffer <> reorderBuffer.io.decoders(i)

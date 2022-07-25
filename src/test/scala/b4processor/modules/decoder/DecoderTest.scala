@@ -21,6 +21,7 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
     this.setRegisterFile()
     this.setLoadStoreQueueReady()
     this.setOutputs()
+    this.io.reservationStation.ready.poke(true.B)
   }
 
   def setImem(instruction: UInt, isPrediction: Boolean = false): Unit = {
@@ -256,9 +257,11 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // imemがvalidのときRSとRBでvalidと表示されている
   it should "say the data is valid when imem is valid" in {
-    test(new DecoderWrapper(0)) { c =>
+    test(new DecoderWrapper(0)).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
+
+      c.clock.step(3)
 
       c.io.reorderBuffer.valid.expect(true.B)
       c.io.reservationStation.entry.valid.expect(true.B)
