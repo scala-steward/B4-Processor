@@ -14,16 +14,14 @@ import chisel3.util._
   */
 class ValueSelector2(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val reorderBufferValue = Flipped(DecoupledIO(UInt(64.W)))
+    val reorderBufferValue = Flipped(Valid(UInt(64.W)))
     val registerFileValue = Input(UInt(64.W))
     val outputCollector = Flipped(new CollectedOutput)
     val immediateValue = Input(SInt(64.W))
     val opcodeFormat = Input(OpcodeFormat())
     val sourceTag = Input(new SourceTagInfo)
-    val value = DecoupledIO(UInt(64.W))
+    val value = Valid(UInt(64.W))
   })
-
-  io.reorderBufferValue.ready := true.B
 
   val outputMatching = Cat(
     io.outputCollector.outputs

@@ -19,7 +19,7 @@ import chisel3.util._
 class Decoder(instructionOffset: Int)(implicit params: Parameters)
     extends Module {
   val io = IO(new Bundle {
-    val instructionFetch = Flipped(new Fetch2Decoder())
+    val instructionFetch = Flipped(new FetchBuffer2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer
     val outputCollector = Flipped(new CollectedOutput())
     val registerFile = new Decoder2RegisterFile()
@@ -111,9 +111,9 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
       .destinationTag
     // 前のデコーダから流れてきたdestination registerがsource registerと等しいか
     // (もともとvalidは情報が存在するかという意味で使われているが、ここで一致しているかという意味に変換)
-    sourceTagSelector1.io.beforeDestinationTag(i).valid := io
-      .decodersBefore(i)
-      .destinationRegister === instRs1 && io.decodersBefore(i).valid
+    sourceTagSelector1.io.beforeDestinationTag(i).valid :=
+      io.decodersBefore(i).destinationRegister === instRs1 &&
+        io.decodersBefore(i).valid
   }
   val sourceTag1 = sourceTagSelector1.io.sourceTag
   // セレクタ2
@@ -123,23 +123,21 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
     sourceTagSelector2.io.beforeDestinationTag(i).bits := io
       .decodersBefore(i)
       .destinationTag
-    sourceTagSelector2.io
-      .beforeDestinationTag(i)
-      .valid := io.decodersBefore(i).destinationRegister === instRs2
+    sourceTagSelector2.io.beforeDestinationTag(i).valid :=
+      io.decodersBefore(i).destinationRegister === instRs2 &&
+        io.decodersBefore(i).valid
   }
   val sourceTag2 = sourceTagSelector2.io.sourceTag
 
   // Valueの選択
   // value1
   val valueSelector1 = Module(new ValueSelector1)
-  valueSelector1.io.value.ready := true.B
   valueSelector1.io.sourceTag <> sourceTag1
   valueSelector1.io.reorderBufferValue <> io.reorderBuffer.source1.value
   valueSelector1.io.registerFileValue := io.registerFile.value1
   valueSelector1.io.outputCollector <> io.outputCollector
   // value2
   val valueSelector2 = Module(new ValueSelector2)
-  valueSelector2.io.value.ready := true.B
   valueSelector2.io.sourceTag <> sourceTag2
   valueSelector2.io.reorderBufferValue <> io.reorderBuffer.source2.value
   valueSelector2.io.registerFileValue := io.registerFile.value2
@@ -160,7 +158,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
     io.decodersAfter(i) <> io.decodersBefore(i)
   }
   // 次のデコーダへ伝える情報
-  when(destinationIsValid && instRd =/= 0.U) {
+  when(destinationIsValid && instRd =/= 0.U && io.instructionFetch.valid) {
     io.decodersAfter(instructionOffset)
       .destinationTag := io.reorderBuffer.destination.destinationTag
     io.decodersAfter(instructionOffset).destinationRegister := instRd
@@ -171,17 +169,11 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
     io.decodersAfter(instructionOffset).valid := false.B
   }
 
-  // リオーダバッファからの情報は常に受け取ることにする
-  io.reorderBuffer.source1.matchingTag.ready := true.B
-  io.reorderBuffer.source1.value.ready := true.B
-  io.reorderBuffer.source2.matchingTag.ready := true.B
-  io.reorderBuffer.source2.value.ready := true.B
-
   // 命令をデコードするのはリオーダバッファにエントリの空きがあり、リザベーションステーションにも空きがあるとき
   io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready
   // リオーダバッファやリザベーションステーションに新しいエントリを追加するのは命令がある時
-  io.reorderBuffer.valid := io.instructionFetch.valid
-  io.reservationStation.entry.valid := io.instructionFetch.valid
+  io.reorderBuffer.valid := io.instructionFetch.ready && io.instructionFetch.valid
+  io.reservationStation.entry.valid := io.instructionFetch.ready && io.instructionFetch.valid
 
   // RSへの出力を埋める
   val rs = io.reservationStation.entry
@@ -208,7 +200,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
   // load or store命令の場合，LSQへ発送
   io.loadStoreQueue.valid := io.loadStoreQueue.ready && instOp === BitPat(
     "b0?00011"
-  ) && io.instructionFetch.valid
+  ) && io.instructionFetch.ready && io.instructionFetch.valid
+
   when(io.loadStoreQueue.valid) {
     io.loadStoreQueue.bits.opcode := instOp
     io.loadStoreQueue.bits.function3 := instFunct3
