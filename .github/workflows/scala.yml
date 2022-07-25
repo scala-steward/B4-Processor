@@ -138,7 +138,7 @@ jobs:
   test-riscv-tests:
     name: RISC-Vテスト
     needs: [ test-compilation ]
-    timeout-minutes: 20
+    timeout-minutes: 30
     if: github.event.pull_request.draft == false
 
     runs-on: ubuntu-latest
