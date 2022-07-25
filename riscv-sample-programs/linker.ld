@@ -1,8 +1,8 @@
 ENTRY(_start)
 
 MEMORY{
-	ROM (rx) : ORIGIN = 0x40000000, LENGTH = 4k
-	RAM (rx) : ORIGIN = 0x80000000, LENGTH = 4k
+	ROM (rx) : ORIGIN = 0x40000000, LENGTH = 1M
+	RAM (rx) : ORIGIN = 0x80000000, LENGTH = 16M
 }
 
 SECTIONS{
@@ -11,5 +11,5 @@ SECTIONS{
 		*(.text.init)
 		*(.text*)
 	} > ROM
-	.data : { *(.data) } > ROM
+	.data : { *(.data) } > RAM
 }

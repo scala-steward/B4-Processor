@@ -12,10 +12,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   // branchプログラムが実行できる
   it should "execute branch with no parallel" in {
     test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/branch/branch.32.hex")
-      )(defaultParams.copy(runParallel = 1))
+      new B4ProcessorWithMemory("riscv-sample-programs/branch/branch")(
+        defaultParams.copy(runParallel = 1)
+      )
     )
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
@@ -30,10 +29,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   // フィボナッチ数列の計算が同時発行数1でできる
   it should "execute fibonacci with no parallel" in {
     test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/fibonacci/fibonacci.32.hex")
-      )(defaultParams.copy(runParallel = 1))
+      new B4ProcessorWithMemory("riscv-sample-programs/fibonacci/fibonacci")(
+        defaultParams.copy(runParallel = 1)
+      )
     )
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
@@ -47,12 +45,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // フィボナッチ数列の計算が同時発行数2でできる
   it should "execute fibonacci with 2 parallel" in {
-    test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/fibonacci/fibonacci.32.hex")
-      )
-    )
+    test(new B4ProcessorWithMemory("riscv-sample-programs/fibonacci/fibonacci"))
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
           c.clock.setTimeout(100)
@@ -66,10 +59,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   // フィボナッチ数列の計算が同時発行数4でできる
   it should "execute fibonacci with 4 parallel" in {
     test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/fibonacci/fibonacci.32.hex")
-      )(defaultParams.copy(runParallel = 4))
+      new B4ProcessorWithMemory("riscv-sample-programs/fibonacci/fibonacci")(
+        defaultParams.copy(runParallel = 4)
+      )
     )
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
@@ -83,12 +75,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // call(JALRを使った関数呼び出し)とret(JALRを使った関数からのリターン)がうまく実行できる
   it should "execute call_ret with 2 parallel" in {
-    test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/call_ret/call_ret.32.hex")
-      )
-    )
+    test(new B4ProcessorWithMemory("riscv-sample-programs/call_ret/call_ret"))
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
           c.clock.step(20)
@@ -101,10 +88,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   // 並列実行できそうな大量のadd命令を同時発行数1で試す
   it should "execute many_add with no parallel" in {
     test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex")
-      )(defaultParams.copy(runParallel = 1))
+      new B4ProcessorWithMemory("riscv-sample-programs/many_add/many_add")(
+        defaultParams.copy(runParallel = 1)
+      )
     )
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
@@ -119,10 +105,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   // 並列実行できそうな大量のadd命令を同時発行数2で試す
   it should "execute many_add with 2 parallel" in {
     test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex")
-      )(defaultParams.copy(fetchWidth = 8))
+      new B4ProcessorWithMemory("riscv-sample-programs/many_add/many_add")(
+        defaultParams.copy(fetchWidth = 8)
+      )
     )
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
@@ -137,10 +122,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   // 並列実行できそうな大量のadd命令を同時発行数4で試す
   it should "execute many_add with 4 parallel" in {
     test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex")
-      )(defaultParams.copy(runParallel = 4, fetchWidth = 8))
+      new B4ProcessorWithMemory("riscv-sample-programs/many_add/many_add")(
+        defaultParams.copy(runParallel = 4, fetchWidth = 8)
+      )
     )
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
@@ -155,10 +139,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   // タグ幅をとても小さくする（すべてのデコーダが使えない）ような状況でもうまく動作する
   it should "execute many_add with 4 parallel with very low tag width" in {
     test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex")
-      )(defaultParams.copy(runParallel = 4, fetchWidth = 8, tagWidth = 2))
+      new B4ProcessorWithMemory("riscv-sample-programs/many_add/many_add")(
+        defaultParams.copy(runParallel = 4, fetchWidth = 8, tagWidth = 2)
+      )
     )
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
@@ -173,10 +156,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   // 並列実行できそうな大量のadd命令を同時発行数8で試す
   it should "execute many_add with 8 parallel" in {
     test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/many_add/many_add.32.hex")
-      )(
+      new B4ProcessorWithMemory("riscv-sample-programs/many_add/many_add")(
         defaultParams.copy(
           runParallel = 8,
           fetchWidth = 8,
@@ -198,9 +178,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute out_of_order with 4 parallel" in {
     test(
       new B4ProcessorWithMemory(
-        InstructionUtil.fromFile32bit(
-          "riscv-sample-programs/many_add_out_of_order/many_add_out_of_order.32.hex"
-        )
+        "riscv-sample-programs/many_add_out_of_order/many_add_out_of_order"
       )(
         defaultParams
           .copy(runParallel = 4, fetchWidth = 8, maxRegisterFileCommitCount = 8)
@@ -227,10 +205,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   // 単純な値をストアしてロードするプログラム
   it should "run load_store" in {
     test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/load_store/load_store.32.hex")
-      )(defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1))
+      new B4ProcessorWithMemory("riscv-sample-programs/load_store/load_store")(
+        defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1)
+      )
     )
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
@@ -248,10 +225,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   // 単純な値をストアしてロードするプログラム同時発行数2
   it should "run load_store with 2 parallel" in {
     test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/load_store/load_store.32.hex")
-      )(defaultParams.copy(runParallel = 2))
+      new B4ProcessorWithMemory("riscv-sample-programs/load_store/load_store")(
+        defaultParams.copy(runParallel = 2)
+      )
     )
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
@@ -267,8 +243,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run fibonacci_c" in {
     test(
       new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex")
+        "riscv-sample-programs/fibonacci_c/fibonacci_c"
       )(
         defaultParams.copy(
           runParallel = 1,
@@ -290,8 +265,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run fibonacci_c with 2 parallel" in {
     test(
       new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/fibonacci_c/fibonacci_c.32.hex")
+        "riscv-sample-programs/fibonacci_c/fibonacci_c"
       )(
         defaultParams.copy(
           runParallel = 2,
@@ -313,9 +287,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run load_plus_arithmetic" in {
     test(
       new B4ProcessorWithMemory(
-        InstructionUtil.fromFile32bit(
-          "riscv-sample-programs/load_plus_arithmetic/load_plus_arithmetic.32.hex"
-        )
+        "riscv-sample-programs/load_plus_arithmetic/load_plus_arithmetic"
       )(
         defaultParams.copy(
           runParallel = 4,
@@ -340,9 +312,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run load_after_store" in {
     test(
       new B4ProcessorWithMemory(
-        InstructionUtil.fromFile32bit(
-          "riscv-sample-programs/load_after_store/load_after_store.32.hex"
-        )
+        "riscv-sample-programs/load_after_store/load_after_store"
       )(
         defaultParams.copy(
           runParallel = 4,
@@ -363,10 +333,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "run enter_c" in {
     test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/enter_c/enter_c.32.hex")
-      )(
+      new B4ProcessorWithMemory("riscv-sample-programs/enter_c/enter_c")(
         defaultParams.copy(
           runParallel = 4,
           maxRegisterFileCommitCount = 4,
@@ -387,9 +354,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run calculation_c" in {
     test(
       new B4ProcessorWithMemory(
-        InstructionUtil.fromFile32bit(
-          "riscv-sample-programs/calculation_c/calculation_c.32.hex"
-        )
+        "riscv-sample-programs/calculation_c/calculation_c"
       )(
         defaultParams.copy(
           runParallel = 4,
@@ -410,10 +375,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "run loop_c" in {
     test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/loop_c/loop_c.32.hex")
-      )(
+      new B4ProcessorWithMemory("riscv-sample-programs/loop_c/loop_c")(
         defaultParams.copy(
           runParallel = 1,
           maxRegisterFileCommitCount = 1,
@@ -433,10 +395,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "run loop_c with 4 parallel" in {
     test(
-      new B4ProcessorWithMemory(
-        InstructionUtil
-          .fromFile32bit("riscv-sample-programs/loop_c/loop_c.32.hex")
-      )(
+      new B4ProcessorWithMemory("riscv-sample-programs/loop_c/loop_c")(
         defaultParams.copy(
           runParallel = 4,
           maxRegisterFileCommitCount = 4,
@@ -457,9 +416,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run many_load_store" in {
     test(
       new B4ProcessorWithMemory(
-        InstructionUtil.fromFile32bit(
-          "riscv-sample-programs/many_load_store/many_load_store.32.hex"
-        )
+        "riscv-sample-programs/many_load_store/many_load_store"
       )(
         defaultParams.copy(
           runParallel = 1,
@@ -481,9 +438,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run many_load_store with 4 parallel" in {
     test(
       new B4ProcessorWithMemory(
-        InstructionUtil.fromFile32bit(
-          "riscv-sample-programs/many_load_store/many_load_store.32.hex"
-        )
+        "riscv-sample-programs/many_load_store/many_load_store"
       )(
         defaultParams.copy(
           runParallel = 4,
@@ -505,9 +460,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run load_store_cross" in {
     test(
       new B4ProcessorWithMemory(
-        InstructionUtil.fromFile32bit(
-          "riscv-sample-programs/load_store_cross/load_store_cross.32.hex"
-        )
+        "riscv-sample-programs/load_store_cross/load_store_cross"
       )(
         defaultParams.copy(
           runParallel = 1,
@@ -533,9 +486,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run load_store_cross with 4 parallel" in {
     test(
       new B4ProcessorWithMemory(
-        InstructionUtil.fromFile32bit(
-          "riscv-sample-programs/load_store_cross/load_store_cross.32.hex"
-        )
+        "riscv-sample-programs/load_store_cross/load_store_cross"
       )(
         defaultParams.copy(
           runParallel = 4,

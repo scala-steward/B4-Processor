@@ -1,11 +1,9 @@
 package b4processor
 
-import b4processor.utils.InstructionUtil
-import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class B4ProcessorRISCVTestWrapper(instructions: Seq[UInt])(implicit
+class B4ProcessorRISCVTestWrapper(instructions: String)(implicit
   params: Parameters
 ) extends B4ProcessorWithMemory(instructions) {
   def riscv_test(): Unit = {
@@ -34,10 +32,9 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
   def riscv_test(test_name: String, timeout: Int = 1000): Unit = {
 
     it should s"run risc-v test ${test_name}" in {
-      test(
+      test( // FIXME fromFile8bit
         new B4ProcessorRISCVTestWrapper(
-          InstructionUtil
-            .fromFile8bit(s"riscv-tests-files/rv64ui-p-${test_name}.text.hex")
+          s"riscv-tests-files/rv64ui-p-${test_name}"
         )
       )
         .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
@@ -62,7 +59,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
   riscv_test("bltu")
   riscv_test("bne")
   // Fenceのテストは命令メモリとデータメモリが同じ空間にあることを前提にしていて、データメモリ上に命令を書き出してジャンプするので、今回はテストできない。
-  riscv_test("fence_i")
+//  riscv_test("fence_i")
   riscv_test("jal")
   riscv_test("jalr")
   riscv_test("lb")

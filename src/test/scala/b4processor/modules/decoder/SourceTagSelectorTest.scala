@@ -5,8 +5,13 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class SourceTagSelectorWrapper(instruction_offset: Int)(implicit params: Parameters) extends SourceTagSelector(instruction_offset) {
-  def initialize(destinationTags: Seq[Option[Int]], reorderBufferValue: Option[Int]): Unit = {
+class SourceTagSelectorWrapper(instruction_offset: Int)(implicit
+  params: Parameters
+) extends SourceTagSelector(instruction_offset) {
+  def initialize(
+    destinationTags: Seq[Option[Int]],
+    reorderBufferValue: Option[Int]
+  ): Unit = {
     initializeBeforeDestinationTag(destinationTags)
     initializeReorderBuffer(reorderBufferValue)
   }
@@ -14,7 +19,10 @@ class SourceTagSelectorWrapper(instruction_offset: Int)(implicit params: Paramet
   def initializeBeforeDestinationTag(destinationTag: Seq[Option[Int]]): Unit = {
     for (i <- destinationTag.indices) {
       this.io.beforeDestinationTag(i).valid.poke(destinationTag(i).isDefined.B)
-      this.io.beforeDestinationTag(i).bits.poke(destinationTag(i).getOrElse(0).U)
+      this.io
+        .beforeDestinationTag(i)
+        .bits
+        .poke(destinationTag(i).getOrElse(0).U)
     }
   }
 

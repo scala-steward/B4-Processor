@@ -9,6 +9,8 @@ import b4processor.connections.{
   LoadStoreQueue2ReorderBuffer
 }
 import b4processor.modules.ourputcollector.OutputCollector
+import b4processor.structures.memoryAccess.MemoryAccessType._
+import b4processor.structures.memoryAccess.MemoryAccessWidth._
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
@@ -33,8 +35,6 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   })
 
   val defaultEntry = LoadStoreQueueEntry.default
-  val LOAD = "b0000011".U
-  val STORE = "b0100011".U
 
   val head = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
   val tail = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
@@ -51,29 +51,25 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   for (i <- 0 until params.runParallel) {
     val decoder = io.decoders(i)
     decoder.ready := tail =/= insertIndex + 1.U
-    val decoderValid =
-      decoder.ready && decoder.valid && decoder.bits.opcode === BitPat(
-        "b0?00011"
-      )
+    val entryValid = decoder.ready && decoder.valid
     // TODO decoderのvalidと機能が一部被っている
 
     /** 現状，(LSQの最大エントリ数 = リオーダバッファの最大エントリ数)であり，
       * プロセッサで同時実行可能な最大命令数がリオーダバッファのエントリ番号数(dtag数)であることから，
       * エンキュー時の命令待機は必要ないが，LSQのエントリ数を減らした場合，必要
       */
-    when(decoderValid) {
+    when(entryValid) {
       //      printf("isLoad = %d\n", decoder.bits.opcode === LOAD)
       buffer(insertIndex) := LoadStoreQueueEntry.validEntry(
         // opcode = 1(load), 0(store) (bit数削減)
-        isLoad = decoder.bits.opcode === LOAD,
-        function3 = decoder.bits.function3,
+        accessInfo = decoder.bits.accessInfo,
         addressAndStoreResultTag = decoder.bits.addressAndLoadResultTag,
         storeDataTag = decoder.bits.storeDataTag,
         storeData = decoder.bits.storeData,
         storeDataValid = decoder.bits.storeDataValid
       )
     }
-    insertIndex = insertIndex + decoderValid.asUInt
+    insertIndex = insertIndex + entryValid.asUInt
   }
 
   head := insertIndex
@@ -138,11 +134,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   for (i <- 0 until params.maxRegisterFileCommitCount) {
     emissionIndex = emissionIndex + 1.U // リングバッファ
-    io.memory(i).bits.address := 0.S
-    io.memory(i).bits.tag := 0.U
-    io.memory(i).bits.data := 0.U
-    io.memory(i).bits.isLoad := false.B
-    io.memory(i).bits.function3 := 0.U
+    io.memory(i).bits := DontCare
     io.memory(i).valid := false.B
 
     when(buffer(emissionIndex).valid) {
@@ -164,8 +156,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       io.memory(i).valid := io.memory(i).ready && (head =/= tail) && buffer(
         emissionIndex
       ).valid && buffer(emissionIndex).addressValid &&
-        ((buffer(emissionIndex).isLoad && !Overlap(i)) ||
-          (!buffer(emissionIndex).isLoad && buffer(
+        ((buffer(emissionIndex).info.accessType === Load && !Overlap(i)) ||
+          (buffer(emissionIndex).info.accessType === Store && buffer(
             emissionIndex
           ).storeDataValid && buffer(emissionIndex).readyReorderSign))
 
@@ -174,8 +166,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         io.memory(i).bits.tag := buffer(emissionIndex).addressAndLoadResultTag
         io.memory(i).bits.data := buffer(emissionIndex).storeData
         io.memory(i).bits.address := buffer(emissionIndex).address
-        io.memory(i).bits.isLoad := buffer(emissionIndex).isLoad
-        io.memory(i).bits.function3 := buffer(emissionIndex).function3
+        io.memory(i).bits.accessInfo := buffer(emissionIndex).info
         buffer(emissionIndex) := LoadStoreQueueEntry.default
       }
     }.otherwise {

@@ -48,27 +48,21 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
         address = Input.bits.address,
         tag = Input.bits.tag,
         data = Input.bits.data,
-        isLoad = Input.bits.isLoad,
-        function3 = Input.bits.function3
+        accessInfo = Input.bits.accessInfo
       )
     }
     insertIndex = insertIndex + Input.valid.asUInt
   }
   head := insertIndex
 
-  io.dataOut.bits.address := 0.S
-  io.dataOut.bits.tag := 0.U
-  io.dataOut.bits.data := 0.U
-  io.dataOut.bits.isLoad := false.B
-  io.dataOut.bits.function3 := 0.U
+  io.dataOut.bits := DontCare
   io.dataOut.valid := io.dataOut.ready && tail =/= head
   // dequeue
   when(io.dataOut.valid) {
     io.dataOut.bits.address := buffer(tail).address
     io.dataOut.bits.tag := buffer(tail).tag
     io.dataOut.bits.data := buffer(tail).data
-    io.dataOut.bits.isLoad := buffer(tail).isLoad
-    io.dataOut.bits.function3 := buffer(tail).function3
+    io.dataOut.bits.accessInfo := buffer(tail).accessInfo
     buffer(tail) := DataMemoryBufferEntry.default
   }
 

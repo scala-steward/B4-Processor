@@ -9,7 +9,6 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-
 class InstructionCheckerWrapper extends InstructionChecker {
   def setInstruction(instruction: UInt): Unit = {
     val opcode = instruction(6, 0)
@@ -21,11 +20,13 @@ class InstructionCheckerWrapper extends InstructionChecker {
     this.input.function7bits.poke(funct7)
   }
 
-  def expect(instruction: Instructions.Type = Instructions.Unknown,
-             branch: BranchOperations.Type = BranchOperations.Unknown,
-             operationWidth: OperationWidth.Type = OperationWidth.Unknown,
-             arithmetic: ArithmeticOperations.Type = ArithmeticOperations.Unknown,
-             csr: CSROperations.Type = CSROperations.Unknown): Unit = {
+  def expect(
+    instruction: Instructions.Type = Instructions.Unknown,
+    branch: BranchOperations.Type = BranchOperations.Unknown,
+    operationWidth: OperationWidth.Type = OperationWidth.Unknown,
+    arithmetic: ArithmeticOperations.Type = ArithmeticOperations.Unknown,
+    csr: CSROperations.Type = CSROperations.Unknown
+  ): Unit = {
     this.output.instruction.expect(instruction, s"$instruction")
     this.output.branch.expect(branch, s"$branch")
     this.output.operationWidth.expect(operationWidth, s"$operationWidth")
@@ -40,14 +41,22 @@ class InstructionCheckerTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "parse add x1, x2, x3" in {
     test(new InstructionCheckerWrapper) { c =>
       c.setInstruction("x003100b3".U)
-      c.expect(instruction = Arithmetic, arithmetic = Addition, operationWidth = DoubleWord)
+      c.expect(
+        instruction = Arithmetic,
+        arithmetic = Addition,
+        operationWidth = DoubleWord
+      )
     }
   }
 
   it should "parse addw x1, x2, x3" in {
     test(new InstructionCheckerWrapper) { c =>
       c.setInstruction("x003100bb".U)
-      c.expect(instruction = Arithmetic, arithmetic = Addition, operationWidth = Word)
+      c.expect(
+        instruction = Arithmetic,
+        arithmetic = Addition,
+        operationWidth = Word
+      )
     }
   }
 
