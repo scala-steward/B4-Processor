@@ -1,9 +1,8 @@
-package b4processor.modules.memory
+package b4processor.modules.cache
 
 import b4processor.Parameters
 import b4processor.structures.memoryAccess.MemoryAccessInfo
 import chisel3._
-import chisel3.util._
 
 class DataMemoryBufferEntry(implicit params: Parameters) extends Bundle {
 
