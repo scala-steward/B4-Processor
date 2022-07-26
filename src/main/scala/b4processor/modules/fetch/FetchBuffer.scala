@@ -13,10 +13,10 @@ class FetchBuffer(implicit params: Parameters) extends Module {
     val fetch = Flipped(new Fetch2FetchBuffer)
   })
 
-  val buffer = Reg(Vec(pow(2, params.runParallel + 1).toInt, new BufferEntry))
+  val buffer = Reg(Vec(pow(2, params.runParallel + 2).toInt, new BufferEntry))
 
-  val head = RegInit(0.U((params.runParallel + 1).W))
-  val tail = RegInit(0.U((params.runParallel + 1).W))
+  val head = RegInit(0.U((params.runParallel + 2).W))
+  val tail = RegInit(0.U((params.runParallel + 2).W))
 
   {
     var nextHead = head

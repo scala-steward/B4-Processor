@@ -38,7 +38,7 @@ class Executor(implicit params: Parameters) extends Module {
       .U(1.W)).asSInt
   val nextProgramCounter = io.reservationStation.bits.programCounter + 4.S
 
-  io.fetch.programCounter := 0.S
+  io.fetch.address := 0.S
   io.fetch.valid := false.B
   executionResult64bit := 0.U
 
@@ -108,7 +108,7 @@ class Executor(implicit params: Parameters) extends Module {
           -> (io.reservationStation.bits.programCounter.asUInt + 4.U),
         // lui
         (instructionChecker.output.instruction === Instructions.lui)
-          -> (io.reservationStation.bits.value2.asSInt).asUInt,
+          -> io.reservationStation.bits.value2.asSInt.asUInt,
         // auipc
         (instructionChecker.output.instruction === Instructions.auipc)
           -> (io.reservationStation.bits.value2 + io.reservationStation.bits.programCounter.asUInt),
@@ -140,17 +140,17 @@ class Executor(implicit params: Parameters) extends Module {
       //      (instructionChecker.output.instruction === Instructions.auipc) ||
       (instructionChecker.output.instruction === Instructions.jalr)
     when(io.fetch.valid) {
-      io.fetch.programCounter := MuxCase(
+      io.fetch.address := MuxCase(
         io.reservationStation.bits.programCounter,
         Seq(
           // 分岐
           // Equal
           (instructionChecker.output.branch === BranchOperations.Equal)
             -> Mux(
-              io.reservationStation.bits.value1 === io.reservationStation.bits.value2,
-              branchedProgramCounter,
-              nextProgramCounter
-            ),
+            io.reservationStation.bits.value1 === io.reservationStation.bits.value2,
+            branchedProgramCounter,
+            nextProgramCounter
+          ),
           // NotEqual
           (instructionChecker.output.branch === BranchOperations.NotEqual)
             -> Mux(

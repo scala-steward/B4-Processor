@@ -1,8 +1,8 @@
 package b4processor
 
-import b4processor.utils.InstructionUtil
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
+import chisel3._
 
 class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "B4Processor"
@@ -280,6 +280,28 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
           while (c.io.registerFileContents.get(2).peekInt() == 0)
             c.clock.step()
           c.io.registerFileContents.get(2).expect(21)
+          c.clock.step(10)
+      }
+  }
+
+  it should "run fibonacci_c_opt in 4 parallel" in {
+    test(
+      new B4ProcessorWithMemory(
+        "riscv-sample-programs/fibonacci_c_opt/fibonacci_c_opt"
+      )(
+        defaultParams.copy(
+          runParallel = 4,
+          maxRegisterFileCommitCount = 6,
+          loadStoreQueueIndexWidth = 3
+        )
+      )
+    )
+      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
+        c =>
+          c.clock.setTimeout(1000)
+          while (c.io.registerFileContents.get(2).peekInt() == 0)
+            c.clock.step()
+          c.io.registerFileContents.get(2).expect("x1CFA62F21".U)
           c.clock.step(10)
       }
   }

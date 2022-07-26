@@ -70,7 +70,7 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   def expectFetch(values: FetchValue): Unit = {
     val fetch = this.io.fetch
     fetch.valid.expect(values.valid)
-    fetch.programCounter.expect(values.programCounter)
+    fetch.address.expect(values.programCounter)
   }
 }
 

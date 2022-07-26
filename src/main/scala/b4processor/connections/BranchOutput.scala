@@ -1,17 +1,31 @@
 package b4processor.connections
 
+import b4processor.Parameters
 import chisel3._
 import chisel3.experimental.BundleLiterals._
 
-class BranchOutput extends Bundle {
+class BranchOutput(implicit params: Parameters) extends Bundle {
   val valid = Bool()
-  val programCounter = SInt(64.W)
+  val address = SInt(64.W)
+  val branchID = UInt(params.branchBufferSize.W)
 }
 
 object BranchOutput {
-  def noResult(): BranchOutput =
-    (new BranchOutput).Lit(_.valid -> false.B, _.programCounter -> 0.S)
+  def noResult(implicit params: Parameters): BranchOutput = {
+    val w = Wire(new BranchOutput)
+    w.valid := false.B
+    w.address := DontCare
+    w.branchID := DontCare
+    w
+  }
 
-  def branch(address: SInt): BranchOutput =
-    (new BranchOutput).Lit(_.valid -> true.B, _.programCounter -> address)
+  def branch(address: SInt, branchID: UInt)(implicit
+                                            params: Parameters
+  ): BranchOutput = {
+    val w = Wire(new BranchOutput)
+    w.valid := true.B
+    w.address := address
+    w.branchID := branchID
+    w
+  }
 }

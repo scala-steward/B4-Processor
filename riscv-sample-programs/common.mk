@@ -1,8 +1,9 @@
 TOOL_PREFIX := riscv64-unknown-elf-
-export CC := $(TOOL_PREFIX)gcc
-export OBJCOPY := $(TOOL_PREFIX)objcopy
-export OBJDUMP := $(TOOL_PREFIX)objdump
-export CFLAGS := -nodefaultlibs -nostdlib -march=rv64i -mabi=lp64 -no-pie -static
+
+CC := $(TOOL_PREFIX)gcc
+OBJCOPY := $(TOOL_PREFIX)objcopy
+OBJDUMP := $(TOOL_PREFIX)objdump
+CFLAGS += -nodefaultlibs -nostdlib -march=rv64i -mabi=lp64 -no-pie -static
 
 CFLAGS += -T ../linker.ld
 

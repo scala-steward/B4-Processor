@@ -2,6 +2,7 @@ package b4processor.modules.fetch
 
 import b4processor.Parameters
 import b4processor.connections.{
+  Fetch2BranchBuffer,
   Fetch2BranchPrediction,
   Fetch2FetchBuffer,
   InstructionCache2Fetch
@@ -20,6 +21,9 @@ class Fetch(implicit params: Parameters) extends Module {
 
     /** 分岐予測 */
     val prediction = Vec(params.runParallel, new Fetch2BranchPrediction)
+
+    /** 投機的実行用 分岐先バッファ */
+    val branchBuffer = new Fetch2BranchBuffer
 
     /** リオーダバッファの中身が空である */
     val reorderBufferEmpty = Input(Bool())
@@ -47,6 +51,9 @@ class Fetch(implicit params: Parameters) extends Module {
 
   /** フェッチの停止と理由 */
   val waiting = RegInit(WaitingReason.None)
+
+  val isPrediction = RegInit(false.B)
+  val branchID = Reg(UInt(params.branchBufferSize.W))
 
   var nextPC = pc
   var nextWait = waiting
@@ -109,7 +116,7 @@ class Fetch(implicit params: Parameters) extends Module {
       for (e <- io.collectedBranchAddresses.addresses) {
         when(e.valid) {
           waiting := WaitingReason.None
-          pc := e.programCounter
+          pc := e.address
         }
       }
     }

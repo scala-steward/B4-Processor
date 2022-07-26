@@ -31,6 +31,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
 
     /** デコーダ */
     val decoders = new Fetch2FetchBuffer
+
     /** ロードストアキューのエントリが空か */
     val loadStoreQueueEmpty = Input(Bool())
 
@@ -101,7 +102,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
   ): Unit = {
     for ((e, r) <- io.collectedBranchAddresses.addresses.zip(results)) {
       e.valid.poke(r.isDefined)
-      e.programCounter.poke(r.getOrElse(0))
+      e.address.poke(r.getOrElse(0))
     }
   }
 
@@ -114,7 +115,11 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
 class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Fetch"
   implicit val defaultParams =
-    Parameters(debug = true, runParallel = 2, instructionStart = 0x10000000)
+    Parameters().copy(
+      debug = true,
+      runParallel = 2,
+      instructionStart = 0x10000000
+    )
 
   // 普通の命令と分岐を区別できるか
   // 書き込む命令
