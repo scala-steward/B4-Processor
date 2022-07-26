@@ -22,6 +22,7 @@ class BranchBuffer(implicit params: Parameters) extends Module {
   val head = RegInit(0.U(buffer_size.W))
   val tail = RegInit(0.U(buffer_size.W))
 
+  val nextFlush = WireInit(false.B)
   val flush = RegInit(false.B)
   val flushUntil = RegInit(0.U(buffer_size.W))
 
@@ -29,7 +30,7 @@ class BranchBuffer(implicit params: Parameters) extends Module {
     var nextHead = head
     for (b <- io.fetch.branches) {
       val indexOk = nextHead + 1.U =/= tail
-      b.ready := indexOk
+      b.ready := indexOk && !nextFlush
       b.branchID := DontCare
       val valid = b.valid && indexOk
       when(valid) {
@@ -61,6 +62,7 @@ class BranchBuffer(implicit params: Parameters) extends Module {
         io.fetch.changeAddress.valid := true.B
         io.fetch.changeAddress.bits := entry.address
         flush := true.B
+        nextFlush := true.B
         flushUntil := head
       }
     }
