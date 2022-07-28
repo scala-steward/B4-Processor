@@ -6,6 +6,7 @@ import b4processor.connections.{
   OutputValue
 }
 import b4processor.modules.branch_output_collector.BranchOutputCollector
+import b4processor.modules.branchprediction.BranchBuffer
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.decoder.Decoder
 import b4processor.modules.executor.Executor
@@ -47,6 +48,7 @@ class B4Processor(implicit params: Parameters) extends Module {
   val registerFile = Module(new RegisterFile)
   val loadStoreQueue = Module(new LoadStoreQueue)
   val dataMemoryBuffer = Module(new DataMemoryBuffer)
+  val branchBuffer = Module(new BranchBuffer)
 
   val outputCollector = Module(new OutputCollector)
   val branchAddressCollector = Module(new BranchOutputCollector)
@@ -110,12 +112,21 @@ class B4Processor(implicit params: Parameters) extends Module {
     reservationStations(i).io.collectedOutput <> outputCollector.io.outputs
 
     /** 分岐結果コレクタと実行ユニットの接続 */
-    branchAddressCollector.io.executor(i) := executors(i).io.fetch
+    branchAddressCollector.io.executor(i) := executors(i).io.branchOutput
+
+    /** リオーダバッファとリザベーションステーションのFlush接続 */
+    reservationStations(i).io.flush := reorderBuffer.io.reservationStationFlush
 
   }
 
-  /** フェッチと分岐結果の接続 */
-  fetch.io.collectedBranchAddresses := branchAddressCollector.io.fetch
+  /** フェッチと分岐バッファの接続 */
+  fetch.io.branchBuffer <> branchBuffer.io.fetch
+
+  /** 分岐バッファと分岐コレクタの接続 */
+  branchBuffer.io.branchOutput := branchAddressCollector.io.fetch
+
+  /** 分岐バッファとリオーダバッファの接続 */
+  reorderBuffer.io.branchBuffer := branchBuffer.io.reorderBuffer
 
   /** LSQと出力コレクタ */
   loadStoreQueue.io.outputCollector := outputCollector.io.outputs
@@ -128,9 +139,6 @@ class B4Processor(implicit params: Parameters) extends Module {
 
   /** フェッチとリオーダバッファの接続 */
   fetch.io.reorderBufferEmpty := reorderBuffer.io.isEmpty
-
-  // TODO:　必要ないはずだけど、確認が必要
-  //  loadStoreQueue.io.reorderBuffer <> reorderBuffer.io.loadStoreQueue
 
   /** データメモリバッファとLSQ */
   dataMemoryBuffer.io.dataIn <> loadStoreQueue.io.memory

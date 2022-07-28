@@ -2,7 +2,7 @@ package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
 import b4processor.connections.{
-  BranchPrediction2ReorderBuffer,
+  BranchBuffer2ReorderBuffer,
   CollectedOutput,
   Decoder2ReorderBuffer,
   LoadStoreQueue2ReorderBuffer,
@@ -11,6 +11,7 @@ import b4processor.connections.{
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
+import PredictionStatus._
 
 import scala.math.pow
 
@@ -26,6 +27,8 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val registerFile =
       Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
     val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
+    val branchBuffer = Flipped(new BranchBuffer2ReorderBuffer)
+    val reservationStationFlush = Output(Bool())
     val isEmpty = Output(Bool())
 
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
@@ -34,34 +37,42 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       if (params.debug) Some(Output(new ReorderBufferEntry)) else None
   })
 
-  val head = RegInit(0.U(params.tagWidth.W))
-  val tail = RegInit(0.U(params.tagWidth.W))
-  val buffer = RegInit(
+  io.reservationStationFlush := false.B
+
+  private val head = RegInit(0.U(params.tagWidth.W))
+  private val tail = RegInit(0.U(params.tagWidth.W))
+  private val buffer = RegInit(
     VecInit(
       Seq.fill(math.pow(2, params.tagWidth).toInt)(ReorderBufferEntry.default)
     )
   )
 
+  private val flush = RegInit(false.B)
+  private val flushPending = RegInit(false.B)
+  private val flushUntil = Reg(UInt(params.tagWidth.W))
+
   // デコーダからの読み取りと書き込み
-  var insertIndex = head
-  var lastReady = true.B
+  private var nextHead = head
+  private var lastReady = true.B
   for (i <- 0 until params.runParallel) {
     val decoder = io.decoders(i)
-    decoder.ready := lastReady && (insertIndex + 1.U) =/= tail
+    decoder.ready := lastReady && (nextHead + 1.U) =/= tail && !flushPending
     when(decoder.valid && decoder.ready) {
       //      if (params.debug)
       //        printf(p"reorder buffer new entry pc = ${decoder.programCounter} destinationRegister=${decoder.destination.destinationRegister} in ${insertIndex} prediction=${decoder.isPrediction}\n")
-      buffer(insertIndex) := {
+      buffer(nextHead) := {
         val entry = Wire(new ReorderBufferEntry)
         entry.value := 0.U
         entry.valueReady := false.B
         entry.programCounter := decoder.programCounter
         entry.destinationRegister := decoder.destination.destinationRegister
         entry.storeSign := decoder.destination.storeSign
+        entry.prediction := Mux(decoder.isBranch, Predicted, NotBranch)
+        entry.branchID := decoder.branchID
         entry
       }
     }
-    decoder.destination.destinationTag := insertIndex
+    decoder.destination.destinationTag := nextHead
     // ソースレジスタに対応するタグ、値の代入
     val descendingIndex = VecInit(
       (0 until pow(2, params.tagWidth).toInt).map(indexOffset =>
@@ -118,55 +129,93 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 
     // 次のループで使用するinserIndexとlastReadyを変える
     // わざと:=ではなく=を利用している
-    insertIndex = insertIndex + Mux(decoder.valid && decoder.ready, 1.U, 0.U)
+    nextHead = nextHead + Mux(decoder.valid && decoder.ready, 1.U, 0.U)
     lastReady = decoder.ready
   }
-  head := insertIndex
+  head := nextHead
 
   // レジスタファイルへの書き込み
-  var lastValid = true.B
-  for (i <- 0 until params.maxRegisterFileCommitCount) {
-    val index = tail + i.U
+  {
+    var lastValid = true.B
+    var nextTail = tail
+    for (i <- 0 until params.maxRegisterFileCommitCount) {
+      val index = tail + i.U
+      val rf = io.registerFile(i)
 
-    val instructionOk = buffer(index).valueReady || buffer(index).storeSign
-    val canCommit = lastValid && index =/= head && instructionOk
+      val entry = buffer(index)
 
-    io.registerFile(i).valid := canCommit
-    when(canCommit) {
-      io.registerFile(i).bits.value := buffer(index).value
-      io.registerFile(i).bits.destinationRegister := buffer(
-        index
-      ).destinationRegister
-    }.otherwise {
-      io.registerFile(i).bits.value := 0.U
-      io.registerFile(i).bits.destinationRegister := 0.U
+      val instructionOk = entry.valueReady || entry.storeSign
+      val canCommit =
+        lastValid && index =/= head && instructionOk && (entry.prediction === NotBranch || entry.prediction === Correct) && !flush
+
+      rf.valid := canCommit
+      when(rf.valid) {
+        rf.bits.value := entry.value
+        rf.bits.destinationRegister := entry.destinationRegister
+      }.otherwise {
+        rf.bits.value := 0.U
+        rf.bits.destinationRegister := 0.U
+      }
+
+      when(rf.valid) {
+        // LSQへストア実行信号
+        io.loadStoreQueue.destinationTag(i) := index
+        io.loadStoreQueue.valid(i) := entry.storeSign
+        io.loadStoreQueue.delete(i) := flush
+        entry := ReorderBufferEntry.default
+      }.otherwise {
+        io.loadStoreQueue.destinationTag(i) := 0.U
+        io.loadStoreQueue.valid(i) := false.B
+        io.loadStoreQueue.delete(i) := false.B
+      }
+      nextTail = Mux(rf.valid, nextTail + 1.U, nextTail)
+
+      lastValid = rf.valid
     }
-
-    when(canCommit) {
-      // LSQへストア実行信号
-      io.loadStoreQueue.destinationTag(i) := index
-      io.loadStoreQueue.valid(i) := buffer(index).storeSign
-      buffer(index) := ReorderBufferEntry.default
-    }.otherwise {
-      io.loadStoreQueue.destinationTag(i) := 0.U
-      io.loadStoreQueue.valid(i) := false.B
+    when(buffer(tail).prediction === Incorrect && flushPending && !flush) {
+      flush := true.B
+      io.reservationStationFlush := true.B
     }
-    lastValid = canCommit
+    when(flush) {
+      flush := false.B
+      flushPending := false.B
+      // すべてのエントリを無効にする
+      for (b <- buffer)
+        b.destinationRegister := 0.U
+      tail := flushUntil
+    }.otherwise {
+      tail := nextTail
+    }
   }
-  tail := tail + MuxCase(
-    params.maxRegisterFileCommitCount.U,
-    io.registerFile.zipWithIndex.map { case (entry, index) =>
-      !entry.valid -> index.U
-    }
-  )
 
   io.isEmpty := head === tail
 
   // 出力の読み込み
-  for (output <- io.collectedOutputs.outputs) {
-    when(output.validAsResult) {
-      buffer(output.tag).value := output.value
-      buffer(output.tag).valueReady := true.B
+  when(!flush) {
+    for (output <- io.collectedOutputs.outputs) {
+      when(output.validAsResult) {
+        buffer(output.tag).value := output.value
+        buffer(output.tag).valueReady := true.B
+      }
+    }
+  }
+
+  // 分岐の確認
+  when(io.branchBuffer.valid && !flushPending && !flush) {
+    for (b <- buffer) {
+      when(
+        b.branchID === io.branchBuffer.bits.BranchID && b.prediction === Predicted
+      ) {
+        when(io.branchBuffer.bits.correct) {
+          b.prediction := Correct
+        }.otherwise {
+          b.prediction := Incorrect
+        }
+      }
+    }
+    when(!io.branchBuffer.bits.correct) {
+      flushPending := true.B
+      flushUntil := nextHead
     }
   }
 
@@ -181,7 +230,11 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 
 object ReorderBuffer extends App {
   implicit val params =
-    Parameters(runParallel = 2, maxRegisterFileCommitCount = 8, tagWidth = 5)
+    Parameters().copy(
+      runParallel = 2,
+      maxRegisterFileCommitCount = 8,
+      tagWidth = 5
+    )
   (new ChiselStage).emitVerilog(
     new ReorderBuffer,
     args = Array(

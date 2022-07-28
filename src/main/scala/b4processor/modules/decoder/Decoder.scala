@@ -93,6 +93,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
 
   // リオーダバッファへの入力
   io.reorderBuffer.programCounter := io.instructionFetch.bits.programCounter
+  io.reorderBuffer.isBranch := io.instructionFetch.bits.isBranch
+  io.reorderBuffer.branchID := io.instructionFetch.bits.branchID
   io.reorderBuffer.source1.sourceRegister := Mux(source1IsValid, instRs1, 0.U)
   io.reorderBuffer.source2.sourceRegister := Mux(source2IsValid, instRs2, 0.U)
   io.reorderBuffer.destination.destinationRegister := Mux(
@@ -164,7 +166,9 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
     io.decodersAfter(i) <> io.decodersBefore(i)
   }
   // 次のデコーダへ伝える情報
-  when(destinationIsValid && instRd =/= 0.U && io.instructionFetch.valid) {
+  when(
+    destinationIsValid && instRd =/= 0.U && io.instructionFetch.valid && io.instructionFetch.ready
+  ) {
     io.decodersAfter(instructionOffset)
       .destinationTag := io.reorderBuffer.destination.destinationTag
     io.decodersAfter(instructionOffset).destinationRegister := instRd
@@ -184,6 +188,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
   // RSへの出力を埋める
   val rs = io.reservationStation.entry
   rs.opcode := instOp
+  rs.branchID := io.instructionFetch.bits.branchID
   rs.function3 := instFunct3
   rs.immediateOrFunction7 := Mux(
     instOp === BitPat(

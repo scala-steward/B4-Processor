@@ -7,6 +7,7 @@ import b4processor.connections.{
   Fetch2FetchBuffer
 }
 import b4processor.modules.branch_output_collector.CollectedBranchAddresses
+import b4processor.modules.branchprediction.{BranchBuffer, BranchBufferWrapper}
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.memory.InstructionMemory
 import b4processor.utils.InstructionUtil
@@ -52,24 +53,19 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
 
     /** プログラムカウンタ */
     val PC = Output(SInt(64.W))
-
-    /** 次のクロックのプログラムカウンタ */
-    val nextPC = Output(SInt(64.W))
-
-    /** 各命令のぶん機の種類 */
-    val branchTypes = Output(Vec(params.runParallel, new BranchType.Type))
   })
 
   val fetch = Module(new Fetch)
   val cache = Module(new InstructionMemoryCache)
   val memory = Module(new InstructionMemory(memoryInit))
+  val branchBuffer = Module(new BranchBufferWrapper)
 
   fetch.io.prediction <> io.prediction
   fetch.io.fetchBuffer <> io.decoders
-  fetch.io.collectedBranchAddresses <> io.collectedBranchAddresses
   fetch.io.reorderBufferEmpty <> io.reorderBufferEmpty
   fetch.io.loadStoreQueueEmpty <> io.loadStoreQueueEmpty
-  fetch.io.branchTypes.get <> io.branchTypes
+  fetch.io.branchBuffer <> branchBuffer.io.fetch
+  branchBuffer.io.branchOutput <> io.collectedBranchAddresses
 
   cache.io.fetch <> fetch.io.cache
   cache.io.memory <> memory.io
@@ -80,7 +76,6 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
   cache.io.fetch.zip(io.cacheOutput).foreach { case (c, f) => c.output <> f }
 
   io.PC := fetch.io.PC.get
-  io.nextPC := fetch.io.nextPC.get
 
   fetch.io.fetchBuffer.decoder.foreach(v => v.ready := true.B)
 
@@ -98,11 +93,15 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
 
   /** 分岐先をセット */
   def setExecutorBranchResult(
-    results: Seq[Option[Int]] = Seq.fill(params.runParallel)(None)
+    results: Seq[Option[(BigInt, Int)]] = Seq.fill(params.runParallel)(None)
   ): Unit = {
     for ((e, r) <- io.collectedBranchAddresses.addresses.zip(results)) {
       e.valid.poke(r.isDefined)
-      e.address.poke(r.getOrElse(0))
+      if (r.isDefined) {
+        val ru = r.get
+        e.address.poke(ru._1)
+        e.branchID.poke(ru._2)
+      }
     }
   }
 
@@ -188,10 +187,13 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       new FetchWrapper(
         InstructionUtil
           .fromStringSeq32bit(Seq("00000013", "00000463", "00000013"))
-      )
+      )(defaultParams.copy(runParallel = 1))
     ) { c =>
       c.initialize()
-      c.io.nextPC.expect(0x10000004)
+      c.clock.step()
+      c.io.PC.expect(0x10000004)
+      c.clock.step()
+      c.io.PC.expect(0x10000008)
     }
   }
 
@@ -206,10 +208,14 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       new FetchWrapper(
         InstructionUtil
           .fromStringSeq32bit(Seq("00000013", "00000463", "00000013"))
-      )
+      )(defaultParams.copy(runParallel = 1))
     ) { c =>
       c.initialize()
-      c.io.nextPC.expect(0x10000004)
+      c.setPrediction(Seq(true))
+      c.clock.step()
+      c.io.PC.expect(0x10000004)
+      c.clock.step()
+      c.io.PC.expect(0x1000000c)
     }
   }
 
@@ -222,16 +228,18 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
     test(
       new FetchWrapper(
         InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063"))
-      )
-    ) { c =>
+      )(defaultParams.copy(runParallel = 1))
+    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize()
-      c.io.nextPC.expect(0x10000004)
 
       c.clock.step()
+      c.io.PC.expect(0x10000004)
 
-      c.setExecutorBranchResult(Seq(Some(0x10000004)))
-
-      c.io.nextPC.expect(0x10000004)
+      c.setExecutorBranchResult(Seq(Some(0x10000004, 0)))
+      c.clock.step()
+      c.io.PC.expect(0x10000008)
+      c.clock.step()
+      c.io.PC.expect(0x10000004)
     }
   }
 
@@ -244,19 +252,25 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
     test(
       new FetchWrapper(
         InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063"))
-      )
+      )(defaultParams.copy(runParallel = 1))
     ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize()
-
-      c.io.nextPC.expect(0x10000004)
       c.clock.step()
+      c.io.PC.expect(0x10000004)
 
-      c.setExecutorBranchResult(Seq(Some(0x10000000)))
-      c.io.nextPC.expect(0x10000004)
       c.clock.step()
+      c.io.PC.expect(0x10000008)
 
-      c.io.nextPC.expect(0x10000004)
       c.clock.step()
+      c.io.PC.expect(0x1000000c)
+
+      c.setExecutorBranchResult(Seq(Some(0x10000000, 0)))
+
+      c.clock.step(2)
+      c.io.PC.expect(0x10000000)
+
+      c.clock.step()
+      c.io.PC.expect(0x10000004)
     }
   }
 
@@ -272,7 +286,8 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     ) { c =>
       c.initialize()
-      c.io.nextPC.expect(0x10000000)
+      c.clock.step()
+      c.io.PC.expect(0x10000000)
     }
   }
 
@@ -308,10 +323,11 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     ) { c =>
       c.initialize()
-      c.io.nextPC.expect(0x1000001c)
+      c.clock.step()
+      c.io.PC.expect(0x1000001c)
 
       c.clock.step()
-      c.io.nextPC.expect(0x10000000)
+      c.io.PC.expect(0x10000000)
     }
   }
 
@@ -330,33 +346,100 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     ) { c =>
       c.initialize()
-      c.io.branchTypes(0).expect(BranchType.None)
-      c.io.branchTypes(1).expect(BranchType.Fence)
       c.io.decoders.decoder(0).valid.expect(true)
       c.io.decoders.decoder(1).valid.expect(true)
-      c.io.nextPC.expect(0x10000004)
-
       c.clock.step()
-      c.io.nextPC.expect(0x10000004)
+      c.io.PC.expect(0x10000004)
+
       c.io.decoders.decoder(0).valid.expect(false)
       c.io.decoders.decoder(1).valid.expect(false)
-
       c.clock.step()
+      c.io.PC.expect(0x10000004)
+
       c.io.reorderBufferEmpty.poke(true)
-      c.io.nextPC.expect(0x10000004)
       c.io.decoders.decoder(0).valid.expect(false)
       c.io.decoders.decoder(1).valid.expect(false)
-
       c.clock.step()
+      c.io.PC.expect(0x10000004)
+
       c.io.loadStoreQueueEmpty.poke(true)
-      c.io.nextPC.expect(0x10000004)
       c.io.decoders.decoder(0).valid.expect(false)
       c.io.decoders.decoder(1).valid.expect(false)
-
       c.clock.step()
-      c.io.nextPC.expect(0x10000010)
+      c.io.PC.expect(0x10000008)
+
       c.io.decoders.decoder(0).valid.expect(true)
       c.io.decoders.decoder(1).valid.expect(true)
+      c.clock.step()
+      c.io.PC.expect(0x10000010)
+    }
+  }
+
+  // ブランチを予測する
+  // beq a0,a1, L2
+  // L1:
+  //	nop
+  // L2:
+  //    nop
+  it should "predict a branch negative" in {
+    test(
+      new FetchWrapper(
+        InstructionUtil
+          .fromStringSeq32bit(Seq("00b50463", "00000013", "00000013"))
+      )(defaultParams.copy(runParallel = 1))
+    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize()
+      c.clock.step()
+      c.io.PC.expect(0x10000004)
+      c.clock.step()
+      c.io.PC.expect(0x10000008)
+    }
+  }
+
+  // ブランチを予測する
+  // beq a0,a1, L2
+  // L1:
+  //	nop
+  // L2:
+  //    nop
+  it should "predict a branch positive" in {
+    test(
+      new FetchWrapper(
+        InstructionUtil
+          .fromStringSeq32bit(Seq("00b50463", "00000013", "00000013"))
+      )(defaultParams.copy(runParallel = 1))
+    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize()
+      c.setPrediction(Seq(true))
+      c.clock.step()
+      c.io.PC.expect(0x10000008)
+      c.clock.step()
+      c.io.PC.expect(0x1000000c)
+    }
+  }
+
+  // ブランチを予測する
+  // beq a0,a1, L2
+  // L1:
+  //	nop
+  // L2:
+  //    nop
+  it should "change address" in {
+    test(
+      new FetchWrapper(
+        InstructionUtil
+          .fromStringSeq32bit(Seq("00b50463", "00000013", "00000013"))
+      )(defaultParams.copy(runParallel = 1))
+    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize()
+      c.setPrediction(Seq(true))
+      c.clock.step()
+      c.io.PC.expect(0x10000008)
+
+      c.setExecutorBranchResult(Seq(Some(0x10000004, 0)))
+
+      c.clock.step(2)
+      c.io.PC.expect(0x10000004)
     }
   }
 }

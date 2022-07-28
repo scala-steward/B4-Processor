@@ -7,12 +7,6 @@ object WaitingReason extends ChiselEnum {
   /** 分岐なし */
   val None = Value
 
-  /** 分岐命令 */
-  val Branch = Value
-
-  /** JALRによる分岐 */
-  val JALR = Value
-
   /** Fenceによる停止 */
   val Fence = Value
 

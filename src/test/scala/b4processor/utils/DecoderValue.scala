@@ -6,5 +6,6 @@ case class DecoderValue(
   source2: Int = 0,
   destination: Int = 0,
   programCounter: Int = 0,
-  isPrediction: Boolean = false
+  isBranch: Boolean = false,
+  branchID: Int = 0
 )

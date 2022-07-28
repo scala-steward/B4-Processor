@@ -11,7 +11,7 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reservationStation = Flipped(new ReservationStation2ExecutorForTest)
     val out = new ExecutionRegisterBypassForTest
-    val fetch = Output(new BranchOutput)
+    val branchOutput = Output(new BranchOutput)
   })
 
   val executor = Module(new Executor)
@@ -23,6 +23,7 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   executor.io.reservationStation.bits.opcode := io.reservationStation.bits.opcode
   executor.io.reservationStation.bits.programCounter := io.reservationStation.bits.programCounter
   executor.io.reservationStation.valid := io.reservationStation.valid
+  executor.io.reservationStation.bits.branchID := io.reservationStation.bits.branchID
   io.reservationStation.ready := executor.io.reservationStation.ready
 
   io.out.value := executor.io.out.value.asSInt
@@ -30,7 +31,7 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   io.out.validAsLoadStoreAddress := executor.io.out.validAsLoadStoreAddress
   io.out.destinationTag := executor.io.out.tag
 
-  executor.io.fetch <> io.fetch
+  executor.io.branchOutput <> io.branchOutput
 
   def setALU(values: ReservationValue): Unit = {
     val reservationstation = this.io.reservationStation
@@ -42,6 +43,7 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
     reservationstation.bits.value1.poke(values.value1)
     reservationstation.bits.value2.poke(values.value2)
     reservationstation.bits.function3.poke(values.function3)
+    reservationstation.bits.branchID.poke(values.branchID)
     reservationstation.bits.immediateOrFunction7.poke(
       values.immediateOrFunction7
     )
@@ -68,7 +70,7 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   }
 
   def expectFetch(values: FetchValue): Unit = {
-    val fetch = this.io.fetch
+    val fetch = this.io.branchOutput
     fetch.valid.expect(values.valid)
     fetch.address.expect(values.programCounter)
   }

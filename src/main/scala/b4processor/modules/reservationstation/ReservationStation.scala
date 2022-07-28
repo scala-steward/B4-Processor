@@ -15,6 +15,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
     val collectedOutput = Flipped(new CollectedOutput)
     val executor = new ReservationStation2Executor
     val decoder = Flipped(new Decoder2ReservationStation)
+    val flush = Input(Bool())
   })
 
   val reservation = RegInit(
@@ -50,23 +51,17 @@ class ReservationStation(implicit params: Parameters) extends Module {
   }
   io.executor.valid := hasReady
   when(io.executor.valid) {
-    io.executor.bits.opcode := reservation(executeIndex).opcode
-    io.executor.bits.destinationTag := reservation(executeIndex).destinationTag
-    io.executor.bits.value1 := reservation(executeIndex).value1
-    io.executor.bits.value2 := reservation(executeIndex).value2
-    io.executor.bits.programCounter := reservation(executeIndex).programCounter
-    io.executor.bits.function3 := reservation(executeIndex).function3
-    io.executor.bits.immediateOrFunction7 := reservation(
-      executeIndex
-    ).immediateOrFunction7
+    val entry = reservation(executeIndex)
+    io.executor.bits.opcode := entry.opcode
+    io.executor.bits.destinationTag := entry.destinationTag
+    io.executor.bits.value1 := entry.value1
+    io.executor.bits.value2 := entry.value2
+    io.executor.bits.programCounter := entry.programCounter
+    io.executor.bits.function3 := entry.function3
+    io.executor.bits.immediateOrFunction7 := entry.immediateOrFunction7
+    io.executor.bits.branchID := entry.branchID
   }.otherwise {
-    io.executor.bits.opcode := 0.U
-    io.executor.bits.destinationTag := 0.U
-    io.executor.bits.value1 := 0.U
-    io.executor.bits.value2 := 0.U
-    io.executor.bits.programCounter := 0.S
-    io.executor.bits.function3 := 0.U
-    io.executor.bits.immediateOrFunction7 := 0.U
+    io.executor.bits := DontCare
   }
 
   // デコーダから
@@ -91,6 +86,11 @@ class ReservationStation(implicit params: Parameters) extends Module {
         }
       }
     }
+  }
+
+  when(io.flush) {
+    for (r <- reservation)
+      r.valid := false.B
   }
 }
 

@@ -18,7 +18,7 @@ class Executor(implicit params: Parameters) extends Module {
     val reservationStation = Flipped(new ReservationStation2Executor)
     val out = new OutputValue
     //    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
-    val fetch = Output(new BranchOutput)
+    val branchOutput = Output(new BranchOutput)
   })
 
   /** リザベーションステーションから実行ユニットへデータを送信 op,fuctionによって命令を判断し，計算を実行
@@ -38,8 +38,9 @@ class Executor(implicit params: Parameters) extends Module {
       .U(1.W)).asSInt
   val nextProgramCounter = io.reservationStation.bits.programCounter + 4.S
 
-  io.fetch.address := 0.S
-  io.fetch.valid := false.B
+  io.branchOutput.address := 0.S
+  io.branchOutput.valid := false.B
+  io.branchOutput.branchID := io.reservationStation.bits.branchID
   executionResult64bit := 0.U
 
   // set destinationRegister
@@ -134,23 +135,23 @@ class Executor(implicit params: Parameters) extends Module {
       )
     )
 
-    io.fetch.valid := (instructionChecker.output.instruction === Instructions.Branch) ||
+    io.branchOutput.valid := (instructionChecker.output.instruction === Instructions.Branch) ||
       // FIXME 用途がわからないからコメントアウトしたけど必要かもしれない
       //      (instructionChecker.output.instruction === Instructions.jal) ||
       //      (instructionChecker.output.instruction === Instructions.auipc) ||
       (instructionChecker.output.instruction === Instructions.jalr)
-    when(io.fetch.valid) {
-      io.fetch.address := MuxCase(
+    when(io.branchOutput.valid) {
+      io.branchOutput.address := MuxCase(
         io.reservationStation.bits.programCounter,
         Seq(
           // 分岐
           // Equal
           (instructionChecker.output.branch === BranchOperations.Equal)
             -> Mux(
-            io.reservationStation.bits.value1 === io.reservationStation.bits.value2,
-            branchedProgramCounter,
-            nextProgramCounter
-          ),
+              io.reservationStation.bits.value1 === io.reservationStation.bits.value2,
+              branchedProgramCounter,
+              nextProgramCounter
+            ),
           // NotEqual
           (instructionChecker.output.branch === BranchOperations.NotEqual)
             -> Mux(

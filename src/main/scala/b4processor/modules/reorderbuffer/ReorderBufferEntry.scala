@@ -1,9 +1,11 @@
 package b4processor.modules.reorderbuffer
 
+import b4processor.Parameters
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
+import chisel3.experimental.ChiselEnum
 
-class ReorderBufferEntry extends Bundle {
+class ReorderBufferEntry(implicit params: Parameters) extends Bundle {
 
   /** プログラムカウンタ */
   val programCounter = SInt(64.W)
@@ -19,14 +21,19 @@ class ReorderBufferEntry extends Bundle {
 
   /** 該当のbufferがStore命令かどうか */
   val storeSign = Bool()
+
+  /** 予測ステータス */
+  val prediction = new PredictionStatus.Type
+
+  /** 分岐ID */
+  val branchID = UInt(params.branchBufferSize.W)
 }
 
 object ReorderBufferEntry {
-  def default: ReorderBufferEntry = (new ReorderBufferEntry).Lit(
-    _.value -> 0.U,
-    _.valueReady -> false.B,
-    _.programCounter -> 0.S,
-    _.destinationRegister -> 0.U,
-    _.storeSign -> false.B
-  )
+  def default(implicit params: Parameters): ReorderBufferEntry = {
+    val w = Wire(new ReorderBufferEntry)
+    w := DontCare
+    w.destinationRegister := 0.U
+    w
+  }
 }

@@ -10,7 +10,7 @@ class BranchOutputCollector(implicit params: Parameters) extends Module {
     val executor = Vec(params.runParallel, Input(new BranchOutput))
   })
   for (i <- 0 until params.runParallel) {
-    io.fetch.addresses(i) := RegNext(io.executor(i))
+    io.fetch.addresses(i) := io.executor(i)
   }
 }
 

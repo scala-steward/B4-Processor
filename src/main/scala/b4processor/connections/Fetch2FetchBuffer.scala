@@ -12,8 +12,9 @@ class Fetch2FetchBuffer(implicit params: Parameters) extends Bundle {
     Decoupled(new Bundle {
       val instruction = UInt(32.W)
       val programCounter = SInt(64.W)
-      val isPrediction = Bool()
+      val isBranch = Bool()
       val branchID = UInt(params.branchBufferSize.W)
     })
   )
+  val flush = Output(Bool())
 }

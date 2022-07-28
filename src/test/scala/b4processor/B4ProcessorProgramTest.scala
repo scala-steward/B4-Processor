@@ -19,9 +19,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
           c.clock.setTimeout(20)
-          while (c.io.registerFileContents.get(12).peekInt() != 20)
+          while (c.io.registerFileContents.get(3).peekInt() == 0)
             c.clock.step()
-          c.io.registerFileContents.get(12).expect(20)
+          c.io.registerFileContents.get(3).expect(20)
           c.clock.step()
       }
   }
@@ -36,7 +36,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
           c.clock.setTimeout(150)
-          while (c.io.registerFileContents.get(5).peekInt() != 55)
+          while (c.io.registerFileContents.get(5).peekInt() == 0)
             c.clock.step()
           c.io.registerFileContents.get(5).expect(55)
           c.clock.step()
@@ -49,7 +49,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
           c.clock.setTimeout(100)
-          while (c.io.registerFileContents.get(5).peekInt() != 55)
+          while (c.io.registerFileContents.get(5).peekInt() == 0)
             c.clock.step()
           c.io.registerFileContents.get(5).expect(55)
           c.clock.step()
@@ -60,13 +60,32 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute fibonacci with 4 parallel" in {
     test(
       new B4ProcessorWithMemory("riscv-sample-programs/fibonacci/fibonacci")(
-        defaultParams.copy(runParallel = 4)
+        defaultParams
+          .copy(runParallel = 4, tagWidth = 5, maxRegisterFileCommitCount = 5)
       )
     )
       .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
         c =>
           c.clock.setTimeout(100)
-          while (c.io.registerFileContents.get(5).peekInt() != 55)
+          while (c.io.registerFileContents.get(5).peekInt() == 0)
+            c.clock.step()
+          c.io.registerFileContents.get(5).expect(55)
+          c.clock.step()
+      }
+  }
+
+  // フィボナッチ数列の計算が同時発行数8でできる
+  it should "execute fibonacci with 8 parallel" in {
+    test(
+      new B4ProcessorWithMemory("riscv-sample-programs/fibonacci/fibonacci")(
+        defaultParams
+          .copy(runParallel = 8, tagWidth = 5, maxRegisterFileCommitCount = 8)
+      )
+    )
+      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
+        c =>
+          c.clock.setTimeout(100)
+          while (c.io.registerFileContents.get(5).peekInt() == 0)
             c.clock.step()
           c.io.registerFileContents.get(5).expect(55)
           c.clock.step()

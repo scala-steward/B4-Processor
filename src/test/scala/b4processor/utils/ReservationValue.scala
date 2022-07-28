@@ -8,5 +8,6 @@ case class ReservationValue(
   function3: Int,
   immediateOrFunction7: Int,
   opcode: Int,
-  programCounter: BigInt
+  programCounter: BigInt,
+  branchID: Int = 0
 )

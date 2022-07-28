@@ -39,6 +39,8 @@ class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
       decoder.source2.sourceRegister.poke(values.source2)
       decoder.destination.destinationRegister.poke(values.destination)
       decoder.programCounter.poke(values.programCounter)
+      decoder.branchID.poke(values.branchID)
+      decoder.isBranch.poke(values.isBranch)
     }
   }
 
@@ -56,13 +58,25 @@ class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
     }
   }
 
+  def sendBranchBuffer(branchID: Int, correct: Boolean): Unit = {
+    this.io.branchBuffer.valid.poke(true)
+    this.io.branchBuffer.bits.BranchID.poke(branchID)
+    this.io.branchBuffer.bits.correct.poke(correct)
+    this.clock.step()
+    this.io.branchBuffer.valid.poke(false)
+  }
+
   def printRF(): Unit = {
-    for (i <- 0 until params.maxRegisterFileCommitCount)
-      println(s"rf valid=${this.io.registerFile(i).valid.peek()} rd=${this.io
-          .registerFile(i)
-          .bits
-          .destinationRegister
-          .peek()}, value=${this.io.registerFile(i).bits.value.peek()}")
+    for (i <- 0 until params.maxRegisterFileCommitCount) {
+      val rf_valid = this.io.registerFile(i).valid.peek()
+      val rf_destination = this.io
+        .registerFile(i)
+        .bits
+        .destinationRegister
+        .peek()
+      val rf_value = this.io.registerFile(i).bits.value.peek()
+      println(s"rf valid=${rf_valid} rd=${rf_destination}, value=${rf_value}")
+    }
   }
 }
 
@@ -760,154 +774,359 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  //  it should "have an output in register file with 4 with correct predictions" in {
-  //    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-  //      c.initialize()
-  //      c.clock.setTimeout(10)
-  //
-  //      // 値の確認
-  //      c.expectRegisterFile(Seq(None, None, None, None))
-  //
-  //      // 値のセット
-  //      c.setDecoder(Seq(
-  //        DecoderValue(valid = true, destination = 1, source1 = 2, source2 = 3, programCounter = 500),
-  //        DecoderValue(valid = true, destination = 2, source1 = 2, source2 = 3, programCounter = 504),
-  //        DecoderValue(valid = true, destination = 3, source1 = 2, source2 = 3, programCounter = 508, isPrediction = true),
-  //        DecoderValue(valid = true, destination = 4, source1 = 2, source2 = 3, programCounter = 512, isPrediction = true),
-  //      ))
-  //
-  //      c.clock.step()
-  //
-  //
-  //      // 値のセット
-  //      c.setDecoder(Seq(
-  //        DecoderValue(valid = true, destination = 5, source1 = 2, source2 = 3, programCounter = 516, isPrediction = true),
-  //        DecoderValue(valid = true, destination = 6, source1 = 2, source2 = 3, programCounter = 520, isPrediction = true),
-  //        DecoderValue(valid = true, destination = 7, source1 = 2, source2 = 3, programCounter = 524, isPrediction = true),
-  //        DecoderValue(valid = true, destination = 8, source1 = 2, source2 = 3, programCounter = 528, isPrediction = true),
-  //      ))
-  //      c.setALU(Seq(
-  //        Some(ALUValue(destinationTag = 4, value = 50)),
-  //        Some(ALUValue(destinationTag = 5, value = 60)),
-  //        Some(ALUValue(destinationTag = 6, value = 70)),
-  //        Some(ALUValue(destinationTag = 7, value = 80))
-  //      ))
-  //
-  //      c.clock.step()
-  //      c.setDecoder()
-  //      c.setALU(Seq(
-  //        Some(ALUValue(destinationTag = 0, value = 10)),
-  //        Some(ALUValue(destinationTag = 1, value = 20)),
-  //        Some(ALUValue(destinationTag = 2, value = 30)),
-  //        Some(ALUValue(destinationTag = 3, value = 40))
-  //      ))
-  //
-  //      c.clock.step()
-  //      c.setALU(Seq(None, None, None, None))
-  //      // 値の確認
-  //      c.expectRegisterFile(Seq(
-  //        Some(RegisterFileValue(destinationRegister = 1, value = 10)),
-  //        Some(RegisterFileValue(destinationRegister = 2, value = 20)),
-  //        None,
-  //        None,
-  //      ))
-  //
-  //      c.clock.step()
-  //      c.expectRegisterFile(Seq(
-  //        None,
-  //        None,
-  //        None,
-  //        None,
-  //      ))
-  //
-  //      c.clock.step()
-  //
-  //      c.clock.step()
-  //      c.expectRegisterFile(Seq(
-  //        Some(RegisterFileValue(destinationRegister = 3, value = 30)),
-  //        Some(RegisterFileValue(destinationRegister = 4, value = 40)),
-  //        Some(RegisterFileValue(destinationRegister = 5, value = 50)),
-  //        Some(RegisterFileValue(destinationRegister = 6, value = 60)),
-  //      ))
-  //
-  //      c.clock.step()
-  //      c.expectRegisterFile(Seq(
-  //        Some(RegisterFileValue(destinationRegister = 7, value = 70)),
-  //        Some(RegisterFileValue(destinationRegister = 8, value = 80)),
-  //        None,
-  //        None,
-  //      ))
-  //
-  //      c.clock.step(5)
-  //    }
-  //  }
+  it should "have an output in register file with 4 with correct predictions" in {
+    test(
+      new ReorderBufferWrapper()(
+        defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4)
+      )
+    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize()
+      c.clock.setTimeout(10)
 
-  //  it should "have an output in register file with 4 with miss prediction" in {
-  //    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-  //      c.initialize()
-  //      c.clock.setTimeout(10)
-  //
-  //      // 値の確認
-  //      c.expectRegisterFile(Seq(None, None, None, None))
-  //
-  //      // 値のセット
-  //      c.setDecoder(Seq(
-  //        DecoderValue(valid = true, destination = 1, source1 = 2, source2 = 3, programCounter = 500),
-  //        DecoderValue(valid = true, destination = 2, source1 = 2, source2 = 3, programCounter = 504),
-  //        DecoderValue(valid = true, destination = 3, source1 = 2, source2 = 3, programCounter = 508, isPrediction = true),
-  //        DecoderValue(valid = true, destination = 4, source1 = 2, source2 = 3, programCounter = 512, isPrediction = true),
-  //      ))
-  //
-  //      c.clock.step()
-  //
-  //
-  //      // 値のセット
-  //      c.setDecoder(Seq(
-  //        DecoderValue(valid = true, destination = 5, source1 = 2, source2 = 3, programCounter = 516, isPrediction = true),
-  //        DecoderValue(valid = true, destination = 6, source1 = 2, source2 = 3, programCounter = 520, isPrediction = true),
-  //        DecoderValue(valid = true, destination = 7, source1 = 2, source2 = 3, programCounter = 524, isPrediction = true),
-  //        DecoderValue(valid = true, destination = 8, source1 = 2, source2 = 3, programCounter = 528, isPrediction = true),
-  //      ))
-  //      c.setALU(Seq(
-  //        Some(ALUValue(destinationTag = 4, value = 50)),
-  //        Some(ALUValue(destinationTag = 5, value = 60)),
-  //        Some(ALUValue(destinationTag = 6, value = 70)),
-  //        Some(ALUValue(destinationTag = 7, value = 80))
-  //      ))
-  //
-  //      c.clock.step()
-  //      c.setDecoder()
-  //      c.setALU(Seq(
-  //        Some(ALUValue(destinationTag = 0, value = 10)),
-  //        Some(ALUValue(destinationTag = 1, value = 20)),
-  //        Some(ALUValue(destinationTag = 2, value = 30)),
-  //        Some(ALUValue(destinationTag = 3, value = 40))
-  //      ))
-  //
-  //      c.clock.step()
-  //      c.setALU(Seq(None, None, None, None))
-  //      // 値の確認
-  //      c.expectRegisterFile(Seq(
-  //        Some(RegisterFileValue(destinationRegister = 1, value = 10)),
-  //        Some(RegisterFileValue(destinationRegister = 2, value = 20)),
-  //        None,
-  //        None,
-  //      ))
-  //
-  //      c.clock.step()
-  //      c.expectRegisterFile(Seq(
-  //        None,
-  //        None,
-  //        None,
-  //        None,
-  //      ))
-  //
-  //      c.clock.step()
-  //      c.expectRegisterFile(Seq(
-  //        None, None, None, None
-  //      ))
-  //
-  //      c.clock.step(5)
-  //    }
-  //  }
+      // 値の確認
+      c.expectRegisterFile(Seq(None, None, None, None))
+
+      // 値のセット
+      c.setDecoder(
+        Seq(
+          DecoderValue(
+            valid = true,
+            destination = 1,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 500
+          ),
+          DecoderValue(
+            valid = true,
+            destination = 2,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 504
+          ),
+          DecoderValue(
+            valid = true,
+            destination = 3,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 508,
+            isBranch = true,
+            branchID = 0
+          ),
+          DecoderValue(
+            valid = true,
+            destination = 4,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 512
+          )
+        )
+      )
+
+      c.clock.step()
+
+      // 値のセット
+      c.setDecoder(
+        Seq(
+          DecoderValue(
+            valid = true,
+            destination = 5,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 516
+          ),
+          DecoderValue(
+            valid = true,
+            destination = 6,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 520,
+            isBranch = true,
+            branchID = 1
+          ),
+          DecoderValue(
+            valid = true,
+            destination = 7,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 524
+          ),
+          DecoderValue(
+            valid = true,
+            destination = 8,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 528
+          )
+        )
+      )
+      c.setOutputs(
+        Seq(
+          Some(ExecutorValue(destinationTag = 4, value = 50)),
+          Some(ExecutorValue(destinationTag = 5, value = 60)),
+          Some(ExecutorValue(destinationTag = 6, value = 70)),
+          Some(ExecutorValue(destinationTag = 7, value = 80)),
+          None
+        )
+      )
+
+      c.clock.step()
+      c.setDecoder()
+      c.setOutputs(
+        Seq(
+          Some(ExecutorValue(destinationTag = 0, value = 10)),
+          Some(ExecutorValue(destinationTag = 1, value = 20)),
+          Some(ExecutorValue(destinationTag = 2, value = 30)),
+          Some(ExecutorValue(destinationTag = 3, value = 40)),
+          None
+        )
+      )
+
+      c.clock.step()
+      c.setOutputs(Seq(None, None, None, None, None))
+      // 値の確認
+      c.expectRegisterFile(
+        Seq(
+          Some(RegisterFileValue(destinationRegister = 1, value = 10)),
+          Some(RegisterFileValue(destinationRegister = 2, value = 20)),
+          None,
+          None
+        )
+      )
+
+      c.clock.step()
+      c.expectRegisterFile(Seq(None, None, None, None))
+
+      c.clock.step()
+      c.sendBranchBuffer(0, correct = true)
+
+      c.expectRegisterFile(
+        Seq(
+          Some(RegisterFileValue(destinationRegister = 3, value = 30)),
+          Some(RegisterFileValue(destinationRegister = 4, value = 40)),
+          Some(RegisterFileValue(destinationRegister = 5, value = 50)),
+          None
+        )
+      )
+
+      c.clock.step()
+      c.sendBranchBuffer(1, correct = true)
+
+      c.expectRegisterFile(
+        Seq(
+          Some(RegisterFileValue(destinationRegister = 6, value = 60)),
+          Some(RegisterFileValue(destinationRegister = 7, value = 70)),
+          Some(RegisterFileValue(destinationRegister = 8, value = 80)),
+          None
+        )
+      )
+
+      c.clock.step()
+      c.setDecoder(
+        Seq(
+          DecoderValue(
+            valid = true,
+            destination = 1,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 500
+          ),
+          DecoderValue(),
+          DecoderValue(),
+          DecoderValue()
+        )
+      )
+      c.clock.step()
+      c.setOutputs(
+        Seq(
+          Some(ExecutorValue(destinationTag = 8, value = 100)),
+          None,
+          None,
+          None,
+          None
+        )
+      )
+      c.clock.step()
+      c.expectRegisterFile(
+        Seq(
+          Some(RegisterFileValue(destinationRegister = 1, value = 100)),
+          None,
+          None,
+          None
+        )
+      )
+
+      c.clock.step(5)
+    }
+  }
+
+  it should "have an output in register file with 4 with incorrect predictions" in {
+    test(
+      new ReorderBufferWrapper()(
+        defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4)
+      )
+    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize()
+      c.clock.setTimeout(10)
+
+      // 値の確認
+      c.expectRegisterFile(Seq(None, None, None, None))
+
+      // 値のセット
+      c.setDecoder(
+        Seq(
+          DecoderValue(
+            valid = true,
+            destination = 1,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 500
+          ),
+          DecoderValue(
+            valid = true,
+            destination = 2,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 504
+          ),
+          DecoderValue(
+            valid = true,
+            destination = 3,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 508,
+            isBranch = true,
+            branchID = 0
+          ),
+          DecoderValue(
+            valid = true,
+            destination = 4,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 512
+          )
+        )
+      )
+
+      c.clock.step()
+
+      // 値のセット
+      c.setDecoder(
+        Seq(
+          DecoderValue(
+            valid = true,
+            destination = 5,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 516
+          ),
+          DecoderValue(
+            valid = true,
+            destination = 6,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 520,
+            isBranch = true,
+            branchID = 1
+          ),
+          DecoderValue(
+            valid = true,
+            destination = 7,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 524
+          ),
+          DecoderValue(
+            valid = true,
+            destination = 8,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 528
+          )
+        )
+      )
+      c.setOutputs(
+        Seq(
+          Some(ExecutorValue(destinationTag = 4, value = 50)),
+          Some(ExecutorValue(destinationTag = 5, value = 60)),
+          Some(ExecutorValue(destinationTag = 6, value = 70)),
+          Some(ExecutorValue(destinationTag = 7, value = 80)),
+          None
+        )
+      )
+
+      c.clock.step()
+      c.setDecoder()
+      c.setOutputs(
+        Seq(
+          Some(ExecutorValue(destinationTag = 0, value = 10)),
+          Some(ExecutorValue(destinationTag = 1, value = 20)),
+          Some(ExecutorValue(destinationTag = 2, value = 30)),
+          Some(ExecutorValue(destinationTag = 3, value = 40)),
+          None
+        )
+      )
+
+      c.clock.step()
+      c.setOutputs(Seq(None, None, None, None, None))
+      // 値の確認
+      c.expectRegisterFile(
+        Seq(
+          Some(RegisterFileValue(destinationRegister = 1, value = 10)),
+          Some(RegisterFileValue(destinationRegister = 2, value = 20)),
+          None,
+          None
+        )
+      )
+
+      c.clock.step()
+      c.expectRegisterFile(Seq(None, None, None, None))
+
+      c.clock.step()
+      c.sendBranchBuffer(0, correct = false)
+
+      c.expectRegisterFile(Seq(None, None, None, None))
+
+      c.clock.step()
+      c.sendBranchBuffer(1, correct = false)
+
+      c.expectRegisterFile(Seq(None, None, None, None))
+
+      c.clock.step()
+      c.setDecoder(
+        Seq(
+          DecoderValue(
+            valid = true,
+            destination = 1,
+            source1 = 2,
+            source2 = 3,
+            programCounter = 500
+          ),
+          DecoderValue(),
+          DecoderValue(),
+          DecoderValue()
+        )
+      )
+      c.clock.step()
+      c.setOutputs(
+        Seq(
+          Some(ExecutorValue(destinationTag = 8, value = 100)),
+          None,
+          None,
+          None,
+          None
+        )
+      )
+      c.clock.step()
+      c.expectRegisterFile(
+        Seq(
+          Some(RegisterFileValue(destinationRegister = 1, value = 100)),
+          None,
+          None,
+          None
+        )
+      )
+
+      c.clock.step(5)
+    }
+  }
 }

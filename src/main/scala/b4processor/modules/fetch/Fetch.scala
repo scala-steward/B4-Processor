@@ -31,19 +31,11 @@ class Fetch(implicit params: Parameters) extends Module {
     /** ロードストアキューが空である */
     val loadStoreQueueEmpty = Input(Bool())
 
-    /** 実行ユニットから分岐先の計算結果が帰ってきた */
-    val collectedBranchAddresses = Flipped(new CollectedBranchAddresses)
-
     /** デコーダ */
     val fetchBuffer = new Fetch2FetchBuffer
 
     /** デバッグ用 */
     val PC = if (params.debug) Some(Output(SInt(64.W))) else None
-    val nextPC = if (params.debug) Some(Output(SInt(64.W))) else None
-    val branchTypes =
-      if (params.debug)
-        Some(Output(Vec(params.runParallel, new BranchType.Type)))
-      else None
   })
 
   /** プログラムカウンタ */
@@ -53,73 +45,108 @@ class Fetch(implicit params: Parameters) extends Module {
   val waiting = RegInit(WaitingReason.None)
 
   val isPrediction = RegInit(false.B)
-  val branchID = Reg(UInt(params.branchBufferSize.W))
 
   var nextPC = pc
   var nextWait = waiting
-  for (i <- 0 until params.runParallel) {
-    val decoder = io.fetchBuffer.decoder(i)
-    val cache = io.cache(i)
+  when(io.branchBuffer.changeAddress.valid) {
+    pc := io.branchBuffer.changeAddress.bits
+    for (i <- 0 until params.runParallel) {
+      val decoder = io.fetchBuffer.decoder(i)
+      val cache = io.cache(i)
+      val branchBuffer = io.branchBuffer.branches(i)
+      val prediction = io.prediction(i)
 
-    cache.address := nextPC
+      assert(branchBuffer.ready === false.B)
+      branchBuffer.valid := DontCare
+      branchBuffer.address := DontCare
+      decoder.valid := false.B
+      decoder.bits := DontCare
+      cache.address := DontCare
+      prediction.address := DontCare
+      io.fetchBuffer.flush := true.B
+    }
+  }.otherwise {
+    io.fetchBuffer.flush := false.B
+    for (i <- 0 until params.runParallel) {
+      val decoder = io.fetchBuffer.decoder(i)
+      val cache = io.cache(i)
+      val branchBuffer = io.branchBuffer.branches(i)
+      val prediction = io.prediction(i)
 
-    val branch = Module(new CheckBranch)
-    branch.io.instruction := io.cache(i).output.bits
-    if (params.debug)
-      io.branchTypes.get(i) := branch.io.branchType
+      branchBuffer.valid := false.B
+      branchBuffer.address := DontCare
 
-    // キャッシュからの値があり、待つ必要はなく、JAL命令ではない（JALはアドレスを変えるだけとして処理できて、デコーダ以降を使う必要はない）
-    decoder.valid := io
-      .cache(i)
-      .output
-      .valid && nextWait === WaitingReason.None
-    decoder.bits.programCounter := nextPC
-    decoder.bits.instruction := cache.output.bits
+      cache.address := nextPC
+      prediction.address := nextPC
 
-    // 次に停止する必要があるか確認
-    nextWait = Mux(
-      nextWait =/= WaitingReason.None || !decoder.ready || !decoder.valid,
-      nextWait,
-      MuxLookup(
+      val branch = Module(new CheckBranch)
+      branch.io.instruction := io.cache(i).output.bits
+
+      val isBranch = MuxLookup(
         branch.io.branchType.asUInt,
-        nextWait,
+        false.B,
         Seq(
-          BranchType.Branch.asUInt -> WaitingReason.Branch,
-          BranchType.JALR.asUInt -> WaitingReason.JALR,
-          BranchType.Fence.asUInt -> WaitingReason.Fence,
-          BranchType.FenceI.asUInt -> WaitingReason.FenceI,
-          BranchType.JAL.asUInt -> Mux(
-            branch.io.offset === 0.S,
-            WaitingReason.BusyLoop,
-            WaitingReason.None
+          BranchType.Branch.asUInt -> true.B,
+          BranchType.JALR.asUInt -> true.B
+        )
+      )
+
+      decoder.valid := io
+        .cache(i)
+        .output
+        .valid && nextWait === WaitingReason.None
+      decoder.bits.programCounter := nextPC
+      decoder.bits.instruction := cache.output.bits
+      decoder.bits.isBranch := isBranch
+      decoder.bits.branchID := branchBuffer.branchID
+
+      // 次に停止する必要があるか確認
+      nextWait = Mux(
+        nextWait =/= WaitingReason.None || !decoder.ready || !decoder.valid,
+        nextWait,
+        MuxLookup(
+          branch.io.branchType.asUInt,
+          nextWait,
+          Seq(
+            BranchType.Fence.asUInt -> WaitingReason.Fence,
+            BranchType.FenceI.asUInt -> WaitingReason.FenceI,
+            BranchType.JAL.asUInt -> Mux(
+              branch.io.offset === 0.S,
+              WaitingReason.BusyLoop,
+              WaitingReason.None
+            )
           )
         )
       )
-    )
-    // PCの更新を確認
-    nextPC = nextPC + MuxCase(
-      4.S,
-      Seq(
-        (!decoder.ready || !decoder.valid) -> 0.S,
-        (branch.io.branchType === BranchType.JAL) -> branch.io.offset,
-        (nextWait =/= WaitingReason.None) -> 0.S
-      )
-    )
 
+      // PCの更新を確認
+      nextPC = nextPC + MuxCase(
+        4.S,
+        Seq(
+          (!decoder.ready || !decoder.valid) -> 0.S,
+          (branch.io.branchType === BranchType.JAL) -> branch.io.offset,
+          (branch.io.branchType === BranchType.Branch) -> Mux(
+            prediction.prediction,
+            branch.io.offset,
+            4.S
+          ),
+          (branch.io.branchType === BranchType.JALR) -> 4.S,
+          (nextWait =/= WaitingReason.None) -> 0.S
+        )
+      )
+
+      when(isBranch && decoder.ready && decoder.valid) {
+        branchBuffer.valid := true.B
+        branchBuffer.address := nextPC
+      }
+
+    }
+    pc := nextPC
+    waiting := nextWait
   }
-  pc := nextPC
-  waiting := nextWait
 
   // 停止している際の挙動
   when(waiting =/= WaitingReason.None) {
-    when(waiting === WaitingReason.Branch || waiting === WaitingReason.JALR) {
-      for (e <- io.collectedBranchAddresses.addresses) {
-        when(e.valid) {
-          waiting := WaitingReason.None
-          pc := e.address
-        }
-      }
-    }
     when(waiting === WaitingReason.Fence || waiting === WaitingReason.FenceI) {
       when(io.reorderBufferEmpty && io.loadStoreQueueEmpty) {
         waiting := WaitingReason.None
@@ -128,21 +155,13 @@ class Fetch(implicit params: Parameters) extends Module {
     }
     when(waiting === WaitingReason.BusyLoop) {
 
-//      /** 1クロック遅らせるだけ */
-//      waiting := WaitingReason.None
+      /** 1クロック遅らせるだけ */
+      waiting := WaitingReason.None
     }
   }
 
   if (params.debug) {
     io.PC.get := pc
-    io.nextPC.get := nextPC
-  }
-
-  // TODO: 分岐予測を使う
-  for (p <- io.prediction) {
-    p.isBranch := DontCare
-    p.prediction := DontCare
-    p.addressLowerBits := DontCare
   }
 }
 

@@ -21,10 +21,12 @@ class ReservationStationWrapper(implicit params: Parameters)
   def setDecoderInput(
     programCounter: Option[Int],
     value1: Option[Int] = None,
-    value2: Option[Int] = None
+    value2: Option[Int] = None,
+    branchID: Int = 0
   ): Unit = {
-    this.io.decoder.entry.poke(ReservationStationEntry.default)
+//    this.io.decoder.entry.poke(ReservationStationEntry.default)
     this.io.decoder.entry.valid.poke(programCounter.isDefined)
+    this.io.decoder.entry.branchID.poke(branchID)
     if (programCounter.isDefined)
       this.io.decoder.entry.programCounter.poke(programCounter.get)
     if (value1.isDefined) {

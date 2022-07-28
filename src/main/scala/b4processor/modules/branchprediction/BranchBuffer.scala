@@ -10,21 +10,21 @@ import chisel3.util._
 import scala.math.pow
 
 class BranchBuffer(implicit params: Parameters) extends Module {
-  val buffer_size = params.branchBufferSize
-
   val io = IO(new Bundle {
     val fetch = Flipped(new Fetch2BranchBuffer)
     val reorderBuffer = new BranchBuffer2ReorderBuffer
     val branchOutput = Flipped(new CollectedBranchAddresses)
   })
 
-  val buffer = Reg(Vec(pow(2, buffer_size).toInt, new BranchBufferEntry))
-  val head = RegInit(0.U(buffer_size.W))
-  val tail = RegInit(0.U(buffer_size.W))
+  private val buffer = Reg(
+    Vec(pow(2, params.branchBufferSize).toInt, new BranchBufferEntry)
+  )
+  private val head = RegInit(0.U(params.branchBufferSize.W))
+  private val tail = RegInit(0.U(params.branchBufferSize.W))
 
-  val nextFlush = WireInit(false.B)
-  val flush = RegInit(false.B)
-  val flushUntil = RegInit(0.U(buffer_size.W))
+  private val nextFlush = WireInit(false.B)
+  private val flush = RegInit(false.B)
+  private val flushUntil = RegInit(0.U(params.branchBufferSize.W))
 
   {
     var nextHead = head
@@ -47,23 +47,26 @@ class BranchBuffer(implicit params: Parameters) extends Module {
 
     io.fetch.changeAddress.valid := false.B
     io.fetch.changeAddress.bits := DontCare
-    r.valid := true.B
+    r.valid := false.B
     r.bits := DontCare
 
     val indexOk = tail =/= head
     val entry = buffer(tail)
-    when(indexOk && entry.correctValid) {
-      r.valid := true.B
+    when(indexOk && (entry.correctValid || flush)) {
+      r.valid := true.B && !flush
       r.bits.BranchID := tail
-      r.bits.correct := entry.correct
+      r.bits.correct := entry.correct && !flush
 
       tail := tail + 1.U
-      when(!entry.correct) {
+      when(!entry.correct && !flush) {
         io.fetch.changeAddress.valid := true.B
         io.fetch.changeAddress.bits := entry.address
-        flush := true.B
+        flush := tail + 1.U =/= head
         nextFlush := true.B
-        flushUntil := head
+        flushUntil := head - 1.U
+      }
+      when(flush && tail === flushUntil) {
+        flush := false.B
       }
     }
   }
