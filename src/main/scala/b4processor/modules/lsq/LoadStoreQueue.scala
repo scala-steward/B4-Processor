@@ -21,6 +21,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       Vec(params.runParallel, Flipped(Decoupled(new Decoder2LoadStoreQueue())))
     val outputCollector = Flipped(new CollectedOutput)
     val reorderBuffer = Input(new LoadStoreQueue2ReorderBuffer())
+    val flush = Input(Bool())
     val memory =
       Vec(params.maxRegisterFileCommitCount, new LoadStoreQueue2Memory)
     val isEmpty = Output(Bool())
@@ -52,7 +53,6 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     val decoder = io.decoders(i)
     decoder.ready := tail =/= insertIndex + 1.U
     val entryValid = decoder.ready && decoder.valid
-    // TODO decoderのvalidと機能が一部被っている
 
     /** 現状，(LSQの最大エントリ数 = リオーダバッファの最大エントリ数)であり，
       * プロセッサで同時実行可能な最大命令数がリオーダバッファのエントリ番号数(dtag数)であることから，
@@ -129,17 +129,19 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   // emissionindex : 送出可能か調べるエントリを指すindex
   // nexttail      : 1クロック分の送出確認後，動かすtailのエントリを指すindex
-  var emissionIndex = tail - 1.U
+  var emissionIndex = tail
   var nextTail = tail
+  var lastOk = true.B
 
   for (i <- 0 until params.maxRegisterFileCommitCount) {
-    emissionIndex = emissionIndex + 1.U // リングバッファ
-    io.memory(i).bits := DontCare
-    io.memory(i).valid := false.B
+    val entry = buffer(emissionIndex)
+    val mem = io.memory(i)
+    mem.bits := DontCare
+    mem.valid := false.B
 
-    when(buffer(emissionIndex).valid) {
-      Address(i) := buffer(emissionIndex).address
-      AddressValid(i) := buffer(emissionIndex).addressValid
+    when(entry.valid) {
+      Address(i) := entry.address
+      AddressValid(i) := entry.addressValid
       //      Overlap(i) := false.B
       // 先行する命令が持つアドレスの中に被りがある場合，Overlap(i) := true.B
       if (i != 0) {
@@ -153,40 +155,49 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       }
 
       // io.memory(i).valid :=  io.memory(i).ready && (head =/= tail) && ("loadの送出条件" || "storeの送出条件")
-      io.memory(i).valid := io.memory(i).ready && (head =/= tail) && buffer(
-        emissionIndex
-      ).valid && buffer(emissionIndex).addressValid &&
-        ((buffer(emissionIndex).info.accessType === Load && !Overlap(i)) ||
-          (buffer(emissionIndex).info.accessType === Store && buffer(
-            emissionIndex
-          ).storeDataValid && buffer(emissionIndex).readyReorderSign))
+      mem.valid := (head =/= nextTail) && entry.valid && entry.addressValid &&
+        ((entry.info.accessType === Load && !Overlap(i)) ||
+          (entry.info.accessType === Store && entry.storeDataValid && entry.readyReorderSign))
 
       // 送出実行
-      when(io.memory(i).valid) {
-        io.memory(i).bits.tag := buffer(emissionIndex).addressAndLoadResultTag
-        io.memory(i).bits.data := buffer(emissionIndex).storeData
-        io.memory(i).bits.address := buffer(emissionIndex).address
-        io.memory(i).bits.accessInfo := buffer(emissionIndex).info
-        buffer(emissionIndex) := LoadStoreQueueEntry.default
+      when(mem.valid) {
+        mem.bits.tag := entry.addressAndLoadResultTag
+        mem.bits.data := entry.storeData
+        mem.bits.address := entry.address
+        mem.bits.accessInfo := entry.info
       }
-    }.otherwise {
-      io.memory(i).valid := false.B
+      when(mem.valid && mem.ready) {
+        entry := LoadStoreQueueEntry.default
+      }
     }
 
     // nextTailの更新
     //    printf("%b && (%b || (%b && %b)) = %b\n", i.U === (nextTail - tail), io.memory(i).valid, head =/= nextTail, !buffer(emissionIndex).valid, (i.U === (nextTail - tail)) &&
     //    (io.memory(i).valid || (head =/= nextTail && !buffer(emissionIndex).valid))
     //    )
-    nextTail = nextTail + Mux(
-      (i.U === (nextTail - tail)) &&
-        (io.memory(i).valid || (head =/= nextTail && !buffer(
-          emissionIndex
-        ).valid)),
-      1.U,
-      0.U
-    )
+    lastOk = lastOk &&
+      ((mem.valid && mem.ready) || (head =/= nextTail && !entry.valid))
+    nextTail = nextTail + Mux(lastOk, 1.U, 0.U)
+    emissionIndex = emissionIndex + 1.U // リングバッファ
   }
   tail := nextTail
+
+  // 投機的な実行に失敗した際のエントリの削除
+  when(io.flush) {
+    for (b <- buffer) {
+      when(b.valid) {
+        when(b.info.accessType === Load && (!b.addressValid)) {
+          b.valid := false.B
+        }
+        when(
+          b.info.accessType === Store && (!b.addressValid || !b.storeDataValid || !b.readyReorderSign)
+        ) {
+          b.valid := false.B
+        }
+      }
+
+    }
+  }
 
   // デバッグ
   if (params.debug) {

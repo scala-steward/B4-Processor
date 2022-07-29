@@ -193,10 +193,8 @@ class Executor(implicit params: Parameters) extends Module {
           // jalr
           (instructionChecker.output.instruction === Instructions.jalr)
             -> Cat(
-              (io.reservationStation.bits.value1 + io.reservationStation.bits.value2)(
-                63,
-                1
-              ),
+              (io.reservationStation.bits.value1(63, 1) +
+                io.reservationStation.bits.value2(63, 1)),
               0.U
             ).asSInt
         )

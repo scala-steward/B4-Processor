@@ -28,7 +28,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
     val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
     val branchBuffer = Flipped(new BranchBuffer2ReorderBuffer)
-    val reservationStationFlush = Output(Bool())
+    val flushOutput = Output(Bool())
     val isEmpty = Output(Bool())
 
     val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
@@ -37,7 +37,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       if (params.debug) Some(Output(new ReorderBufferEntry)) else None
   })
 
-  io.reservationStationFlush := false.B
+  io.flushOutput := false.B
 
   private val head = RegInit(0.U(params.tagWidth.W))
   private val tail = RegInit(0.U(params.tagWidth.W))
@@ -157,24 +157,26 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         rf.bits.destinationRegister := 0.U
       }
 
-      when(rf.valid) {
+      when(canCommit) {
         // LSQへストア実行信号
         io.loadStoreQueue.destinationTag(i) := index
         io.loadStoreQueue.valid(i) := entry.storeSign
-        io.loadStoreQueue.delete(i) := flush
         entry := ReorderBufferEntry.default
       }.otherwise {
         io.loadStoreQueue.destinationTag(i) := 0.U
         io.loadStoreQueue.valid(i) := false.B
-        io.loadStoreQueue.delete(i) := false.B
       }
-      nextTail = Mux(rf.valid, nextTail + 1.U, nextTail)
+      nextTail = Mux(canCommit, nextTail + 1.U, nextTail)
 
-      lastValid = rf.valid
+      lastValid = canCommit
     }
     when(buffer(tail).prediction === Incorrect && flushPending && !flush) {
       flush := true.B
-      io.reservationStationFlush := true.B
+      io.flushOutput := true.B
+      io.registerFile(0).valid := true.B
+      io.registerFile(0).bits.value := buffer(tail).value
+      io.registerFile(0).bits.destinationRegister :=
+        buffer(tail).destinationRegister
     }
     when(flush) {
       flush := false.B

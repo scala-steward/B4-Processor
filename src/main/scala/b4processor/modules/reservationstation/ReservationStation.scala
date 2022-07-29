@@ -18,6 +18,8 @@ class ReservationStation(implicit params: Parameters) extends Module {
     val flush = Input(Bool())
   })
 
+  val flushing = io.flush
+
   val reservation = RegInit(
     VecInit(
       Seq.fill(math.pow(2, params.tagWidth).toInt / params.runParallel)(
@@ -26,14 +28,14 @@ class ReservationStation(implicit params: Parameters) extends Module {
     )
   )
   val emptyList = reservation.map { r => !r.valid }
-  val readyList = reservation.map { r => r.ready1 && r.ready2 }
+  val readyList = reservation.map { r => r.valid && r.ready1 && r.ready2 }
 
-  val hasEmpty = Cat(emptyList).orR
+  val hasEmpty = Cat(emptyList).orR && !flushing
   val emptyIndex = MuxCase(
     0.U,
     emptyList.zipWithIndex.map { case (empty, index) => empty -> index.U }
   )
-  val hasReady = Cat(readyList).orR
+  val hasReady = Cat(readyList).orR && !flushing
   val executeIndex = MuxCase(
     0.U,
     readyList.zipWithIndex.map { case (ready, index) => ready -> index.U }
@@ -88,7 +90,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
     }
   }
 
-  when(io.flush) {
+  when(flushing) {
     for (r <- reservation)
       r.valid := false.B
   }

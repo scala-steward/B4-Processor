@@ -10,5 +10,4 @@ class LoadStoreQueue2ReorderBuffer(implicit params: Parameters) extends Bundle {
   val destinationTag =
     Vec(params.maxRegisterFileCommitCount, UInt(params.tagWidth.W))
   val valid = Vec(params.maxRegisterFileCommitCount, Bool())
-  val delete = Vec(params.maxRegisterFileCommitCount, Bool())
 }

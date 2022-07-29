@@ -43,7 +43,7 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
     val Input = io.dataIn(i)
     Input.ready := tail =/= insertIndex + 1.U
 
-    when(Input.valid) {
+    when(Input.valid && Input.ready) {
       buffer(insertIndex) := DataMemoryBufferEntry.validEntry(
         address = Input.bits.address,
         tag = Input.bits.tag,

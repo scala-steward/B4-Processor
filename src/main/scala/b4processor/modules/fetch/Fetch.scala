@@ -48,6 +48,7 @@ class Fetch(implicit params: Parameters) extends Module {
 
   var nextPC = pc
   var nextWait = waiting
+
   when(io.branchBuffer.changeAddress.valid) {
     pc := io.branchBuffer.changeAddress.bits
     for (i <- 0 until params.runParallel) {
@@ -64,6 +65,7 @@ class Fetch(implicit params: Parameters) extends Module {
       cache.address := DontCare
       prediction.address := DontCare
       io.fetchBuffer.flush := true.B
+      waiting := WaitingReason.None
     }
   }.otherwise {
     io.fetchBuffer.flush := false.B

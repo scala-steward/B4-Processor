@@ -115,7 +115,7 @@ class B4Processor(implicit params: Parameters) extends Module {
     branchAddressCollector.io.executor(i) := executors(i).io.branchOutput
 
     /** リオーダバッファとリザベーションステーションのFlush接続 */
-    reservationStations(i).io.flush := reorderBuffer.io.reservationStationFlush
+    reservationStations(i).io.flush := reorderBuffer.io.flushOutput
 
   }
 
@@ -130,6 +130,9 @@ class B4Processor(implicit params: Parameters) extends Module {
 
   /** LSQと出力コレクタ */
   loadStoreQueue.io.outputCollector := outputCollector.io.outputs
+
+  /** LSQとリオーダバッファのFlushを接続 */
+  loadStoreQueue.io.flush := reorderBuffer.io.flushOutput
 
   /** レジスタファイルとリオーダバッファ */
   registerFile.io.reorderBuffer <> reorderBuffer.io.registerFile
