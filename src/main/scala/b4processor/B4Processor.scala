@@ -6,7 +6,7 @@ import b4processor.connections.{
   OutputValue
 }
 import b4processor.modules.branch_output_collector.BranchOutputCollector
-import b4processor.modules.branchprediction.BranchBuffer
+import b4processor.modules.branchprediction.{BranchBuffer, BranchPrediction}
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.decoder.Decoder
 import b4processor.modules.executor.Executor
@@ -49,6 +49,7 @@ class B4Processor(implicit params: Parameters) extends Module {
   val loadStoreQueue = Module(new LoadStoreQueue)
   val dataMemoryBuffer = Module(new DataMemoryBuffer)
   val branchBuffer = Module(new BranchBuffer)
+  val branchPrediction = Module(new BranchPrediction)
 
   val outputCollector = Module(new OutputCollector)
   val branchAddressCollector = Module(new BranchOutputCollector)
@@ -155,8 +156,8 @@ class B4Processor(implicit params: Parameters) extends Module {
   /** リオーダバッファとLSQ */
   reorderBuffer.io.loadStoreQueue <> loadStoreQueue.io.reorderBuffer
 
-  /** フェッチと分岐予測 TODO */
-  fetch.io.prediction <> DontCare
+  /** フェッチと分岐予測 */
+  fetch.io.prediction <> branchPrediction.io.fetch
 }
 
 object B4Processor extends App {

@@ -25,7 +25,10 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val decoders = Vec(params.runParallel, Flipped(new Decoder2ReorderBuffer))
     val collectedOutputs = Flipped(new CollectedOutput)
     val registerFile =
-      Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
+      Vec(
+        params.maxRegisterFileCommitCount,
+        Valid(new ReorderBuffer2RegisterFile)
+      )
     val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
     val branchBuffer = Flipped(new BranchBuffer2ReorderBuffer)
     val flushOutput = Output(Bool())

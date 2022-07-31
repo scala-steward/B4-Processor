@@ -22,7 +22,10 @@ class RegisterFile(implicit params: Parameters) extends Module {
 
     /** リオーダバッファ */
     val reorderBuffer = Flipped(
-      Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
+      Vec(
+        params.maxRegisterFileCommitCount,
+        Valid(new ReorderBuffer2RegisterFile())
+      )
     )
 
     val values = if (params.debug) Some(Output(Vec(31, UInt(64.W)))) else None
@@ -41,22 +44,18 @@ class RegisterFile(implicit params: Parameters) extends Module {
     )
   }
 
-  // リオーダバッファからくる信号はすべてtrueにして置く
-  for (rb <- io.reorderBuffer)
-    rb.ready := true.B
-
   // それぞれのデコーダへの信号
   for (dec <- io.decoders) {
     // ソースレジスタが0ならば0それ以外ならばレジスタから
-    dec.value1 := Mux(
-      dec.sourceRegister1 === 0.U,
+    dec.value1 := MuxLookup(
+      dec.sourceRegister1,
       0.U,
-      registers(dec.sourceRegister1 - 1.U)
+      (1 to 31).map { i => i.U -> registers(i - 1) }
     )
-    dec.value2 := Mux(
-      dec.sourceRegister2 === 0.U,
+    dec.value2 := MuxLookup(
+      dec.sourceRegister2,
       0.U,
-      registers(dec.sourceRegister2 - 1.U)
+      (1 to 31).map { i => i.U -> registers(i - 1) }
     )
   }
 

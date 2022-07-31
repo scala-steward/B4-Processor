@@ -57,6 +57,9 @@ class Fetch(implicit params: Parameters) extends Module {
       val branchBuffer = io.branchBuffer.branches(i)
       val prediction = io.prediction(i)
 
+      prediction.address := DontCare
+      prediction.branchID := DontCare
+
       assert(branchBuffer.ready === false.B)
       branchBuffer.valid := DontCare
       branchBuffer.address := DontCare
@@ -77,6 +80,9 @@ class Fetch(implicit params: Parameters) extends Module {
 
       branchBuffer.valid := false.B
       branchBuffer.address := DontCare
+
+      prediction.address := DontCare
+      prediction.branchID := DontCare
 
       cache.address := nextPC
       prediction.address := nextPC

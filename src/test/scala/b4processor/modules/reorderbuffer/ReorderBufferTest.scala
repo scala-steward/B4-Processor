@@ -1084,7 +1084,14 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
       c.clock.step()
       c.sendBranchBuffer(0, correct = false)
 
-      c.expectRegisterFile(Seq(None, None, None, None))
+      c.expectRegisterFile(
+        Seq(
+          Some(RegisterFileValue(destinationRegister = 3, value = 30)),
+          None,
+          None,
+          None
+        )
+      )
 
       c.clock.step()
       c.sendBranchBuffer(1, correct = false)
