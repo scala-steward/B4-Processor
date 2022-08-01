@@ -55,7 +55,7 @@ class DataMemoryInterface(implicit params: Parameters) extends Module {
         io.master.writeData.bits.data := io.dataIn.bits.data
         io.master.writeData.bits.strb := MuxLookup(
           io.dataIn.bits.accessInfo.accessWidth.asUInt,
-          "b00000000".U,
+          "b11111111".U,
           Seq(
             Byte.asUInt -> "b00000001".U,
             HalfWord.asUInt -> "b00000011".U,
