@@ -1,7 +1,7 @@
 package b4processor.modules.memory
 
 import b4processor.Parameters
-import b4processor.connections.InstructionMemory2Cache
+import b4processor.connections.InstructionMemoryInterface2Cache
 import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
 import b4processor.utils.AxiLiteMaster
@@ -9,11 +9,14 @@ import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
 
-class InstructionMemoryInterface(implicit params:Parameters) extends Module {
+class InstructionMemoryInterface(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val fetch = new InstructionMemory2Cache
-    val master = new AxiLiteMaster(64, 64)
+    val fetch = new InstructionMemoryInterface2Cache
+    val master = new AxiLiteMaster(64, 32*params.fetchWidth)
   })
+
+  io.fetch.output.valid := false.B
+  io.fetch.output.bits := 0.U
 
   io.master.readAddr.valid := false.B
   io.master.readAddr.bits.addr := 0.S
@@ -32,8 +35,21 @@ class InstructionMemoryInterface(implicit params:Parameters) extends Module {
     io.master.readData.ready := true.B
     io.master.readAddr.bits.addr := io.fetch.address
     when(io.master.readData.valid && io.master.readData.ready) {
-      io.fetch.output := io.master.readData.bits.data
+        io.fetch.output.bits := io.master.readData.bits.data
+      io.fetch.output.valid := true.B
     }
   }
 
+}
+
+object InstructionMemoryInterface extends App {
+  implicit val params = {
+    Parameters(runParallel = 1, tagWidth = 4)
+  }
+  (new ChiselStage).emitVerilog(
+      new InstructionMemoryInterface,
+      args = Array(
+        "--emission-options=disableMemRandomization,disableRegisterRandomization"
+      )
+    )
 }

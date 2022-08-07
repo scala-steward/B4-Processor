@@ -86,15 +86,15 @@ class DataMemoryInterface(implicit params: Parameters) extends Module {
       }
     }
 //  }
-  printf(p"io.datain.valid = ${io.dataIn.valid}\n")
-  printf(p"io.datain.data = ${io.dataIn.bits.data}\n")
-  printf(p"io.datain.ready = ${io.dataIn.ready}\n")
-  printf(p"io.master.writeaddr.addr = ${io.master.writeAddr.bits.addr}\n")
-  printf(p"io.master.writedata.data = ${io.master.writeData.bits.data}\n")
-  printf(p"io.master.readaddr.valid = ${io.master.readAddr.valid}\n")
-  printf(p"io.master.readaddr.addr = ${io.master.readAddr.bits.addr}\n")
-  printf(p"io.master.readdata.data = ${io.master.readData.bits.data}\n")
-  printf(p"dataout.data = ${io.dataOut.value}\n\n")
+//  printf(p"io.datain.valid = ${io.dataIn.valid}\n")
+//  printf(p"io.datain.data = ${io.dataIn.bits.data}\n")
+//  printf(p"io.datain.ready = ${io.dataIn.ready}\n")
+//  printf(p"io.master.writeaddr.addr = ${io.master.writeAddr.bits.addr}\n")
+//  printf(p"io.master.writedata.data = ${io.master.writeData.bits.data}\n")
+//  printf(p"io.master.readaddr.valid = ${io.master.readAddr.valid}\n")
+//  printf(p"io.master.readaddr.addr = ${io.master.readAddr.bits.addr}\n")
+//  printf(p"io.master.readdata.data = ${io.master.readData.bits.data}\n")
+//  printf(p"dataout.data = ${io.dataOut.value}\n\n")
 }
 
 object DataMemoryInterface extends App {
