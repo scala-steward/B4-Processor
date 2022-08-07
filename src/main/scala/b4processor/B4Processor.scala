@@ -6,12 +6,12 @@ import b4processor.connections.{
   OutputValue
 }
 import b4processor.modules.branch_output_collector.BranchOutputCollector
-import b4processor.modules.cache.InstructionMemoryCache
+import b4processor.modules.cache.{DataMemoryBuffer, InstructionMemoryCache}
 import b4processor.modules.decoder.Decoder
 import b4processor.modules.executor.Executor
 import b4processor.modules.fetch.{Fetch, FetchBuffer}
 import b4processor.modules.lsq.LoadStoreQueue
-import b4processor.modules.memory.{DataMemory, DataMemoryBuffer}
+import b4processor.modules.memory.DataMemory
 import b4processor.modules.ourputcollector.OutputCollector
 import b4processor.modules.registerfile.RegisterFile
 import b4processor.modules.reorderbuffer.ReorderBuffer

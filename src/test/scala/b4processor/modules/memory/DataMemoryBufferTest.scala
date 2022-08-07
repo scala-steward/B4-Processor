@@ -1,6 +1,7 @@
 package b4processor.modules.memory
 
 import b4processor.Parameters
+import b4processor.modules.cache.DataMemoryBuffer
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
