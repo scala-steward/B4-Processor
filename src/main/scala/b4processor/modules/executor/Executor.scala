@@ -15,7 +15,7 @@ import chisel3.{Mux, _}
 
 class Executor(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val reservationStation = Flipped(new ReservationStation2Executor)
+    val reservationStation = Flipped(Decoupled(new ReservationStation2Executor))
     val out = new OutputValue
     //    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
     val branchOutput = Output(new BranchOutput)
@@ -43,7 +43,7 @@ class Executor(implicit params: Parameters) extends Module {
   io.branchOutput.branchID := io.reservationStation.bits.branchID
   executionResult64bit := 0.U
 
-  // set destinationRegister
+  // 複数クロックかかる演算で使えるようにReadyは残す
   io.reservationStation.ready := true.B
   when(io.reservationStation.valid) {
     //    printf("pc=%x, immediate=%d\n", io.reservationStation.bits.programCounter, immediateOrFunction7Extended.asSInt)

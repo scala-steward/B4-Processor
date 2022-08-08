@@ -13,7 +13,7 @@ import chisel3.util._
 class ReservationStation(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val collectedOutput = Flipped(new CollectedOutput)
-    val executor = new ReservationStation2Executor
+    val executor = Decoupled(new ReservationStation2Executor)
     val decoder = Flipped(new Decoder2ReservationStation)
     val flush = Input(Bool())
   })
