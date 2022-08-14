@@ -31,6 +31,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
 
     /** デコーダ */
     val decoders = new Fetch2FetchBuffer
+
     /** ロードストアキューのエントリが空か */
     val loadStoreQueueEmpty = Input(Bool())
 
