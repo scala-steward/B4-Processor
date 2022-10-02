@@ -33,7 +33,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
   private val request = Reg(UInt(60.W))
   private var didRequest = false.B
   for (f <- io.fetch) {
-    val lowerAddress = f.address(63, 1)
+    val lowerAddress = f.address.bits(63, 1)
     val upperAddress = lowerAddress + 1.U
     val lowerData = WireDefault(0.U(16.W))
     val upperData = WireDefault(0.U(16.W))
@@ -58,12 +58,14 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     f.output.valid := foundData && foundData2
     f.output.bits := upperData ## lowerData
 
-    when(!foundData && !didRequest) {
-      request := lowerAddress(62, 3)
-    }.elsewhen(!foundData2 && !didRequest) {
-      request := upperAddress(62, 3)
+    when(f.address.valid) {
+      when(!foundData && !didRequest) {
+        request := lowerAddress(62, 3)
+      }.elsewhen(!foundData2 && !didRequest) {
+        request := upperAddress(62, 3)
+      }
     }
-    didRequest = didRequest || !foundData || !foundData2
+    didRequest = didRequest || (!foundData || !foundData2) && f.address.valid
   }
 
   private val waiting :: requesting :: Nil = Enum(2)

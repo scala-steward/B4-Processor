@@ -22,7 +22,8 @@ class InstructionMEmoryCacheWrapper()(implicit params: Parameters)
   }
 
   def setFetch(address: UInt) = {
-    this.io.fetch(0).address.poke(address)
+    this.io.fetch(0).address.valid.poke(true)
+    this.io.fetch(0).address.bits.poke(address)
   }
 
   def expectRequest(address: UInt) = {
