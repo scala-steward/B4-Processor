@@ -5,7 +5,7 @@ import chisel3.experimental.BundleLiterals._
 
 class BranchOutput extends Bundle {
   val valid = Bool()
-  val programCounter = SInt(64.W)
+  val programCounter = UInt(64.W)
 }
 
 object BranchOutput {

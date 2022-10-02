@@ -34,8 +34,8 @@ class Fetch(implicit params: Parameters) extends Module {
     val fetchBuffer = new Fetch2FetchBuffer
 
     /** デバッグ用 */
-    val PC = if (params.debug) Some(Output(SInt(64.W))) else None
-    val nextPC = if (params.debug) Some(Output(SInt(64.W))) else None
+    val PC = if (params.debug) Some(Output(UInt(64.W))) else None
+    val nextPC = if (params.debug) Some(Output(UInt(64.W))) else None
     val branchTypes =
       if (params.debug)
         Some(Output(Vec(params.runParallel, new BranchType.Type)))
@@ -43,7 +43,7 @@ class Fetch(implicit params: Parameters) extends Module {
   })
 
   /** プログラムカウンタ */
-  val pc = RegInit(params.instructionStart.S(64.W))
+  val pc = RegInit(params.instructionStart.U(64.W))
 
   /** フェッチの停止と理由 */
   val waiting = RegInit(WaitingReason.None)
@@ -54,20 +54,19 @@ class Fetch(implicit params: Parameters) extends Module {
     val decoder = io.fetchBuffer.decoder(i)
     val cache = io.cache(i)
 
-    cache.address := nextPC
+    cache.address.bits := nextPC
 
     val branch = Module(new CheckBranch)
-    branch.io.instruction := io.cache(i).output.bits
+    branch.io.instruction := cache.output.bits
     if (params.debug)
       io.branchTypes.get(i) := branch.io.branchType
 
     // キャッシュからの値があり、待つ必要はなく、JAL命令ではない（JALはアドレスを変えるだけとして処理できて、デコーダ以降を使う必要はない）
-    decoder.valid := io
-      .cache(i)
-      .output
-      .valid && nextWait === WaitingReason.None
+    decoder.valid := cache.output.valid && nextWait === WaitingReason.None
     decoder.bits.programCounter := nextPC
     decoder.bits.instruction := cache.output.bits
+
+    cache.address.valid := nextWait =/= WaitingReason.None
 
     // 次に停止する必要があるか確認
     nextWait = Mux(
@@ -82,7 +81,7 @@ class Fetch(implicit params: Parameters) extends Module {
           BranchType.Fence.asUInt -> WaitingReason.Fence,
           BranchType.FenceI.asUInt -> WaitingReason.FenceI,
           BranchType.JAL.asUInt -> Mux(
-            branch.io.offset === 0.S,
+            branch.io.offset === 0.U,
             WaitingReason.BusyLoop,
             WaitingReason.None
           )
@@ -91,11 +90,11 @@ class Fetch(implicit params: Parameters) extends Module {
     )
     // PCの更新を確認
     nextPC = nextPC + MuxCase(
-      4.S,
+      4.U,
       Seq(
-        (!decoder.ready || !decoder.valid) -> 0.S,
+        (!decoder.ready || !decoder.valid) -> 0.U,
         (branch.io.branchType === BranchType.JAL) -> branch.io.offset,
-        (nextWait =/= WaitingReason.None) -> 0.S
+        (nextWait =/= WaitingReason.None) -> 0.U
       )
     )
 
@@ -116,7 +115,7 @@ class Fetch(implicit params: Parameters) extends Module {
     when(waiting === WaitingReason.Fence || waiting === WaitingReason.FenceI) {
       when(io.reorderBufferEmpty && io.loadStoreQueueEmpty) {
         waiting := WaitingReason.None
-        pc := pc + 4.S
+        pc := pc + 4.U
       }
     }
     when(waiting === WaitingReason.BusyLoop) {

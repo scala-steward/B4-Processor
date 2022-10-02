@@ -75,7 +75,7 @@ object BufferEntry extends App {
     w
   }
 
-  def validEntry(instruction: UInt, programCounter: SInt): BufferEntry = {
+  def validEntry(instruction: UInt, programCounter: UInt): BufferEntry = {
     val w = Wire(new BufferEntry)
     w.instruction := instruction
     w.programCounter := programCounter

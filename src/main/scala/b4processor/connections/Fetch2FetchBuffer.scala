@@ -11,7 +11,7 @@ class Fetch2FetchBuffer(implicit params: Parameters) extends Bundle {
     params.runParallel,
     Decoupled(new Bundle {
       val instruction = UInt(32.W)
-      val programCounter = SInt(64.W)
+      val programCounter = UInt(64.W)
     })
   )
 }
