@@ -1,6 +1,7 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
+import b4processor.utils.Tag
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -22,19 +23,19 @@ class SourceTagSelectorWrapper(instruction_offset: Int)(implicit
       this.io
         .beforeDestinationTag(i)
         .bits
-        .poke(destinationTag(i).getOrElse(0).U)
+        .poke(Tag(destinationTag(i).getOrElse(0)))
     }
   }
 
   def initializeReorderBuffer(value: Option[Int]): Unit = {
     this.io.reorderBufferDestinationTag.valid.poke(value.isDefined.B)
-    this.io.reorderBufferDestinationTag.bits.poke(value.getOrElse(0))
+    this.io.reorderBufferDestinationTag.bits.poke(Tag(value.getOrElse(0)))
   }
 
   def expect(value: Option[Int]): Unit = {
     this.io.sourceTag.valid.expect(value.isDefined.B, "source tagが出力されていません")
     if (value.isDefined) {
-      this.io.sourceTag.tag.expect(value.get.U, "source tagの値が間違っています")
+      this.io.sourceTag.tag.expect(Tag(value.get), "source tagの値が間違っています")
     }
   }
 }

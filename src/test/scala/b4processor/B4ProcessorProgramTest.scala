@@ -2,6 +2,7 @@ package b4processor
 
 import b4processor.utils.InstructionUtil
 import chiseltest._
+import chiseltest.internal.CachingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
 class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
@@ -16,13 +17,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         defaultParams.copy(runParallel = 1)
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(20)
-          while (c.io.registerFileContents.get(12).peekInt() != 20)
-            c.clock.step()
-          c.io.registerFileContents.get(12).expect(20)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(20)
+        while (c.io.registerFileContents.get(12).peekInt() != 20)
           c.clock.step()
+        c.io.registerFileContents.get(12).expect(20)
+        c.clock.step()
       }
   }
 
@@ -33,26 +35,28 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         defaultParams.copy(runParallel = 1)
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(150)
-          while (c.io.registerFileContents.get(5).peekInt() != 55)
-            c.clock.step()
-          c.io.registerFileContents.get(5).expect(55)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(150)
+        while (c.io.registerFileContents.get(5).peekInt() != 55)
           c.clock.step()
+        c.io.registerFileContents.get(5).expect(55)
+        c.clock.step()
       }
   }
 
   // フィボナッチ数列の計算が同時発行数2でできる
   it should "execute fibonacci with 2 parallel" in {
     test(new B4ProcessorWithMemory("riscv-sample-programs/fibonacci/fibonacci"))
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(100)
-          while (c.io.registerFileContents.get(5).peekInt() != 55)
-            c.clock.step()
-          c.io.registerFileContents.get(5).expect(55)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(100)
+        while (c.io.registerFileContents.get(5).peekInt() != 55)
           c.clock.step()
+        c.io.registerFileContents.get(5).expect(55)
+        c.clock.step()
       }
   }
 
@@ -63,25 +67,27 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         defaultParams.copy(runParallel = 4)
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(100)
-          while (c.io.registerFileContents.get(5).peekInt() != 55)
-            c.clock.step()
-          c.io.registerFileContents.get(5).expect(55)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(100)
+        while (c.io.registerFileContents.get(5).peekInt() != 55)
           c.clock.step()
+        c.io.registerFileContents.get(5).expect(55)
+        c.clock.step()
       }
   }
 
   // call(JALRを使った関数呼び出し)とret(JALRを使った関数からのリターン)がうまく実行できる
   it should "execute call_ret with 2 parallel" in {
     test(new B4ProcessorWithMemory("riscv-sample-programs/call_ret/call_ret"))
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.step(20)
-          c.io.registerFileContents.get(4).expect(1)
-          c.io.registerFileContents.get(5).expect(2)
-          c.io.registerFileContents.get(6).expect(3)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.step(20)
+        c.io.registerFileContents.get(4).expect(1)
+        c.io.registerFileContents.get(5).expect(2)
+        c.io.registerFileContents.get(6).expect(3)
       }
   }
 
@@ -92,13 +98,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         defaultParams.copy(runParallel = 1)
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(40)
-          while (c.io.registerFileContents.get(0).peekInt() != 8)
-            c.clock.step()
-          c.io.registerFileContents.get(0).expect(8)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(40)
+        while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
+        c.io.registerFileContents.get(0).expect(8)
+        c.clock.step()
       }
   }
 
@@ -109,13 +116,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         defaultParams.copy(fetchWidth = 8)
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(40)
-          while (c.io.registerFileContents.get(0).peekInt() != 8)
-            c.clock.step()
-          c.io.registerFileContents.get(0).expect(8)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(40)
+        while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
+        c.io.registerFileContents.get(0).expect(8)
+        c.clock.step()
       }
   }
 
@@ -126,13 +134,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         defaultParams.copy(runParallel = 4, fetchWidth = 8)
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(40)
-          while (c.io.registerFileContents.get(0).peekInt() != 8)
-            c.clock.step()
-          c.io.registerFileContents.get(0).expect(8)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(40)
+        while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
+        c.io.registerFileContents.get(0).expect(8)
+        c.clock.step()
       }
   }
 
@@ -143,13 +152,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         defaultParams.copy(runParallel = 4, fetchWidth = 8, tagWidth = 2)
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(40)
-          while (c.io.registerFileContents.get(0).peekInt() != 8)
-            c.clock.step()
-          c.io.registerFileContents.get(0).expect(8)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(40)
+        while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
+        c.io.registerFileContents.get(0).expect(8)
+        c.clock.step()
       }
   }
 
@@ -164,13 +174,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(20)
-          while (c.io.registerFileContents.get(0).peekInt() != 8)
-            c.clock.step()
-          c.io.registerFileContents.get(0).expect(8)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(20)
+        while (c.io.registerFileContents.get(0).peekInt() != 8)
           c.clock.step()
+        c.io.registerFileContents.get(0).expect(8)
+        c.clock.step()
       }
   }
 
@@ -184,21 +195,22 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
           .copy(runParallel = 4, fetchWidth = 8, maxRegisterFileCommitCount = 8)
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.step(15)
-          c.io.registerFileContents.get(0).expect(1)
-          c.io.registerFileContents.get(1).expect(2)
-          c.io.registerFileContents.get(2).expect(3)
-          c.io.registerFileContents.get(3).expect(4)
-          c.io.registerFileContents.get(4).expect(1)
-          c.io.registerFileContents.get(5).expect(2)
-          c.io.registerFileContents.get(6).expect(3)
-          c.io.registerFileContents.get(7).expect(4)
-          c.io.registerFileContents.get(8).expect(1)
-          c.io.registerFileContents.get(9).expect(2)
-          c.io.registerFileContents.get(10).expect(3)
-          c.io.registerFileContents.get(11).expect(4)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.step(15)
+        c.io.registerFileContents.get(0).expect(1)
+        c.io.registerFileContents.get(1).expect(2)
+        c.io.registerFileContents.get(2).expect(3)
+        c.io.registerFileContents.get(3).expect(4)
+        c.io.registerFileContents.get(4).expect(1)
+        c.io.registerFileContents.get(5).expect(2)
+        c.io.registerFileContents.get(6).expect(3)
+        c.io.registerFileContents.get(7).expect(4)
+        c.io.registerFileContents.get(8).expect(1)
+        c.io.registerFileContents.get(9).expect(2)
+        c.io.registerFileContents.get(10).expect(3)
+        c.io.registerFileContents.get(11).expect(4)
       }
   }
 
@@ -209,16 +221,17 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1)
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(20)
-          while (c.io.registerFileContents.get(2).peekInt() != 10)
-            c.clock.step()
-          c.io.registerFileContents.get(0).expect(0x8000_0000L)
-          c.io.registerFileContents.get(1).expect(10)
-          c.io.registerFileContents.get(2).expect(10)
-
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(20)
+        while (c.io.registerFileContents.get(2).peekInt() != 10)
           c.clock.step()
+        c.io.registerFileContents.get(0).expect(0x8000_0000L)
+        c.io.registerFileContents.get(1).expect(10)
+        c.io.registerFileContents.get(2).expect(10)
+
+        c.clock.step()
       }
   }
 
@@ -229,14 +242,15 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         defaultParams.copy(runParallel = 2)
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(20)
-          while (c.io.registerFileContents.get(2).peekInt() != 10)
-            c.clock.step()
-          c.io.registerFileContents.get(0).expect(0x8000_0000L)
-          c.io.registerFileContents.get(1).expect(10)
-          c.io.registerFileContents.get(2).expect(10)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(20)
+        while (c.io.registerFileContents.get(2).peekInt() != 10)
+          c.clock.step()
+        c.io.registerFileContents.get(0).expect(0x8000_0000L)
+        c.io.registerFileContents.get(1).expect(10)
+        c.io.registerFileContents.get(2).expect(10)
       }
   }
 
@@ -252,13 +266,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(1000)
-          while (c.io.registerFileContents.get(2).peekInt() == 0)
-            c.clock.step()
-          c.io.registerFileContents.get(2).expect(21)
-          c.clock.step(10)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(1000)
+        while (c.io.registerFileContents.get(2).peekInt() == 0)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(21)
+        c.clock.step(10)
       }
   }
 
@@ -274,13 +289,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(500)
-          while (c.io.registerFileContents.get(2).peekInt() == 0)
-            c.clock.step()
-          c.io.registerFileContents.get(2).expect(21)
-          c.clock.step(10)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(500)
+        while (c.io.registerFileContents.get(2).peekInt() == 0)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(21)
+        c.clock.step(10)
       }
   }
 
@@ -296,16 +312,17 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(50)
-          while (c.io.registerFileContents.get(1).peekInt() != 20)
-            c.clock.step()
-          c.io.registerFileContents.get(1).expect(20)
-          while (c.io.registerFileContents.get(2).peekInt() != 1)
-            c.clock.step()
-          c.io.registerFileContents.get(2).expect(1)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(50)
+        while (c.io.registerFileContents.get(1).peekInt() != 20)
           c.clock.step()
+        c.io.registerFileContents.get(1).expect(20)
+        while (c.io.registerFileContents.get(2).peekInt() != 1)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(1)
+        c.clock.step()
       }
   }
 
@@ -321,13 +338,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(50)
-          while (c.io.registerFileContents.get(2).peekInt() != 10)
-            c.clock.step()
-          c.io.registerFileContents.get(2).expect(10)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(50)
+        while (c.io.registerFileContents.get(2).peekInt() != 10)
           c.clock.step()
+        c.io.registerFileContents.get(2).expect(10)
+        c.clock.step()
       }
   }
 
@@ -341,13 +359,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(50)
-          while (c.io.registerFileContents.get(2).peekInt() != 5)
-            c.clock.step()
-          c.io.registerFileContents.get(2).expect(5)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(50)
+        while (c.io.registerFileContents.get(2).peekInt() != 5)
           c.clock.step()
+        c.io.registerFileContents.get(2).expect(5)
+        c.clock.step()
       }
   }
 
@@ -363,13 +382,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(200)
-          while (c.io.registerFileContents.get(2).peekInt() != 18)
-            c.clock.step()
-          c.io.registerFileContents.get(2).expect(18)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(200)
+        while (c.io.registerFileContents.get(2).peekInt() != 18)
           c.clock.step()
+        c.io.registerFileContents.get(2).expect(18)
+        c.clock.step()
       }
   }
 
@@ -383,13 +403,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(400)
-          while (c.io.registerFileContents.get(2).peekInt() != 30)
-            c.clock.step()
-          c.io.registerFileContents.get(2).expect(30)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(400)
+        while (c.io.registerFileContents.get(2).peekInt() != 30)
           c.clock.step()
+        c.io.registerFileContents.get(2).expect(30)
+        c.clock.step()
       }
   }
 
@@ -403,13 +424,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(400)
-          while (c.io.registerFileContents.get(2).peekInt() != 30)
-            c.clock.step()
-          c.io.registerFileContents.get(2).expect(30)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(400)
+        while (c.io.registerFileContents.get(2).peekInt() != 30)
           c.clock.step()
+        c.io.registerFileContents.get(2).expect(30)
+        c.clock.step()
       }
   }
 
@@ -425,13 +447,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(100)
-          while (c.io.registerFileContents.get(1).peekInt() != 36)
-            c.clock.step()
-          c.io.registerFileContents.get(1).expect(36)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(100)
+        while (c.io.registerFileContents.get(1).peekInt() != 36)
           c.clock.step()
+        c.io.registerFileContents.get(1).expect(36)
+        c.clock.step()
       }
   }
 
@@ -447,13 +470,14 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(100)
-          while (c.io.registerFileContents.get(1).peekInt() != 36)
-            c.clock.step()
-          c.io.registerFileContents.get(1).expect(36)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(100)
+        while (c.io.registerFileContents.get(1).peekInt() != 36)
           c.clock.step()
+        c.io.registerFileContents.get(1).expect(36)
+        c.clock.step()
       }
   }
 
@@ -469,17 +493,18 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(50)
-          while (c.io.registerFileContents.get(1).peekInt() != 101)
-            c.clock.step()
-          c.io.registerFileContents.get(1).expect(101)
-
-          while (c.io.registerFileContents.get(2).peekInt() != 201)
-            c.clock.step()
-          c.io.registerFileContents.get(2).expect(201)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(50)
+        while (c.io.registerFileContents.get(1).peekInt() != 101)
           c.clock.step()
+        c.io.registerFileContents.get(1).expect(101)
+
+        while (c.io.registerFileContents.get(2).peekInt() != 201)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(201)
+        c.clock.step()
       }
   }
 
@@ -495,17 +520,18 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
     )
-      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-        c =>
-          c.clock.setTimeout(50)
-          while (c.io.registerFileContents.get(1).peekInt() != 101)
-            c.clock.step()
-          c.io.registerFileContents.get(1).expect(101)
-
-          while (c.io.registerFileContents.get(2).peekInt() != 201)
-            c.clock.step()
-          c.io.registerFileContents.get(2).expect(201)
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.clock.setTimeout(50)
+        while (c.io.registerFileContents.get(1).peekInt() != 101)
           c.clock.step()
+        c.io.registerFileContents.get(1).expect(101)
+
+        while (c.io.registerFileContents.get(2).peekInt() != 201)
+          c.clock.step()
+        c.io.registerFileContents.get(2).expect(201)
+        c.clock.step()
       }
   }
 }

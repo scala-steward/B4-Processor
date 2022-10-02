@@ -4,7 +4,7 @@ import b4processor.Parameters
 import b4processor.structures.memoryAccess.{MemoryAccessInfo, MemoryAccessWidth}
 import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
-import b4processor.utils.{DataMemoryValue, InstructionUtil}
+import b4processor.utils.{DataMemoryValue, InstructionUtil, Tag}
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chiseltest._
@@ -58,7 +58,7 @@ class DataMemoryTestWrapper(implicit params: Parameters)
     this.io.dataOut.validAsResult.expect(true)
     this.io.dataOut.validAsLoadStoreAddress.expect(false)
     this.io.dataOut.value.expect(data)
-    this.io.dataOut.tag.expect(tag)
+    this.io.dataOut.tag.expect(Tag(tag))
   }
 }
 

@@ -1,6 +1,7 @@
 package b4processor
 
 import chiseltest._
+import chiseltest.internal.CachingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
 class B4ProcessorRISCVTestWrapper(instructions: String)(implicit
@@ -37,10 +38,11 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
           s"riscv-tests-files/rv64ui-p-${test_name}"
         )
       )
-        .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-          c =>
-            c.clock.setTimeout(timeout)
-            c.riscv_test()
+        .withAnnotations(
+          Seq(WriteVcdAnnotation, CachingAnnotation, VerilatorBackendAnnotation)
+        ) { c =>
+          c.clock.setTimeout(timeout)
+          c.riscv_test()
         }
     }
   }

@@ -1,7 +1,7 @@
 package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
-import b4processor.utils.{ExecutorValue, DecoderValue, RegisterFileValue}
+import b4processor.utils.{DecoderValue, ExecutorValue, RegisterFileValue, Tag}
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -21,7 +21,7 @@ class ReorderBufferWrapper(implicit params: Parameters) extends ReorderBuffer {
       val v = values(i)
       output.validAsResult.poke(v.isDefined)
       if (v.isDefined) {
-        output.tag.poke(v.get.destinationTag)
+        output.tag.poke(Tag(v.get.destinationTag))
         output.value.poke(v.get.value)
       }
     }

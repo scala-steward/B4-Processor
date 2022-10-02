@@ -5,7 +5,7 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class B4ProcessorCompileTest extends AnyFlatSpec with ChiselScalatestTester {
+class B4ProcessoElaborateTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
   implicit val defaultParams = Parameters(debug = true, tagWidth = 4)
@@ -15,7 +15,7 @@ class B4ProcessorCompileTest extends AnyFlatSpec with ChiselScalatestTester {
   for (runParallel <- 1 to 3)
     for (maxCommitCount <- 1 to 3)
       for (tagWidth <- 2 to 3)
-        it should s"compile runParallel${runParallel} maxCommitCount=${maxCommitCount} tagWidth=${tagWidth}" in {
+        it should s"elaborate runParallel${runParallel} maxCommitCount=${maxCommitCount} tagWidth=${tagWidth}" in {
           test(
             new B4ProcessorWithMemory(
               "riscv-sample-programs/fibonacci_c/fibonacci_c"

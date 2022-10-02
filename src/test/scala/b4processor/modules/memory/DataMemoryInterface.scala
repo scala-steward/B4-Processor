@@ -4,6 +4,7 @@ import b4processor.Parameters
 import b4processor.structures.memoryAccess.{MemoryAccessInfo, MemoryAccessWidth}
 import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
+import b4processor.utils.Tag
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
@@ -51,7 +52,7 @@ class DataMemoryInterfaceTestWrapper(implicit params: Parameters)
     this.io.dataOut.validAsResult.expect(true)
     this.io.dataOut.validAsLoadStoreAddress.expect(false)
     this.io.dataOut.value.expect(data)
-    this.io.dataOut.tag.expect(tag)
+    this.io.dataOut.tag.expect(Tag(tag))
   }
 }
 
@@ -61,8 +62,8 @@ class DataMemoryInterfaceTest extends AnyFlatSpec with ChiselScalatestTester {
   implicit val params = Parameters()
 
   it should "store and load" in {
-    test(new DataMemoryInterfaceTestWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
-      c =>
+    test(new DataMemoryInterfaceTestWrapper)
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         // 100アドレスへのストア
 
         c.store(100, 10.U)
@@ -74,7 +75,6 @@ class DataMemoryInterfaceTest extends AnyFlatSpec with ChiselScalatestTester {
 
         c.clock.step(5)
 
-
-    }
+      }
   }
 }

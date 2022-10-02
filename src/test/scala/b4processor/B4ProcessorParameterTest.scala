@@ -1,6 +1,7 @@
 package b4processor
 
 import chiseltest._
+import chiseltest.internal.CachingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
 class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
@@ -25,7 +26,11 @@ class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
               )
             )
               .withAnnotations(
-                Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)
+                Seq(
+                  WriteVcdAnnotation,
+                  VerilatorBackendAnnotation,
+                  CachingAnnotation
+                )
               ) { c =>
                 c.clock.setTimeout(500)
                 while (c.io.registerFileContents.get(2).peekInt() == 0)

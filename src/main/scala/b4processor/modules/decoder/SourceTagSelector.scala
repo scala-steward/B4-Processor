@@ -1,6 +1,7 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
+import b4processor.utils.Tag
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util._
@@ -16,9 +17,9 @@ class SourceTagSelector(instructionOffset: Int)(implicit params: Parameters)
     extends Module {
   val io = IO(new Bundle {
     val beforeDestinationTag =
-      Vec(instructionOffset, Flipped(Valid(UInt(params.tagWidth.W))))
+      Vec(instructionOffset, Flipped(Valid(new Tag)))
     val reorderBufferDestinationTag =
-      Flipped(Valid(UInt(params.tagWidth.W)))
+      Flipped(Valid(new Tag))
     val sourceTag = Output(new SourceTagInfo) // 選択したsource tagを格納
   })
 

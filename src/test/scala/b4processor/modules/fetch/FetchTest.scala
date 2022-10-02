@@ -75,7 +75,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
   cache.io.memory <> memory.io
 
   io.memoryOutput <> memory.io.output
-  io.memoryAddress <> cache.io.memory.address
+  io.memoryAddress <> cache.io.memory
   fetch.io.cache.zip(io.cacheAddress).foreach { case (f, c) => f.address <> c }
   cache.io.fetch.zip(io.cacheOutput).foreach { case (c, f) => c.output <> f }
 

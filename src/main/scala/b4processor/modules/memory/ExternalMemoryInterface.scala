@@ -7,16 +7,20 @@ import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
 import b4processor.utils.AxiLiteMaster
 import chisel3._
-import chisel3.experimental.FlatIO
+import chisel3.experimental.{ChiselEnum, FlatIO}
 import chisel3.util._
 import chisel3.stage.ChiselStage
 
-class DataMemoryInterface(implicit params: Parameters) extends Module {
+class ExternalMemoryInterface(implicit params: Parameters) extends Module {
   val io = FlatIO(new Bundle {
     val dataIn = Flipped(new LoadStoreQueue2Memory)
     val dataOut = new OutputValue
     val master = new AxiLiteMaster(64, 64)
   })
+
+  object ExternalMemoryInterfaceState extends ChiselEnum {
+    val None, Write, WaitWriteResp, Read, WaitReadResp = Value
+  }
 
   io.master.readAddr.valid := false.B
   io.master.readAddr.bits.addr := 0.S
@@ -36,6 +40,14 @@ class DataMemoryInterface(implicit params: Parameters) extends Module {
   io.dataOut.validAsResult := false.B
   io.dataOut.validAsLoadStoreAddress := false.B
 
+  private val state = RegInit(ExternalMemoryInterfaceState.None)
+
+  private val transactionBuffer = VecInit(Seq())
+
+  switch(state) {
+    is(None) {}
+  }
+
   io.dataIn.ready := MuxLookup(
     io.dataIn.bits.accessInfo.accessType.asUInt,
     true.B,
@@ -48,7 +60,7 @@ class DataMemoryInterface(implicit params: Parameters) extends Module {
   )
 
   // FIXME: AXIのreadyが1クロックで返ってくるか分からないから．その間DataMemoryBufferのvalidを常にtrueにしておく必要がある？
-//  when(io.dataIn.valid) {
+  //  when(io.dataIn.valid) {
   when(io.dataIn.bits.accessInfo.accessType === Store) {
     io.master.writeAddr.valid := true.B
     io.master.writeData.valid := true.B
@@ -88,24 +100,24 @@ class DataMemoryInterface(implicit params: Parameters) extends Module {
       )
     }
   }
-//  }
-//  printf(p"io.datain.valid = ${io.dataIn.valid}\n")
-//  printf(p"io.datain.data = ${io.dataIn.bits.data}\n")
-//  printf(p"io.datain.ready = ${io.dataIn.ready}\n")
-//  printf(p"io.master.writeaddr.addr = ${io.master.writeAddr.bits.addr}\n")
-//  printf(p"io.master.writedata.data = ${io.master.writeData.bits.data}\n")
-//  printf(p"io.master.readaddr.valid = ${io.master.readAddr.valid}\n")
-//  printf(p"io.master.readaddr.addr = ${io.master.readAddr.bits.addr}\n")
-//  printf(p"io.master.readdata.data = ${io.master.readData.bits.data}\n")
-//  printf(p"dataout.data = ${io.dataOut.value}\n\n")
+  //  }
+  //  printf(p"io.datain.valid = ${io.dataIn.valid}\n")
+  //  printf(p"io.datain.data = ${io.dataIn.bits.data}\n")
+  //  printf(p"io.datain.ready = ${io.dataIn.ready}\n")
+  //  printf(p"io.master.writeaddr.addr = ${io.master.writeAddr.bits.addr}\n")
+  //  printf(p"io.master.writedata.data = ${io.master.writeData.bits.data}\n")
+  //  printf(p"io.master.readaddr.valid = ${io.master.readAddr.valid}\n")
+  //  printf(p"io.master.readaddr.addr = ${io.master.readAddr.bits.addr}\n")
+  //  printf(p"io.master.readdata.data = ${io.master.readData.bits.data}\n")
+  //  printf(p"dataout.data = ${io.dataOut.value}\n\n")
 }
 
-object DataMemoryInterface extends App {
+object ExternalMemoryInterface extends App {
   implicit val params = {
     Parameters(runParallel = 1, tagWidth = 4)
   }
   (new ChiselStage).emitVerilog(
-    new DataMemoryInterface,
+    new ExternalMemoryInterface,
     args = Array(
       "--emission-options=disableMemRandomization,disableRegisterRandomization"
     )

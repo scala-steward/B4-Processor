@@ -8,6 +8,7 @@ import b4processor.connections.{
   LoadStoreQueue2ReorderBuffer,
   ReorderBuffer2RegisterFile
 }
+import b4processor.utils.Tag
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -20,6 +21,8 @@ import scala.math.pow
   *   パラメータ
   */
 class ReorderBuffer(implicit params: Parameters) extends Module {
+  private val tagWidth = new Tag().id.getWidth
+
   val io = IO(new Bundle {
     val decoders = Vec(params.runParallel, Flipped(new Decoder2ReorderBuffer))
     val collectedOutputs = Flipped(new CollectedOutput)
@@ -28,18 +31,16 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
     val isEmpty = Output(Bool())
 
-    val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
-    val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
+    val head = if (params.debug) Some(Output(UInt(tagWidth.W))) else None
+    val tail = if (params.debug) Some(Output(UInt(tagWidth.W))) else None
     val bufferIndex0 =
       if (params.debug) Some(Output(new ReorderBufferEntry)) else None
   })
 
-  val head = RegInit(0.U(params.tagWidth.W))
-  val tail = RegInit(0.U(params.tagWidth.W))
+  val head = RegInit(0.U(tagWidth.W))
+  val tail = RegInit(0.U(tagWidth.W))
   val buffer = RegInit(
-    VecInit(
-      Seq.fill(math.pow(2, params.tagWidth).toInt)(ReorderBufferEntry.default)
-    )
+    VecInit(Seq.fill(math.pow(2, tagWidth).toInt)(ReorderBufferEntry.default))
   )
 
   // デコーダからの読み取りと書き込み
@@ -165,8 +166,8 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   // 出力の読み込み
   for (output <- io.collectedOutputs.outputs) {
     when(output.validAsResult) {
-      buffer(output.tag).value := output.value
-      buffer(output.tag).valueReady := true.B
+      buffer(output.tag.id).value := output.value
+      buffer(output.tag.id).valueReady := true.B
     }
   }
 

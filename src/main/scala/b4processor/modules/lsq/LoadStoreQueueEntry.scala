@@ -2,6 +2,7 @@ package b4processor.modules.lsq
 
 import b4processor.Parameters
 import b4processor.structures.memoryAccess.MemoryAccessInfo
+import b4processor.utils.Tag
 import chisel3._
 
 /** LSQのエントリ
@@ -21,7 +22,7 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
   val info = new MemoryAccessInfo
 
   /** 命令自体を識別するためのタグ(Destination Tag) */
-  val addressAndLoadResultTag = UInt(params.tagWidth.W)
+  val addressAndLoadResultTag = new Tag
 
   /** アドレス値 */
   val address = SInt(64.W)
@@ -30,7 +31,7 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
   val addressValid = Bool()
 
   /** ストアに使用するデータが格納されるタグ(SourceRegister2 Tag) */
-  val storeDataTag = UInt(params.tagWidth.W)
+  val storeDataTag = new Tag
 
   /** ストアデータ */
   val storeData = UInt(64.W)
