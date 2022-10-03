@@ -19,7 +19,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     val fetch = Vec(params.runParallel, new InstructionCache2Fetch)
 
     val memory = new Bundle {
-      val request = Valid(new MemoryTransaction)
+      val request = Irrevocable(new MemoryTransaction)
       val response = Flipped(Valid(UInt(64.W)))
     }
   })
@@ -80,9 +80,12 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
   }
 
   io.memory.request.valid := false.B
-  io.memory.request.bits := DontCare
+  io.memory.request.bits := MemoryTransaction.default()
+  private val sent = RegInit(false.B)
   private val head = RegInit(0.U(2.W))
   when(state === requesting) {
+    buf(head).valid := false.B
+
     when(!requested) {
       val tmp_transaction =
         MemoryTransaction.instructionFetchContent(
@@ -91,9 +94,15 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
       transaction := tmp_transaction
       io.memory.request.valid := true.B
       io.memory.request.bits := tmp_transaction
+      requested := true.B
+      sent := false.B
     }.otherwise {
-      io.memory.request.valid := true.B
+      io.memory.request.valid := !sent
       io.memory.request.bits := transaction
+    }
+
+    when(io.memory.request.ready) {
+      sent := true.B
     }
 
     when(io.memory.response.valid) {
@@ -103,6 +112,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
       }
       buf(head).upper := request
       readIndex := readIndex + 1.U
+      requested := false.B
       when(readIndex === 1.U) {
         state := waiting
         buf(head).valid := true.B

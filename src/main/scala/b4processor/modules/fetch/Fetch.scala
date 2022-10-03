@@ -66,7 +66,7 @@ class Fetch(implicit params: Parameters) extends Module {
     decoder.bits.programCounter := nextPC
     decoder.bits.instruction := cache.output.bits
 
-    cache.address.valid := nextWait =/= WaitingReason.None
+    cache.address.valid := nextWait === WaitingReason.None
 
     // 次に停止する必要があるか確認
     nextWait = Mux(
@@ -89,14 +89,14 @@ class Fetch(implicit params: Parameters) extends Module {
       )
     )
     // PCの更新を確認
-    nextPC = nextPC + MuxCase(
-      4.U,
+    nextPC = (nextPC.asSInt + MuxCase(
+      4.S,
       Seq(
-        (!decoder.ready || !decoder.valid) -> 0.U,
-        (branch.io.branchType === BranchType.JAL) -> branch.io.offset,
-        (nextWait =/= WaitingReason.None) -> 0.U
+        (!decoder.ready || !decoder.valid) -> 0.S,
+        (branch.io.branchType === BranchType.JAL) -> branch.io.offset.asSInt,
+        (nextWait =/= WaitingReason.None) -> 0.S
       )
-    )
+    )).asUInt
 
   }
   pc := nextPC
