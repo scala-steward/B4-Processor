@@ -14,7 +14,7 @@ scalacOptions ++= Seq(
 Test / logBuffered := false
 Test / parallelExecution := false
 
-scalaVersion := "2.13.8"
+scalaVersion := "2.13.10"
 
 addCompilerPlugin(
   "edu.berkeley.cs" % "chisel3-plugin" % "3.5.4" cross CrossVersion.full
