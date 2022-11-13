@@ -17,10 +17,10 @@ Test / parallelExecution := false
 scalaVersion := "2.13.10"
 
 addCompilerPlugin(
-  "edu.berkeley.cs" % "chisel3-plugin" % "3.5.4" cross CrossVersion.full
+  "edu.berkeley.cs" % "chisel3-plugin" % "3.5.5" cross CrossVersion.full
 )
 libraryDependencies ++= Seq(
-  "edu.berkeley.cs" %% "chisel3" % "3.5.4",
+  "edu.berkeley.cs" %% "chisel3" % "3.5.5",
   // We also recommend using chiseltest for writing unit tests
-  "edu.berkeley.cs" %% "chiseltest" % "0.5.4" % "test"
+  "edu.berkeley.cs" %% "chiseltest" % "0.5.5" % "test"
 )
