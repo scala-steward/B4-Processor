@@ -39,7 +39,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
         .withAnnotations(
-          Seq(WriteVcdAnnotation, CachingAnnotation, VerilatorBackendAnnotation)
+          Seq(WriteFstAnnotation, CachingAnnotation, VerilatorBackendAnnotation)
         ) { c =>
           c.clock.setTimeout(timeout)
           c.riscv_test()

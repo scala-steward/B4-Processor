@@ -39,7 +39,6 @@ class InstructionMemoryInterface(implicit params: Parameters) extends Module {
       io.fetch.output.valid := true.B
     }
   }
-
 }
 
 object InstructionMemoryInterface extends App {

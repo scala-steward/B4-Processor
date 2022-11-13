@@ -43,8 +43,8 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
 object LoadStoreQueueEntry {
   def validEntry(
     accessInfo: MemoryAccessInfo,
-    addressAndStoreResultTag: UInt,
-    storeDataTag: UInt,
+    addressAndStoreResultTag: Tag,
+    storeDataTag: Tag,
     storeData: UInt,
     storeDataValid: Bool
   )(implicit params: Parameters): LoadStoreQueueEntry = {

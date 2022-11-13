@@ -1,6 +1,7 @@
 package b4processor.connections
 
 import b4processor.Parameters
+import b4processor.utils.Tag
 import chisel3._
 
 /** デコーダ同士をつなぐ
@@ -10,6 +11,6 @@ import chisel3._
   */
 class Decoder2NextDecoder(implicit params: Parameters) extends Bundle {
   val valid = Bool()
-  val destinationTag = UInt(params.tagWidth.W)
+  val destinationTag = new Tag
   val destinationRegister = UInt(5.W)
 }

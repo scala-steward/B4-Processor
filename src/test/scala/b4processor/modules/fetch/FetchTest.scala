@@ -2,7 +2,6 @@ package b4processor.modules.fetch
 
 import b4processor.Parameters
 import b4processor.connections.{
-  BranchOutput,
   Fetch2BranchPrediction,
   Fetch2FetchBuffer
 }
@@ -241,7 +240,7 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       new FetchWrapper(
         InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063"))
       )
-    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+    ).withAnnotations(Seq(WriteFstAnnotation)) { c =>
       c.initialize()
 
       c.io.nextPC.expect(0x10000004)

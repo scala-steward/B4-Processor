@@ -18,7 +18,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(20)
         while (c.io.registerFileContents.get(12).peekInt() != 20)
@@ -36,7 +36,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(150)
         while (c.io.registerFileContents.get(5).peekInt() != 55)
@@ -50,7 +50,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute fibonacci with 2 parallel" in {
     test(new B4ProcessorWithMemory("riscv-sample-programs/fibonacci/fibonacci"))
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(100)
         while (c.io.registerFileContents.get(5).peekInt() != 55)
@@ -68,7 +68,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(100)
         while (c.io.registerFileContents.get(5).peekInt() != 55)
@@ -82,7 +82,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute call_ret with 2 parallel" in {
     test(new B4ProcessorWithMemory("riscv-sample-programs/call_ret/call_ret"))
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.step(20)
         c.io.registerFileContents.get(4).expect(1)
@@ -99,7 +99,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(40)
         while (c.io.registerFileContents.get(0).peekInt() != 8)
@@ -117,7 +117,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(40)
         while (c.io.registerFileContents.get(0).peekInt() != 8)
@@ -135,7 +135,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(40)
         while (c.io.registerFileContents.get(0).peekInt() != 8)
@@ -153,7 +153,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(40)
         while (c.io.registerFileContents.get(0).peekInt() != 8)
@@ -175,7 +175,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(20)
         while (c.io.registerFileContents.get(0).peekInt() != 8)
@@ -196,7 +196,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.step(15)
         c.io.registerFileContents.get(0).expect(1)
@@ -222,7 +222,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(20)
         while (c.io.registerFileContents.get(2).peekInt() != 10)
@@ -243,7 +243,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(20)
         while (c.io.registerFileContents.get(2).peekInt() != 10)
@@ -267,7 +267,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(1000)
         while (c.io.registerFileContents.get(2).peekInt() == 0)
@@ -290,7 +290,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(500)
         while (c.io.registerFileContents.get(2).peekInt() == 0)
@@ -313,7 +313,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(50)
         while (c.io.registerFileContents.get(1).peekInt() != 20)
@@ -339,7 +339,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(50)
         while (c.io.registerFileContents.get(2).peekInt() != 10)
@@ -360,7 +360,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(50)
         while (c.io.registerFileContents.get(2).peekInt() != 5)
@@ -383,7 +383,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(200)
         while (c.io.registerFileContents.get(2).peekInt() != 18)
@@ -404,7 +404,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(400)
         while (c.io.registerFileContents.get(2).peekInt() != 30)
@@ -425,7 +425,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(400)
         while (c.io.registerFileContents.get(2).peekInt() != 30)
@@ -448,7 +448,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(100)
         while (c.io.registerFileContents.get(1).peekInt() != 36)
@@ -471,7 +471,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(100)
         while (c.io.registerFileContents.get(1).peekInt() != 36)
@@ -494,7 +494,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(50)
         while (c.io.registerFileContents.get(1).peekInt() != 101)
@@ -521,7 +521,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteFstAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.clock.setTimeout(50)
         while (c.io.registerFileContents.get(1).peekInt() != 101)

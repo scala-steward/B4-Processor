@@ -1,14 +1,9 @@
 package b4processor.modules.executor
 
 import b4processor.Parameters
-import b4processor.common.{
-  ArithmeticOperations,
-  BranchOperations,
-  InstructionChecker,
-  Instructions,
-  OperationWidth
-}
+import b4processor.common.{ArithmeticOperations, BranchOperations, InstructionChecker, Instructions, OperationWidth}
 import b4processor.connections._
+import b4processor.utils.Tag
 import chisel3.stage.ChiselStage
 import chisel3.util._
 import chisel3.{Mux, _}
@@ -34,11 +29,11 @@ class Executor(implicit params: Parameters) extends Module {
   val immediateOrFunction7Extended =
     io.reservationStation.bits.immediateOrFunction7
   val branchedProgramCounter =
-    io.reservationStation.bits.programCounter + (immediateOrFunction7Extended ## 0
-      .U(1.W)).asSInt
-  val nextProgramCounter = io.reservationStation.bits.programCounter + 4.S
+    (io.reservationStation.bits.programCounter.asSInt + (immediateOrFunction7Extended ## 0
+      .U(1.W)).asSInt).asUInt
+  val nextProgramCounter = io.reservationStation.bits.programCounter + 4.U
 
-  io.fetch.programCounter := 0.S
+  io.fetch.programCounter := 0.U
   io.fetch.valid := false.B
   executionResult64bit := 0.U
 
@@ -188,7 +183,7 @@ class Executor(implicit params: Parameters) extends Module {
             ),
           // jal or auipc
           (instructionChecker.output.instruction === Instructions.auipc || instructionChecker.output.instruction === Instructions.jal)
-            -> (io.reservationStation.bits.programCounter + io.reservationStation.bits.value2.asSInt),
+            -> (io.reservationStation.bits.programCounter.asSInt + io.reservationStation.bits.value2.asSInt).asUInt,
           // jalr
           (instructionChecker.output.instruction === Instructions.jalr)
             -> Cat(
@@ -197,7 +192,7 @@ class Executor(implicit params: Parameters) extends Module {
                 1
               ),
               0.U
-            ).asSInt
+            ).asUInt
         )
       )
     }
@@ -238,7 +233,7 @@ class Executor(implicit params: Parameters) extends Module {
     io.out.tag := io.reservationStation.bits.destinationTag
     io.out.value := executionResultSized
   }.otherwise {
-    io.out.tag := 0.U
+    io.out.tag := Tag(0)
     io.out.value := 0.U
   }
 }

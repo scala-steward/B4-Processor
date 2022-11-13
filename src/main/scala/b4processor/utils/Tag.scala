@@ -14,4 +14,10 @@ class Tag(implicit params: Parameters) extends Bundle {
 object Tag {
   def apply(id: Int)(implicit params: Parameters): Tag =
     new Tag().Lit(_.id -> id.U)
+
+  def fromWires(id: UInt)(implicit params: Parameters): Tag = {
+    val w = Wire(new Tag)
+    w.id := id
+    w
+  }
 }

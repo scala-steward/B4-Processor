@@ -1,6 +1,7 @@
 package b4processor.connections
 
 import b4processor.Parameters
+import b4processor.utils.Tag
 import chisel3._
 import chisel3.util._
 
@@ -20,13 +21,13 @@ class Decoder2ReorderBuffer(implicit params: Parameters) extends Bundle {
 
   class SourceRegister extends Bundle {
     val sourceRegister = Output(UInt(5.W))
-    val matchingTag = Flipped(Valid(UInt(params.tagWidth.W)))
+    val matchingTag = Flipped(Valid(new Tag))
     val value = Flipped(Valid(UInt(64.W)))
   }
 
   class DestinationRegister extends Bundle {
     val destinationRegister = Output(UInt(5.W))
-    val destinationTag = Input(UInt(params.tagWidth.W))
+    val destinationTag = Input(new Tag)
     val storeSign = Output(Bool())
   }
 }

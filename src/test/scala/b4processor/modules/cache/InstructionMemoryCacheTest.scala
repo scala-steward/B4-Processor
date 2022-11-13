@@ -46,7 +46,7 @@ class InstructionMemoryCacheTest
 
   it should "load memory" in {
     test(new InstructionMEmoryCacheWrapper)
-      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      .withAnnotations(Seq(WriteFstAnnotation)) { c =>
         c.setFetch("x2222222200000000".U)
         c.clock.step()
         c.expectRequest("x2222222200000000".U)

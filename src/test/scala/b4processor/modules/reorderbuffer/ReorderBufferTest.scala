@@ -205,7 +205,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "have an output in register file" in {
-    test(new ReorderBufferWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
+    test(new ReorderBufferWrapper).withAnnotations(Seq(WriteFstAnnotation)) {
       c =>
         c.initialize()
         c.clock.setTimeout(10)
@@ -251,7 +251,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   //  it should "have an output in register file with prediction" in {
-  //    test(new ReorderBufferWrapper).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+  //    test(new ReorderBufferWrapper).withAnnotations(Seq(WriteFstAnnotation)) { c =>
   //      c.initialize()
   //      c.clock.setTimeout(10)
   //
@@ -290,7 +290,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
       new ReorderBufferWrapper()(
         defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4)
       )
-    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+    ).withAnnotations(Seq(WriteFstAnnotation)) { c =>
       c.initialize()
       c.clock.setTimeout(10)
 
@@ -369,7 +369,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
       new ReorderBufferWrapper()(
         defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4)
       )
-    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+    ).withAnnotations(Seq(WriteFstAnnotation)) { c =>
       c.initialize()
       c.clock.setTimeout(10)
 
@@ -498,7 +498,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
       new ReorderBufferWrapper()(
         defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4)
       )
-    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+    ).withAnnotations(Seq(WriteFstAnnotation)) { c =>
       c.initialize()
       c.clock.setTimeout(10)
 
@@ -627,7 +627,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
       new ReorderBufferWrapper()(
         defaultParams.copy(runParallel = 4, maxRegisterFileCommitCount = 4)
       )
-    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+    ).withAnnotations(Seq(WriteFstAnnotation)) { c =>
       c.initialize()
       c.clock.setTimeout(10)
 
@@ -761,7 +761,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   //  it should "have an output in register file with 4 with correct predictions" in {
-  //    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+  //    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteFstAnnotation)) { c =>
   //      c.initialize()
   //      c.clock.setTimeout(10)
   //
@@ -843,7 +843,7 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   //  }
 
   //  it should "have an output in register file with 4 with miss prediction" in {
-  //    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+  //    test(new ReorderBufferWrapper()(defaultParams.copy(numberOfALUs = 4, numberOfDecoders = 4, maxRegisterFileCommitCount = 4))).withAnnotations(Seq(WriteFstAnnotation)) { c =>
   //      c.initialize()
   //      c.clock.setTimeout(10)
   //

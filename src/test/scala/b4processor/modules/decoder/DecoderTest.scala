@@ -37,13 +37,13 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
     sourceTag2: Option[Int] = None,
     value2: Option[Int] = None
   ): Unit = {
-    this.io.reorderBuffer.destination.destinationTag.poke(destinationTag)
+    this.io.reorderBuffer.destination.destinationTag.poke(Tag(destinationTag))
     this.io.reorderBuffer.source1.matchingTag.valid.poke(sourceTag1.isDefined)
-    this.io.reorderBuffer.source1.matchingTag.bits.poke(sourceTag1.getOrElse(0))
+    this.io.reorderBuffer.source1.matchingTag.bits.poke(Tag(sourceTag1.getOrElse(0)))
     this.io.reorderBuffer.source1.value.valid.poke(value1.isDefined)
     this.io.reorderBuffer.source1.value.bits.poke(value1.getOrElse(0))
     this.io.reorderBuffer.source2.matchingTag.valid.poke(sourceTag2.isDefined)
-    this.io.reorderBuffer.source2.matchingTag.bits.poke(sourceTag2.getOrElse(0))
+    this.io.reorderBuffer.source2.matchingTag.bits.poke(Tag(sourceTag2.getOrElse(0)))
     this.io.reorderBuffer.source2.value.valid.poke(value2.isDefined)
     this.io.reorderBuffer.source2.value.bits.poke(value2.getOrElse(0))
     this.io.reorderBuffer.ready.poke(true)
@@ -259,7 +259,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // imemがvalidのときRSとRBでvalidと表示されている
   it should "say the data is valid when imem is valid" in {
-    test(new DecoderWrapper(0)).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+    test(new DecoderWrapper(0)).withAnnotations(Seq(WriteFstAnnotation)) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
 
