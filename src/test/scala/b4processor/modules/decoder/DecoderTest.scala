@@ -39,11 +39,13 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
   ): Unit = {
     this.io.reorderBuffer.destination.destinationTag.poke(Tag(destinationTag))
     this.io.reorderBuffer.source1.matchingTag.valid.poke(sourceTag1.isDefined)
-    this.io.reorderBuffer.source1.matchingTag.bits.poke(Tag(sourceTag1.getOrElse(0)))
+    this.io.reorderBuffer.source1.matchingTag.bits
+      .poke(Tag(sourceTag1.getOrElse(0)))
     this.io.reorderBuffer.source1.value.valid.poke(value1.isDefined)
     this.io.reorderBuffer.source1.value.bits.poke(value1.getOrElse(0))
     this.io.reorderBuffer.source2.matchingTag.valid.poke(sourceTag2.isDefined)
-    this.io.reorderBuffer.source2.matchingTag.bits.poke(Tag(sourceTag2.getOrElse(0)))
+    this.io.reorderBuffer.source2.matchingTag.bits
+      .poke(Tag(sourceTag2.getOrElse(0)))
     this.io.reorderBuffer.source2.value.valid.poke(value2.isDefined)
     this.io.reorderBuffer.source2.value.bits.poke(value2.getOrElse(0))
     this.io.reorderBuffer.ready.poke(true)

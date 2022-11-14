@@ -1,7 +1,11 @@
 package b4processor.modules.reservationstation
 
 import b4processor.Parameters
-import b4processor.connections.{CollectedOutput, Decoder2ReservationStation, ReservationStation2Executor}
+import b4processor.connections.{
+  CollectedOutput,
+  Decoder2ReservationStation,
+  ReservationStation2Executor
+}
 import b4processor.utils.Tag
 import chisel3._
 import chisel3.stage.ChiselStage

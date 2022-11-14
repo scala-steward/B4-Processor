@@ -1,7 +1,13 @@
 package b4processor.modules.executor
 
 import b4processor.Parameters
-import b4processor.common.{ArithmeticOperations, BranchOperations, InstructionChecker, Instructions, OperationWidth}
+import b4processor.common.{
+  ArithmeticOperations,
+  BranchOperations,
+  InstructionChecker,
+  Instructions,
+  OperationWidth
+}
 import b4processor.connections._
 import b4processor.utils.Tag
 import chisel3.stage.ChiselStage
@@ -212,13 +218,6 @@ class Executor(implicit params: Parameters) extends Module {
   /** 実行結果をリオーダバッファ,デコーダに送信 (validで送信データを調節) (レジスタ挿入の可能性あり)
     */
 
-  // LSQ TODO 必要か確認
-  //  io.loadStoreQueue.valid :=
-  //    instructionChecker.output.instruction =/= Instructions.Unknown && io.reservationStation.valid
-  //  io.loadStoreQueue.destinationTag := io.reservationStation.bits.destinationTag
-  //  io.loadStoreQueue.value := Mux(instructionChecker.output.instruction === Instructions.Store,
-  //    io.reservationStation.bits.value1 + immediateOrFunction7Extended, executionResultSized)
-
   // reorder Buffer
   //  printf(p"instruction type = ${instructionChecker.output.instruction.asUInt}\n")
   io.out.validAsResult := io.reservationStation.valid &&
@@ -240,7 +239,7 @@ class Executor(implicit params: Parameters) extends Module {
   io.out.isError := false.B
 }
 
-object ExecutorElaborate extends App {
+object Executor extends App {
   implicit val params = Parameters()
   (new ChiselStage).emitVerilog(
     new Executor(),
