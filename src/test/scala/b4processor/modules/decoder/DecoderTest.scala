@@ -25,8 +25,8 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
   }
 
   def setImem(instruction: UInt, isPrediction: Boolean = false): Unit = {
-    this.io.instructionFetch.bits.programCounter.poke(0)
     this.io.instructionFetch.bits.instruction.poke(instruction)
+    this.io.instructionFetch.bits.programCounter.poke(0)
     this.io.instructionFetch.valid.poke(true)
   }
 

@@ -8,5 +8,5 @@ import chisel3.util.ReadyValidIO
 class FetchBuffer2Decoder
     extends ReadyValidIO(new Bundle {
       val instruction = UInt(32.W)
-      val programCounter = SInt(64.W)
+      val programCounter = UInt(64.W)
     })
