@@ -2,19 +2,30 @@ package b4processor.modules.cache
 
 import b4processor.Parameters
 import b4processor.connections.LoadStoreQueue2Memory
+import b4processor.modules.memory.{
+  MemoryReadTransaction,
+  MemoryWriteTransaction
+}
+import b4processor.structures.memoryAccess.{
+  MemoryAccessInfo,
+  MemoryAccessType,
+  MemoryAccessWidth
+}
 import chisel3._
+import chisel3.util._
 import chisel3.stage.ChiselStage
 
 /** from LSQ toDataMemory のためのバッファ
-  *
-  * @param params
-  *   パラメータ
-  */
+ *
+ * @param params
+ * パラメータ
+ */
 class DataMemoryBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val dataIn =
       Vec(params.maxRegisterFileCommitCount, Flipped(new LoadStoreQueue2Memory))
-    val dataOut = new LoadStoreQueue2Memory
+    val dataReadRequest = Irrevocable(new MemoryReadTransaction())
+    val dataWriteRequest = Irrevocable(new MemoryWriteTransaction())
     val head =
       if (params.debug) Some(Output(UInt(params.loadStoreQueueIndexWidth.W)))
       else None
@@ -28,6 +39,8 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
 
   val head = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
   val tail = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
+  private val empty = tail === head
+  private val full = head + 1.U === tail
   val buffer = RegInit(
     VecInit(
       Seq.fill(math.pow(2, params.loadStoreQueueIndexWidth).toInt)(defaultEntry)
@@ -52,18 +65,76 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
   }
   head := insertIndex
 
-  io.dataOut.bits := DontCare
-  io.dataOut.valid := io.dataOut.ready && tail =/= head
-  // dequeue
-  when(io.dataOut.valid) {
-    io.dataOut.bits.address := buffer(tail).address
-    io.dataOut.bits.tag := buffer(tail).tag
-    io.dataOut.bits.data := buffer(tail).data
-    io.dataOut.bits.accessInfo := buffer(tail).accessInfo
-    buffer(tail) := DataMemoryBufferEntry.default
-  }
+  io.dataReadRequest.bits := DontCare
+  io.dataReadRequest.valid := false.B
+  io.dataWriteRequest.bits := DontCare
+  io.dataWriteRequest.valid := false.B
 
-  tail := tail + io.dataOut.valid.asUInt
+  when(!empty) {
+    val entry = buffer(tail)
+    when(entry.accessInfo.accessType === MemoryAccessType.Load) {
+      io.dataReadRequest.valid := true.B
+      io.dataReadRequest.bits.address := entry.address
+      io.dataReadRequest.bits.size := entry.accessInfo.accessWidth
+      io.dataReadRequest.bits.outputTag := entry.tag
+      when(io.dataReadRequest.ready) {
+        tail := tail + 1.U
+      }
+    }.elsewhen(buffer(tail).accessInfo.accessType === MemoryAccessType.Store) {
+      io.dataWriteRequest.valid := true.B
+      val addressUpper = entry.address(63, 3)
+      val addressLower = entry.address(2, 0)
+      io.dataWriteRequest.bits.address := addressUpper
+      io.dataWriteRequest.bits.data := MuxLookup(
+        entry.accessInfo.accessWidth.asUInt,
+        0.U,
+        Seq(
+          MemoryAccessWidth.Byte.asUInt -> Mux1H(
+            (0 until 8).map(i =>
+              (addressLower === i.U) -> entry.data(7, 0) ## 0.U((i * 8).W)
+            )
+          ),
+          MemoryAccessWidth.HalfWord.asUInt -> Mux1H(
+            (0 until 4).map(i =>
+              (addressLower(2, 1) === i.U) -> entry.data(15, 0) ## 0
+                .U((i * 16).W)
+            )
+          ),
+          MemoryAccessWidth.Word.asUInt -> Mux1H(
+            (0 until 2).map(i =>
+              (addressLower(2) === i.U) -> entry.data(31, 0) ## 0.U((i * 32).W)
+            )
+          ),
+          MemoryAccessWidth.DoubleWord.asUInt -> entry.data
+        )
+      )
+      io.dataWriteRequest.bits.mask := MuxLookup(
+        entry.accessInfo.accessWidth.asUInt,
+        0.U,
+        Seq(
+          MemoryAccessWidth.Byte.asUInt -> Mux1H(
+            (0 until 8).map(i => (addressLower === i.U) -> 1.U ## 0.U(i.W))
+          ),
+          MemoryAccessWidth.HalfWord.asUInt -> Mux1H(
+            (0 until 4).map(i =>
+              (addressLower(2, 1) === i.U) -> "b11".U ## 0
+                .U((i * 2).W)
+            )
+          ),
+          MemoryAccessWidth.Word.asUInt -> Mux1H(
+            (0 until 2).map(i =>
+              (addressLower(2) === i.U) -> "b1111".U ## 0.U((i * 4).W)
+            )
+          ),
+          MemoryAccessWidth.DoubleWord.asUInt -> "b11111111".U
+        )
+      )
+      io.dataReadRequest.bits.outputTag := entry.tag
+      when(io.dataReadRequest.ready) {
+        tail := tail + 1.U
+      }
+    }
+  }
 
   if (params.debug) {
     io.head.get := head

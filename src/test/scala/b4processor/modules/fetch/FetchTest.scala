@@ -1,13 +1,10 @@
 package b4processor.modules.fetch
 
 import b4processor.Parameters
-import b4processor.connections.{
-  Fetch2BranchPrediction,
-  Fetch2FetchBuffer
-}
+import b4processor.connections.{Fetch2BranchPrediction, Fetch2FetchBuffer}
 import b4processor.modules.branch_output_collector.CollectedBranchAddresses
 import b4processor.modules.cache.InstructionMemoryCache
-import b4processor.modules.memory.InstructionMemory
+import b4processor.modules.memory.{ExternalMemoryInterface, InstructionMemory}
 import b4processor.utils.InstructionUtil
 import chisel3._
 import chisel3.util._
@@ -61,7 +58,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
 
   val fetch = Module(new Fetch)
   val cache = Module(new InstructionMemoryCache)
-  val memory = Module(new InstructionMemory(memoryInit))
+  val memory = Module(new ExternalMemoryInterface)
 
   fetch.io.prediction <> io.prediction
   fetch.io.fetchBuffer <> io.decoders

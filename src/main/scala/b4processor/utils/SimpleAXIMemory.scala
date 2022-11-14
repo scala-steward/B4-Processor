@@ -7,13 +7,32 @@ import chisel3.util._
 class SimpleAXIMemory(size: Int = 1024) extends Module {
   val axiIo = FlatIO(Flipped(new AXI(64)))
 
-  val stateWaitForRequest :: stateWriteResponse :: stateReadMemGetValue :: stateReadResponse :: Nil =
-    Enum(6)
-  val state = RegInit(stateWaitForRequest)
+
+  // WRITE OPERATION
+  val writeState = Module(new FIFO(2)(new Bundle {
+    val address = UInt(64.W)
+    val burstLength = UInt(8.W)
+  }))
+
+  val writeResponseState = Module(new FIFO(2)(new Bundle() {
+    val isError = Bool()
+  }))
+
+  when(!writeState.full) {
+    axiIo.writeAddress.ready := true.B
+    when(axiIo.writeAddress.valid) {
+      writeState.input.bits.address := axiIo.writeAddress.bits.ADDR
+      writeState.input.bits.burstLength := axiIo.writeAddress.bits.LEN
+    }
+  }
+  when(!writeState.empty) {
+    axiIo.write.ready := true.B
+
+  }
 
   val globalAddress = Reg(UInt(64.W))
   val readData = Reg(UInt(64.W))
-//  val strb = Reg(UInt(8.W))
+  //  val strb = Reg(UInt(8.W))
 
   val mem = Seq.fill(8)(SyncReadMem(size, UInt(8.W)))
 
@@ -33,7 +52,7 @@ class SimpleAXIMemory(size: Int = 1024) extends Module {
           }
         }
         axiIo.writeResponse.valid := true.B
-        when(!axiIo.writeResponse.ready){
+        when(!axiIo.writeResponse.ready) {
           state := stateWriteResponse
         }
       }.elsewhen(axiIo.readAddress.valid) {
@@ -60,8 +79,8 @@ class SimpleAXIMemory(size: Int = 1024) extends Module {
     }
 
     is(stateReadMemGetValue) {
-      val internalAddress = globalAddress(63,4)
-      for(i <- 0 until 8){
+      val internalAddress = globalAddress(63, 4)
+      for (i <- 0 until 8) {
         mem(i).read(internalAddress)
       }
     }
