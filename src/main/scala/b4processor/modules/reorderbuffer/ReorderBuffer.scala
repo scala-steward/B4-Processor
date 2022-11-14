@@ -62,7 +62,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         entry
       }
     }
-    decoder.destination.destinationTag := insertIndex
+    decoder.destination.destinationTag := Tag.fromWires(insertIndex)
     // ソースレジスタに対応するタグ、値の代入
     val descendingIndex = VecInit(
       (0 until pow(2, params.tagWidth).toInt).map(indexOffset =>
@@ -84,12 +84,12 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       )
         .suggestName(s"matchingIndex_d${i}_s1")
       decoder.source1.matchingTag.valid := hasMatching
-      decoder.source1.matchingTag.bits := matchingIndex
+      decoder.source1.matchingTag.bits := Tag.fromWires(matchingIndex)
       decoder.source1.value.valid := buffer(matchingIndex).valueReady
       decoder.source1.value.bits := buffer(matchingIndex).value
     }.otherwise {
       decoder.source1.matchingTag.valid := false.B
-      decoder.source1.matchingTag.bits := 0.U
+      decoder.source1.matchingTag.bits := Tag(0)
       decoder.source1.value.valid := false.B
       decoder.source1.value.bits := 0.U
     }
@@ -107,12 +107,12 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         descendingIndex.map { index => matchingBits(index).asBool -> index }
       )
       decoder.source2.matchingTag.valid := hasMatching
-      decoder.source2.matchingTag.bits := matchingIndex
+      decoder.source2.matchingTag.bits := Tag.fromWires(matchingIndex)
       decoder.source2.value.valid := buffer(matchingIndex).valueReady
       decoder.source2.value.bits := buffer(matchingIndex).value
     }.otherwise {
       decoder.source2.matchingTag.valid := false.B
-      decoder.source2.matchingTag.bits := 0.U
+      decoder.source2.matchingTag.bits := Tag(0)
       decoder.source2.value.valid := false.B
       decoder.source2.value.bits := 0.U
     }
@@ -145,11 +145,11 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 
     when(canCommit) {
       // LSQへストア実行信号
-      io.loadStoreQueue.destinationTag(i) := index
+      io.loadStoreQueue.destinationTag(i) := Tag.fromWires(index)
       io.loadStoreQueue.valid(i) := buffer(index).storeSign
       buffer(index) := ReorderBufferEntry.default
     }.otherwise {
-      io.loadStoreQueue.destinationTag(i) := 0.U
+      io.loadStoreQueue.destinationTag(i) := Tag(0)
       io.loadStoreQueue.valid(i) := false.B
     }
     lastValid = canCommit
