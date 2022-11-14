@@ -21,7 +21,7 @@ class ReservationStationEntry(implicit params: Parameters) extends Bundle {
   val ready2 = Bool()
   val value2 = UInt(64.W)
   val destinationTag = new Tag()
-  val programCounter = SInt(64.W)
+  val programCounter = UInt(64.W)
   val valid = Bool()
 }
 
@@ -38,7 +38,7 @@ object ReservationStationEntry {
       _.ready2 -> false.B,
       _.value2 -> 0.U,
       _.destinationTag -> Tag(0),
-      _.programCounter -> 0.S,
+      _.programCounter -> 0.U,
       _.valid -> false.B
     )
 }

@@ -60,10 +60,10 @@ class ReservationStation(implicit params: Parameters) extends Module {
     ).immediateOrFunction7
   }.otherwise {
     io.executor.bits.opcode := 0.U
-    io.executor.bits.destinationTag := 0.U
+    io.executor.bits.destinationTag := Tag(0)
     io.executor.bits.value1 := 0.U
     io.executor.bits.value2 := 0.U
-    io.executor.bits.programCounter := 0.S
+    io.executor.bits.programCounter := 0.U
     io.executor.bits.function3 := 0.U
     io.executor.bits.immediateOrFunction7 := 0.U
   }
