@@ -1,10 +1,7 @@
 package b4processor.modules.cache
 
 import b4processor.Parameters
-import b4processor.connections.InstructionCache2Fetch
-import b4processor.modules.memory.{InstructionMemory, TransactionMode}
 import chisel3._
-import chisel3.util._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -15,10 +12,10 @@ class InstructionMEmoryCacheWrapper()(implicit params: Parameters)
 
   def responseStep(data: UInt) = {
     this.io.memory.response.valid.poke(true)
-    this.io.memory.response.bits.poke(data)
+    this.io.memory.response.bits.inner.poke(data)
     this.clock.step()
     this.io.memory.response.valid.poke(false)
-    this.io.memory.response.bits.poke(0)
+    this.io.memory.response.bits.inner.poke(0)
   }
 
   def setFetch(address: UInt) = {
@@ -29,7 +26,7 @@ class InstructionMEmoryCacheWrapper()(implicit params: Parameters)
   def expectRequest(address: UInt) = {
     this.io.memory.request.valid.expect(true)
     this.io.memory.request.bits.address.expect(address)
-    this.io.memory.request.bits.mode.expect(TransactionMode.InstructionRead)
+    this.io.memory.request.bits.burstLength.expect(1)
   }
 
   def expectData(data: UInt) = {
@@ -46,13 +43,13 @@ class InstructionMemoryCacheTest
 
   it should "load memory" in {
     test(new InstructionMEmoryCacheWrapper)
-      .withAnnotations(Seq(WriteFstAnnotation)) { c =>
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         c.setFetch("x2222222200000000".U)
         c.clock.step()
         c.expectRequest("x2222222200000000".U)
+        c.io.memory.request.ready.poke(true)
         c.clock.step(2)
         c.responseStep("x2020202010101010".U)
-        c.expectRequest("x2222222200000008".U)
         c.clock.step(2)
         c.responseStep("x4040404030303030".U)
         c.clock.step(2)

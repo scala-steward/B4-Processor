@@ -66,7 +66,7 @@ class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
   // エントリを追加してALUから値をうけとり、実行ユニットに回す
   it should "store a entry and release it" in {
     test(new ReservationStationWrapper())
-      .withAnnotations(Seq(WriteFstAnnotation)) { c =>
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         c.initialize()
         c.setDecoderInput(programCounter = Some(1))
         c.clock.step()
@@ -84,7 +84,7 @@ class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
   // 空きがないときready=0になる
   it should "make decoder become not ready" in {
     test(new ReservationStationWrapper())
-      .withAnnotations(Seq(WriteFstAnnotation)) { c =>
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         c.initialize()
         c.setExecutorReady(false)
         var loop = 0
@@ -106,7 +106,7 @@ class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
   // 空きがなくなるまで命令を入れて
   it should "fill and flush instructions" in {
     test(new ReservationStationWrapper())
-      .withAnnotations(Seq(WriteFstAnnotation)) { c =>
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         c.initialize()
         c.setExecutorReady(false)
         var loop = 0

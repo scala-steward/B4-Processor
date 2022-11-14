@@ -157,7 +157,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "load check" in {
     // runParallel = 1, maxRegisterFileCommitCount = 1
-    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteFstAnnotation)) {
+    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
       c =>
         c.initialize()
         // 初期化
@@ -243,7 +243,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "store check" in {
     // runParallel = 1, maxRegisterFileCommitCount = 1
-    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteFstAnnotation)) {
+    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
       c =>
         c.initialize()
         // 初期化
@@ -343,7 +343,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   //      Some(LSQ2Memory(address = ???, tag = ???, data = ???, opcode = ???, function3 = ???))))
 
   it should "2 Parallel load check" in {
-    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteFstAnnotation)) {
+    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
       c =>
         c.initialize()
         // 初期化
@@ -434,7 +434,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "2 Parallel store check" in {
-    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteFstAnnotation)) {
+    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
       c =>
         c.initialize()
         // 初期化
@@ -551,7 +551,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "2 Parallel check (1 clock wait)" in {
-    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteFstAnnotation)) {
+    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
       c =>
         c.initialize()
         // 初期化
@@ -726,7 +726,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       new LoadStoreQueueWrapper()(
         defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1)
       )
-    ).withAnnotations(Seq(WriteFstAnnotation)) { c =>
+    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize()
       // 初期化
       c.io.head.get.expect(0)

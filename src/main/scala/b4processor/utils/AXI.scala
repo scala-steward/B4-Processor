@@ -71,7 +71,7 @@ class AXI(
 
   class ReadAddressChannel extends Bundle {
     val ID = UInt(idWidth.W)
-    val ARRD = UInt(addressWidth.W)
+    val ADDR = UInt(addressWidth.W)
     val LEN = UInt(8.W)
     val SIZE = BurstSize()
     val BURST = BurstType()

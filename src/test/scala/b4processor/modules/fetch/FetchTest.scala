@@ -240,7 +240,7 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       new FetchWrapper(
         InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063"))
       )
-    ).withAnnotations(Seq(WriteFstAnnotation)) { c =>
+    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize()
 
       c.io.nextPC.expect(0x10000004)

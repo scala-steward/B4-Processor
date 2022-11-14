@@ -259,7 +259,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // imemがvalidのときRSとRBでvalidと表示されている
   it should "say the data is valid when imem is valid" in {
-    test(new DecoderWrapper(0)).withAnnotations(Seq(WriteFstAnnotation)) { c =>
+    test(new DecoderWrapper(0)).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
 

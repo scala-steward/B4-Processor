@@ -63,7 +63,7 @@ class DataMemoryInterfaceTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "store and load" in {
     test(new DataMemoryInterfaceTestWrapper)
-      .withAnnotations(Seq(WriteFstAnnotation)) { c =>
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
         // 100アドレスへのストア
 
         c.store(100, 10.U)

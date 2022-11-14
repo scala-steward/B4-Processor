@@ -2,7 +2,10 @@ package b4processor.modules.cache
 
 import b4processor.Parameters
 import b4processor.connections.{InstructionCache2Fetch, InstructionMemory2Cache}
-import b4processor.modules.memory.MemoryTransaction
+import b4processor.modules.memory.{
+  InstructionFetchTransaction,
+  InstructionResponse
+}
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.stage.ChiselStage
@@ -19,8 +22,8 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     val fetch = Vec(params.runParallel, new InstructionCache2Fetch)
 
     val memory = new Bundle {
-      val request = Valid(new MemoryTransaction)
-      val response = Flipped(Valid(UInt(64.W)))
+      val request = Irrevocable(new InstructionFetchTransaction())
+      val response = Flipped(Valid(new InstructionResponse))
     }
   })
 
@@ -30,7 +33,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     val data = Vec(8, UInt(16.W))
   }.Lit(_.valid -> false.B))))
 
-  private val request = Reg(UInt(60.W))
+  private val request = WireDefault(0.U(60.W))
   private var didRequest = false.B
   for (f <- io.fetch) {
     val lowerAddress = f.address.bits(63, 1)
@@ -72,34 +75,34 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
   private val state = RegInit(waiting)
   private val readIndex = Reg(UInt(1.W))
   private val requested = Reg(Bool())
-  private val transaction = Reg(new MemoryTransaction)
+  private val transaction = Reg(new InstructionFetchTransaction)
   when(didRequest && state === waiting) {
     state := requesting
     requested := false.B
     readIndex := 0.U
+
+    val tmp_transaction =
+      Wire(new InstructionFetchTransaction)
+    tmp_transaction.address := Cat(request, readIndex, 0.U(3.W))
+    tmp_transaction.burstLength := 1.U
+    transaction := tmp_transaction
+    io.memory.request.valid := true.B
+    io.memory.request.bits := tmp_transaction
   }
 
   io.memory.request.valid := false.B
   io.memory.request.bits := DontCare
-  private val head = RegInit(0.U(2.W))
+  private val head = RegInit(0.U(1.W))
   when(state === requesting) {
-    when(!requested) {
-      val tmp_transaction =
-        MemoryTransaction.instructionFetchContent(
-          Cat(request, readIndex, 0.U(3.W))
-        )
-      transaction := tmp_transaction
-      io.memory.request.valid := true.B
-      io.memory.request.bits := tmp_transaction
-    }.otherwise {
+    when(!io.memory.request.ready) {
       io.memory.request.valid := true.B
       io.memory.request.bits := transaction
     }
 
     when(io.memory.response.valid) {
       for (i <- 0 until 4) {
-        buf(head).data(readIndex ## i.U(2.W)) := io.memory.response
-          .bits(i * 16 + 15, i * 16)
+        buf(head).data(readIndex ## i.U(2.W)) := io.memory.response.bits
+          .inner(i * 16 + 15, i * 16)
       }
       buf(head).upper := request
       readIndex := readIndex + 1.U

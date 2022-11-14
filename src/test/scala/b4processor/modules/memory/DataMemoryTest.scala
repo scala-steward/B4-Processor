@@ -68,7 +68,7 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
   implicit val params = Parameters()
 
   it should "store and load a value" in {
-    test(new DataMemoryTestWrapper).withAnnotations(Seq(WriteFstAnnotation)) {
+    test(new DataMemoryTestWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
       c =>
         // 0アドレスへのストア
         c.store(0, 123.U)
@@ -103,7 +103,7 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "load a byte value" in {
-    test(new DataMemoryTestWrapper).withAnnotations(Seq(WriteFstAnnotation)) {
+    test(new DataMemoryTestWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
       c =>
         // 0アドレスへのストア
         c.store(24, "b10000000011".U)
@@ -116,7 +116,7 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "store double-word and get small bytes" in {
-    test(new DataMemoryTestWrapper).withAnnotations(Seq(WriteFstAnnotation)) {
+    test(new DataMemoryTestWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
       c =>
         // 0アドレスへのストア
         c.store(0, "xFEDCBA9876543210".U)
@@ -154,7 +154,7 @@ class DataMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "store small bytes and get double word" in {
-    test(new DataMemoryTestWrapper).withAnnotations(Seq(WriteFstAnnotation)) {
+    test(new DataMemoryTestWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
       c =>
         // byte単位でストア
         for (
