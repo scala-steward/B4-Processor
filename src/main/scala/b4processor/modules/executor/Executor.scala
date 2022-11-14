@@ -236,6 +236,8 @@ class Executor(implicit params: Parameters) extends Module {
     io.out.tag := Tag(0)
     io.out.value := 0.U
   }
+
+  io.out.isError := false.B
 }
 
 object ExecutorElaborate extends App {
