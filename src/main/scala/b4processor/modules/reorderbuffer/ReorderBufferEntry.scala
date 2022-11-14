@@ -6,7 +6,7 @@ import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 class ReorderBufferEntry extends Bundle {
 
   /** プログラムカウンタ */
-  val programCounter = SInt(64.W)
+  val programCounter = UInt(64.W)
 
   /** デスティネーションレジスタ */
   val destinationRegister = UInt(5.W)
@@ -25,7 +25,7 @@ object ReorderBufferEntry {
   def default: ReorderBufferEntry = (new ReorderBufferEntry).Lit(
     _.value -> 0.U,
     _.valueReady -> false.B,
-    _.programCounter -> 0.S,
+    _.programCounter -> 0.U,
     _.destinationRegister -> 0.U,
     _.storeSign -> false.B
   )
