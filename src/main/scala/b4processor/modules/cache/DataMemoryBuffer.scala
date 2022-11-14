@@ -16,10 +16,10 @@ import chisel3.util._
 import chisel3.stage.ChiselStage
 
 /** from LSQ toDataMemory のためのバッファ
- *
- * @param params
- * パラメータ
- */
+  *
+  * @param params
+  *   パラメータ
+  */
 class DataMemoryBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val dataIn =
@@ -84,25 +84,25 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
       io.dataWriteRequest.valid := true.B
       val addressUpper = entry.address(63, 3)
       val addressLower = entry.address(2, 0)
-      io.dataWriteRequest.bits.address := addressUpper
+      io.dataWriteRequest.bits.address := addressUpper ## 0.U(3.W)
+      io.dataWriteRequest.bits.outputTag := entry.tag
       io.dataWriteRequest.bits.data := MuxLookup(
         entry.accessInfo.accessWidth.asUInt,
         0.U,
         Seq(
           MemoryAccessWidth.Byte.asUInt -> Mux1H(
             (0 until 8).map(i =>
-              (addressLower === i.U) -> entry.data(7, 0) ## 0.U((i * 8).W)
+              (addressLower === i.U) -> (entry.data(7, 0) << i * 8)
             )
           ),
           MemoryAccessWidth.HalfWord.asUInt -> Mux1H(
             (0 until 4).map(i =>
-              (addressLower(2, 1) === i.U) -> entry.data(15, 0) ## 0
-                .U((i * 16).W)
+              (addressLower(2, 1) === i.U) -> (entry.data(15, 0) << i * 16)
             )
           ),
           MemoryAccessWidth.Word.asUInt -> Mux1H(
             (0 until 2).map(i =>
-              (addressLower(2) === i.U) -> entry.data(31, 0) ## 0.U((i * 32).W)
+              (addressLower(2) === i.U) -> (entry.data(31, 0) << i * 32)
             )
           ),
           MemoryAccessWidth.DoubleWord.asUInt -> entry.data
@@ -113,18 +113,13 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
         0.U,
         Seq(
           MemoryAccessWidth.Byte.asUInt -> Mux1H(
-            (0 until 8).map(i => (addressLower === i.U) -> 1.U ## 0.U(i.W))
+            (0 until 8).map(i => (addressLower === i.U) -> (1 << i).U)
           ),
           MemoryAccessWidth.HalfWord.asUInt -> Mux1H(
-            (0 until 4).map(i =>
-              (addressLower(2, 1) === i.U) -> "b11".U ## 0
-                .U((i * 2).W)
-            )
+            (0 until 4).map(i => (addressLower(2, 1) === i.U) -> (3 << i * 2).U)
           ),
           MemoryAccessWidth.Word.asUInt -> Mux1H(
-            (0 until 2).map(i =>
-              (addressLower(2) === i.U) -> "b1111".U ## 0.U((i * 4).W)
-            )
+            (0 until 2).map(i => (addressLower(2) === i.U) -> (15 << i * 4).U)
           ),
           MemoryAccessWidth.DoubleWord.asUInt -> "b11111111".U
         )

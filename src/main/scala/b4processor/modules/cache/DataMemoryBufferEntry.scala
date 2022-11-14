@@ -2,15 +2,16 @@ package b4processor.modules.cache
 
 import b4processor.Parameters
 import b4processor.structures.memoryAccess.MemoryAccessInfo
+import b4processor.utils.Tag
 import chisel3._
 
 class DataMemoryBufferEntry(implicit params: Parameters) extends Bundle {
 
   /** アドレス値 */
-  val address = SInt(64.W)
+  val address = UInt(64.W)
 
   /** 命令を識別するためのタグ(Destination Tag) */
-  val tag = UInt(params.tagWidth.W)
+  val tag = new Tag
 
   /** ストアデータ */
   val data = UInt(64.W)
@@ -21,8 +22,8 @@ class DataMemoryBufferEntry(implicit params: Parameters) extends Bundle {
 
 object DataMemoryBufferEntry {
   def validEntry(
-    address: SInt,
-    tag: UInt,
+    address: UInt,
+    tag: Tag,
     data: UInt,
     accessInfo: MemoryAccessInfo
   )(implicit params: Parameters): DataMemoryBufferEntry = {
