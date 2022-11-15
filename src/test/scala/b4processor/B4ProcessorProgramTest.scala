@@ -2,6 +2,7 @@ package b4processor
 
 import b4processor.utils.{B4ProcessorWithMemory, InstructionUtil}
 import chiseltest._
+import chisel3._
 import chiseltest.internal.CachingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -20,11 +21,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       .withAnnotations(
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
-        c.clock.setTimeout(20)
-        while (c.io.registerFileContents.get(12).peekInt() != 20)
-          c.clock.step()
-        c.io.registerFileContents.get(12).expect(20)
-        c.clock.step()
+        c.initialize()
+        c.checkForRegister(13, 20.U, 40)
       }
   }
 

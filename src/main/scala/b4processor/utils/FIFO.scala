@@ -30,18 +30,14 @@ class FIFO[T <: Data](width: Int)(t: T) extends Module {
 
   output.valid := false.B
   private val outputReg = Reg(t)
-  output.bits := outputReg
+  val rwport = buffer(Mux(output.ready, tail + 1.U, tail))
   when(!empty) {
     output.valid := true.B
     when(output.ready) {
-      outputReg := buffer.read(tail + 1.U)
       tail := tail + 1.U
-    }.otherwise{
-      outputReg := buffer.read(tail)
     }
-  }.otherwise{
-    outputReg := buffer.read(tail)
   }
+  output.bits := rwport
 }
 
 object FIFO extends App {

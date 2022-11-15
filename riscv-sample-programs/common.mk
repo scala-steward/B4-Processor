@@ -9,7 +9,7 @@ CFLAGS += -T ../linker.ld
 data_hex = $(addsuffix .hex,$(addprefix  $(PROGRAMNAME).data_,0 1 2 3 4 5 6 7))
 
 .PHONY:clean
-all: $(PROGRAMNAME).text.hex $(data_hex) $(PROGRAMNAME).o $(PROGRAMNAME).dump
+all: $(PROGRAMNAME).text.hex $(data_hex) $(PROGRAMNAME).o $(PROGRAMNAME).dump $(PROGRAMNAME).text64.hex
 
 
 $(PROGRAMNAME).o: $(SOURCES)
@@ -24,6 +24,9 @@ $(PROGRAMNAME).data.binary: $(PROGRAMNAME).o
 
 $(PROGRAMNAME).text.hex: $(PROGRAMNAME).text.binary
 	od -An -t x1 $< -w1 -v | tr -d " " > $@
+
+$(PROGRAMNAME).text64.hex: $(PROGRAMNAME).text.binary
+	od -An -t x8 $< -w1 -v | tr -d " " > $@
 
 
 $(PROGRAMNAME).data_0.hex: $(PROGRAMNAME).data.binary

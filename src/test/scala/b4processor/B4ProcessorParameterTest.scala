@@ -33,10 +33,11 @@ class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
                   CachingAnnotation
                 )
               ) { c =>
+                c.initialize()
                 c.clock.setTimeout(500)
-                while (c.io.registerFileContents.get(2).peekInt() == 0)
+                while (c.io.registerFileContents.get(3).peekInt() == 0)
                   c.clock.step()
-                c.io.registerFileContents.get(2).expect(21)
+                c.io.registerFileContents.get(3).expect(21)
                 c.clock.step(10)
               }
           }
