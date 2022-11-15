@@ -1,6 +1,6 @@
 package b4processor
 
-import b4processor.utils.InstructionUtil
+import b4processor.utils.{B4ProcessorWithMemory, InstructionUtil}
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec

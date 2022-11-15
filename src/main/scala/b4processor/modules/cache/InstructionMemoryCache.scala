@@ -76,6 +76,8 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
   private val readIndex = Reg(UInt(1.W))
   private val requested = Reg(Bool())
   private val transaction = Reg(new InstructionFetchTransaction)
+  private val requestDone = Reg(Bool())
+
   when(didRequest && state === waiting) {
     state := requesting
     requested := false.B
@@ -88,15 +90,19 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     transaction := tmp_transaction
     io.memory.request.valid := true.B
     io.memory.request.bits := tmp_transaction
+    requestDone := false.B
   }
 
   io.memory.request.valid := false.B
   io.memory.request.bits := DontCare
   private val head = RegInit(0.U(1.W))
   when(state === requesting) {
-    when(!io.memory.request.ready) {
+    when(!requestDone) {
       io.memory.request.valid := true.B
       io.memory.request.bits := transaction
+      when(io.memory.request.ready) {
+        requestDone := true.B
+      }
     }
 
     when(io.memory.response.valid) {

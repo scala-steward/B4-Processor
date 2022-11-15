@@ -13,9 +13,9 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     val dataReadRequests = Flipped(Irrevocable(new MemoryReadTransaction))
     val instructionFetchRequest =
       Flipped(Irrevocable(new InstructionFetchTransaction))
-    val dataReadOut = Valid(new OutputValue)
+    val dataReadOut = new OutputValue
     val dataWriteOut = Valid(new WriteResponse)
-    val instructionOut = Irrevocable(new InstructionResponse)
+    val instructionOut = Valid(new InstructionResponse)
     val coordinator = new AXI(64)
   })
 
@@ -56,11 +56,11 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     readAddress.bits.BURST := BurstType.Incr
   }
   io.dataWriteRequests.ready := false.B
-  io.dataReadOut.valid := false.B
-  io.dataReadOut.bits.validAsResult := false.B
-  io.dataReadOut.bits.validAsLoadStoreAddress := false.B
-  io.dataReadOut.bits.value := 0.U
-  io.dataReadOut.bits.tag := Tag(0)
+  io.dataReadOut.validAsResult := false.B
+  io.dataReadOut.validAsLoadStoreAddress := false.B
+  io.dataReadOut.value := 0.U
+  io.dataReadOut.isError := false.B
+  io.dataReadOut.tag := Tag(0)
   io.instructionFetchRequest.ready := false.B
   io.dataReadRequests.ready := false.B
   io.dataWriteOut.valid := false.B
@@ -111,25 +111,25 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
         readQueue.input.bits.tag := io.dataReadRequests.bits.outputTag
       }
     }
-    val burstLen = Reg(UInt(8.W))
+    val burstLen = RegInit(0.U(8.W))
     when(!readQueue.empty) {
       io.coordinator.read.ready := true.B
       when(io.coordinator.read.valid) {
         burstLen := burstLen + 1.U
-        io.dataReadOut.valid := true.B
         when(readQueue.output.bits.isInstruction) {
           io.instructionOut.valid := true.B
           io.instructionOut.bits.inner := io.coordinator.read.bits.DATA
         }.otherwise {
-          io.dataReadOut.bits.tag := readQueue.output.bits.tag
-          io.dataReadOut.bits.value := io.coordinator.read.bits.DATA
-          io.dataReadOut.bits.validAsResult := true.B
-          io.dataReadOut.bits.validAsLoadStoreAddress := false.B
-          io.dataReadOut.bits.isError := io.coordinator.read.bits.RESP =/= Response.Okay
+          io.dataReadOut.tag := readQueue.output.bits.tag
+          io.dataReadOut.value := io.coordinator.read.bits.DATA
+          io.dataReadOut.validAsResult := true.B
+          io.dataReadOut.validAsLoadStoreAddress := false.B
+          io.dataReadOut.isError := io.coordinator.read.bits.RESP =/= Response.Okay
         }
       }
       when(burstLen === readQueue.output.bits.burstLength) {
-        readQueue.output.ready
+        readQueue.output.ready := true.B
+        burstLen := 0.U
       }
     }
     // ----------------------------------------

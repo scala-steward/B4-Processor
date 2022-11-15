@@ -66,7 +66,7 @@ class Fetch(implicit params: Parameters) extends Module {
     decoder.bits.programCounter := nextPC
     decoder.bits.instruction := cache.output.bits
 
-    cache.address.valid := nextWait =/= WaitingReason.None
+    cache.address.valid := nextWait === WaitingReason.None
 
     // 次に停止する必要があるか確認
     nextWait = Mux(

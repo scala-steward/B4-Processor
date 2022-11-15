@@ -5,11 +5,13 @@ import b4processor.connections.{Fetch2BranchPrediction, Fetch2FetchBuffer}
 import b4processor.modules.branch_output_collector.CollectedBranchAddresses
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.memory.{ExternalMemoryInterface, InstructionMemory}
-import b4processor.utils.InstructionUtil
+import b4processor.utils.{InstructionUtil, SimpleAXIMemory}
 import chisel3._
 import chisel3.util._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
+
+import scala.math
 
 /** フェッチのラッパー
   *
@@ -34,31 +36,28 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
     /** リオーダバッファのエントリが空か */
     val reorderBufferEmpty = Input(Bool())
 
-    /** メモリに要求されているアドレス */
-    val memoryAddress = Output(SInt(64.W))
-
-    /** メモリの出力 */
-    val memoryOutput = Vec(params.fetchWidth, Output(UInt(64.W)))
-
     /** キャッシュに要求されているアドレス */
-    val cacheAddress = Vec(params.runParallel, Output(SInt(64.W)))
+    val cacheAddress = Vec(params.runParallel, Valid(UInt(64.W)))
 
     /** キャッシュからの出力 */
     val cacheOutput = Vec(params.runParallel, Valid(UInt(64.W)))
 
     /** プログラムカウンタ */
-    val PC = Output(SInt(64.W))
+    val PC = Output(UInt(64.W))
 
     /** 次のクロックのプログラムカウンタ */
-    val nextPC = Output(SInt(64.W))
+    val nextPC = Output(UInt(64.W))
 
     /** 各命令のぶん機の種類 */
     val branchTypes = Output(Vec(params.runParallel, new BranchType.Type))
+
+    val memorySetup = Flipped(Valid(UInt(64.W)))
   })
 
   val fetch = Module(new Fetch)
   val cache = Module(new InstructionMemoryCache)
-  val memory = Module(new ExternalMemoryInterface)
+  val memoryInterface = Module(new ExternalMemoryInterface)
+  val axiMemory = Module(new SimpleAXIMemory)
 
   fetch.io.prediction <> io.prediction
   fetch.io.fetchBuffer <> io.decoders
@@ -68,10 +67,17 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
   fetch.io.branchTypes.get <> io.branchTypes
 
   cache.io.fetch <> fetch.io.cache
-  cache.io.memory <> memory.io
+  cache.io.memory.request <> memoryInterface.io.instructionFetchRequest
+  cache.io.memory.response <> memoryInterface.io.instructionOut
 
-  io.memoryOutput <> memory.io.output
-  io.memoryAddress <> cache.io.memory
+  memoryInterface.io.dataReadRequests.valid := false.B
+  memoryInterface.io.dataReadRequests.bits := DontCare
+  memoryInterface.io.dataWriteRequests.valid := false.B
+  memoryInterface.io.dataWriteRequests.bits := DontCare
+
+  axiMemory.axi <> memoryInterface.io.coordinator
+  axiMemory.simulationSource.input <> io.memorySetup
+
   fetch.io.cache.zip(io.cacheAddress).foreach { case (f, c) => f.address <> c }
   cache.io.fetch.zip(io.cacheOutput).foreach { case (c, f) => c.output <> f }
 
@@ -83,6 +89,15 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
   /** 初期化 */
   def initialize(): Unit = {
     this.setPrediction(Seq.fill(params.runParallel)(false))
+    this.io.memorySetup.valid.poke(true)
+    this.io.memorySetup.bits.poke(memoryInit.length)
+    for (i <- memoryInit.indices) {
+      this.clock.step()
+      this.io.memorySetup.bits.poke(memoryInit(i))
+    }
+    this.clock.step()
+    this.io.memorySetup.valid.poke(false)
+    this.clock.step()
   }
 
   /** 予測をセット */
@@ -100,11 +115,6 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
       e.valid.poke(r.isDefined)
       e.programCounter.poke(r.getOrElse(0))
     }
-  }
-
-  /** メモリからの出力内容を確認 */
-  def expectMemory(values: Seq[UInt]): Unit = {
-    this.io.memoryOutput.zip(values).foreach { case (out, v) => out.expect(v) }
   }
 }
 
@@ -125,13 +135,12 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
         InstructionUtil
           .fromStringSeq32bit(Seq("00000013", "00000463", "00000013"))
       )
-    ) { c =>
+    ) .withAnnotations(Seq(WriteVcdAnnotation)){ c =>
       c.initialize()
+      c.clock.step(20)
 
-      c.io.memoryAddress.expect(0x10000000)
-      c.expectMemory(Seq("x00000013".U, "x00000463".U))
-      c.io.cacheAddress(0).expect(0x10000000)
-      c.io.cacheAddress(1).expect(0x10000004)
+      c.io.cacheAddress(0).bits.expect(0x10000000)
+      c.io.cacheAddress(1).bits.expect(0x10000004)
 
       c.io.cacheOutput(0).bits.expect("x00000013".U)
       c.io.cacheOutput(0).valid.expect(true)
@@ -154,10 +163,8 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize()
       c.setPrediction(Seq(true, true))
 
-      c.io.memoryAddress.expect(0x10000000)
-      c.expectMemory(Seq("x00000063".U, "x00000000".U))
-      c.io.cacheAddress(0).expect(0x10000000)
-      c.io.cacheAddress(0).expect(0x10000000)
+      c.io.cacheAddress(0).bits.expect(0x10000000)
+      c.io.cacheAddress(0).bits.expect(0x10000000)
 
       c.io.cacheOutput(0).bits.expect("x00000063".U)
       c.io.cacheOutput(0).valid.expect(true)

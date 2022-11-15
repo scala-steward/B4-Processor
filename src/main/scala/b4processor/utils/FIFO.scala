@@ -28,14 +28,19 @@ class FIFO[T <: Data](width: Int)(t: T) extends Module {
     }
   }
 
-  output.bits := buffer.read(tail)
   output.valid := false.B
+  private val outputReg = Reg(t)
+  output.bits := outputReg
   when(!empty) {
     output.valid := true.B
     when(output.ready) {
-      output.bits := buffer.read(tail + 1.U)
+      outputReg := buffer.read(tail + 1.U)
       tail := tail + 1.U
+    }.otherwise{
+      outputReg := buffer.read(tail)
     }
+  }.otherwise{
+    outputReg := buffer.read(tail)
   }
 }
 

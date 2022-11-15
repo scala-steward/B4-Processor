@@ -11,26 +11,18 @@ import b4processor.modules.decoder.Decoder
 import b4processor.modules.executor.Executor
 import b4processor.modules.fetch.{Fetch, FetchBuffer}
 import b4processor.modules.lsq.LoadStoreQueue
-import b4processor.modules.memory.DataMemory
+import b4processor.modules.memory.ExternalMemoryInterface
 import b4processor.modules.ourputcollector.OutputCollector
 import b4processor.modules.registerfile.RegisterFile
 import b4processor.modules.reorderbuffer.ReorderBuffer
 import b4processor.modules.reservationstation.ReservationStation
+import b4processor.utils.AXI
 import chisel3._
 import chisel3.experimental.FlatIO
 import chisel3.stage.ChiselStage
 
 class B4Processor(implicit params: Parameters) extends Module {
-  val io = FlatIO(new Bundle {
-    val instructionMemory = Flipped(new InstructionMemory2Cache)
-    val dataMemory = new Bundle {
-      val lsq = new LoadStoreQueue2Memory
-      val output = Flipped(new OutputValue)
-    }
-
-    val registerFileContents =
-      if (params.debug) Some(Output(Vec(31, UInt(64.W)))) else None
-  })
+  val io = IO(new AXI(64))
 
   require(params.runParallel >= 1, "同時発行数は1以上である必要があります。")
   require(params.tagWidth >= 1, "タグ幅は1以上である必要があります。")
@@ -56,18 +48,23 @@ class B4Processor(implicit params: Parameters) extends Module {
     Seq.fill(params.runParallel)(Module(new ReservationStation))
   val executors = Seq.fill(params.runParallel)(Module(new Executor))
 
+  val externalMemoryInterface = Module(new ExternalMemoryInterface)
+
+  io <> externalMemoryInterface.io.coordinator
+
   /** 出力コレクタとデータメモリ */
-  outputCollector.io.dataMemory := io.dataMemory.output
+  outputCollector.io.dataMemory := externalMemoryInterface.io.dataReadOut
 
   /** 命令メモリと命令キャッシュを接続 */
-  io.instructionMemory <> instructionCache.io.memory
+  externalMemoryInterface.io.instructionFetchRequest <> instructionCache.io.memory.request
+  externalMemoryInterface.io.instructionOut <> instructionCache.io.memory.response
 
   /** フェッチとフェッチバッファの接続 */
   fetch.io.fetchBuffer <> fetchBuffer.io.fetch
 
   /** レジスタのコンテンツをデバッグ時に接続 */
-  if (params.debug)
-    io.registerFileContents.get <> registerFile.io.values.get
+//  if (params.debug)
+//    io.registerFileContents.get <> registerFile.io.values.get
 
   /** デコーダ同士を接続 */
   for (i <- 1 until params.runParallel)
@@ -135,8 +132,9 @@ class B4Processor(implicit params: Parameters) extends Module {
   /** データメモリバッファとLSQ */
   dataMemoryBuffer.io.dataIn <> loadStoreQueue.io.memory
 
-  /** データメモリとデータメモリバッファ */
-//  TODO io.dataMemory.lsq <> dataMemoryBuffer.io.dataOut
+  /** メモリとデータメモリバッファ */
+  externalMemoryInterface.io.dataReadRequests <> dataMemoryBuffer.io.dataReadRequest
+  externalMemoryInterface.io.dataWriteRequests <> dataMemoryBuffer.io.dataWriteRequest
 
   /** リオーダバッファと出力コレクタ */
   reorderBuffer.io.collectedOutputs := outputCollector.io.outputs

@@ -39,6 +39,16 @@ object InstructionUtil {
         offset = 1
       output = output :+ s.slice(offset, offset + 2)
     }
-    output.map(n => s"x$n".U(8.W))
+    var output64 = Seq[String]()
+    for (i <- 0 until math.ceil(output.length.toDouble / 8).toInt) {
+      output64 = output64 :+ (0 until 8)
+        .map(k => i * 8 + k)
+        .map(p =>
+          if (p < output.length) { output(p) }
+          else { "00" }
+        )
+        .reduce(_ + _)
+    }
+    output64.map(n => s"x$n".U(64.W))
   }
 }
