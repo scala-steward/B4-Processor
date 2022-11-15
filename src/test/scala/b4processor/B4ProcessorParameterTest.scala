@@ -15,9 +15,7 @@ class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
         for (lsqWidth <- Seq(2, 5))
           it should s"run fibonacci runParallel${runParallel} maxCommitCount=${maxCommitCount} tagWidth=${tagWidth} lsqWidth=${lsqWidth}" in {
             test(
-              new B4ProcessorWithMemory(
-                "riscv-sample-programs/fibonacci_c/fibonacci_c"
-              )(
+              new B4ProcessorWithMemory()(
                 defaultParams.copy(
                   runParallel = runParallel,
                   tagWidth = tagWidth,
@@ -33,7 +31,7 @@ class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
                   CachingAnnotation
                 )
               ) { c =>
-                c.initialize()
+                c.initialize("riscv-sample-programs/fibonacci_c/fibonacci_c")
                 c.clock.setTimeout(500)
                 while (c.io.registerFileContents.get(3).peekInt() == 0)
                   c.clock.step()

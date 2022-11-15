@@ -1,15 +1,16 @@
 ENTRY(_start)
 
 MEMORY{
-	ROM (rx) : ORIGIN = 0x40000000, LENGTH = 1M
-	RAM (rx) : ORIGIN = 0x80000000, LENGTH = 16M
+	RAM (rx) : ORIGIN = 0x40000000, LENGTH = 16M
 }
 
 SECTIONS{
+    . = ALIGN(8);
 	.text :
 	{
 		*(.text.init)
 		*(.text*)
-	} > ROM
+	} > RAM
+	. = ALIGN(8);
 	.data : { *(.data) } > RAM
 }

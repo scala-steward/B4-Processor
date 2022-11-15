@@ -48,47 +48,14 @@ vpath %.S $(src_dir)
 %.dump: %
 	$(RISCV_OBJDUMP) $< > $@
 
-%.out: %
-	$(RISCV_SIM) --isa=rv64gc_zfh_svnapot $< 2> $@
+%.binary: %
+	riscv64-unknown-elf-objcopy -O binary $< $@
 
-%.out32: %
-	$(RISCV_SIM) --isa=rv32gc_zfh_svnapot $< 2> $@
-
-%.text.binary: %
-	riscv64-unknown-elf-objcopy -O binary -j .text $< $@
-
-%.data.binary: %
-	riscv64-unknown-elf-objcopy -O binary -j .data $< $@
-
-%.text.hex: %.text.binary
+%.hex: %.binary
 	od -An -t x1 $< -w1 -v | tr -d " " > $@
 
-#%.data.hex: %.data.binary
-#	od -An -t x8 $< -w8 -v | tr -d " " > $@
-
-%.data_0.hex: %.data.binary
-	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==0" > $@
-
-%.data_1.hex: %.data.binary
-	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==1" > $@
-
-%.data_2.hex: %.data.binary
-	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==2" > $@
-
-%.data_3.hex: %.data.binary
-	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==3" > $@
-
-%.data_4.hex: %.data.binary
-	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==4" > $@
-
-%.data_5.hex: %.data.binary
-	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==5" > $@
-
-%.data_6.hex: %.data.binary
-	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==6" > $@
-
-%.data_7.hex: %.data.binary
-	od -An -t x1 $< -w1 -v | tr -d " " | awk "(NR-1)%8==7" > $@
+%.64.hex: %.binary
+	od -An -t x8 $< -w8 -v | tr -d " " > $@
 
 define compile_template
 
@@ -137,15 +104,8 @@ $(eval $(call compile_template,rv64ui,-march=rv64g -mabi=lp64))
 endif
 
 tests_dump = $(addsuffix .dump, $(tests))
-tests_text_hex = $(addsuffix .text.hex, $(tests))
-tests_data_hex = $(addsuffix .data_0.hex, $(tests)) \
-					$(addsuffix .data_1.hex, $(tests)) \
-					$(addsuffix .data_2.hex, $(tests)) \
-					$(addsuffix .data_3.hex, $(tests)) \
-					$(addsuffix .data_4.hex, $(tests)) \
-					$(addsuffix .data_5.hex, $(tests)) \
-					$(addsuffix .data_6.hex, $(tests)) \
-					$(addsuffix .data_7.hex, $(tests))
+tests_hex = $(addsuffix .hex, $(tests))
+tests_64hex = $(addsuffix .64.hex, $(tests))
 tests_out = $(addsuffix .out, $(filter rv64%,$(tests)))
 tests32_out = $(addsuffix .out32, $(filter rv32%,$(tests)))
 
@@ -156,7 +116,7 @@ junk += $(tests) $(tests_dump) $(tests_data_hex) $(tests_text_hex) $(tests_out) 
 #------------------------------------------------------------
 # Default
 
-all: $(tests_dump) $(tests_data_hex) $(tests_text_hex)
+all: $(tests_dump) $(tests_hex) $(tests_64hex)
 
 #------------------------------------------------------------
 # Clean up

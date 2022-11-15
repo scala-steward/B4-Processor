@@ -24,3 +24,18 @@ Disassembly of section .text:
     40000040:	00310133          	add	x2,x2,x3
     40000044:	00410133          	add	x2,x2,x4
     40000048:	0000006f          	jal	x0,40000048 <_start+0x48>
+
+Disassembly of section .riscv.attributes:
+
+0000000000000000 <.riscv.attributes>:
+   0:	1941                	.2byte	0x1941
+   2:	0000                	.2byte	0x0
+   4:	7200                	.2byte	0x7200
+   6:	7369                	.2byte	0x7369
+   8:	01007663          	bgeu	x0,x16,14 <_start-0x3fffffec>
+   c:	0000000f          	fence	unknown,unknown
+  10:	7205                	.2byte	0x7205
+  12:	3676                	.2byte	0x3676
+  14:	6934                	.2byte	0x6934
+  16:	7032                	.2byte	0x7032
+  18:	0031                	.2byte	0x31

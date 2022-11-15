@@ -26,8 +26,8 @@ Disassembly of section .text:
     40000038:	5391e193          	ori	x3,x3,1337
 
 000000004000003c <write_tohost>:
-    4000003c:	40000f17          	auipc	x30,0x40000
-    40000040:	003f2223          	sw	x3,4(x30) # 80000040 <tohost>
+    4000003c:	00000f17          	auipc	x30,0x0
+    40000040:	2c3f2223          	sw	x3,708(x30) # 40000300 <tohost>
     40000044:	ff9ff06f          	j	4000003c <write_tohost>
 
 0000000040000048 <reset_vector>:
@@ -99,7 +99,7 @@ Disassembly of section .text:
     4000014c:	00028a63          	beqz	x5,40000160 <reset_vector+0x118>
     40000150:	10529073          	csrw	stvec,x5
     40000154:	0000b2b7          	lui	x5,0xb
-    40000158:	1092829b          	addiw	x5,x5,265
+    40000158:	1092829b          	addiw	x5,x5,265 # b109 <_start-0x3fff4ef7>
     4000015c:	30229073          	csrw	medeleg,x5
     40000160:	30005073          	csrwi	mstatus,0
     40000164:	00000297          	auipc	x5,0x0
@@ -108,10 +108,10 @@ Disassembly of section .text:
     40000170:	f1402573          	csrr	x10,mhartid
     40000174:	30200073          	mret
     40000178:	06f00693          	li	x13,111
-    4000017c:	40000517          	auipc	x10,0x40000
-    40000180:	e8451503          	lh	x10,-380(x10) # 80000000 <begin_signature>
-    40000184:	40000597          	auipc	x11,0x40000
-    40000188:	e7e59583          	lh	x11,-386(x11) # 80000002 <begin_signature+0x2>
+    4000017c:	00000517          	auipc	x10,0x0
+    40000180:	13451503          	lh	x10,308(x10) # 400002b0 <begin_signature>
+    40000184:	00000597          	auipc	x11,0x0
+    40000188:	12e59583          	lh	x11,302(x11) # 400002b2 <begin_signature+0x2>
     4000018c:	00000013          	nop
     40000190:	00000013          	nop
     40000194:	00000013          	nop
@@ -125,13 +125,13 @@ Disassembly of section .text:
     400001b4:	00000013          	nop
     400001b8:	00000013          	nop
     400001bc:	00000013          	nop
-    400001c0:	40000297          	auipc	x5,0x40000
-    400001c4:	e4a29223          	sh	x10,-444(x5) # 80000004 <begin_signature+0x4>
-    400001c8:	40000297          	auipc	x5,0x40000
-    400001cc:	e2b29f23          	sh	x11,-450(x5) # 80000006 <begin_signature+0x6>
+    400001c0:	00000297          	auipc	x5,0x0
+    400001c4:	0ea29a23          	sh	x10,244(x5) # 400002b4 <begin_signature+0x4>
+    400001c8:	00000297          	auipc	x5,0x0
+    400001cc:	0eb29723          	sh	x11,238(x5) # 400002b6 <begin_signature+0x6>
     400001d0:	0000100f          	fence.i
-    400001d4:	40000797          	auipc	x15,0x40000
-    400001d8:	e3078793          	addi	x15,x15,-464 # 80000004 <begin_signature+0x4>
+    400001d4:	00000797          	auipc	x15,0x0
+    400001d8:	0e078793          	addi	x15,x15,224 # 400002b4 <begin_signature+0x4>
     400001dc:	00078367          	jalr	x6,x15
 
 00000000400001e0 <test_2>:
@@ -142,10 +142,10 @@ Disassembly of section .text:
     400001f0:	06400713          	li	x14,100
     400001f4:	fff70713          	addi	x14,x14,-1
     400001f8:	fe071ee3          	bnez	x14,400001f4 <test_2+0x14>
-    400001fc:	40000297          	auipc	x5,0x40000
-    40000200:	e0a29823          	sh	x10,-496(x5) # 8000000c <begin_signature+0xc>
-    40000204:	40000297          	auipc	x5,0x40000
-    40000208:	e0b29523          	sh	x11,-502(x5) # 8000000e <begin_signature+0xe>
+    400001fc:	00000297          	auipc	x5,0x0
+    40000200:	0ca29023          	sh	x10,192(x5) # 400002bc <begin_signature+0xc>
+    40000204:	00000297          	auipc	x5,0x0
+    40000208:	0ab29d23          	sh	x11,186(x5) # 400002be <begin_signature+0xe>
     4000020c:	0000100f          	fence.i
     40000210:	00000013          	nop
     40000214:	00000013          	nop
@@ -159,8 +159,8 @@ Disassembly of section .text:
     40000234:	00000013          	nop
     40000238:	00000013          	nop
     4000023c:	00000013          	nop
-    40000240:	40000797          	auipc	x15,0x40000
-    40000244:	dcc78793          	addi	x15,x15,-564 # 8000000c <begin_signature+0xc>
+    40000240:	00000797          	auipc	x15,0x0
+    40000244:	07c78793          	addi	x15,x15,124 # 400002bc <begin_signature+0xc>
     40000248:	00078367          	jalr	x6,x15
 
 000000004000024c <test_3>:
@@ -186,28 +186,28 @@ Disassembly of section .text:
     40000288:	00000513          	li	x10,0
     4000028c:	00000073          	ecall
     40000290:	c0001073          	unimp
-    40000294:	0000                	unimp
-    40000296:	0000                	unimp
-    40000298:	0000                	unimp
-    4000029a:	0000                	unimp
-    4000029c:	0000                	unimp
-    4000029e:	0000                	unimp
-    400002a0:	0000                	unimp
-    400002a2:	0000                	unimp
-    400002a4:	0000                	unimp
-    400002a6:	0000                	unimp
+    40000294:	0000                	.2byte	0x0
+    40000296:	0000                	.2byte	0x0
+    40000298:	0000                	.2byte	0x0
+    4000029a:	0000                	.2byte	0x0
+    4000029c:	0000                	.2byte	0x0
+    4000029e:	0000                	.2byte	0x0
+    400002a0:	0000                	.2byte	0x0
+    400002a2:	0000                	.2byte	0x0
+    400002a4:	0000                	.2byte	0x0
+    400002a6:	0000                	.2byte	0x0
 
 Disassembly of section .data:
 
-0000000080000000 <begin_signature>:
-    80000000:	14d68693          	addi	x13,x13,333
-    80000004:	0de68693          	addi	x13,x13,222
-    80000008:	000307e7          	jalr	x15,x6
-    8000000c:	22b68693          	addi	x13,x13,555
-    80000010:	000307e7          	jalr	x15,x6
-    80000014:	0000                	unimp
-    80000016:	0000                	unimp
-    80000018:	0000                	unimp
-    8000001a:	0000                	unimp
-    8000001c:	0000                	unimp
-    8000001e:	0000                	unimp
+00000000400002b0 <begin_signature>:
+    400002b0:	14d68693          	addi	x13,x13,333
+    400002b4:	0de68693          	addi	x13,x13,222
+    400002b8:	000307e7          	jalr	x15,x6
+    400002bc:	22b68693          	addi	x13,x13,555
+    400002c0:	000307e7          	jalr	x15,x6
+    400002c4:	0000                	.2byte	0x0
+    400002c6:	0000                	.2byte	0x0
+    400002c8:	0000                	.2byte	0x0
+    400002ca:	0000                	.2byte	0x0
+    400002cc:	0000                	.2byte	0x0
+    400002ce:	0000                	.2byte	0x0

@@ -26,8 +26,8 @@ Disassembly of section .text:
     40000038:	5391e193          	ori	x3,x3,1337
 
 000000004000003c <write_tohost>:
-    4000003c:	40000f17          	auipc	x30,0x40000
-    40000040:	fc3f2223          	sw	x3,-60(x30) # 80000000 <begin_signature>
+    4000003c:	00000f17          	auipc	x30,0x0
+    40000040:	283f2223          	sw	x3,644(x30) # 400002c0 <begin_signature>
     40000044:	ff9ff06f          	j	4000003c <write_tohost>
 
 0000000040000048 <reset_vector>:
@@ -99,7 +99,7 @@ Disassembly of section .text:
     4000014c:	00028a63          	beqz	x5,40000160 <reset_vector+0x118>
     40000150:	10529073          	csrw	stvec,x5
     40000154:	0000b2b7          	lui	x5,0xb
-    40000158:	1092829b          	addiw	x5,x5,265
+    40000158:	1092829b          	addiw	x5,x5,265 # b109 <_start-0x3fff4ef7>
     4000015c:	30229073          	csrw	medeleg,x5
     40000160:	30005073          	csrwi	mstatus,0
     40000164:	00000297          	auipc	x5,0x0
@@ -205,17 +205,17 @@ Disassembly of section .text:
     40000294:	00000513          	li	x10,0
     40000298:	00000073          	ecall
     4000029c:	c0001073          	unimp
-    400002a0:	0000                	unimp
-    400002a2:	0000                	unimp
-    400002a4:	0000                	unimp
-    400002a6:	0000                	unimp
-    400002a8:	0000                	unimp
-    400002aa:	0000                	unimp
-    400002ac:	0000                	unimp
-    400002ae:	0000                	unimp
-    400002b0:	0000                	unimp
-    400002b2:	0000                	unimp
-    400002b4:	0000                	unimp
-    400002b6:	0000                	unimp
-    400002b8:	0000                	unimp
-    400002ba:	0000                	unimp
+    400002a0:	0000                	.2byte	0x0
+    400002a2:	0000                	.2byte	0x0
+    400002a4:	0000                	.2byte	0x0
+    400002a6:	0000                	.2byte	0x0
+    400002a8:	0000                	.2byte	0x0
+    400002aa:	0000                	.2byte	0x0
+    400002ac:	0000                	.2byte	0x0
+    400002ae:	0000                	.2byte	0x0
+    400002b0:	0000                	.2byte	0x0
+    400002b2:	0000                	.2byte	0x0
+    400002b4:	0000                	.2byte	0x0
+    400002b6:	0000                	.2byte	0x0
+    400002b8:	0000                	.2byte	0x0
+    400002ba:	0000                	.2byte	0x0

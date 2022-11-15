@@ -6,7 +6,7 @@ import chisel3.stage.ChiselStage
 import chisel3.util.Valid
 
 class SimpleAXIMemory(size: Int = 1024) extends Module {
-  val axi = FlatIO(Flipped(new AXI(64)))
+  val axi = FlatIO(Flipped(new AXI(64, 64)))
   val simulationSource = IO(new Bundle {
     val input = Flipped(Valid(UInt(64.W)))
   })
@@ -80,6 +80,7 @@ class SimpleAXIMemory(size: Int = 1024) extends Module {
     when(!writeState.full) {
       axi.writeAddress.ready := true.B
       when(axi.writeAddress.valid) {
+        writeState.input.valid := true.B
         writeState.input.bits.address := axi.writeAddress.bits.ADDR
         writeState.input.bits.burstLength := axi.writeAddress.bits.LEN
       }
@@ -134,20 +135,26 @@ class SimpleAXIMemory(size: Int = 1024) extends Module {
     }
 
     when(!readState.empty) {
+      val rwport = (0 until 8).map(i =>
+        mem(i)(
+          readState.output.bits
+            .address(63, 3) + readBurstLen + Mux(
+            axi.read.ready && readDone,
+            1.U,
+            0.U
+          )
+        )
+      )
       when(!readDone) {
-        axi.read.bits.DATA := (0 until 8)
-          .map(i => mem(i).read(readState.output.bits.address(63, 3)))
+        axi.read.bits.DATA := (0 until 8).reverse
+          .map(i => rwport(i))
           .reduce(_ ## _)
         readDone := true.B
       }.otherwise {
         axi.read.valid := true.B
         when(axi.read.ready) {
-          axi.read.bits.DATA := (0 until 8)
-            .map(i =>
-              mem(i).read(
-                readState.output.bits.address(63, 3) + readBurstLen + 1.U
-              )
-            )
+          axi.read.bits.DATA := (0 until 8).reverse
+            .map(i => rwport(i))
             .reduce(_ ## _)
           readBurstLen := readBurstLen + 1.U
           when(readBurstLen === readState.output.bits.burstLength) {
@@ -157,10 +164,8 @@ class SimpleAXIMemory(size: Int = 1024) extends Module {
             readBurstLen := 0.U
           }
         }.otherwise {
-          axi.read.bits.DATA := (0 until 8)
-            .map(i =>
-              mem(i).read(readState.output.bits.address(63, 3) + readBurstLen)
-            )
+          axi.read.bits.DATA := (0 until 8).reverse
+            .map(i => rwport(i))
             .reduce(_ ## _)
         }
       }

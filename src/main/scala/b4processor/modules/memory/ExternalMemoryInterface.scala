@@ -16,7 +16,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     val dataReadOut = new OutputValue
     val dataWriteOut = Valid(new WriteResponse)
     val instructionOut = Valid(new InstructionResponse)
-    val coordinator = new AXI(64)
+    val coordinator = new AXI(64,64)
   })
 
   // setDefaultOutputs
@@ -50,7 +50,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     readAddress.bits.ID := 0.U
     writeAddress.bits.QOS := 0.U
     writeAddress.bits.LEN := 0.U
-    writeAddress.valid := true.B
+    writeAddress.valid := false.B
     write.bits.ID := 0.U
     write.bits.DATA := 0.U
     readAddress.bits.BURST := BurstType.Incr
@@ -74,9 +74,9 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     val isInstruction = Bool()
     val tag = new Tag
   }
-  val readQueue = Module(new FIFO[ReadState](8)(new ReadState))
+  val readQueue = Module(new FIFO[ReadState](3)(new ReadState))
   readQueue.output.ready := false.B
-  readQueue.input.valid := true.B
+  readQueue.input.valid := false.B
   readQueue.input.bits := DontCare
 
   when(!readQueue.full) {
@@ -116,6 +116,10 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
       io.coordinator.read.ready := true.B
       when(io.coordinator.read.valid) {
         burstLen := burstLen + 1.U
+        when(burstLen === readQueue.output.bits.burstLength) {
+          readQueue.output.ready := true.B
+          burstLen := 0.U
+        }
         when(readQueue.output.bits.isInstruction) {
           io.instructionOut.valid := true.B
           io.instructionOut.bits.inner := io.coordinator.read.bits.DATA
@@ -127,10 +131,6 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
           io.dataReadOut.isError := io.coordinator.read.bits.RESP =/= Response.Okay
         }
       }
-      when(burstLen === readQueue.output.bits.burstLength) {
-        readQueue.output.ready := true.B
-        burstLen := 0.U
-      }
     }
     // ----------------------------------------
     // WRITE OPERATION ------------------------
@@ -140,14 +140,14 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
       val tag = new Tag
       val strb = UInt(8.W)
     }
-    val dataWriteQueue = Module(new FIFO(4)(new DataWriteState))
+    val dataWriteQueue = Module(new FIFO(3)(new DataWriteState))
     dataWriteQueue.output.ready := false.B
     dataWriteQueue.input.valid := false.B
     dataWriteQueue.input.bits := DontCare
     class WriteResponseState extends Bundle {
       val tag = new Tag
     }
-    val writeResponseQueue = Module(new FIFO(4)(new WriteResponseState))
+    val writeResponseQueue = Module(new FIFO(3)(new WriteResponseState))
     writeResponseQueue.output.ready := false.B
     writeResponseQueue.input.valid := false.B
     writeResponseQueue.input.bits := DontCare

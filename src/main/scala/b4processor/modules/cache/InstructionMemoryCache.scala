@@ -95,7 +95,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
 
   io.memory.request.valid := false.B
   io.memory.request.bits := DontCare
-  private val head = RegInit(0.U(1.W))
+  private val head = RegInit(0.U(2.W))
   when(state === requesting) {
     when(!requestDone) {
       io.memory.request.valid := true.B
@@ -106,15 +106,16 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     }
 
     when(io.memory.response.valid) {
+      buf(head).valid := false.B
       for (i <- 0 until 4) {
         buf(head).data(readIndex ## i.U(2.W)) := io.memory.response.bits
           .inner(i * 16 + 15, i * 16)
       }
-      buf(head).upper := request
       readIndex := readIndex + 1.U
       when(readIndex === 1.U) {
         state := waiting
         buf(head).valid := true.B
+        buf(head).upper := request
         head := head + 1.U
       }
     }

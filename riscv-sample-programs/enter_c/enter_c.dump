@@ -36,3 +36,38 @@ Disassembly of section .text:
     40000060:	01013403          	ld	x8,16(x2)
     40000064:	02010113          	addi	x2,x2,32
     40000068:	00008067          	jalr	x0,0(x1)
+
+Disassembly of section .riscv.attributes:
+
+0000000000000000 <.riscv.attributes>:
+   0:	1b41                	.2byte	0x1b41
+   2:	0000                	.2byte	0x0
+   4:	7200                	.2byte	0x7200
+   6:	7369                	.2byte	0x7369
+   8:	01007663          	bgeu	x0,x16,14 <_start-0x3fffffec>
+   c:	0011                	.2byte	0x11
+   e:	0000                	.2byte	0x0
+  10:	1004                	.2byte	0x1004
+  12:	7205                	.2byte	0x7205
+  14:	3676                	.2byte	0x3676
+  16:	6934                	.2byte	0x6934
+  18:	7032                	.2byte	0x7032
+  1a:	0031                	.2byte	0x31
+
+Disassembly of section .comment:
+
+0000000000000000 <.comment>:
+   0:	3a434347          	.4byte	0x3a434347
+   4:	2820                	.2byte	0x2820
+   6:	7241                	.2byte	0x7241
+   8:	4c206863          	bltu	x0,x2,4d8 <_start-0x3ffffb28>
+   c:	6e69                	.2byte	0x6e69
+   e:	7875                	.2byte	0x7875
+  10:	5220                	.2byte	0x5220
+  12:	7065                	.2byte	0x7065
+  14:	7469736f          	jal	x6,9775a <_start-0x3ff688a6>
+  18:	6569726f          	jal	x4,9766e <_start-0x3ff68992>
+  1c:	31202973          	.4byte	0x31202973
+  20:	2e32                	.2byte	0x2e32
+  22:	2e32                	.2byte	0x2e32
+  24:	0030                	.2byte	0x30

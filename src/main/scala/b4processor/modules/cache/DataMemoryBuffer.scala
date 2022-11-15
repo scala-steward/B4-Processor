@@ -125,7 +125,7 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
         )
       )
       io.dataReadRequest.bits.outputTag := entry.tag
-      when(io.dataReadRequest.ready) {
+      when(io.dataWriteRequest.ready) {
         tail := tail + 1.U
       }
     }

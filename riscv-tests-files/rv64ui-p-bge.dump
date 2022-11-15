@@ -26,8 +26,8 @@ Disassembly of section .text:
     40000038:	5391e193          	ori	x3,x3,1337
 
 000000004000003c <write_tohost>:
-    4000003c:	40000f17          	auipc	x30,0x40000
-    40000040:	fc3f2223          	sw	x3,-60(x30) # 80000000 <begin_signature>
+    4000003c:	00000f17          	auipc	x30,0x0
+    40000040:	4c3f2223          	sw	x3,1220(x30) # 40000500 <begin_signature>
     40000044:	ff9ff06f          	j	4000003c <write_tohost>
 
 0000000040000048 <reset_vector>:
@@ -99,7 +99,7 @@ Disassembly of section .text:
     4000014c:	00028a63          	beqz	x5,40000160 <reset_vector+0x118>
     40000150:	10529073          	csrw	stvec,x5
     40000154:	0000b2b7          	lui	x5,0xb
-    40000158:	1092829b          	addiw	x5,x5,265
+    40000158:	1092829b          	addiw	x5,x5,265 # b109 <_start-0x3fff4ef7>
     4000015c:	30229073          	csrw	medeleg,x5
     40000160:	30005073          	csrwi	mstatus,0
     40000164:	00000297          	auipc	x5,0x0
@@ -370,27 +370,27 @@ Disassembly of section .text:
     400004c0:	00000513          	li	x10,0
     400004c4:	00000073          	ecall
     400004c8:	c0001073          	unimp
-    400004cc:	0000                	unimp
-    400004ce:	0000                	unimp
-    400004d0:	0000                	unimp
-    400004d2:	0000                	unimp
-    400004d4:	0000                	unimp
-    400004d6:	0000                	unimp
-    400004d8:	0000                	unimp
-    400004da:	0000                	unimp
-    400004dc:	0000                	unimp
-    400004de:	0000                	unimp
-    400004e0:	0000                	unimp
-    400004e2:	0000                	unimp
-    400004e4:	0000                	unimp
-    400004e6:	0000                	unimp
-    400004e8:	0000                	unimp
-    400004ea:	0000                	unimp
-    400004ec:	0000                	unimp
-    400004ee:	0000                	unimp
-    400004f0:	0000                	unimp
-    400004f2:	0000                	unimp
-    400004f4:	0000                	unimp
-    400004f6:	0000                	unimp
-    400004f8:	0000                	unimp
-    400004fa:	0000                	unimp
+    400004cc:	0000                	.2byte	0x0
+    400004ce:	0000                	.2byte	0x0
+    400004d0:	0000                	.2byte	0x0
+    400004d2:	0000                	.2byte	0x0
+    400004d4:	0000                	.2byte	0x0
+    400004d6:	0000                	.2byte	0x0
+    400004d8:	0000                	.2byte	0x0
+    400004da:	0000                	.2byte	0x0
+    400004dc:	0000                	.2byte	0x0
+    400004de:	0000                	.2byte	0x0
+    400004e0:	0000                	.2byte	0x0
+    400004e2:	0000                	.2byte	0x0
+    400004e4:	0000                	.2byte	0x0
+    400004e6:	0000                	.2byte	0x0
+    400004e8:	0000                	.2byte	0x0
+    400004ea:	0000                	.2byte	0x0
+    400004ec:	0000                	.2byte	0x0
+    400004ee:	0000                	.2byte	0x0
+    400004f0:	0000                	.2byte	0x0
+    400004f2:	0000                	.2byte	0x0
+    400004f4:	0000                	.2byte	0x0
+    400004f6:	0000                	.2byte	0x0
+    400004f8:	0000                	.2byte	0x0
+    400004fa:	0000                	.2byte	0x0

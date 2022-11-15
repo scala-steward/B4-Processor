@@ -26,8 +26,8 @@ Disassembly of section .text:
     40000038:	5391e193          	ori	x3,x3,1337
 
 000000004000003c <write_tohost>:
-    4000003c:	40000f17          	auipc	x30,0x40000
-    40000040:	fc3f2223          	sw	x3,-60(x30) # 80000000 <begin_signature>
+    4000003c:	00000f17          	auipc	x30,0x0
+    40000040:	403f2223          	sw	x3,1028(x30) # 40000440 <begin_signature>
     40000044:	ff9ff06f          	j	4000003c <write_tohost>
 
 0000000040000048 <reset_vector>:
@@ -99,7 +99,7 @@ Disassembly of section .text:
     4000014c:	00028a63          	beqz	x5,40000160 <reset_vector+0x118>
     40000150:	10529073          	csrw	stvec,x5
     40000154:	0000b2b7          	lui	x5,0xb
-    40000158:	1092829b          	addiw	x5,x5,265
+    40000158:	1092829b          	addiw	x5,x5,265 # b109 <_start-0x3fff4ef7>
     4000015c:	30229073          	csrw	medeleg,x5
     40000160:	30005073          	csrwi	mstatus,0
     40000164:	00000297          	auipc	x5,0x0
@@ -167,7 +167,7 @@ Disassembly of section .text:
 0000000040000218 <test_10>:
     40000218:	00a00193          	li	x3,10
     4000021c:	800000b7          	lui	x1,0x80000
-    40000220:	fff0809b          	addiw	x1,x1,-1
+    40000220:	fff0809b          	addiw	x1,x1,-1 # 7fffffff <fromhost+0x3ffffb7f>
     40000224:	0000b713          	sltiu	x14,x1,0
     40000228:	00000393          	li	x7,0
     4000022c:	1c771063          	bne	x14,x7,400003ec <fail>
@@ -175,7 +175,7 @@ Disassembly of section .text:
 0000000040000230 <test_11>:
     40000230:	00b00193          	li	x3,11
     40000234:	800000b7          	lui	x1,0x80000
-    40000238:	fff0809b          	addiw	x1,x1,-1
+    40000238:	fff0809b          	addiw	x1,x1,-1 # 7fffffff <fromhost+0x3ffffb7f>
     4000023c:	7ff0b713          	sltiu	x14,x1,2047
     40000240:	00000393          	li	x7,0
     40000244:	1a771463          	bne	x14,x7,400003ec <fail>
@@ -190,7 +190,7 @@ Disassembly of section .text:
 000000004000025c <test_13>:
     4000025c:	00d00193          	li	x3,13
     40000260:	800000b7          	lui	x1,0x80000
-    40000264:	fff0809b          	addiw	x1,x1,-1
+    40000264:	fff0809b          	addiw	x1,x1,-1 # 7fffffff <fromhost+0x3ffffb7f>
     40000268:	8000b713          	sltiu	x14,x1,-2048
     4000026c:	00100393          	li	x7,1
     40000270:	16771e63          	bne	x14,x7,400003ec <fail>
@@ -307,7 +307,7 @@ Disassembly of section .text:
 00000000400003d0 <test_25>:
     400003d0:	01900193          	li	x3,25
     400003d4:	00ff00b7          	lui	x1,0xff0
-    400003d8:	0ff0809b          	addiw	x1,x1,255
+    400003d8:	0ff0809b          	addiw	x1,x1,255 # ff00ff <_start-0x3f00ff01>
     400003dc:	fff0b013          	sltiu	x0,x1,-1
     400003e0:	00000393          	li	x7,0
     400003e4:	00701463          	bne	x0,x7,400003ec <fail>
@@ -329,17 +329,17 @@ Disassembly of section .text:
     40000414:	00000513          	li	x10,0
     40000418:	00000073          	ecall
     4000041c:	c0001073          	unimp
-    40000420:	0000                	unimp
-    40000422:	0000                	unimp
-    40000424:	0000                	unimp
-    40000426:	0000                	unimp
-    40000428:	0000                	unimp
-    4000042a:	0000                	unimp
-    4000042c:	0000                	unimp
-    4000042e:	0000                	unimp
-    40000430:	0000                	unimp
-    40000432:	0000                	unimp
-    40000434:	0000                	unimp
-    40000436:	0000                	unimp
-    40000438:	0000                	unimp
-    4000043a:	0000                	unimp
+    40000420:	0000                	.2byte	0x0
+    40000422:	0000                	.2byte	0x0
+    40000424:	0000                	.2byte	0x0
+    40000426:	0000                	.2byte	0x0
+    40000428:	0000                	.2byte	0x0
+    4000042a:	0000                	.2byte	0x0
+    4000042c:	0000                	.2byte	0x0
+    4000042e:	0000                	.2byte	0x0
+    40000430:	0000                	.2byte	0x0
+    40000432:	0000                	.2byte	0x0
+    40000434:	0000                	.2byte	0x0
+    40000436:	0000                	.2byte	0x0
+    40000438:	0000                	.2byte	0x0
+    4000043a:	0000                	.2byte	0x0

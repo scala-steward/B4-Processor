@@ -81,7 +81,7 @@ class Fetch(implicit params: Parameters) extends Module {
           BranchType.Fence.asUInt -> WaitingReason.Fence,
           BranchType.FenceI.asUInt -> WaitingReason.FenceI,
           BranchType.JAL.asUInt -> Mux(
-            branch.io.offset === 0.U,
+            branch.io.offset === 0.S,
             WaitingReason.BusyLoop,
             WaitingReason.None
           )
@@ -89,14 +89,14 @@ class Fetch(implicit params: Parameters) extends Module {
       )
     )
     // PCの更新を確認
-    nextPC = nextPC + MuxCase(
-      4.U,
+    nextPC = (nextPC.asSInt + MuxCase(
+      4.S,
       Seq(
-        (!decoder.ready || !decoder.valid) -> 0.U,
+        (!decoder.ready || !decoder.valid) -> 0.S,
         (branch.io.branchType === BranchType.JAL) -> branch.io.offset,
-        (nextWait =/= WaitingReason.None) -> 0.U
+        (nextWait =/= WaitingReason.None) -> 0.S
       )
-    )
+    )).asUInt
 
   }
   pc := nextPC

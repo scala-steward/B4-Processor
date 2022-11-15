@@ -47,6 +47,7 @@ object InstructionUtil {
           if (p < output.length) { output(p) }
           else { "00" }
         )
+        .reverse
         .reduce(_ + _)
     }
     output64.map(n => s"x$n".U(64.W))

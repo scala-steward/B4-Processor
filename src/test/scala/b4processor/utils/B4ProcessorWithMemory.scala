@@ -6,11 +6,11 @@ import chiseltest._
 import chisel3.stage.ChiselStage
 import chisel3.util.Valid
 
-class B4ProcessorWithMemory(instructions: String)(implicit params: Parameters)
-    extends Module {
+class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val simulation = Flipped(Valid(UInt(64.W)))
-    val registerFileContents = if (params.debug) Some(Output(Vec(32, UInt(64.W)))) else None
+    val registerFileContents =
+      if (params.debug) Some(Output(Vec(32, UInt(64.W)))) else None
     val accessMemoryAddress = new Bundle {
       val read = Valid(UInt(64.W))
       val write = Valid(UInt(64.W))
@@ -31,8 +31,8 @@ class B4ProcessorWithMemory(instructions: String)(implicit params: Parameters)
   io.accessMemoryAddress.writeData.valid := core.io.axi.write.valid
   io.accessMemoryAddress.writeData.bits := core.io.axi.write.bits.DATA
 
-  def initialize(): Unit = {
-    val memoryInit = InstructionUtil.fromFile8bit(instructions + ".text.hex")
+  def initialize(instructions: String): Unit = {
+    val memoryInit = InstructionUtil.fromFile8bit(instructions + ".hex")
     this.io.simulation.valid.poke(true)
     this.io.simulation.bits.poke(memoryInit.length)
     for (i <- memoryInit.indices) {
@@ -46,18 +46,26 @@ class B4ProcessorWithMemory(instructions: String)(implicit params: Parameters)
 
   def checkForWrite(address: UInt, value: UInt, timeout: Int = 500): Unit = {
     this.clock.setTimeout(timeout)
-    while (this.io.accessMemoryAddress.write.valid.peekBoolean() && this.io.accessMemoryAddress.write.bits.peek() == address)
+    while (
+      this.io.accessMemoryAddress.write.valid
+        .peekBoolean() && this.io.accessMemoryAddress.write.bits
+        .peek() == address
+    )
       this.clock.step()
     this.io.accessMemoryAddress.write.bits.expect(address)
-    while (this.io.accessMemoryAddress.writeData.valid.peekBoolean() && this.io.accessMemoryAddress.writeData.bits.peek() == value)
+    while (
+      this.io.accessMemoryAddress.writeData.valid
+        .peekBoolean() && this.io.accessMemoryAddress.writeData.bits
+        .peek() == value
+    )
       this.clock.step()
     this.io.accessMemoryAddress.write.bits.expect(value)
     this.clock.step(10)
   }
 
-  def checkForRegister(regNum: Int, value: UInt, timeout: Int = 500): Unit = {
+  def checkForRegister(regNum: Int, value: BigInt, timeout: Int = 500): Unit = {
     this.clock.setTimeout(timeout)
-    while (this.io.registerFileContents.get(regNum).peek() != value)
+    while (this.io.registerFileContents.get(regNum).peekInt() != value)
       this.clock.step()
     this.io.registerFileContents.get(regNum).expect(value)
     this.clock.step(3)
@@ -73,7 +81,7 @@ object B4ProcessorWithMemory extends App {
     loadStoreQueueIndexWidth = 3
   )
   (new ChiselStage).emitVerilog(
-    new B4ProcessorWithMemory("riscv-sample-programs/fibonacci_c/fibonacci_c"),
+    new B4ProcessorWithMemory(),
     args = Array(
       "--emission-options=disableMemRandomization,disableRegisterRandomization"
     )
