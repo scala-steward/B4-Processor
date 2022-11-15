@@ -25,7 +25,7 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
   val addressAndLoadResultTag = new Tag
 
   /** アドレス値 */
-  val address = SInt(64.W)
+  val address = UInt(64.W)
 
   /** アドレス値が有効である */
   val addressValid = Bool()
@@ -54,7 +54,7 @@ object LoadStoreQueueEntry {
     entry.info := accessInfo
 
     entry.addressAndLoadResultTag := addressAndStoreResultTag
-    entry.address := 0.S
+    entry.address := 0.U
     entry.addressValid := false.B
 
     entry.storeDataTag := storeDataTag
@@ -71,11 +71,11 @@ object LoadStoreQueueEntry {
 
     entry.info := DontCare
 
-    entry.addressAndLoadResultTag := 0.U
-    entry.address := 0.S
+    entry.addressAndLoadResultTag := Tag(0)
+    entry.address := 0.U
     entry.addressValid := false.B
 
-    entry.storeDataTag := 0.U
+    entry.storeDataTag := Tag(0)
     entry.storeData := 0.U
     entry.storeDataValid := false.B
 

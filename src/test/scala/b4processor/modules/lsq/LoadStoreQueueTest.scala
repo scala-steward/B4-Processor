@@ -77,7 +77,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
       this.io.memory(i).valid.expect(values(i).isDefined)
       if (values(i).isDefined) {
         this.io.memory(i).bits.address.expect(values(i).get.address)
-        this.io.memory(i).bits.tag.expect(values(i).get.tag)
+        this.io.memory(i).bits.tag.id.expect(values(i).get.tag)
         this.io
           .memory(i)
           .bits
