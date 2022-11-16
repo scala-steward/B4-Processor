@@ -17,8 +17,7 @@ import scala.math
   *
   * フェッチ、キャッシュ、命令メモリを含む
   */
-class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
-    extends Module {
+class FetchWrapper()(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
 
     /** 分岐予測 */
@@ -87,7 +86,7 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
   fetch.io.fetchBuffer.decoder.foreach(v => v.ready := true.B)
 
   /** 初期化 */
-  def initialize(): Unit = {
+  def initialize(memoryInit: => Seq[UInt]): Unit = {
     this.setPrediction(Seq.fill(params.runParallel)(false))
     this.io.memorySetup.valid.poke(true)
     this.io.memorySetup.bits.poke(memoryInit.length)
@@ -98,6 +97,12 @@ class FetchWrapper(memoryInit: => Seq[UInt])(implicit params: Parameters)
     this.clock.step()
     this.io.memorySetup.valid.poke(false)
     this.clock.step()
+    this.clock.setTimeout(200)
+  }
+
+  def waitForCacheValid(): Unit ={
+    while(!this.io.cacheOutput(0).valid.peekBoolean())
+      this.clock.step()
   }
 
   /** 予測をセット */
@@ -132,13 +137,14 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "load memory" in {
     test(
       new FetchWrapper(
+      )
+    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+      c.initialize(
         InstructionUtil
           .fromStringSeq32bit(Seq("00000013", "00000463", "00000013"))
       )
-    ) .withAnnotations(Seq(WriteVcdAnnotation)){ c =>
-      c.initialize()
-      c.clock.step(20)
 
+      c.waitForCacheValid()
       c.io.cacheAddress(0).bits.expect(0x10000000)
       c.io.cacheAddress(1).bits.expect(0x10000004)
 
@@ -157,12 +163,14 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "read both values in loop" in {
     test(
       new FetchWrapper(
-        InstructionUtil.fromStringSeq32bit(Seq("00000063", "00000000"))
       )
     ) { c =>
-      c.initialize()
+      c.initialize(
+        InstructionUtil.fromStringSeq32bit(Seq("00000063", "00000000"))
+      )
       c.setPrediction(Seq(true, true))
 
+      c.waitForCacheValid()
       c.io.cacheAddress(0).bits.expect(0x10000000)
       c.io.cacheAddress(0).bits.expect(0x10000000)
 
@@ -185,11 +193,13 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand branch prediction=false" in {
     test(
       new FetchWrapper(
+      )
+    ) { c =>
+      c.initialize(
         InstructionUtil
           .fromStringSeq32bit(Seq("00000013", "00000463", "00000013"))
       )
-    ) { c =>
-      c.initialize()
+      c.waitForCacheValid()
       c.io.nextPC.expect(0x10000004)
     }
   }
@@ -203,11 +213,13 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand branch prediction=true" in {
     test(
       new FetchWrapper(
+      )
+    ) { c =>
+      c.initialize(
         InstructionUtil
           .fromStringSeq32bit(Seq("00000013", "00000463", "00000013"))
       )
-    ) { c =>
-      c.initialize()
+      c.waitForCacheValid()
       c.io.nextPC.expect(0x10000004)
     }
   }
@@ -220,10 +232,12 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand loop to self" in {
     test(
       new FetchWrapper(
-        InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063"))
       )
     ) { c =>
-      c.initialize()
+      c.initialize(
+        InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063"))
+      )
+      c.waitForCacheValid()
       c.io.nextPC.expect(0x10000004)
 
       c.clock.step()
@@ -242,11 +256,12 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand loop" in {
     test(
       new FetchWrapper(
-        InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063"))
       )
     ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
-      c.initialize()
-
+      c.initialize(
+        InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063"))
+      )
+      c.waitForCacheValid()
       c.io.nextPC.expect(0x10000004)
       c.clock.step()
 
@@ -267,10 +282,12 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand jal loop" in {
     test(
       new FetchWrapper(
-        InstructionUtil.fromStringSeq32bit(Seq("00000013", "ffdff06f"))
       )
     ) { c =>
-      c.initialize()
+      c.initialize(
+        InstructionUtil.fromStringSeq32bit(Seq("00000013", "ffdff06f"))
+      )
+      c.waitForCacheValid()
       c.io.nextPC.expect(0x10000000)
     }
   }
@@ -291,6 +308,9 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand jal jumps" in {
     test(
       new FetchWrapper(
+      )
+    ) { c =>
+      c.initialize(
         InstructionUtil.fromStringSeq32bit(
           Seq(
             "00000013",
@@ -305,12 +325,16 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
           )
         )
       )
-    ) { c =>
-      c.initialize()
+      c.waitForCacheValid()
       c.io.nextPC.expect(0x1000001c)
 
       c.clock.step()
-      c.io.nextPC.expect(0x10000000)
+      c.waitForCacheValid()
+      c.io.nextPC.expect(0x10000020)
+
+      c.clock.step()
+      c.waitForCacheValid()
+      c.io.nextPC.expect(0x10000004)
     }
   }
 
@@ -323,12 +347,14 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "understand fence" in {
     test(
       new FetchWrapper(
+      )
+    ) { c =>
+      c.initialize(
         InstructionUtil.fromStringSeq32bit(
           Seq("00000013", "0ff0000f", "00000013", "00000013")
         )
       )
-    ) { c =>
-      c.initialize()
+      c.waitForCacheValid()
       c.io.branchTypes(0).expect(BranchType.None)
       c.io.branchTypes(1).expect(BranchType.Fence)
       c.io.decoders.decoder(0).valid.expect(true)

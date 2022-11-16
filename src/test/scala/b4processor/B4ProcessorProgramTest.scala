@@ -271,11 +271,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/load_after_store/load_after_store")
-        c.clock.setTimeout(50)
-        while (c.io.registerFileContents.get(2).peekInt() != 10)
-          c.clock.step()
-        c.io.registerFileContents.get(2).expect(10)
-        c.clock.step()
+        c.checkForRegister(3,10,100)
       }
   }
 
@@ -293,11 +289,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/enter_c/enter_c")
-        c.clock.setTimeout(50)
-        while (c.io.registerFileContents.get(2).peekInt() != 5)
-          c.clock.step()
-        c.io.registerFileContents.get(2).expect(5)
-        c.clock.step()
+        c.checkForRegister(3,5,100)
+
       }
   }
 
@@ -316,11 +309,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/calculation_c/calculation_c")
-        c.clock.setTimeout(200)
-        while (c.io.registerFileContents.get(2).peekInt() != 18)
-          c.clock.step()
-        c.io.registerFileContents.get(2).expect(18)
-        c.clock.step()
+        c.checkForRegister(3,18,400)
+
       }
   }
 
@@ -338,11 +328,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/loop_c/loop_c")
-        c.clock.setTimeout(400)
-        while (c.io.registerFileContents.get(2).peekInt() != 30)
-          c.clock.step()
-        c.io.registerFileContents.get(2).expect(30)
-        c.clock.step()
+        c.checkForRegister(3,30,500)
+
       }
   }
 
@@ -360,11 +347,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/loop_c/loop_c")
-        c.clock.setTimeout(400)
-        while (c.io.registerFileContents.get(2).peekInt() != 30)
-          c.clock.step()
-        c.io.registerFileContents.get(2).expect(30)
-        c.clock.step()
+        c.checkForRegister(3,30,500)
+
       }
   }
 
@@ -383,11 +367,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/many_load_store/many_load_store")
-        c.clock.setTimeout(100)
-        while (c.io.registerFileContents.get(1).peekInt() != 36)
-          c.clock.step()
-        c.io.registerFileContents.get(1).expect(36)
-        c.clock.step()
+        c.checkForRegister(2,36,500)
+
       }
   }
 
@@ -406,11 +387,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/many_load_store/many_load_store")
-        c.clock.setTimeout(100)
-        while (c.io.registerFileContents.get(1).peekInt() != 36)
-          c.clock.step()
-        c.io.registerFileContents.get(1).expect(36)
-        c.clock.step()
+        c.checkForRegister(2,36,100)
+
       }
   }
 
@@ -429,15 +407,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/load_store_cross/load_store_cross")
-        c.clock.setTimeout(50)
-        while (c.io.registerFileContents.get(1).peekInt() != 101)
-          c.clock.step()
-        c.io.registerFileContents.get(1).expect(101)
+        c.checkForRegister(2,101,100)
+        c.checkForRegister(3,201,100)
 
-        while (c.io.registerFileContents.get(2).peekInt() != 201)
-          c.clock.step()
-        c.io.registerFileContents.get(2).expect(201)
-        c.clock.step()
       }
   }
 
@@ -456,15 +428,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/load_store_cross/load_store_cross")
-        c.clock.setTimeout(50)
-        while (c.io.registerFileContents.get(1).peekInt() != 101)
-          c.clock.step()
-        c.io.registerFileContents.get(1).expect(101)
-
-        while (c.io.registerFileContents.get(2).peekInt() != 201)
-          c.clock.step()
-        c.io.registerFileContents.get(2).expect(201)
-        c.clock.step()
+        c.checkForRegister(2, 101, 100)
+        c.checkForRegister(3, 201, 100)
       }
   }
 }
