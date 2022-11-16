@@ -32,7 +32,7 @@ class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
                 )
               ) { c =>
                 c.initialize("riscv-sample-programs/fibonacci_c/fibonacci_c")
-                c.checkForRegister(3,21,1500)
+                c.checkForRegister(3, 21, 1500)
               }
           }
 }

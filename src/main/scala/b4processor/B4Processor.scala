@@ -22,12 +22,11 @@ import chisel3.experimental.FlatIO
 import chisel3.stage.ChiselStage
 
 class B4Processor(implicit params: Parameters) extends Module {
-  val io = IO(
-    new Bundle {
-      val axi = new AXI(64)
-      val registerFileContents = if (params.debug) Some(Output(Vec(32, UInt(64.W)))) else None
-    }
-  )
+  val io = IO(new Bundle {
+    val axi = new AXI(64)
+    val registerFileContents =
+      if (params.debug) Some(Output(Vec(32, UInt(64.W)))) else None
+  })
 
   require(params.runParallel >= 1, "同時発行数は1以上である必要があります。")
   require(params.tagWidth >= 1, "タグ幅は1以上である必要があります。")

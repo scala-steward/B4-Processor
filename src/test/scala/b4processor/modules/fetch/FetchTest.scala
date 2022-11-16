@@ -100,8 +100,8 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
     this.clock.setTimeout(200)
   }
 
-  def waitForCacheValid(): Unit ={
-    while(!this.io.cacheOutput(0).valid.peekBoolean())
+  def waitForCacheValid(): Unit = {
+    while (!this.io.cacheOutput(0).valid.peekBoolean())
       this.clock.step()
   }
 

@@ -271,7 +271,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/load_after_store/load_after_store")
-        c.checkForRegister(3,10,100)
+        c.checkForRegister(3, 10, 100)
       }
   }
 
@@ -289,7 +289,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/enter_c/enter_c")
-        c.checkForRegister(3,5,100)
+        c.checkForRegister(3, 5, 100)
 
       }
   }
@@ -309,7 +309,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/calculation_c/calculation_c")
-        c.checkForRegister(3,18,400)
+        c.checkForRegister(3, 18, 400)
 
       }
   }
@@ -328,7 +328,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/loop_c/loop_c")
-        c.checkForRegister(3,30,500)
+        c.checkForRegister(3, 30, 500)
 
       }
   }
@@ -347,7 +347,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/loop_c/loop_c")
-        c.checkForRegister(3,30,500)
+        c.checkForRegister(3, 30, 500)
 
       }
   }
@@ -367,7 +367,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/many_load_store/many_load_store")
-        c.checkForRegister(2,36,500)
+        c.checkForRegister(2, 36, 500)
 
       }
   }
@@ -387,7 +387,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/many_load_store/many_load_store")
-        c.checkForRegister(2,36,100)
+        c.checkForRegister(2, 36, 100)
 
       }
   }
@@ -407,8 +407,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/load_store_cross/load_store_cross")
-        c.checkForRegister(2,101,100)
-        c.checkForRegister(3,201,100)
+        c.checkForRegister(2, 101, 100)
+        c.checkForRegister(3, 201, 100)
 
       }
   }
