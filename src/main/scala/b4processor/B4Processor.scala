@@ -52,7 +52,7 @@ class B4Processor(implicit params: Parameters) extends Module {
 
   val externalMemoryInterface = Module(new ExternalMemoryInterface)
 
-  io.axi <> externalMemoryInterface.io.coordinator
+  axi <> externalMemoryInterface.io.coordinator
 
   /** 出力コレクタとデータメモリ */
   outputCollector.io.dataMemory := externalMemoryInterface.io.dataReadOut
@@ -66,9 +66,9 @@ class B4Processor(implicit params: Parameters) extends Module {
 
   /** レジスタのコンテンツをデバッグ時に接続 */
   if (params.debug) {
-    io.registerFileContents.get(0) := 0.U
+    registerFileContents.get(0) := 0.U
     for (i <- 0 until 31)
-      io.registerFileContents.get(i + 1) <> registerFile.io.values.get(i)
+      registerFileContents.get(i + 1) <> registerFile.io.values.get(i)
   }
 
   /** デコーダ同士を接続 */
