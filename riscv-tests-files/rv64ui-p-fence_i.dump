@@ -4,7 +4,7 @@ rv64ui-p-fence_i:     file format elf64-littleriscv
 
 Disassembly of section .text:
 
-0000000040000000 <_start>:
+0000000040000000 <__TEXT_START_>:
     40000000:	0480006f          	j	40000048 <reset_vector>
 
 0000000040000004 <trap_vector>:
@@ -99,7 +99,7 @@ Disassembly of section .text:
     4000014c:	00028a63          	beqz	x5,40000160 <reset_vector+0x118>
     40000150:	10529073          	csrw	stvec,x5
     40000154:	0000b2b7          	lui	x5,0xb
-    40000158:	1092829b          	addiw	x5,x5,265 # b109 <_start-0x3fff4ef7>
+    40000158:	1092829b          	addiw	x5,x5,265
     4000015c:	30229073          	csrw	medeleg,x5
     40000160:	30005073          	csrwi	mstatus,0
     40000164:	00000297          	auipc	x5,0x0
@@ -186,16 +186,16 @@ Disassembly of section .text:
     40000288:	00000513          	li	x10,0
     4000028c:	00000073          	ecall
     40000290:	c0001073          	unimp
-    40000294:	0000                	.2byte	0x0
-    40000296:	0000                	.2byte	0x0
-    40000298:	0000                	.2byte	0x0
-    4000029a:	0000                	.2byte	0x0
-    4000029c:	0000                	.2byte	0x0
-    4000029e:	0000                	.2byte	0x0
-    400002a0:	0000                	.2byte	0x0
-    400002a2:	0000                	.2byte	0x0
-    400002a4:	0000                	.2byte	0x0
-    400002a6:	0000                	.2byte	0x0
+    40000294:	0000                	unimp
+    40000296:	0000                	unimp
+    40000298:	0000                	unimp
+    4000029a:	0000                	unimp
+    4000029c:	0000                	unimp
+    4000029e:	0000                	unimp
+    400002a0:	0000                	unimp
+    400002a2:	0000                	unimp
+    400002a4:	0000                	unimp
+    400002a6:	0000                	unimp
 
 Disassembly of section .data:
 
@@ -205,9 +205,9 @@ Disassembly of section .data:
     400002b8:	000307e7          	jalr	x15,x6
     400002bc:	22b68693          	addi	x13,x13,555
     400002c0:	000307e7          	jalr	x15,x6
-    400002c4:	0000                	.2byte	0x0
-    400002c6:	0000                	.2byte	0x0
-    400002c8:	0000                	.2byte	0x0
-    400002ca:	0000                	.2byte	0x0
-    400002cc:	0000                	.2byte	0x0
-    400002ce:	0000                	.2byte	0x0
+    400002c4:	0000                	unimp
+    400002c6:	0000                	unimp
+    400002c8:	0000                	unimp
+    400002ca:	0000                	unimp
+    400002cc:	0000                	unimp
+    400002ce:	0000                	unimp
