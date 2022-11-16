@@ -1,7 +1,7 @@
 package b4processor.modules.reservationstation
 
 import b4processor.Parameters
-import b4processor.utils.ExecutorValue
+import b4processor.utils.{ExecutorValue, Tag}
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -44,7 +44,10 @@ class ReservationStationWrapper(implicit params: Parameters)
         v.getOrElse(ExecutorValue(destinationTag = 0, value = 0)).value
       )
       bypassValue.tag.poke(
-        v.getOrElse(ExecutorValue(destinationTag = 0, value = 0)).destinationTag
+        Tag(
+          v.getOrElse(ExecutorValue(destinationTag = 0, value = 0))
+            .destinationTag
+        )
       )
     }
   }

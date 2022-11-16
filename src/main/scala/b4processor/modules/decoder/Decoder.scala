@@ -10,6 +10,7 @@ import b4processor.structures.memoryAccess.{
   MemoryAccessType,
   MemoryAccessWidth
 }
+import b4processor.utils.Tag
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -170,7 +171,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
     io.decodersAfter(instructionOffset).destinationRegister := instRd
     io.decodersAfter(instructionOffset).valid := true.B
   } otherwise {
-    io.decodersAfter(instructionOffset).destinationTag := 0.U
+    io.decodersAfter(instructionOffset).destinationTag := Tag(0)
     io.decodersAfter(instructionOffset).destinationRegister := 0.U
     io.decodersAfter(instructionOffset).valid := false.B
   }
@@ -201,8 +202,8 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
     )
   )
   rs.destinationTag := io.reorderBuffer.destination.destinationTag
-  rs.sourceTag1 := Mux(valueSelector1.io.value.valid, 0.U, sourceTag1.tag)
-  rs.sourceTag2 := Mux(valueSelector2.io.value.valid, 0.U, sourceTag2.tag)
+  rs.sourceTag1 := Mux(valueSelector1.io.value.valid, Tag(0), sourceTag1.tag)
+  rs.sourceTag2 := Mux(valueSelector2.io.value.valid, Tag(0), sourceTag2.tag)
   rs.ready1 := valueSelector1.io.value.valid
   rs.ready2 := valueSelector2.io.value.valid
   rs.value1 := valueSelector1.io.value.bits
@@ -222,7 +223,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
       io.loadStoreQueue.bits.storeData := valueSelector2.io.value.bits
       io.loadStoreQueue.bits.storeDataValid := valueSelector2.io.value.valid
     }.otherwise {
-      io.loadStoreQueue.bits.storeDataTag := 0.U
+      io.loadStoreQueue.bits.storeDataTag := Tag(0)
       io.loadStoreQueue.bits.storeData := 0.U
       io.loadStoreQueue.bits.storeDataValid := true.B
     }

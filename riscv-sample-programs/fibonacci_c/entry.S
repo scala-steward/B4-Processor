@@ -1,9 +1,9 @@
+.extern __STACK_START_
+
 .section .text.init
 .global _start
 _start:
-    li sp, 1
-    slli sp, sp, 31
-    addi sp, sp, 512
+    la sp, __STACK_START_
 
     la a1, loop_count
     lw a0, 0(a1)

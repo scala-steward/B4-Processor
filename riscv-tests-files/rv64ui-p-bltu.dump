@@ -26,8 +26,8 @@ Disassembly of section .text:
     40000038:	5391e193          	ori	x3,x3,1337
 
 000000004000003c <write_tohost>:
-    4000003c:	40000f17          	auipc	x30,0x40000
-    40000040:	fc3f2223          	sw	x3,-60(x30) # 80000000 <begin_signature>
+    4000003c:	00000f17          	auipc	x30,0x0
+    40000040:	503f2223          	sw	x3,1284(x30) # 40000540 <begin_signature>
     40000044:	ff9ff06f          	j	4000003c <write_tohost>
 
 0000000040000048 <reset_vector>:
@@ -99,7 +99,7 @@ Disassembly of section .text:
     4000014c:	00028a63          	beqz	x5,40000160 <reset_vector+0x118>
     40000150:	10529073          	csrw	stvec,x5
     40000154:	0000b2b7          	lui	x5,0xb
-    40000158:	1092829b          	addiw	x5,x5,265
+    40000158:	1092829b          	addiw	x5,x5,265 # b109 <_start-0x3fff4ef7>
     4000015c:	30229073          	csrw	medeleg,x5
     40000160:	30005073          	csrwi	mstatus,0
     40000164:	00000297          	auipc	x5,0x0
@@ -182,7 +182,7 @@ Disassembly of section .text:
     40000260:	0010009b          	addiw	x1,x0,1
     40000264:	01f09093          	slli	x1,x1,0x1f
     40000268:	80000137          	lui	x2,0x80000
-    4000026c:	fff1011b          	addiw	x2,x2,-1
+    4000026c:	fff1011b          	addiw	x2,x2,-1 # 7fffffff <__STACK_START_+0x3ffff65f>
     40000270:	0020e463          	bltu	x1,x2,40000278 <test_8+0x1c>
     40000274:	00301463          	bne	x0,x3,4000027c <test_8+0x20>
     40000278:	28301463          	bne	x0,x3,40000500 <fail>
@@ -195,7 +195,7 @@ Disassembly of section .text:
     4000028c:	01c09093          	slli	x1,x1,0x1c
     40000290:	00f0011b          	addiw	x2,x0,15
     40000294:	01c11113          	slli	x2,x2,0x1c
-    40000298:	fff10113          	addi	x2,x2,-1 # ffffffff7fffffff <fromhost+0xfffffffeffffffbf>
+    40000298:	fff10113          	addi	x2,x2,-1
     4000029c:	2620e263          	bltu	x1,x2,40000500 <fail>
     400002a0:	00120213          	addi	x4,x4,1 # 1 <_start-0x3fffffff>
     400002a4:	00200293          	li	x5,2
@@ -390,7 +390,7 @@ Disassembly of section .text:
     40000528:	00000513          	li	x10,0
     4000052c:	00000073          	ecall
     40000530:	c0001073          	unimp
-    40000534:	0000                	unimp
-    40000536:	0000                	unimp
-    40000538:	0000                	unimp
-    4000053a:	0000                	unimp
+    40000534:	0000                	.2byte	0x0
+    40000536:	0000                	.2byte	0x0
+    40000538:	0000                	.2byte	0x0
+    4000053a:	0000                	.2byte	0x0

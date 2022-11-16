@@ -9,6 +9,7 @@ import b4processor.common.{
   OperationWidth
 }
 import b4processor.connections._
+import b4processor.utils.Tag
 import chisel3.stage.ChiselStage
 import chisel3.util._
 import chisel3.{Mux, _}
@@ -34,11 +35,11 @@ class Executor(implicit params: Parameters) extends Module {
   val immediateOrFunction7Extended =
     io.reservationStation.bits.immediateOrFunction7
   val branchedProgramCounter =
-    io.reservationStation.bits.programCounter + (immediateOrFunction7Extended ## 0
-      .U(1.W)).asSInt
-  val nextProgramCounter = io.reservationStation.bits.programCounter + 4.S
+    (io.reservationStation.bits.programCounter.asSInt + (immediateOrFunction7Extended ## 0
+      .U(1.W)).asSInt).asUInt
+  val nextProgramCounter = io.reservationStation.bits.programCounter + 4.U
 
-  io.fetch.programCounter := 0.S
+  io.fetch.programCounter := 0.U
   io.fetch.valid := false.B
   executionResult64bit := 0.U
 
@@ -188,7 +189,7 @@ class Executor(implicit params: Parameters) extends Module {
             ),
           // jal or auipc
           (instructionChecker.output.instruction === Instructions.auipc || instructionChecker.output.instruction === Instructions.jal)
-            -> (io.reservationStation.bits.programCounter + io.reservationStation.bits.value2.asSInt),
+            -> (io.reservationStation.bits.programCounter.asSInt + io.reservationStation.bits.value2.asSInt).asUInt,
           // jalr
           (instructionChecker.output.instruction === Instructions.jalr)
             -> Cat(
@@ -197,7 +198,7 @@ class Executor(implicit params: Parameters) extends Module {
                 1
               ),
               0.U
-            ).asSInt
+            ).asUInt
         )
       )
     }
@@ -217,13 +218,6 @@ class Executor(implicit params: Parameters) extends Module {
   /** 実行結果をリオーダバッファ,デコーダに送信 (validで送信データを調節) (レジスタ挿入の可能性あり)
     */
 
-  // LSQ TODO 必要か確認
-  //  io.loadStoreQueue.valid :=
-  //    instructionChecker.output.instruction =/= Instructions.Unknown && io.reservationStation.valid
-  //  io.loadStoreQueue.destinationTag := io.reservationStation.bits.destinationTag
-  //  io.loadStoreQueue.value := Mux(instructionChecker.output.instruction === Instructions.Store,
-  //    io.reservationStation.bits.value1 + immediateOrFunction7Extended, executionResultSized)
-
   // reorder Buffer
   //  printf(p"instruction type = ${instructionChecker.output.instruction.asUInt}\n")
   io.out.validAsResult := io.reservationStation.valid &&
@@ -238,12 +232,14 @@ class Executor(implicit params: Parameters) extends Module {
     io.out.tag := io.reservationStation.bits.destinationTag
     io.out.value := executionResultSized
   }.otherwise {
-    io.out.tag := 0.U
+    io.out.tag := Tag(0)
     io.out.value := 0.U
   }
+
+  io.out.isError := false.B
 }
 
-object ExecutorElaborate extends App {
+object Executor extends App {
   implicit val params = Parameters()
   (new ChiselStage).emitVerilog(
     new Executor(),

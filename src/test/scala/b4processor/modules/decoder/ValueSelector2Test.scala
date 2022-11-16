@@ -3,6 +3,7 @@ package b4processor.modules.decoder
 import b4processor.Parameters
 import b4processor.common.OpcodeFormat
 import b4processor.common.OpcodeFormat._
+import b4processor.utils.Tag
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -34,22 +35,22 @@ class ValueSelector2Wrapper(implicit params: Parameters)
       this.io.outputCollector
         .outputs(i)
         .validAsResult
-        .poke(aluBypassValue(i).isDefined.B)
+        .poke(aluBypassValue(i).isDefined)
       this.io.outputCollector
         .outputs(i)
         .tag
-        .poke(aluBypassValue(i).getOrElse((0, 0))._1.U)
+        .poke(Tag(aluBypassValue(i).getOrElse((0, 0))._1))
       this.io.outputCollector
         .outputs(i)
         .value
-        .poke(aluBypassValue(i).getOrElse((0, 0))._2.U)
+        .poke(aluBypassValue(i).getOrElse((0, 0))._2)
     }
     this.io.reorderBufferValue.valid.poke(reorderBufferValue.isDefined)
     this.io.reorderBufferValue.bits.poke(reorderBufferValue.getOrElse(0))
-    this.io.registerFileValue.poke(registerFileValue.U)
-    this.io.sourceTag.valid.poke(sourceTag.isDefined.B)
-    this.io.sourceTag.tag.poke(sourceTag.getOrElse(0).U)
-    this.io.immediateValue.poke(immediate.S)
+    this.io.registerFileValue.poke(registerFileValue)
+    this.io.sourceTag.valid.poke(sourceTag.isDefined)
+    this.io.sourceTag.tag.poke(Tag(sourceTag.getOrElse(0)))
+    this.io.immediateValue.poke(immediate)
     this.io.opcodeFormat.poke(opcodeFormat)
   }
 

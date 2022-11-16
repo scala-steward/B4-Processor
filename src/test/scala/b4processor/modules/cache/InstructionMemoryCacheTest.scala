@@ -1,22 +1,38 @@
 package b4processor.modules.cache
 
 import b4processor.Parameters
-import b4processor.connections.InstructionCache2Fetch
-import b4processor.modules.memory.InstructionMemory
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 /** メモリをキャッシュを含んだラッパー */
-class MemoryAndCache(memoryInit: => Seq[UInt])(implicit params: Parameters)
-    extends Module {
-  val io = IO(Vec(params.runParallel, new InstructionCache2Fetch))
+class InstructionMEmoryCacheWrapper()(implicit params: Parameters)
+    extends InstructionMemoryCache {
+  def initialize() = {}
 
-  val cache = Module(new InstructionMemoryCache)
-  val memory = Module(new InstructionMemory(memoryInit))
+  def responseStep(data: UInt) = {
+    this.io.memory.response.valid.poke(true)
+    this.io.memory.response.bits.inner.poke(data)
+    this.clock.step()
+    this.io.memory.response.valid.poke(false)
+    this.io.memory.response.bits.inner.poke(0)
+  }
 
-  io <> cache.io.fetch
-  cache.io.memory <> memory.io
+  def setFetch(address: UInt) = {
+    this.io.fetch(0).address.valid.poke(true)
+    this.io.fetch(0).address.bits.poke(address)
+  }
+
+  def expectRequest(address: UInt) = {
+    this.io.memory.request.valid.expect(true)
+    this.io.memory.request.bits.address.expect(address)
+    this.io.memory.request.bits.burstLength.expect(1)
+  }
+
+  def expectData(data: UInt) = {
+    this.io.fetch(0).output.valid.expect(true)
+    this.io.fetch(0).output.bits.expect(data)
+  }
 }
 
 class InstructionMemoryCacheTest
@@ -25,19 +41,25 @@ class InstructionMemoryCacheTest
   behavior of "Instruction Cache"
   implicit val defaultParams = Parameters(fetchWidth = 2)
 
-  /** 命令を読み込む */
   it should "load memory" in {
-    test(new MemoryAndCache((0 until 100).map(_.U(8.W)))) { c =>
-      c.io(0).address.poke(0)
-      c.io(0).output.valid.expect(true)
-      c.io(0).output.bits.expect("x03020100".U)
+    test(new InstructionMEmoryCacheWrapper)
+      .withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+        c.setFetch("x2222222200000000".U)
+        c.clock.step()
+        c.expectRequest("x2222222200000000".U)
+        c.io.memory.request.ready.poke(true)
+        c.clock.step(2)
+        c.responseStep("x2020202010101010".U)
+        c.clock.step(2)
+        c.responseStep("x4040404030303030".U)
+        c.clock.step(2)
 
-      c.io(1).address.poke(4)
-      c.io(1).output.valid.expect(true)
-      c.io(1).output.bits.expect("x07060504".U)
+        c.expectData("x10101010".U)
+        c.clock.step()
 
-      c.io(1).address.poke(8)
-      c.io(1).output.valid.expect(false)
-    }
+        c.setFetch("x2222222200000004".U)
+        c.clock.step()
+        c.expectData("x20202020".U)
+      }
   }
 }

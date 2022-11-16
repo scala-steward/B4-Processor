@@ -4,8 +4,13 @@ import b4processor.Parameters
 import b4processor.structures.memoryAccess.MemoryAccessInfo
 import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
-import b4processor.utils.{DecodeEnqueue, LSQ2Memory, LSQfromALU}
-import b4processor.utils.ExecutorValue
+import b4processor.utils.{
+  DecodeEnqueue,
+  ExecutorValue,
+  LSQ2Memory,
+  LSQfromALU,
+  Tag
+}
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.util.{BitPat, DecoupledIO}
@@ -30,7 +35,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
       output.validAsResult.poke(value.exists(_.valid))
       output.validAsLoadStoreAddress.poke(value.exists(_.valid))
       output.value.poke(value.map(_.value).getOrElse(0))
-      output.tag.poke(value.map(_.destinationtag).getOrElse(0))
+      output.tag.poke(Tag(value.map(_.destinationtag).getOrElse(0)))
       //      output.programCounter.poke(value.map(_.ProgramCounter).getOrElse(0))
     }
   }
@@ -44,8 +49,8 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
       decoder.valid.poke(value.isDefined)
       if (value.isDefined) {
         val v = value.get
-        decoder.bits.addressAndLoadResultTag.poke(v.addressTag)
-        decoder.bits.storeDataTag.poke(v.storeDataTag)
+        decoder.bits.addressAndLoadResultTag.poke(Tag(v.addressTag))
+        decoder.bits.storeDataTag.poke(Tag(v.storeDataTag))
         decoder.bits.storeData.poke(v.storeData.getOrElse(0L))
         decoder.bits.storeDataValid.poke(v.storeData.isDefined)
 
@@ -62,7 +67,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
     for (i <- 0 until params.maxRegisterFileCommitCount) {
       val tag = DestinationTags(i)
       val v = valids(i)
-      io.reorderBuffer.destinationTag(i).poke(tag)
+      io.reorderBuffer.destinationTag(i).poke(Tag(tag))
       io.reorderBuffer.valid(i).poke(v)
     }
   }
@@ -72,7 +77,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
       this.io.memory(i).valid.expect(values(i).isDefined)
       if (values(i).isDefined) {
         this.io.memory(i).bits.address.expect(values(i).get.address)
-        this.io.memory(i).bits.tag.expect(values(i).get.tag)
+        this.io.memory(i).bits.tag.id.expect(values(i).get.tag)
         this.io
           .memory(i)
           .bits

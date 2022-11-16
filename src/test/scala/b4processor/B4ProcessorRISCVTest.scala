@@ -1,18 +1,19 @@
 package b4processor
 
+import b4processor.utils.B4ProcessorWithMemory
 import chiseltest._
+import chiseltest.internal.CachingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
-class B4ProcessorRISCVTestWrapper(instructions: String)(implicit
-  params: Parameters
-) extends B4ProcessorWithMemory(instructions) {
+class B4ProcessorRISCVTestWrapper()(implicit params: Parameters)
+    extends B4ProcessorWithMemory() {
   def riscv_test(): Unit = {
-    while (this.io.registerFileContents.get(16).peekInt() != 93) {
+    while (this.io.registerFileContents.get(17).peekInt() != 93) {
       this.clock.step()
     }
-    val reg3_value = this.io.registerFileContents.get(2).peekInt()
+    val reg3_value = this.io.registerFileContents.get(3).peekInt()
     val fail_num = reg3_value >> 1
-    this.io.registerFileContents.get(2).expect(1, s"failed on test ${fail_num}")
+    this.io.registerFileContents.get(3).expect(1, s"failed on test ${fail_num}")
   }
 }
 
@@ -29,18 +30,19 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
 
   behavior of s"RISC-V tests rv64i"
 
-  def riscv_test(test_name: String, timeout: Int = 1000): Unit = {
+  def riscv_test(test_name: String, timeout: Int = 2000): Unit = {
 
     it should s"run risc-v test ${test_name}" in {
       test( // FIXME fromFile8bit
         new B4ProcessorRISCVTestWrapper(
-          s"riscv-tests-files/rv64ui-p-${test_name}"
         )
       )
-        .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation)) {
-          c =>
-            c.clock.setTimeout(timeout)
-            c.riscv_test()
+        .withAnnotations(
+          Seq(WriteVcdAnnotation, CachingAnnotation, VerilatorBackendAnnotation)
+        ) { c =>
+          c.clock.setTimeout(timeout)
+          c.initialize(s"riscv-tests-files/rv64ui-p-${test_name}")
+          c.riscv_test()
         }
     }
   }
@@ -58,8 +60,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
   riscv_test("blt")
   riscv_test("bltu")
   riscv_test("bne")
-  // Fenceのテストは命令メモリとデータメモリが同じ空間にあることを前提にしていて、データメモリ上に命令を書き出してジャンプするので、今回はテストできない。
-//  riscv_test("fence_i")
+  riscv_test("fence_i")
   riscv_test("jal")
   riscv_test("jalr")
   riscv_test("lb")
@@ -73,7 +74,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
   riscv_test("or")
   riscv_test("ori")
   riscv_test("sb")
-  riscv_test("sd", timeout = 2000)
+  riscv_test("sd")
   riscv_test("sh")
   riscv_test("sll")
   riscv_test("slli")

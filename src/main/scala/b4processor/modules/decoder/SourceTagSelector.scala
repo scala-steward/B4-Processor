@@ -1,6 +1,7 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
+import b4processor.utils.Tag
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util._
@@ -16,9 +17,9 @@ class SourceTagSelector(instructionOffset: Int)(implicit params: Parameters)
     extends Module {
   val io = IO(new Bundle {
     val beforeDestinationTag =
-      Vec(instructionOffset, Flipped(Valid(UInt(params.tagWidth.W))))
+      Vec(instructionOffset, Flipped(Valid(new Tag)))
     val reorderBufferDestinationTag =
-      Flipped(Valid(UInt(params.tagWidth.W)))
+      Flipped(Valid(new Tag))
     val sourceTag = Output(new SourceTagInfo) // 選択したsource tagを格納
   })
 
@@ -45,7 +46,7 @@ class SourceTagSelector(instructionOffset: Int)(implicit params: Parameters)
       beforeDestinationRegisterValid,
       // これまですべてのデコーダのうち、validがtrueならばその値を返すというMuxCase。第二引数の値は配列になっている。
       MuxCase(
-        0.U, // デフォルト値0
+        Tag(0), // デフォルト値0
         // これまでのdestinationTagを遡っていき(reverse)、validなものを選ぶ
         (0 until instructionOffset).reverse.map(i =>
           io.beforeDestinationTag(i).valid -> io.beforeDestinationTag(i).bits
@@ -56,6 +57,6 @@ class SourceTagSelector(instructionOffset: Int)(implicit params: Parameters)
     )
     // 最大発行命令数(i)を増やすならばMux -> MuxCase に変更
   }.otherwise { // valid = 0
-    io.sourceTag.tag := 0.U // source tagが存在しなければsourceTag = 0に設定
+    io.sourceTag.tag := Tag(0) // source tagが存在しなければsourceTag = 0に設定
   }
 }

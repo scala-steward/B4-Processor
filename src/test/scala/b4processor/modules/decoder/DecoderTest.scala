@@ -1,7 +1,7 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
-import b4processor.utils.ExecutorValue
+import b4processor.utils.{ExecutorValue, Tag}
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -25,8 +25,8 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
   }
 
   def setImem(instruction: UInt, isPrediction: Boolean = false): Unit = {
-    this.io.instructionFetch.bits.programCounter.poke(0)
     this.io.instructionFetch.bits.instruction.poke(instruction)
+    this.io.instructionFetch.bits.programCounter.poke(0)
     this.io.instructionFetch.valid.poke(true)
   }
 
@@ -37,13 +37,15 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
     sourceTag2: Option[Int] = None,
     value2: Option[Int] = None
   ): Unit = {
-    this.io.reorderBuffer.destination.destinationTag.poke(destinationTag)
+    this.io.reorderBuffer.destination.destinationTag.poke(Tag(destinationTag))
     this.io.reorderBuffer.source1.matchingTag.valid.poke(sourceTag1.isDefined)
-    this.io.reorderBuffer.source1.matchingTag.bits.poke(sourceTag1.getOrElse(0))
+    this.io.reorderBuffer.source1.matchingTag.bits
+      .poke(Tag(sourceTag1.getOrElse(0)))
     this.io.reorderBuffer.source1.value.valid.poke(value1.isDefined)
     this.io.reorderBuffer.source1.value.bits.poke(value1.getOrElse(0))
     this.io.reorderBuffer.source2.matchingTag.valid.poke(sourceTag2.isDefined)
-    this.io.reorderBuffer.source2.matchingTag.bits.poke(sourceTag2.getOrElse(0))
+    this.io.reorderBuffer.source2.matchingTag.bits
+      .poke(Tag(sourceTag2.getOrElse(0)))
     this.io.reorderBuffer.source2.value.valid.poke(value2.isDefined)
     this.io.reorderBuffer.source2.value.bits.poke(value2.getOrElse(0))
     this.io.reorderBuffer.ready.poke(true)
@@ -67,9 +69,11 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
         .outputs(i)
         .tag
         .poke(
-          bypassedValues(i)
-            .getOrElse(ExecutorValue(destinationTag = 0, value = 0))
-            .destinationTag
+          Tag(
+            bypassedValues(i)
+              .getOrElse(ExecutorValue(destinationTag = 0, value = 0))
+              .destinationTag
+          )
         )
       this.io.outputCollector
         .outputs(i)
@@ -110,9 +114,9 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
     value2: Int = 0,
     immediateOrFunction7: Int = 0
   ): Unit = {
-    this.io.reservationStation.entry.destinationTag.expect(destinationTag)
-    this.io.reservationStation.entry.sourceTag1.expect(sourceTag1)
-    this.io.reservationStation.entry.sourceTag2.expect(sourceTag2)
+    this.io.reservationStation.entry.destinationTag.expect(Tag(destinationTag))
+    this.io.reservationStation.entry.sourceTag1.expect(Tag(sourceTag1))
+    this.io.reservationStation.entry.sourceTag2.expect(Tag(sourceTag2))
     this.io.reservationStation.entry.value1.expect(value1)
     this.io.reservationStation.entry.value2.expect(value2)
     this.io.reservationStation.entry.immediateOrFunction7

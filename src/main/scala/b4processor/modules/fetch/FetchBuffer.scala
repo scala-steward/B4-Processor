@@ -42,7 +42,7 @@ class FetchBuffer(implicit params: Parameters) extends Module {
       d.valid := indexOk
       val valid = d.ready && indexOk
       d.bits.instruction := 0.U
-      d.bits.programCounter := 0.S
+      d.bits.programCounter := 0.U
       when(valid) {
         d.bits.instruction := buffer(nextTail).instruction
         d.bits.programCounter := buffer(nextTail).programCounter
@@ -56,7 +56,7 @@ class FetchBuffer(implicit params: Parameters) extends Module {
 
 sealed class BufferEntry extends Bundle {
   val instruction = UInt(32.W)
-  val programCounter = SInt(32.W)
+  val programCounter = UInt(64.W)
 }
 
 object BufferEntry extends App {
@@ -75,7 +75,7 @@ object BufferEntry extends App {
     w
   }
 
-  def validEntry(instruction: UInt, programCounter: SInt): BufferEntry = {
+  def validEntry(instruction: UInt, programCounter: UInt): BufferEntry = {
     val w = Wire(new BufferEntry)
     w.instruction := instruction
     w.programCounter := programCounter

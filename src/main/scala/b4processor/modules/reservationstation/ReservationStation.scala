@@ -6,11 +6,14 @@ import b4processor.connections.{
   Decoder2ReservationStation,
   ReservationStation2Executor
 }
+import b4processor.utils.Tag
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
 
 class ReservationStation(implicit params: Parameters) extends Module {
+  private val tagWidth = new Tag().id.getWidth
+
   val io = IO(new Bundle {
     val collectedOutput = Flipped(new CollectedOutput)
     val executor = new ReservationStation2Executor
@@ -19,7 +22,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
 
   val reservation = RegInit(
     VecInit(
-      Seq.fill(math.pow(2, params.tagWidth).toInt / params.runParallel)(
+      Seq.fill(math.pow(2, tagWidth).toInt / params.runParallel)(
         ReservationStationEntry.default
       )
     )
@@ -61,10 +64,10 @@ class ReservationStation(implicit params: Parameters) extends Module {
     ).immediateOrFunction7
   }.otherwise {
     io.executor.bits.opcode := 0.U
-    io.executor.bits.destinationTag := 0.U
+    io.executor.bits.destinationTag := Tag(0)
     io.executor.bits.value1 := 0.U
     io.executor.bits.value2 := 0.U
-    io.executor.bits.programCounter := 0.S
+    io.executor.bits.programCounter := 0.U
     io.executor.bits.function3 := 0.U
     io.executor.bits.immediateOrFunction7 := 0.U
   }

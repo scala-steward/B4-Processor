@@ -82,7 +82,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         (output.validAsResult || output.validAsLoadStoreAddress) && buf.valid
       ) {
         when(buf.addressAndLoadResultTag === output.tag && !buf.addressValid) {
-          buf.address := output.value.asSInt
+          buf.address := output.value
           buf.addressValid := true.B
         }
       }
@@ -121,7 +121,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     VecInit(Seq.fill(params.maxRegisterFileCommitCount)(false.B))
   )
   val Address = WireInit(
-    VecInit(Seq.fill(params.maxRegisterFileCommitCount)(0.S(64.W)))
+    VecInit(Seq.fill(params.maxRegisterFileCommitCount)(0.U(64.W)))
   )
   val AddressValid = WireInit(
     VecInit(Seq.fill(params.maxRegisterFileCommitCount)(false.B))

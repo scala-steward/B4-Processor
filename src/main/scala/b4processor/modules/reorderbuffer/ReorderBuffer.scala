@@ -8,6 +8,7 @@ import b4processor.connections.{
   LoadStoreQueue2ReorderBuffer,
   ReorderBuffer2RegisterFile
 }
+import b4processor.utils.Tag
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -20,6 +21,8 @@ import scala.math.pow
   *   パラメータ
   */
 class ReorderBuffer(implicit params: Parameters) extends Module {
+  private val tagWidth = new Tag().id.getWidth
+
   val io = IO(new Bundle {
     val decoders = Vec(params.runParallel, Flipped(new Decoder2ReorderBuffer))
     val collectedOutputs = Flipped(new CollectedOutput)
@@ -28,18 +31,16 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
     val isEmpty = Output(Bool())
 
-    val head = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
-    val tail = if (params.debug) Some(Output(UInt(params.tagWidth.W))) else None
+    val head = if (params.debug) Some(Output(UInt(tagWidth.W))) else None
+    val tail = if (params.debug) Some(Output(UInt(tagWidth.W))) else None
     val bufferIndex0 =
       if (params.debug) Some(Output(new ReorderBufferEntry)) else None
   })
 
-  val head = RegInit(0.U(params.tagWidth.W))
-  val tail = RegInit(0.U(params.tagWidth.W))
+  val head = RegInit(0.U(tagWidth.W))
+  val tail = RegInit(0.U(tagWidth.W))
   val buffer = RegInit(
-    VecInit(
-      Seq.fill(math.pow(2, params.tagWidth).toInt)(ReorderBufferEntry.default)
-    )
+    VecInit(Seq.fill(math.pow(2, tagWidth).toInt)(ReorderBufferEntry.default))
   )
 
   // デコーダからの読み取りと書き込み
@@ -61,7 +62,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         entry
       }
     }
-    decoder.destination.destinationTag := insertIndex
+    decoder.destination.destinationTag := Tag.fromWires(insertIndex)
     // ソースレジスタに対応するタグ、値の代入
     val descendingIndex = VecInit(
       (0 until pow(2, params.tagWidth).toInt).map(indexOffset =>
@@ -83,12 +84,12 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       )
         .suggestName(s"matchingIndex_d${i}_s1")
       decoder.source1.matchingTag.valid := hasMatching
-      decoder.source1.matchingTag.bits := matchingIndex
+      decoder.source1.matchingTag.bits := Tag.fromWires(matchingIndex)
       decoder.source1.value.valid := buffer(matchingIndex).valueReady
       decoder.source1.value.bits := buffer(matchingIndex).value
     }.otherwise {
       decoder.source1.matchingTag.valid := false.B
-      decoder.source1.matchingTag.bits := 0.U
+      decoder.source1.matchingTag.bits := Tag(0)
       decoder.source1.value.valid := false.B
       decoder.source1.value.bits := 0.U
     }
@@ -106,12 +107,12 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         descendingIndex.map { index => matchingBits(index).asBool -> index }
       )
       decoder.source2.matchingTag.valid := hasMatching
-      decoder.source2.matchingTag.bits := matchingIndex
+      decoder.source2.matchingTag.bits := Tag.fromWires(matchingIndex)
       decoder.source2.value.valid := buffer(matchingIndex).valueReady
       decoder.source2.value.bits := buffer(matchingIndex).value
     }.otherwise {
       decoder.source2.matchingTag.valid := false.B
-      decoder.source2.matchingTag.bits := 0.U
+      decoder.source2.matchingTag.bits := Tag(0)
       decoder.source2.value.valid := false.B
       decoder.source2.value.bits := 0.U
     }
@@ -144,11 +145,11 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 
     when(canCommit) {
       // LSQへストア実行信号
-      io.loadStoreQueue.destinationTag(i) := index
+      io.loadStoreQueue.destinationTag(i) := Tag.fromWires(index)
       io.loadStoreQueue.valid(i) := buffer(index).storeSign
       buffer(index) := ReorderBufferEntry.default
     }.otherwise {
-      io.loadStoreQueue.destinationTag(i) := 0.U
+      io.loadStoreQueue.destinationTag(i) := Tag(0)
       io.loadStoreQueue.valid(i) := false.B
     }
     lastValid = canCommit
@@ -165,8 +166,8 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   // 出力の読み込み
   for (output <- io.collectedOutputs.outputs) {
     when(output.validAsResult) {
-      buffer(output.tag).value := output.value
-      buffer(output.tag).valueReady := true.B
+      buffer(output.tag.id).value := output.value
+      buffer(output.tag.id).valueReady := true.B
     }
   }
 

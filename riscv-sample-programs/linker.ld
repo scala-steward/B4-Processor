@@ -1,15 +1,20 @@
 ENTRY(_start)
 
 MEMORY{
-	ROM (rx) : ORIGIN = 0x40000000, LENGTH = 1M
-	RAM (rx) : ORIGIN = 0x80000000, LENGTH = 16M
+	RAM (rwx) : ORIGIN = 0x40000000, LENGTH = 16M
 }
 
 SECTIONS{
 	.text :
 	{
+	    . = ALIGN(8);
 		*(.text.init)
 		*(.text*)
-	} > ROM
-	.data : { *(.data) } > RAM
+	} > RAM
+	.data : {
+		. = ALIGN(8);
+	    *(.data)
+	} > RAM
+	. = ALIGN(32) + 1024;
+	__STACK_START_ = .;
 }
