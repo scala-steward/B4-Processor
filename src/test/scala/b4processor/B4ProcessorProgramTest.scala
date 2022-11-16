@@ -211,7 +211,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/fibonacci_c/fibonacci_c")
-        c.checkForRegister(3, 21, 1000)
+        c.checkForRegister(3, 21, 1500)
       }
   }
 

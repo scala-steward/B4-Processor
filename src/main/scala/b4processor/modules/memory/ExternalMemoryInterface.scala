@@ -2,8 +2,10 @@ package b4processor.modules.memory
 
 import b4processor.Parameters
 import b4processor.connections.OutputValue
+import b4processor.structures.memoryAccess.MemoryAccessWidth
 import b4processor.utils.{AXI, BurstSize, BurstType, FIFO, Lock, Response, Tag}
 import chisel3._
+import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import chisel3.stage.ChiselStage
 
@@ -16,7 +18,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     val dataReadOut = new OutputValue
     val dataWriteOut = Valid(new WriteResponse)
     val instructionOut = Valid(new InstructionResponse)
-    val coordinator = new AXI(64,64)
+    val coordinator = new AXI(64, 64)
   })
 
   // setDefaultOutputs
@@ -69,15 +71,20 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
   io.dataWriteOut.bits := DontCare
 
   // READ OPERATION -------------------------------------------
-  class ReadState extends Bundle {
+  val readQueue = Module(new FIFO(3)(new Bundle {
     val burstLength = UInt(8.W)
     val isInstruction = Bool()
     val tag = new Tag
-  }
-  val readQueue = Module(new FIFO[ReadState](3)(new ReadState))
+    val size = new MemoryAccessWidth.Type()
+    val offset = UInt(3.W)
+  }))
   readQueue.output.ready := false.B
   readQueue.input.valid := false.B
-  readQueue.input.bits := DontCare
+  readQueue.input.bits.size := MemoryAccessWidth.DoubleWord
+  readQueue.input.bits.offset := 0.U
+  readQueue.input.bits.tag := Tag(0)
+  readQueue.input.bits.burstLength := 0.U
+  readQueue.input.bits.isInstruction := false.B
 
   when(!readQueue.full) {
     when(io.instructionFetchRequest.valid) {
@@ -94,12 +101,14 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
         readQueue.input.bits.burstLength := io.instructionFetchRequest.bits.burstLength
         readQueue.input.bits.isInstruction := true.B
         readQueue.input.bits.tag := Tag(0)
+        readQueue.input.bits.offset := 0.U
+        readQueue.input.bits.size := MemoryAccessWidth.DoubleWord
       }
     }.elsewhen(io.dataReadRequests.valid) {
       locally {
         import io.coordinator.readAddress._
         valid := true.B
-        bits.ADDR := io.dataReadRequests.bits.address
+        bits.ADDR := io.dataReadRequests.bits.address(63, 3) ## 0.U(3.W)
         bits.LEN := 0.U
         bits.SIZE := BurstSize.Size64
       }
@@ -109,6 +118,8 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
         readQueue.input.bits.burstLength := 0.U
         readQueue.input.bits.isInstruction := false.B
         readQueue.input.bits.tag := io.dataReadRequests.bits.outputTag
+        readQueue.input.bits.offset := io.dataReadRequests.bits.address(2, 0)
+        readQueue.input.bits.size := io.dataReadRequests.bits.size
       }
     }
     val burstLen = RegInit(0.U(8.W))
@@ -122,10 +133,40 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
         }
         when(readQueue.output.bits.isInstruction) {
           io.instructionOut.valid := true.B
-          io.instructionOut.bits.inner := io.coordinator.read.bits.DATA
+          val data = io.coordinator.read.bits.DATA
+          io.instructionOut.bits.inner := data
         }.otherwise {
           io.dataReadOut.tag := readQueue.output.bits.tag
-          io.dataReadOut.value := io.coordinator.read.bits.DATA
+          val data = io.coordinator.read.bits.DATA
+          io.dataReadOut.value := Mux1H(
+            Seq(
+              (readQueue.output.bits.size === MemoryAccessWidth.Byte) -> Mux1H(
+                (0 until 8).map(i =>
+                  (readQueue.output.bits.offset === i.U) -> data(
+                    i * 8 + 7,
+                    i * 8
+                  )
+                )
+              ),
+              (readQueue.output.bits.size === MemoryAccessWidth.HalfWord) -> Mux1H(
+                Seq(0, 1, 2, 3).map(i =>
+                  (readQueue.output.bits.offset === (i * 2).U) -> data(
+                    i * 8 + 15,
+                    i * 8
+                  )
+                )
+              ),
+              (readQueue.output.bits.size === MemoryAccessWidth.Word) -> Mux1H(
+                Seq(0, 4).map(i =>
+                  (readQueue.output.bits.offset === i.U) -> data(
+                    i * 8 + 31,
+                    i * 8
+                  )
+                )
+              ),
+              (readQueue.output.bits.size === MemoryAccessWidth.DoubleWord) -> data
+            )
+          )
           io.dataReadOut.validAsResult := true.B
           io.dataReadOut.validAsLoadStoreAddress := false.B
           io.dataReadOut.isError := io.coordinator.read.bits.RESP =/= Response.Okay
@@ -135,19 +176,17 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     // ----------------------------------------
     // WRITE OPERATION ------------------------
     // ----------------------------------------
-    class DataWriteState extends Bundle {
+    val dataWriteQueue = Module(new FIFO(3)(new Bundle {
       val data = UInt(64.W)
       val tag = new Tag
       val strb = UInt(8.W)
-    }
-    val dataWriteQueue = Module(new FIFO(3)(new DataWriteState))
+    }))
     dataWriteQueue.output.ready := false.B
     dataWriteQueue.input.valid := false.B
     dataWriteQueue.input.bits := DontCare
-    class WriteResponseState extends Bundle {
+    val writeResponseQueue = Module(new FIFO(3)(new Bundle {
       val tag = new Tag
-    }
-    val writeResponseQueue = Module(new FIFO(3)(new WriteResponseState))
+    }))
     writeResponseQueue.output.ready := false.B
     writeResponseQueue.input.valid := false.B
     writeResponseQueue.input.bits := DontCare
