@@ -4,7 +4,7 @@ rv64ui-p-bne:     file format elf64-littleriscv
 
 Disassembly of section .text:
 
-0000000040000000 <__TEXT_START_>:
+0000000040000000 <_start>:
     40000000:	0480006f          	j	40000048 <reset_vector>
 
 0000000040000004 <trap_vector>:
@@ -27,7 +27,7 @@ Disassembly of section .text:
 
 000000004000003c <write_tohost>:
     4000003c:	00000f17          	auipc	x30,0x0
-    40000040:	443f2223          	sw	x3,1092(x30) # 40000480 <__DATA_START_>
+    40000040:	443f2223          	sw	x3,1092(x30) # 40000480 <begin_signature>
     40000044:	ff9ff06f          	j	4000003c <write_tohost>
 
 0000000040000048 <reset_vector>:
@@ -99,7 +99,7 @@ Disassembly of section .text:
     4000014c:	00028a63          	beqz	x5,40000160 <reset_vector+0x118>
     40000150:	10529073          	csrw	stvec,x5
     40000154:	0000b2b7          	lui	x5,0xb
-    40000158:	1092829b          	addiw	x5,x5,265
+    40000158:	1092829b          	addiw	x5,x5,265 # b109 <_start-0x3fff4ef7>
     4000015c:	30229073          	csrw	medeleg,x5
     40000160:	30005073          	csrwi	mstatus,0
     40000164:	00000297          	auipc	x5,0x0
@@ -181,7 +181,7 @@ Disassembly of section .text:
     40000254:	00000093          	li	x1,0
     40000258:	00000113          	li	x2,0
     4000025c:	1e209063          	bne	x1,x2,4000043c <fail>
-    40000260:	00120213          	addi	x4,x4,1 # 1 <__TEXT_START_-0x3fffffff>
+    40000260:	00120213          	addi	x4,x4,1 # 1 <_start-0x3fffffff>
     40000264:	00200293          	li	x5,2
     40000268:	fe5216e3          	bne	x4,x5,40000254 <test_9+0x8>
 
@@ -192,7 +192,7 @@ Disassembly of section .text:
     40000278:	00000113          	li	x2,0
     4000027c:	00000013          	nop
     40000280:	1a209e63          	bne	x1,x2,4000043c <fail>
-    40000284:	00120213          	addi	x4,x4,1 # 1 <__TEXT_START_-0x3fffffff>
+    40000284:	00120213          	addi	x4,x4,1 # 1 <_start-0x3fffffff>
     40000288:	00200293          	li	x5,2
     4000028c:	fe5214e3          	bne	x4,x5,40000274 <test_10+0x8>
 
@@ -204,7 +204,7 @@ Disassembly of section .text:
     400002a0:	00000013          	nop
     400002a4:	00000013          	nop
     400002a8:	18209a63          	bne	x1,x2,4000043c <fail>
-    400002ac:	00120213          	addi	x4,x4,1 # 1 <__TEXT_START_-0x3fffffff>
+    400002ac:	00120213          	addi	x4,x4,1 # 1 <_start-0x3fffffff>
     400002b0:	00200293          	li	x5,2
     400002b4:	fe5212e3          	bne	x4,x5,40000298 <test_11+0x8>
 
@@ -215,7 +215,7 @@ Disassembly of section .text:
     400002c4:	00000013          	nop
     400002c8:	00000113          	li	x2,0
     400002cc:	16209863          	bne	x1,x2,4000043c <fail>
-    400002d0:	00120213          	addi	x4,x4,1 # 1 <__TEXT_START_-0x3fffffff>
+    400002d0:	00120213          	addi	x4,x4,1 # 1 <_start-0x3fffffff>
     400002d4:	00200293          	li	x5,2
     400002d8:	fe5214e3          	bne	x4,x5,400002c0 <test_12+0x8>
 
@@ -227,7 +227,7 @@ Disassembly of section .text:
     400002ec:	00000113          	li	x2,0
     400002f0:	00000013          	nop
     400002f4:	14209463          	bne	x1,x2,4000043c <fail>
-    400002f8:	00120213          	addi	x4,x4,1 # 1 <__TEXT_START_-0x3fffffff>
+    400002f8:	00120213          	addi	x4,x4,1 # 1 <_start-0x3fffffff>
     400002fc:	00200293          	li	x5,2
     40000300:	fe5212e3          	bne	x4,x5,400002e4 <test_13+0x8>
 
@@ -239,7 +239,7 @@ Disassembly of section .text:
     40000314:	00000013          	nop
     40000318:	00000113          	li	x2,0
     4000031c:	12209063          	bne	x1,x2,4000043c <fail>
-    40000320:	00120213          	addi	x4,x4,1 # 1 <__TEXT_START_-0x3fffffff>
+    40000320:	00120213          	addi	x4,x4,1 # 1 <_start-0x3fffffff>
     40000324:	00200293          	li	x5,2
     40000328:	fe5212e3          	bne	x4,x5,4000030c <test_14+0x8>
 
@@ -249,7 +249,7 @@ Disassembly of section .text:
     40000334:	00000093          	li	x1,0
     40000338:	00000113          	li	x2,0
     4000033c:	10209063          	bne	x1,x2,4000043c <fail>
-    40000340:	00120213          	addi	x4,x4,1 # 1 <__TEXT_START_-0x3fffffff>
+    40000340:	00120213          	addi	x4,x4,1 # 1 <_start-0x3fffffff>
     40000344:	00200293          	li	x5,2
     40000348:	fe5216e3          	bne	x4,x5,40000334 <test_15+0x8>
 
@@ -260,7 +260,7 @@ Disassembly of section .text:
     40000358:	00000113          	li	x2,0
     4000035c:	00000013          	nop
     40000360:	0c209e63          	bne	x1,x2,4000043c <fail>
-    40000364:	00120213          	addi	x4,x4,1 # 1 <__TEXT_START_-0x3fffffff>
+    40000364:	00120213          	addi	x4,x4,1 # 1 <_start-0x3fffffff>
     40000368:	00200293          	li	x5,2
     4000036c:	fe5214e3          	bne	x4,x5,40000354 <test_16+0x8>
 
@@ -272,7 +272,7 @@ Disassembly of section .text:
     40000380:	00000013          	nop
     40000384:	00000013          	nop
     40000388:	0a209a63          	bne	x1,x2,4000043c <fail>
-    4000038c:	00120213          	addi	x4,x4,1 # 1 <__TEXT_START_-0x3fffffff>
+    4000038c:	00120213          	addi	x4,x4,1 # 1 <_start-0x3fffffff>
     40000390:	00200293          	li	x5,2
     40000394:	fe5212e3          	bne	x4,x5,40000378 <test_17+0x8>
 
@@ -283,7 +283,7 @@ Disassembly of section .text:
     400003a4:	00000013          	nop
     400003a8:	00000113          	li	x2,0
     400003ac:	08209863          	bne	x1,x2,4000043c <fail>
-    400003b0:	00120213          	addi	x4,x4,1 # 1 <__TEXT_START_-0x3fffffff>
+    400003b0:	00120213          	addi	x4,x4,1 # 1 <_start-0x3fffffff>
     400003b4:	00200293          	li	x5,2
     400003b8:	fe5214e3          	bne	x4,x5,400003a0 <test_18+0x8>
 
@@ -295,7 +295,7 @@ Disassembly of section .text:
     400003cc:	00000113          	li	x2,0
     400003d0:	00000013          	nop
     400003d4:	06209463          	bne	x1,x2,4000043c <fail>
-    400003d8:	00120213          	addi	x4,x4,1 # 1 <__TEXT_START_-0x3fffffff>
+    400003d8:	00120213          	addi	x4,x4,1 # 1 <_start-0x3fffffff>
     400003dc:	00200293          	li	x5,2
     400003e0:	fe5212e3          	bne	x4,x5,400003c4 <test_19+0x8>
 
@@ -307,7 +307,7 @@ Disassembly of section .text:
     400003f4:	00000013          	nop
     400003f8:	00000113          	li	x2,0
     400003fc:	04209063          	bne	x1,x2,4000043c <fail>
-    40000400:	00120213          	addi	x4,x4,1 # 1 <__TEXT_START_-0x3fffffff>
+    40000400:	00120213          	addi	x4,x4,1 # 1 <_start-0x3fffffff>
     40000404:	00200293          	li	x5,2
     40000408:	fe5212e3          	bne	x4,x5,400003ec <test_20+0x8>
 
@@ -341,9 +341,9 @@ Disassembly of section .text:
     40000464:	00000513          	li	x10,0
     40000468:	00000073          	ecall
     4000046c:	c0001073          	unimp
-    40000470:	0000                	unimp
-    40000472:	0000                	unimp
-    40000474:	0000                	unimp
-    40000476:	0000                	unimp
-    40000478:	0000                	unimp
-    4000047a:	0000                	unimp
+    40000470:	0000                	.2byte	0x0
+    40000472:	0000                	.2byte	0x0
+    40000474:	0000                	.2byte	0x0
+    40000476:	0000                	.2byte	0x0
+    40000478:	0000                	.2byte	0x0
+    4000047a:	0000                	.2byte	0x0

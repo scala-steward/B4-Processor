@@ -77,6 +77,7 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
       io.dataReadRequest.bits.address := entry.address
       io.dataReadRequest.bits.size := entry.accessInfo.accessWidth
       io.dataReadRequest.bits.outputTag := entry.tag
+      io.dataReadRequest.bits.signed := entry.accessInfo.signed
       when(io.dataReadRequest.ready) {
         tail := tail + 1.U
       }

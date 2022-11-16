@@ -16,6 +16,7 @@ class MemoryReadTransaction(implicit params: Parameters) extends Bundle {
   val outputTag = new Tag()
   val address = UInt(64.W)
   val size = new MemoryAccessWidth.Type()
+  val signed = Bool()
 }
 
 class InstructionFetchTransaction(implicit params: Parameters) extends Bundle {

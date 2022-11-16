@@ -58,7 +58,7 @@ class AXI(
   class WriteDataChannel extends Bundle {
     val ID = UInt(idWidth.W)
     val DATA = UInt(dataWidth.W)
-    val STRB = UInt(log2Up(dataWidth).W) // Optional Default All 1
+    val STRB = UInt((dataWidth/8).W) // Optional Default All 1
     val LAST = Bool()
     val USER = UInt(userDataWidth.W)
   }

@@ -77,14 +77,11 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     val tag = new Tag
     val size = new MemoryAccessWidth.Type()
     val offset = UInt(3.W)
+    val signed = Bool()
   }))
   readQueue.output.ready := false.B
   readQueue.input.valid := false.B
-  readQueue.input.bits.size := MemoryAccessWidth.DoubleWord
-  readQueue.input.bits.offset := 0.U
-  readQueue.input.bits.tag := Tag(0)
-  readQueue.input.bits.burstLength := 0.U
-  readQueue.input.bits.isInstruction := false.B
+  readQueue.input.bits := DontCare
 
   when(!readQueue.full) {
     when(io.instructionFetchRequest.valid) {
@@ -120,6 +117,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
         readQueue.input.bits.tag := io.dataReadRequests.bits.outputTag
         readQueue.input.bits.offset := io.dataReadRequests.bits.address(2, 0)
         readQueue.input.bits.size := io.dataReadRequests.bits.size
+        readQueue.input.bits.signed := io.dataReadRequests.bits.signed
       }
     }
     val burstLen = RegInit(0.U(8.W))
@@ -142,25 +140,37 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
             Seq(
               (readQueue.output.bits.size === MemoryAccessWidth.Byte) -> Mux1H(
                 (0 until 8).map(i =>
-                  (readQueue.output.bits.offset === i.U) -> data(
-                    i * 8 + 7,
-                    i * 8
+                  (readQueue.output.bits.offset === i.U) -> Cat(
+                    Mux(
+                      readQueue.output.bits.signed && data(i * 8 + 7),
+                      "xFFFF_FFFF_FFFF_FF".U,
+                      0.U
+                    ),
+                    data(i * 8 + 7, i * 8)
                   )
                 )
               ),
               (readQueue.output.bits.size === MemoryAccessWidth.HalfWord) -> Mux1H(
-                Seq(0, 1, 2, 3).map(i =>
-                  (readQueue.output.bits.offset === (i * 2).U) -> data(
-                    i * 8 + 15,
-                    i * 8
+                Seq(0, 2, 4, 6).map(i =>
+                  (readQueue.output.bits.offset === i.U) -> Cat(
+                    Mux(
+                      readQueue.output.bits.signed && data(i * 8 + 15),
+                      "xFFFF_FFFF_FFFF".U,
+                      0.U
+                    ),
+                    data(i * 8 + 15, i * 8)
                   )
                 )
               ),
               (readQueue.output.bits.size === MemoryAccessWidth.Word) -> Mux1H(
                 Seq(0, 4).map(i =>
-                  (readQueue.output.bits.offset === i.U) -> data(
-                    i * 8 + 31,
-                    i * 8
+                  (readQueue.output.bits.offset === i.U) -> Cat(
+                    Mux(
+                      readQueue.output.bits.signed && data(i * 8 + 31),
+                      "xFFFF_FFFF".U,
+                      0.U
+                    ),
+                    data(i * 8 + 31, i * 8)
                   )
                 )
               ),

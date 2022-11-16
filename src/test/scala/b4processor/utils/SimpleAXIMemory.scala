@@ -89,10 +89,12 @@ class SimpleAXIMemory(size: Int = 1024 * 10) extends Module {
       axi.write.ready := true.B
       when(axi.write.valid) {
         for (i <- 0 until 8) {
-          mem(i).write(
-            writeState.output.bits.address(63, 3) + burstLen,
-            axi.write.bits.DATA(i * 8 + 7, i * 8)
-          )
+          when(axi.write.bits.STRB(i)) {
+            mem(i).write(
+              writeState.output.bits.address(63, 3) + burstLen,
+              axi.write.bits.DATA(i * 8 + 7, i * 8)
+            )
+          }
         }
         burstLen := burstLen + 1.U
         when(burstLen === writeState.output.bits.burstLength) {
@@ -174,5 +176,5 @@ class SimpleAXIMemory(size: Int = 1024 * 10) extends Module {
 }
 
 object SimpleAXIMemory extends App {
-  (new ChiselStage).emitVerilog(new SimpleAXIMemory)
+  (new ChiselStage).emitVerilog(new SimpleAXIMemory())
 }
