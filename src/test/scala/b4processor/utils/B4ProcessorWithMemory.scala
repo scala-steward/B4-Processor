@@ -19,17 +19,17 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
   })
   val core = Module(new B4Processor)
   val axiMemory = Module(new SimpleAXIMemory())
-  core.io.axi <> axiMemory.axi
+  core.axi <> axiMemory.axi
   io.simulation <> axiMemory.simulationSource.input
 
-  io.registerFileContents.get <> core.io.registerFileContents.get
+  io.registerFileContents.get <> core.registerFileContents.get
 
-  io.accessMemoryAddress.read.valid := core.io.axi.readAddress.valid
-  io.accessMemoryAddress.read.bits := core.io.axi.readAddress.bits.ADDR
-  io.accessMemoryAddress.write.valid := core.io.axi.writeAddress.valid
-  io.accessMemoryAddress.write.bits := core.io.axi.writeAddress.bits.ADDR
-  io.accessMemoryAddress.writeData.valid := core.io.axi.write.valid
-  io.accessMemoryAddress.writeData.bits := core.io.axi.write.bits.DATA
+  io.accessMemoryAddress.read.valid := core.axi.readAddress.valid
+  io.accessMemoryAddress.read.bits := core.axi.readAddress.bits.ADDR
+  io.accessMemoryAddress.write.valid := core.axi.writeAddress.valid
+  io.accessMemoryAddress.write.bits := core.axi.writeAddress.bits.ADDR
+  io.accessMemoryAddress.writeData.valid := core.axi.write.valid
+  io.accessMemoryAddress.writeData.bits := core.axi.write.bits.DATA
 
   def initialize(instructions: String): Unit = {
     val memoryInit = InstructionUtil.fromFile8bit(instructions + ".hex")
