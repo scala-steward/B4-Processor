@@ -14,7 +14,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     val dataWriteRequests = Flipped(Irrevocable(new MemoryWriteTransaction))
     val dataReadRequests = Flipped(Irrevocable(new MemoryReadTransaction))
     val instructionFetchRequest =
-      Flipped(Irrevocable(new InstructionFetchTransaction))
+      Flipped(Irrevocable(new MemoryReadTransaction))
     val dataReadOut = new OutputValue
     val dataWriteOut = Valid(new WriteResponse)
     val instructionOut = Valid(new InstructionResponse)
@@ -83,41 +83,30 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
   readQueue.input.valid := false.B
   readQueue.input.bits := DontCare
 
+  private val arbiter = Module(new RRArbiter(new MemoryReadTransaction(), 2))
+  arbiter.io.in(0) <> io.instructionFetchRequest
+  arbiter.io.in(1) <> io.dataReadRequests
+  private val readTransaction = arbiter.io.out
+  readTransaction.ready := false.B
+
   when(!readQueue.full) {
-    when(io.instructionFetchRequest.valid) {
+    when(readTransaction.valid) {
       locally {
         import io.coordinator.readAddress._
         valid := true.B
-        bits.ADDR := io.instructionFetchRequest.bits.address
-        bits.LEN := io.instructionFetchRequest.bits.burstLength
+        bits.ADDR := readTransaction.bits.address(63, 3) ## 0.U(3.W)
+        bits.LEN := readTransaction.bits.burstLength
         bits.SIZE := BurstSize.Size64
       }
       when(io.coordinator.readAddress.ready) {
-        io.instructionFetchRequest.ready := true.B
+        readTransaction.ready := true.B
         readQueue.input.valid := true.B
-        readQueue.input.bits.burstLength := io.instructionFetchRequest.bits.burstLength
-        readQueue.input.bits.isInstruction := true.B
-        readQueue.input.bits.tag := Tag(0)
-        readQueue.input.bits.offset := 0.U
-        readQueue.input.bits.size := MemoryAccessWidth.DoubleWord
-      }
-    }.elsewhen(io.dataReadRequests.valid) {
-      locally {
-        import io.coordinator.readAddress._
-        valid := true.B
-        bits.ADDR := io.dataReadRequests.bits.address(63, 3) ## 0.U(3.W)
-        bits.LEN := 0.U
-        bits.SIZE := BurstSize.Size64
-      }
-      when(io.coordinator.readAddress.ready) {
-        io.dataReadRequests.ready := true.B
-        readQueue.input.valid := true.B
-        readQueue.input.bits.burstLength := 0.U
-        readQueue.input.bits.isInstruction := false.B
-        readQueue.input.bits.tag := io.dataReadRequests.bits.outputTag
-        readQueue.input.bits.offset := io.dataReadRequests.bits.address(2, 0)
-        readQueue.input.bits.size := io.dataReadRequests.bits.size
-        readQueue.input.bits.signed := io.dataReadRequests.bits.signed
+        readQueue.input.bits.burstLength := readTransaction.bits.burstLength
+        readQueue.input.bits.isInstruction := readTransaction.bits.isInstruction
+        readQueue.input.bits.tag := readTransaction.bits.outputTag
+        readQueue.input.bits.offset := readTransaction.bits.address(2, 0)
+        readQueue.input.bits.size := readTransaction.bits.size
+        readQueue.input.bits.signed := readTransaction.bits.signed
       }
     }
     val burstLen = RegInit(0.U(8.W))
