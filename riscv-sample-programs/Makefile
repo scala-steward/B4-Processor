@@ -11,7 +11,8 @@ SUBDIRS := fibonacci \
 			enter_c \
 			calculation_c \
 			loop_c \
-			load_store_cross
+			load_store_cross \
+			led_show
 
 all: $(SUBDIRS)
 
