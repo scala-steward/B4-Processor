@@ -18,19 +18,24 @@ Disassembly of section .text:
     40000020:	fedff06f          	jal	x0,4000000c <_LOOP>
 
 0000000040000024 <wait>:
-    40000024:	000f46b7          	lui	x13,0xf4
-    40000028:	2406869b          	addiw	x13,x13,576
+    40000024:	3e800693          	addi	x13,x0,1000
 
-000000004000002c <_WTMP>:
-    4000002c:	00068663          	beq	x13,x0,40000038 <_WEND>
-    40000030:	fff68693          	addi	x13,x13,-1 # f3fff <_start-0x3ff0c001>
-    40000034:	ff9ff06f          	jal	x0,4000002c <_WTMP>
+0000000040000028 <_WTMP>:
+    40000028:	00068663          	beq	x13,x0,40000034 <_WEND>
+    4000002c:	fff68693          	addi	x13,x13,-1
+    40000030:	ff9ff06f          	jal	x0,40000028 <_WTMP>
 
-0000000040000038 <_WEND>:
-    40000038:	00008067          	jalr	x0,0(x1)
+0000000040000034 <_WEND>:
+    40000034:	00008067          	jalr	x0,0(x1)
 
-000000004000003c <END>:
-    4000003c:	0000006f          	jal	x0,4000003c <END>
+0000000040000038 <END>:
+    40000038:	0000006f          	jal	x0,40000038 <END>
+
+Disassembly of section .data:
+
+000000004000003c <__STACK_START_-0x404>:
+    4000003c:	0000                	c.unimp
+	...
 
 Disassembly of section .riscv.attributes:
 
@@ -103,7 +108,7 @@ Disassembly of section .debug_line:
   6a:	0004                	0x4
   6c:	0301                	c.addi	x6,0
   6e:	0902                	c.slli64	x18
-  70:	0008                	0x8
+  70:	0004                	0x4
   72:	0301                	c.addi	x6,0
   74:	0901                	c.addi	x18,0
   76:	0004                	0x4
@@ -136,7 +141,7 @@ Disassembly of section .debug_info:
   12:	4000                	c.lw	x8,0(x8)
   14:	0000                	c.unimp
   16:	0000                	c.unimp
-  18:	0040                	c.addi4spn	x8,x2,4
+  18:	003c                	c.addi4spn	x15,x2,8
   1a:	4000                	c.lw	x8,0(x8)
 	...
   24:	0000000b          	0xb
@@ -172,7 +177,7 @@ Disassembly of section .debug_aranges:
   12:	4000                	c.lw	x8,0(x8)
   14:	0000                	c.unimp
   16:	0000                	c.unimp
-  18:	0040                	c.addi4spn	x8,x2,4
+  18:	003c                	c.addi4spn	x15,x2,8
 	...
 
 Disassembly of section .debug_str:

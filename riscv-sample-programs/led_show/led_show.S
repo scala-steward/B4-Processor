@@ -16,7 +16,7 @@ _LOOP:
 
 .global wait
 wait:
-    li a3,1000000
+    li a3,1000
 _WTMP:
     beq a3,zero,_WEND
     addi a3,a3,-1
