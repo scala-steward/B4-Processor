@@ -2,10 +2,7 @@ package b4processor.modules.cache
 
 import b4processor.Parameters
 import b4processor.connections.{InstructionCache2Fetch, InstructionMemory2Cache}
-import b4processor.modules.memory.{
-  InstructionFetchTransaction,
-  InstructionResponse
-}
+import b4processor.modules.memory.{InstructionResponse, MemoryReadTransaction}
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.stage.ChiselStage
@@ -22,7 +19,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     val fetch = Vec(params.runParallel, new InstructionCache2Fetch)
 
     val memory = new Bundle {
-      val request = Irrevocable(new InstructionFetchTransaction())
+      val request = Irrevocable(new MemoryReadTransaction())
       val response = Flipped(Valid(new InstructionResponse))
     }
   })
@@ -75,7 +72,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
   private val state = RegInit(waiting)
   private val readIndex = Reg(UInt(1.W))
   private val requested = Reg(Bool())
-  private val transaction = Reg(new InstructionFetchTransaction)
+  private val transaction = Reg(new MemoryReadTransaction)
   private val requestDone = Reg(Bool())
 
   when(didRequest && state === waiting) {
@@ -83,10 +80,10 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     requested := false.B
     readIndex := 0.U
 
-    val tmp_transaction =
-      Wire(new InstructionFetchTransaction)
-    tmp_transaction.address := Cat(request, readIndex, 0.U(3.W))
-    tmp_transaction.burstLength := 1.U
+    val tmp_transaction = MemoryReadTransaction.ReadInstruction(
+      Cat(request, readIndex, 0.U(3.W)),
+      2
+    )
     transaction := tmp_transaction
     io.memory.request.valid := true.B
     io.memory.request.bits := tmp_transaction
