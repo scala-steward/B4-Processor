@@ -4,19 +4,19 @@ branch.o:     file format elf64-littleriscv
 
 Disassembly of section .text:
 
-0000000040000000 <_start>:
-    40000000:	00200513          	addi	x10,x0,2
-    40000004:	00300593          	addi	x11,x0,3
-    40000008:	00a58633          	add	x12,x11,x10
-    4000000c:	00061663          	bne	x12,x0,40000018 <LABEL>
-    40000010:	00a00693          	addi	x13,x0,10
-    40000014:	00000463          	beq	x0,x0,4000001c <END>
+0000000080000000 <_start>:
+    80000000:	00200513          	addi	x10,x0,2
+    80000004:	00300593          	addi	x11,x0,3
+    80000008:	00a58633          	add	x12,x11,x10
+    8000000c:	00061663          	bne	x12,x0,80000018 <LABEL>
+    80000010:	00a00693          	addi	x13,x0,10
+    80000014:	00000463          	beq	x0,x0,8000001c <END>
 
-0000000040000018 <LABEL>:
-    40000018:	01400693          	addi	x13,x0,20
+0000000080000018 <LABEL>:
+    80000018:	01400693          	addi	x13,x0,20
 
-000000004000001c <END>:
-    4000001c:	0000006f          	jal	x0,4000001c <END>
+000000008000001c <END>:
+    8000001c:	0000006f          	jal	x0,8000001c <END>
 
 Disassembly of section .riscv.attributes:
 
@@ -25,7 +25,7 @@ Disassembly of section .riscv.attributes:
    2:	0000                	c.unimp
    4:	7200                	c.ld	x8,32(x12)
    6:	7369                	c.lui	x6,0xffffa
-   8:	01007663          	bgeu	x0,x16,14 <_start-0x3fffffec>
+   8:	01007663          	bgeu	x0,x16,14 <_start-0x7fffffec>
    c:	0000000f          	fence	unknown,unknown
   10:	7205                	c.lui	x4,0xfffe1
   12:	3676                	c.fldsp	f12,376(x2)
@@ -50,13 +50,13 @@ Disassembly of section .debug_line:
   1a:	0001                	c.addi	x0,0
   1c:	7262                	c.ldsp	x4,56(x2)
   1e:	6e61                	c.lui	x28,0x18
-  20:	532e6863          	bltu	x28,x18,550 <_start-0x3ffffab0>
+  20:	532e6863          	bltu	x28,x18,550 <_start-0x7ffffab0>
   24:	0000                	c.unimp
   26:	0000                	c.unimp
   28:	0000                	c.unimp
   2a:	0209                	c.addi	x4,2
   2c:	0000                	c.unimp
-  2e:	4000                	c.lw	x8,0(x8)
+  2e:	8000                	0x8000
   30:	0000                	c.unimp
   32:	0000                	c.unimp
   34:	0315                	c.addi	x6,5
@@ -97,11 +97,11 @@ Disassembly of section .debug_info:
    c:	0000                	c.unimp
    e:	0000                	c.unimp
   10:	0000                	c.unimp
-  12:	4000                	c.lw	x8,0(x8)
+  12:	8000                	0x8000
   14:	0000                	c.unimp
   16:	0000                	c.unimp
   18:	0020                	c.addi4spn	x8,x2,8
-  1a:	4000                	c.lw	x8,0(x8)
+  1a:	8000                	0x8000
 	...
   24:	0009                	c.addi	x0,2
   26:	0000                	c.unimp
@@ -134,7 +134,7 @@ Disassembly of section .debug_aranges:
    c:	0000                	c.unimp
    e:	0000                	c.unimp
   10:	0000                	c.unimp
-  12:	4000                	c.lw	x8,0(x8)
+  12:	8000                	0x8000
   14:	0000                	c.unimp
   16:	0000                	c.unimp
   18:	0020                	c.addi4spn	x8,x2,8
@@ -145,7 +145,7 @@ Disassembly of section .debug_str:
 0000000000000000 <.debug_str>:
    0:	7262                	c.ldsp	x4,56(x2)
    2:	6e61                	c.lui	x28,0x18
-   4:	532e6863          	bltu	x28,x18,534 <_start-0x3ffffacc>
+   4:	532e6863          	bltu	x28,x18,534 <_start-0x7ffffacc>
    8:	2f00                	c.fld	f8,24(x14)
    a:	6f68                	c.ld	x10,216(x14)
    c:	656d                	c.lui	x10,0x1b
@@ -155,7 +155,7 @@ Disassembly of section .debug_str:
   18:	706f746b          	0x706f746b
   1c:	2d34422f          	0x2d34422f
   20:	7270                	c.ld	x12,224(x12)
-  22:	7365636f          	jal	x6,56758 <_start-0x3ffa98a8>
+  22:	7365636f          	jal	x6,56758 <_start-0x7ffa98a8>
   26:	2f726f73          	csrrsi	x30,0x2f7,4
   2a:	6972                	c.ldsp	x18,280(x2)
   2c:	2d766373          	csrrsi	x6,0x2d7,12
@@ -166,7 +166,7 @@ Disassembly of section .debug_str:
   3a:	6d617267          	0x6d617267
   3e:	72622f73          	csrrs	x30,0x726,x4
   42:	6e61                	c.lui	x28,0x18
-  44:	47006863          	bltu	x0,x16,4b4 <_start-0x3ffffb4c>
+  44:	47006863          	bltu	x0,x16,4b4 <_start-0x7ffffb4c>
   48:	554e                	c.lwsp	x10,240(x2)
   4a:	4120                	c.lw	x8,64(x10)
   4c:	2e322053          	0x2e322053

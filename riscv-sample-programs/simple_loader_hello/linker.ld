@@ -1,7 +1,7 @@
 ENTRY(_start)
 
 MEMORY{
-	RAM (rwx) : ORIGIN = 0x80000000, LENGTH = 256M
+	ROM (rx) : ORIGIN = 0x20000000, LENGTH = 32k
 }
 
 SECTIONS{
@@ -12,13 +12,15 @@ SECTIONS{
 		*(.text.init)
 		*(.text*)
 	    PROVIDE(__TEXT_END = .);
-	} > RAM
+	} > ROM
 	.data : {
 		. = ALIGN(8);
 	    PROVIDE(__DATA_START = .);
 	    *(.data)
 	    PROVIDE(__DATA_END = .);
-	} > RAM
-	. = ALIGN(32) + 1024;
-	PROVIDE(__STACK_START_ = .);
+	} > ROM
+
+	PROVIDE(__UART_START = 0x10013000);
+	PROVIDE(__GPIO_START = 0x10012000);
+	PROVIDE(__RAM_START = 0x80000000);
 }

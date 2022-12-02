@@ -4,67 +4,67 @@ calculation_c.o:     file format elf64-littleriscv
 
 Disassembly of section .text:
 
-0000000040000000 <_start>:
-    40000000:	00100113          	addi	x2,x0,1
-    40000004:	01f11113          	slli	x2,x2,0x1f
-    40000008:	20010113          	addi	x2,x2,512
-    4000000c:	0a0000ef          	jal	x1,400000ac <main>
-    40000010:	00050193          	addi	x3,x10,0
-    40000014:	0000006f          	jal	x0,40000014 <_start+0x14>
+0000000080000000 <_start>:
+    80000000:	00100113          	addi	x2,x0,1
+    80000004:	01f11113          	slli	x2,x2,0x1f
+    80000008:	20010113          	addi	x2,x2,512
+    8000000c:	0a0000ef          	jal	x1,800000ac <main>
+    80000010:	00050193          	addi	x3,x10,0
+    80000014:	0000006f          	jal	x0,80000014 <_start+0x14>
 
-0000000040000018 <func>:
-    40000018:	fd010113          	addi	x2,x2,-48
-    4000001c:	02813423          	sd	x8,40(x2)
-    40000020:	03010413          	addi	x8,x2,48
-    40000024:	00500793          	addi	x15,x0,5
-    40000028:	fef42623          	sw	x15,-20(x8)
-    4000002c:	00300793          	addi	x15,x0,3
-    40000030:	fef42423          	sw	x15,-24(x8)
-    40000034:	fec42703          	lw	x14,-20(x8)
-    40000038:	fe842783          	lw	x15,-24(x8)
-    4000003c:	00f707bb          	addw	x15,x14,x15
-    40000040:	fef42223          	sw	x15,-28(x8)
-    40000044:	fec42703          	lw	x14,-20(x8)
-    40000048:	fe842783          	lw	x15,-24(x8)
-    4000004c:	40f707bb          	subw	x15,x14,x15
-    40000050:	fef42023          	sw	x15,-32(x8)
-    40000054:	fec42703          	lw	x14,-20(x8)
-    40000058:	fe842783          	lw	x15,-24(x8)
-    4000005c:	00f777b3          	and	x15,x14,x15
-    40000060:	fcf42e23          	sw	x15,-36(x8)
-    40000064:	fec42703          	lw	x14,-20(x8)
-    40000068:	fe842783          	lw	x15,-24(x8)
-    4000006c:	00f767b3          	or	x15,x14,x15
-    40000070:	fcf42c23          	sw	x15,-40(x8)
-    40000074:	fe442703          	lw	x14,-28(x8)
-    40000078:	fe042783          	lw	x15,-32(x8)
-    4000007c:	00f707bb          	addw	x15,x14,x15
-    40000080:	0007879b          	addiw	x15,x15,0
-    40000084:	fdc42703          	lw	x14,-36(x8)
-    40000088:	00f707bb          	addw	x15,x14,x15
-    4000008c:	0007879b          	addiw	x15,x15,0
-    40000090:	fd842703          	lw	x14,-40(x8)
-    40000094:	00f707bb          	addw	x15,x14,x15
-    40000098:	0007879b          	addiw	x15,x15,0
-    4000009c:	00078513          	addi	x10,x15,0
-    400000a0:	02813403          	ld	x8,40(x2)
-    400000a4:	03010113          	addi	x2,x2,48
-    400000a8:	00008067          	jalr	x0,0(x1)
+0000000080000018 <func>:
+    80000018:	fd010113          	addi	x2,x2,-48
+    8000001c:	02813423          	sd	x8,40(x2)
+    80000020:	03010413          	addi	x8,x2,48
+    80000024:	00500793          	addi	x15,x0,5
+    80000028:	fef42623          	sw	x15,-20(x8)
+    8000002c:	00300793          	addi	x15,x0,3
+    80000030:	fef42423          	sw	x15,-24(x8)
+    80000034:	fec42703          	lw	x14,-20(x8)
+    80000038:	fe842783          	lw	x15,-24(x8)
+    8000003c:	00f707bb          	addw	x15,x14,x15
+    80000040:	fef42223          	sw	x15,-28(x8)
+    80000044:	fec42703          	lw	x14,-20(x8)
+    80000048:	fe842783          	lw	x15,-24(x8)
+    8000004c:	40f707bb          	subw	x15,x14,x15
+    80000050:	fef42023          	sw	x15,-32(x8)
+    80000054:	fec42703          	lw	x14,-20(x8)
+    80000058:	fe842783          	lw	x15,-24(x8)
+    8000005c:	00f777b3          	and	x15,x14,x15
+    80000060:	fcf42e23          	sw	x15,-36(x8)
+    80000064:	fec42703          	lw	x14,-20(x8)
+    80000068:	fe842783          	lw	x15,-24(x8)
+    8000006c:	00f767b3          	or	x15,x14,x15
+    80000070:	fcf42c23          	sw	x15,-40(x8)
+    80000074:	fe442703          	lw	x14,-28(x8)
+    80000078:	fe042783          	lw	x15,-32(x8)
+    8000007c:	00f707bb          	addw	x15,x14,x15
+    80000080:	0007879b          	addiw	x15,x15,0
+    80000084:	fdc42703          	lw	x14,-36(x8)
+    80000088:	00f707bb          	addw	x15,x14,x15
+    8000008c:	0007879b          	addiw	x15,x15,0
+    80000090:	fd842703          	lw	x14,-40(x8)
+    80000094:	00f707bb          	addw	x15,x14,x15
+    80000098:	0007879b          	addiw	x15,x15,0
+    8000009c:	00078513          	addi	x10,x15,0
+    800000a0:	02813403          	ld	x8,40(x2)
+    800000a4:	03010113          	addi	x2,x2,48
+    800000a8:	00008067          	jalr	x0,0(x1)
 
-00000000400000ac <main>:
-    400000ac:	fe010113          	addi	x2,x2,-32
-    400000b0:	00113c23          	sd	x1,24(x2)
-    400000b4:	00813823          	sd	x8,16(x2)
-    400000b8:	02010413          	addi	x8,x2,32
-    400000bc:	f5dff0ef          	jal	x1,40000018 <func>
-    400000c0:	00050793          	addi	x15,x10,0
-    400000c4:	fef42623          	sw	x15,-20(x8)
-    400000c8:	fec42783          	lw	x15,-20(x8)
-    400000cc:	00078513          	addi	x10,x15,0
-    400000d0:	01813083          	ld	x1,24(x2)
-    400000d4:	01013403          	ld	x8,16(x2)
-    400000d8:	02010113          	addi	x2,x2,32
-    400000dc:	00008067          	jalr	x0,0(x1)
+00000000800000ac <main>:
+    800000ac:	fe010113          	addi	x2,x2,-32
+    800000b0:	00113c23          	sd	x1,24(x2)
+    800000b4:	00813823          	sd	x8,16(x2)
+    800000b8:	02010413          	addi	x8,x2,32
+    800000bc:	f5dff0ef          	jal	x1,80000018 <func>
+    800000c0:	00050793          	addi	x15,x10,0
+    800000c4:	fef42623          	sw	x15,-20(x8)
+    800000c8:	fec42783          	lw	x15,-20(x8)
+    800000cc:	00078513          	addi	x10,x15,0
+    800000d0:	01813083          	ld	x1,24(x2)
+    800000d4:	01013403          	ld	x8,16(x2)
+    800000d8:	02010113          	addi	x2,x2,32
+    800000dc:	00008067          	jalr	x0,0(x1)
 
 Disassembly of section .riscv.attributes:
 
@@ -73,7 +73,7 @@ Disassembly of section .riscv.attributes:
    2:	0000                	c.unimp
    4:	7200                	c.ld	x8,32(x12)
    6:	7369                	c.lui	x6,0xffffa
-   8:	01007663          	bgeu	x0,x16,14 <_start-0x3fffffec>
+   8:	01007663          	bgeu	x0,x16,14 <_start-0x7fffffec>
    c:	0011                	c.addi	x0,4
    e:	0000                	c.unimp
   10:	1004                	c.addi4spn	x9,x2,32
@@ -117,7 +117,7 @@ Disassembly of section .debug_line:
   28:	0900                	c.addi4spn	x8,x2,144
   2a:	0002                	c.slli64	x0
   2c:	0000                	c.unimp
-  2e:	0040                	c.addi4spn	x8,x2,4
+  2e:	0080                	c.addi4spn	x8,x2,64
   30:	0000                	c.unimp
   32:	1500                	c.addi4spn	x8,x2,672
   34:	04090103          	lb	x2,64(x18)
@@ -150,7 +150,7 @@ Disassembly of section .debug_line:
   80:	0500                	c.addi4spn	x8,x2,640
   82:	0209000b          	0x209000b
   86:	0018                	0x18
-  88:	4000                	c.lw	x8,0(x8)
+  88:	8000                	0x8000
   8a:	0000                	c.unimp
   8c:	0000                	c.unimp
   8e:	0501                	c.addi	x10,0
@@ -221,11 +221,11 @@ Disassembly of section .debug_info:
    c:	0000                	c.unimp
    e:	0000                	c.unimp
   10:	0000                	c.unimp
-  12:	4000                	c.lw	x8,0(x8)
+  12:	8000                	0x8000
   14:	0000                	c.unimp
   16:	0000                	c.unimp
   18:	0018                	0x18
-  1a:	4000                	c.lw	x8,0(x8)
+  1a:	8000                	0x8000
 	...
   24:	0008                	0x8
   26:	0000                	c.unimp
@@ -246,7 +246,7 @@ Disassembly of section .debug_info:
   44:	0000                	c.unimp
   46:	1800                	c.addi4spn	x8,x2,48
   48:	0000                	c.unimp
-  4a:	0040                	c.addi4spn	x8,x2,4
+  4a:	0080                	c.addi4spn	x8,x2,64
   4c:	0000                	c.unimp
   4e:	c800                	c.sw	x8,16(x8)
   50:	0000                	c.unimp
@@ -261,7 +261,7 @@ Disassembly of section .debug_info:
   64:	0000                	c.unimp
   66:	ac00                	c.fsd	f8,24(x8)
   68:	0000                	c.unimp
-  6a:	0040                	c.addi4spn	x8,x2,4
+  6a:	0080                	c.addi4spn	x8,x2,64
   6c:	0000                	c.unimp
   6e:	3400                	c.fld	f8,40(x8)
   70:	0000                	c.unimp
@@ -288,7 +288,7 @@ Disassembly of section .debug_info:
   9a:	005d                	c.addi	x0,23
   9c:	0000                	c.unimp
   9e:	0018                	0x18
-  a0:	4000                	c.lw	x8,0(x8)
+  a0:	8000                	0x8000
   a2:	0000                	c.unimp
   a4:	0000                	c.unimp
   a6:	0094                	c.addi4spn	x13,x2,64
@@ -296,7 +296,7 @@ Disassembly of section .debug_info:
   aa:	0000                	c.unimp
   ac:	0000                	c.unimp
   ae:	9c01                	c.subw	x8,x8
-  b0:	01006103          	lwu	x2,16(x0) # 10 <_start-0x3ffffff0>
+  b0:	01006103          	lwu	x2,16(x0) # 10 <_start-0x7ffffff0>
   b4:	0902                	c.slli64	x18
   b6:	005d                	c.addi	x0,23
   b8:	0000                	c.unimp
@@ -308,7 +308,7 @@ Disassembly of section .debug_info:
   c4:	0000                	c.unimp
   c6:	0200                	c.addi4spn	x8,x2,256
   c8:	6891                	c.lui	x17,0x4
-  ca:	01006303          	lwu	x6,16(x0) # 10 <_start-0x3ffffff0>
+  ca:	01006303          	lwu	x6,16(x0) # 10 <_start-0x7ffffff0>
   ce:	0904                	c.addi4spn	x9,x2,144
   d0:	005d                	c.addi	x0,23
   d2:	0000                	c.unimp
@@ -320,7 +320,7 @@ Disassembly of section .debug_info:
   de:	0000                	c.unimp
   e0:	0200                	c.addi4spn	x8,x2,256
   e2:	6091                	c.lui	x1,0x4
-  e4:	01006503          	lwu	x10,16(x0) # 10 <_start-0x3ffffff0>
+  e4:	01006503          	lwu	x10,16(x0) # 10 <_start-0x7ffffff0>
   e8:	0906                	c.slli	x18,0x1
   ea:	005d                	c.addi	x0,23
   ec:	0000                	c.unimp
@@ -398,7 +398,7 @@ Disassembly of section .debug_aranges:
    c:	0000                	c.unimp
    e:	0000                	c.unimp
   10:	0000                	c.unimp
-  12:	4000                	c.lw	x8,0(x8)
+  12:	8000                	0x8000
   14:	0000                	c.unimp
   16:	0000                	c.unimp
   18:	0018                	0x18
@@ -413,7 +413,7 @@ Disassembly of section .debug_aranges:
   3c:	0000                	c.unimp
   3e:	0000                	c.unimp
   40:	0018                	0x18
-  42:	4000                	c.lw	x8,0(x8)
+  42:	8000                	0x8000
   44:	0000                	c.unimp
   46:	0000                	c.unimp
   48:	00c8                	c.addi4spn	x10,x2,68
@@ -426,28 +426,28 @@ Disassembly of section .debug_str:
    2:	7274                	c.ld	x13,224(x12)
    4:	2e79                	c.addiw	x28,30
    6:	682f0053          	0x682f0053
-   a:	2f656d6f          	jal	x26,56300 <_start-0x3ffa9d00>
+   a:	2f656d6f          	jal	x26,56300 <_start-0x7ffa9d00>
    e:	676f6873          	csrrsi	x16,0x676,30
-  12:	65442f6f          	jal	x30,42666 <_start-0x3ffbd99a>
+  12:	65442f6f          	jal	x30,42666 <_start-0x7ffbd99a>
   16:	6f746b73          	csrrsi	x22,0x6f7,8
   1a:	2f70                	c.fld	f12,216(x14)
   1c:	3442                	c.fldsp	f8,48(x2)
   1e:	702d                	c.lui	x0,0xfffeb
   20:	6f72                	c.ldsp	x30,280(x2)
-  22:	73736563          	bltu	x6,x23,74c <_start-0x3ffff8b4>
-  26:	722f726f          	jal	x4,f7748 <_start-0x3ff088b8>
+  22:	73736563          	bltu	x6,x23,74c <_start-0x7ffff8b4>
+  26:	722f726f          	jal	x4,f7748 <_start-0x7ff088b8>
   2a:	7369                	c.lui	x6,0xffffa
-  2c:	732d7663          	bgeu	x26,x18,758 <_start-0x3ffff8a8>
+  2c:	732d7663          	bgeu	x26,x18,758 <_start-0x7ffff8a8>
   30:	6d61                	c.lui	x26,0x18
   32:	6c70                	c.ld	x12,216(x8)
   34:	2d65                	c.addiw	x26,25
   36:	7270                	c.ld	x12,224(x12)
-  38:	6172676f          	jal	x14,26e4e <_start-0x3ffd91b2>
+  38:	6172676f          	jal	x14,26e4e <_start-0x7ffd91b2>
   3c:	736d                	c.lui	x6,0xffffb
   3e:	6c61632f          	0x6c61632f
-  42:	616c7563          	bgeu	x24,x22,64c <_start-0x3ffff9b4>
+  42:	616c7563          	bgeu	x24,x22,64c <_start-0x7ffff9b4>
   46:	6974                	c.ld	x13,208(x10)
-  48:	635f6e6f          	jal	x28,f6e7c <_start-0x3ff09184>
+  48:	635f6e6f          	jal	x28,f6e7c <_start-0x7ff09184>
   4c:	4700                	c.lw	x8,8(x14)
   4e:	554e                	c.lwsp	x10,240(x2)
   50:	4120                	c.lw	x8,64(x10)
@@ -455,7 +455,7 @@ Disassembly of section .debug_str:
   56:	312e3533          	0x312e3533
   5a:	6600                	c.ld	x8,8(x12)
   5c:	6e75                	c.lui	x28,0x1d
-  5e:	4e470063          	beq	x14,x4,53e <_start-0x3ffffac2>
+  5e:	4e470063          	beq	x14,x4,53e <_start-0x7ffffac2>
   62:	2055                	0x2055
   64:	20373143          	fmadd.s	f2,f14,f3,f4,rup
   68:	3031                	0x3031
@@ -474,7 +474,7 @@ Disassembly of section .debug_str:
   82:	706c                	c.ld	x11,224(x8)
   84:	3436                	c.fldsp	f8,360(x2)
   86:	2d20                	c.fld	f8,88(x10)
-  88:	69730067          	jalr	x0,1687(x6) # ffffffffffffb697 <__STACK_START_+0xffffffffbfffb1b7>
+  88:	69730067          	jalr	x0,1687(x6) # ffffffffffffb697 <main+0xffffffff7fffb5eb>
   8c:	706d                	c.lui	x0,0xffffb
   8e:	656c                	c.ld	x11,200(x10)
   90:	632e                	c.ldsp	x6,200(x2)
@@ -497,7 +497,7 @@ Disassembly of section .debug_frame:
   14:	0000                	c.unimp
   16:	0000                	c.unimp
   18:	0018                	0x18
-  1a:	4000                	c.lw	x8,0(x8)
+  1a:	8000                	0x8000
   1c:	0000                	c.unimp
   1e:	0000                	c.unimp
   20:	0094                	c.addi4spn	x13,x2,64
@@ -521,7 +521,7 @@ Disassembly of section .debug_frame:
   44:	0000                	c.unimp
   46:	0000                	c.unimp
   48:	00ac                	c.addi4spn	x11,x2,72
-  4a:	4000                	c.lw	x8,0(x8)
+  4a:	8000                	0x8000
   4c:	0000                	c.unimp
   4e:	0000                	c.unimp
   50:	0034                	c.addi4spn	x13,x2,8

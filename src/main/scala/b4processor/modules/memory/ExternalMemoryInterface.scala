@@ -89,6 +89,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
   private val readTransaction = arbiter.io.out
   readTransaction.ready := false.B
 
+  val readQueued = RegInit(false.B)
   when(!readQueue.full) {
     when(readTransaction.valid) {
       locally {
@@ -97,16 +98,19 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
         bits.ADDR := readTransaction.bits.address(63, 3) ## 0.U(3.W)
         bits.LEN := readTransaction.bits.burstLength
         bits.SIZE := BurstSize.Size64
+        bits.CACHE := "b0010".U
       }
+      readQueue.input.valid := !readQueued
+      readQueue.input.bits.burstLength := readTransaction.bits.burstLength
+      readQueue.input.bits.isInstruction := readTransaction.bits.isInstruction
+      readQueue.input.bits.tag := readTransaction.bits.outputTag
+      readQueue.input.bits.offset := readTransaction.bits.address(2, 0)
+      readQueue.input.bits.size := readTransaction.bits.size
+      readQueue.input.bits.signed := readTransaction.bits.signed
+      readQueued := true.B
       when(io.coordinator.readAddress.ready) {
         readTransaction.ready := true.B
-        readQueue.input.valid := true.B
-        readQueue.input.bits.burstLength := readTransaction.bits.burstLength
-        readQueue.input.bits.isInstruction := readTransaction.bits.isInstruction
-        readQueue.input.bits.tag := readTransaction.bits.outputTag
-        readQueue.input.bits.offset := readTransaction.bits.address(2, 0)
-        readQueue.input.bits.size := readTransaction.bits.size
-        readQueue.input.bits.signed := readTransaction.bits.signed
+        readQueued := false.B
       }
     }
     val burstLen = RegInit(0.U(8.W))
@@ -177,7 +181,6 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     // ----------------------------------------
     val dataWriteQueue = Module(new FIFO(3)(new Bundle {
       val data = UInt(64.W)
-      val tag = new Tag
       val strb = UInt(8.W)
     }))
     dataWriteQueue.output.ready := false.B
@@ -190,6 +193,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     writeResponseQueue.input.valid := false.B
     writeResponseQueue.input.bits := DontCare
 
+    val writeQueued = RegInit(false.B)
     when(io.dataWriteRequests.valid) {
       locally {
         import io.coordinator.writeAddress._
@@ -198,13 +202,18 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
         bits.LEN := 0.U
         bits.SIZE := BurstSize.Size64
         bits.BURST := BurstType.Incr
+        bits.CACHE := "b0010".U
+
+        dataWriteQueue.input.valid := !writeQueued
+        dataWriteQueue.input.bits.data := io.dataWriteRequests.bits.data
+        dataWriteQueue.input.bits.strb := io.dataWriteRequests.bits.mask
+        writeResponseQueue.input.valid := !writeQueued
+        writeResponseQueue.input.bits.tag := io.dataWriteRequests.bits.outputTag
+        writeQueued := true.B
       }
       when(io.coordinator.writeAddress.ready) {
         io.dataWriteRequests.ready := true.B
-        dataWriteQueue.input.valid := true.B
-        dataWriteQueue.input.bits.data := io.dataWriteRequests.bits.data
-        dataWriteQueue.input.bits.tag := io.dataWriteRequests.bits.outputTag
-        dataWriteQueue.input.bits.strb := io.dataWriteRequests.bits.mask
+        writeQueued := false.B
       }
     }
 
@@ -215,8 +224,6 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
       io.coordinator.write.bits.LAST := true.B
       when(io.coordinator.write.ready) {
         dataWriteQueue.output.ready := true.B
-        writeResponseQueue.input.valid := true.B
-        writeResponseQueue.input.bits.tag := dataWriteQueue.output.bits.tag
       }
     }
 

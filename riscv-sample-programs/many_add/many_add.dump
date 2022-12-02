@@ -4,23 +4,23 @@ many_add.o:     file format elf64-littleriscv
 
 Disassembly of section .text:
 
-0000000040000000 <_start>:
-    40000000:	00100093          	addi	x1,x0,1
-    40000004:	00100113          	addi	x2,x0,1
-    40000008:	00100193          	addi	x3,x0,1
-    4000000c:	00100213          	addi	x4,x0,1
-    40000010:	00100293          	addi	x5,x0,1
-    40000014:	00100313          	addi	x6,x0,1
-    40000018:	00100393          	addi	x7,x0,1
-    4000001c:	00100413          	addi	x8,x0,1
-    40000020:	002080b3          	add	x1,x1,x2
-    40000024:	004181b3          	add	x3,x3,x4
-    40000028:	006282b3          	add	x5,x5,x6
-    4000002c:	008383b3          	add	x7,x7,x8
-    40000030:	003080b3          	add	x1,x1,x3
-    40000034:	007282b3          	add	x5,x5,x7
-    40000038:	005080b3          	add	x1,x1,x5
-    4000003c:	0000006f          	jal	x0,4000003c <_start+0x3c>
+0000000080000000 <_start>:
+    80000000:	00100093          	addi	x1,x0,1
+    80000004:	00100113          	addi	x2,x0,1
+    80000008:	00100193          	addi	x3,x0,1
+    8000000c:	00100213          	addi	x4,x0,1
+    80000010:	00100293          	addi	x5,x0,1
+    80000014:	00100313          	addi	x6,x0,1
+    80000018:	00100393          	addi	x7,x0,1
+    8000001c:	00100413          	addi	x8,x0,1
+    80000020:	002080b3          	add	x1,x1,x2
+    80000024:	004181b3          	add	x3,x3,x4
+    80000028:	006282b3          	add	x5,x5,x6
+    8000002c:	008383b3          	add	x7,x7,x8
+    80000030:	003080b3          	add	x1,x1,x3
+    80000034:	007282b3          	add	x5,x5,x7
+    80000038:	005080b3          	add	x1,x1,x5
+    8000003c:	0000006f          	jal	x0,8000003c <_start+0x3c>
 
 Disassembly of section .riscv.attributes:
 
@@ -29,7 +29,7 @@ Disassembly of section .riscv.attributes:
    2:	0000                	c.unimp
    4:	7200                	c.ld	x8,32(x12)
    6:	7369                	c.lui	x6,0xffffa
-   8:	01007663          	bgeu	x0,x16,14 <_start-0x3fffffec>
+   8:	01007663          	bgeu	x0,x16,14 <_start-0x7fffffec>
    c:	0000000f          	fence	unknown,unknown
   10:	7205                	c.lui	x4,0xfffe1
   12:	3676                	c.fldsp	f12,376(x2)
@@ -59,7 +59,7 @@ Disassembly of section .debug_line:
   2a:	0000                	c.unimp
   2c:	0209                	c.addi	x4,2
   2e:	0000                	c.unimp
-  30:	4000                	c.lw	x8,0(x8)
+  30:	8000                	0x8000
   32:	0000                	c.unimp
   34:	0000                	c.unimp
   36:	09010313          	addi	x6,x2,144
@@ -124,11 +124,11 @@ Disassembly of section .debug_info:
    c:	0000                	c.unimp
    e:	0000                	c.unimp
   10:	0000                	c.unimp
-  12:	4000                	c.lw	x8,0(x8)
+  12:	8000                	0x8000
   14:	0000                	c.unimp
   16:	0000                	c.unimp
   18:	0040                	c.addi4spn	x8,x2,4
-  1a:	4000                	c.lw	x8,0(x8)
+  1a:	8000                	0x8000
 	...
   24:	0000000b          	0xb
   28:	0000004b          	fnmsub.s	f0,f0,f0,f0,rne
@@ -160,7 +160,7 @@ Disassembly of section .debug_aranges:
    c:	0000                	c.unimp
    e:	0000                	c.unimp
   10:	0000                	c.unimp
-  12:	4000                	c.lw	x8,0(x8)
+  12:	8000                	0x8000
   14:	0000                	c.unimp
   16:	0000                	c.unimp
   18:	0040                	c.addi4spn	x8,x2,4
@@ -181,7 +181,7 @@ Disassembly of section .debug_str:
   1a:	706f746b          	0x706f746b
   1e:	2d34422f          	0x2d34422f
   22:	7270                	c.ld	x12,224(x12)
-  24:	7365636f          	jal	x6,5675a <_start-0x3ffa98a6>
+  24:	7365636f          	jal	x6,5675a <_start-0x7ffa98a6>
   28:	2f726f73          	csrrsi	x30,0x2f7,4
   2c:	6972                	c.ldsp	x18,280(x2)
   2e:	2d766373          	csrrsi	x6,0x2d7,12

@@ -1,10 +1,6 @@
 package b4processor
 
-import b4processor.connections.{
-  InstructionMemory2Cache,
-  LoadStoreQueue2Memory,
-  OutputValue
-}
+import b4processor.connections.{InstructionMemory2Cache, LoadStoreQueue2Memory, OutputValue}
 import b4processor.modules.branch_output_collector.BranchOutputCollector
 import b4processor.modules.cache.{DataMemoryBuffer, InstructionMemoryCache}
 import b4processor.modules.decoder.Decoder
@@ -152,7 +148,7 @@ class B4Processor(implicit params: Parameters) extends Module {
 }
 
 object B4Processor extends App {
-  implicit val params = Parameters()
+  implicit val params = Parameters(instructionStart = 0x2000_0000L)
   (new ChiselStage).emitVerilog(
     new B4Processor(),
     args = Array(
