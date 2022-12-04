@@ -1,7 +1,7 @@
 package b4processor.modules.executor
 
 import b4processor.Parameters
-import b4processor.connections.BranchOutput
+import b4processor.connections.{BranchOutput, ResultType}
 import b4processor.utils.{
   ExecutorValue,
   FetchValue,
@@ -12,13 +12,14 @@ import b4processor.utils.{
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
+import chisel3.util.Irrevocable
 import org.scalatest.GivenWhenThen
 
 class ExecutorWrapper(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reservationStation = Flipped(new ReservationStation2ExecutorForTest)
     val out = new ExecutionRegisterBypassForTest
-    val fetch = Output(new BranchOutput)
+    val fetch = Irrevocable(new BranchOutput)
   })
 
   val executor = Module(new Executor)
@@ -30,19 +31,20 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   executor.io.reservationStation.bits.opcode := io.reservationStation.bits.opcode
   executor.io.reservationStation.bits.programCounter := io.reservationStation.bits.programCounter
   executor.io.reservationStation.valid := io.reservationStation.valid
+  executor.io.out.ready := true.B
   io.reservationStation.ready := executor.io.reservationStation.ready
 
-  io.out.value := executor.io.out.value.asSInt
-  io.out.validAsResult := executor.io.out.validAsResult
-  io.out.validAsLoadStoreAddress := executor.io.out.validAsLoadStoreAddress
-  io.out.destinationTag := executor.io.out.tag
+  io.out.value := executor.io.out.bits.value.asSInt
+  io.out.valid := executor.io.out.valid
+  io.out.resultType := executor.io.out.bits.resultType
+  io.out.destinationTag := executor.io.out.bits.tag
 
   executor.io.fetch <> io.fetch
 
   def setALU(values: ReservationValue): Unit = {
     val reservationstation = this.io.reservationStation
     reservationstation.valid.poke(values.valid)
-    reservationstation.bits.destinationTag.poke(Tag(values.destinationTag))
+    reservationstation.bits.destinationTag.poke(Tag(0, values.destinationTag))
 
     /** マイナスの表現ができていない */
 
@@ -56,20 +58,22 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
     reservationstation.bits.programCounter.poke(values.programCounter)
   }
 
-  def expectout(values: Option[ExecutorValue]): Unit = {
+  def expectout(values: Option[ExecutorValue], valid: Boolean = true): Unit = {
     val out = this.io.out
-    out.validAsResult.expect(values.isDefined)
+    out.valid.expect(valid)
     if (values.isDefined) {
-      out.destinationTag.expect(Tag(values.get.destinationTag))
+      out.resultType.expect(ResultType.Result)
+      out.destinationTag.expect(Tag(0, values.get.destinationTag))
       out.value.expect(values.get.value)
     }
   }
 
-  def expectLSQ(values: Option[ExecutorValue]): Unit = {
+  def expectLSQ(values: Option[ExecutorValue], valid: Boolean = true): Unit = {
     val out = this.io.out
-    out.validAsLoadStoreAddress.expect(values.isDefined)
+    out.valid.expect(valid)
     if (values.isDefined) {
-      out.destinationTag.expect(Tag(values.get.destinationTag))
+      out.resultType.expect(ResultType.LoadStoreAddress)
+      out.destinationTag.expect(Tag(0, values.get.destinationTag))
       out.value.expect(values.get.value)
     }
   }
@@ -77,7 +81,7 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   def expectFetch(values: FetchValue): Unit = {
     val fetch = this.io.fetch
     fetch.valid.expect(values.valid)
-    fetch.programCounter.expect(values.programCounter)
+    fetch.bits.programCounter.expect(values.programCounter)
   }
 }
 
@@ -87,7 +91,7 @@ class ExecutorTest
     with GivenWhenThen {
   behavior of "Executor"
 
-  implicit val defaultParams = Parameters(runParallel = 1)
+  implicit val defaultParams = Parameters(decoderPerThread = 1)
 
   it should "be compatible with I extension" in {
     test(new ExecutorWrapper) { c =>

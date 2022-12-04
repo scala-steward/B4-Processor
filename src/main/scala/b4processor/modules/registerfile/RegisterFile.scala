@@ -18,7 +18,7 @@ class RegisterFile(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
 
     /** デコーダへ */
-    val decoders = Flipped(Vec(params.runParallel, new Decoder2RegisterFile))
+    val decoders = Flipped(Vec(params.decoderPerThread, new Decoder2RegisterFile))
 
     /** リオーダバッファ */
     val reorderBuffer = Flipped(

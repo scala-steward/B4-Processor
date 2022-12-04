@@ -22,7 +22,8 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
   implicit val defaultParams =
     Parameters(
       debug = true,
-      runParallel = 1,
+      threads = 1,
+      decoderPerThread = 1,
       tagWidth = 4,
       loadStoreQueueIndexWidth = 2,
       maxRegisterFileCommitCount = 2

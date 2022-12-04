@@ -31,13 +31,13 @@ object ReservationStationEntry {
       _.opcode -> 0.U,
       _.function3 -> 0.U,
       _.immediateOrFunction7 -> 0.U,
-      _.sourceTag1 -> Tag(0),
+      _.sourceTag1 -> Tag(0,0),
       _.ready1 -> false.B,
       _.value1 -> 0.U,
-      _.sourceTag2 -> Tag(0),
+      _.sourceTag2 -> Tag(0,0),
       _.ready2 -> false.B,
       _.value2 -> 0.U,
-      _.destinationTag -> Tag(0),
+      _.destinationTag -> Tag(0,0),
       _.programCounter -> 0.U,
       _.valid -> false.B
     )

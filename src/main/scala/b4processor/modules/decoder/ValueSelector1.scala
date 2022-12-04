@@ -1,7 +1,7 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
-import b4processor.connections.CollectedOutput
+import b4processor.connections.{CollectedOutput, ResultType}
 import chisel3._
 import chisel3.util._
 
@@ -20,12 +20,9 @@ class ValueSelector1(implicit params: Parameters) extends Module {
   })
 
   // ALUからバイパスされた値のうち、destination tagと一致するsource tagを持っている
-  val outputMatching = Cat(
-    io.outputCollector.outputs
-      .map(o => o.validAsResult && o.tag === io.sourceTag.tag)
-      .reverse
-  )
-  val outputMatchingTagExists = outputMatching.orR
+  private val o = io.outputCollector.outputs
+  val outputMatchingTagExists =
+    o.valid && o.bits.resultType === ResultType.Result && o.bits.tag === io.sourceTag.tag
 
   // 値があるか
   io.value.valid := MuxCase(
@@ -43,11 +40,7 @@ class ValueSelector1(implicit params: Parameters) extends Module {
     Seq(
       (io.sourceTag.from === SourceTagFrom.BeforeDecoder) -> 0.U,
       (io.sourceTag.valid && io.reorderBufferValue.valid) -> io.reorderBufferValue.bits,
-      (io.sourceTag.valid && outputMatchingTagExists) ->
-        // Mux1Hは入力が一つであることが求められるがタグ一つにつき出力は一つなので問題ない
-        Mux1H(outputMatching.asBools.zip(io.outputCollector.outputs).map {
-          case (flag, output) => flag -> output.value
-        }),
+      (io.sourceTag.valid && outputMatchingTagExists) -> o.bits.value,
       (!io.sourceTag.valid) -> io.registerFileValue
     )
   )

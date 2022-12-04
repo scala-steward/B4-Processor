@@ -26,9 +26,12 @@ import scala.math.pow
   *   データメモリのサイズ
   */
 case class Parameters(
-  tagWidth: Int = 5,
+  tagWidth: Int = 4,
+  reservationStationWidth: Int = 3,
   loadStoreQueueIndexWidth: Int = 3,
-  runParallel: Int = 2,
+  loadStoreQueueCheckLength: Int = 3,
+  decoderPerThread: Int = 2,
+  threads: Int = 2,
   maxRegisterFileCommitCount: Int = 4,
   maxDataMemoryCommitCount: Int = 4,
   fetchWidth: Int = 4,

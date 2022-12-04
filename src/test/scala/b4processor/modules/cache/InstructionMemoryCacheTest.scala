@@ -7,7 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 /** メモリをキャッシュを含んだラッパー */
 class InstructionMEmoryCacheWrapper()(implicit params: Parameters)
-    extends InstructionMemoryCache {
+    extends InstructionMemoryCache(0) {
   def initialize() = {}
 
   def responseStep(data: UInt) = {

@@ -21,7 +21,7 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
 
     /** 分岐予測 */
-    val prediction = Vec(params.runParallel, new Fetch2BranchPrediction)
+    val prediction = Vec(params.decoderPerThread, new Fetch2BranchPrediction)
 
     /** 実行ユニットからの分岐先の値 */
     val collectedBranchAddresses = Flipped(new CollectedBranchAddresses)
@@ -36,10 +36,10 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
     val reorderBufferEmpty = Input(Bool())
 
     /** キャッシュに要求されているアドレス */
-    val cacheAddress = Vec(params.runParallel, Valid(UInt(64.W)))
+    val cacheAddress = Vec(params.decoderPerThread, Valid(UInt(64.W)))
 
     /** キャッシュからの出力 */
-    val cacheOutput = Vec(params.runParallel, Valid(UInt(64.W)))
+    val cacheOutput = Vec(params.decoderPerThread, Valid(UInt(64.W)))
 
     /** プログラムカウンタ */
     val PC = Output(UInt(64.W))
@@ -47,14 +47,14 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
     /** 次のクロックのプログラムカウンタ */
     val nextPC = Output(UInt(64.W))
 
-    /** 各命令のぶん機の種類 */
-    val branchTypes = Output(Vec(params.runParallel, new BranchType.Type))
+    /** 各命令の分岐の種類 */
+    val branchTypes = Output(Vec(params.decoderPerThread, new BranchType.Type))
 
     val memorySetup = Flipped(Valid(UInt(64.W)))
   })
 
-  val fetch = Module(new Fetch)
-  val cache = Module(new InstructionMemoryCache)
+  val fetch = Module(new Fetch(0))
+  val cache = Module(new InstructionMemoryCache(0))
   val memoryInterface = Module(new ExternalMemoryInterface)
   val axiMemory = Module(new SimpleAXIMemory)
 
@@ -66,8 +66,8 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
   fetch.io.branchTypes.get <> io.branchTypes
 
   cache.io.fetch <> fetch.io.cache
-  cache.io.memory.request <> memoryInterface.io.instructionFetchRequest
-  cache.io.memory.response <> memoryInterface.io.instructionOut
+  cache.io.memory.request <> memoryInterface.io.instructionFetchRequest(0)
+  cache.io.memory.response <> memoryInterface.io.instructionOut(0)
 
   memoryInterface.io.dataReadRequests.valid := false.B
   memoryInterface.io.dataReadRequests.bits := DontCare
@@ -87,7 +87,7 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
 
   /** 初期化 */
   def initialize(memoryInit: => Seq[UInt]): Unit = {
-    this.setPrediction(Seq.fill(params.runParallel)(false))
+    this.setPrediction(Seq.fill(params.decoderPerThread)(false))
     this.io.memorySetup.valid.poke(true)
     this.io.memorySetup.bits.poke(memoryInit.length)
     for (i <- memoryInit.indices) {
@@ -107,26 +107,28 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
 
   /** 予測をセット */
   def setPrediction(values: Seq[Boolean]): Unit = {
-    for (i <- 0 until params.runParallel) {
+    for (i <- 0 until params.decoderPerThread) {
       this.io.prediction(i).prediction.poke(values(i))
     }
   }
 
   /** 分岐先をセット */
-  def setExecutorBranchResult(
-    results: Seq[Option[Int]] = Seq.fill(params.runParallel)(None)
-  ): Unit = {
-    for ((e, r) <- io.collectedBranchAddresses.addresses.zip(results)) {
-      e.valid.poke(r.isDefined)
-      e.programCounter.poke(r.getOrElse(0))
-    }
+  def setExecutorBranchResult(results: Option[Int] = None): Unit = {
+    io.collectedBranchAddresses.addresses.valid.poke(results.isDefined)
+    io.collectedBranchAddresses.addresses.bits.programCounter
+      .poke(results.getOrElse(0))
   }
 }
 
 class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Fetch"
   implicit val defaultParams =
-    Parameters(debug = true, runParallel = 2, instructionStart = 0x10000000)
+    Parameters(
+      debug = true,
+      threads = 1,
+      decoderPerThread = 2,
+      instructionStart = 0x10000000
+    )
 
   // 普通の命令と分岐を区別できるか
   // 書き込む命令
@@ -242,7 +244,7 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.clock.step()
 
-      c.setExecutorBranchResult(Seq(Some(0x10000004)))
+      c.setExecutorBranchResult(Some(0x10000004))
 
       c.io.nextPC.expect(0x10000004)
     }
@@ -265,7 +267,7 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.nextPC.expect(0x10000004)
       c.clock.step()
 
-      c.setExecutorBranchResult(Seq(Some(0x10000000)))
+      c.setExecutorBranchResult(Some(0x10000000))
       c.io.nextPC.expect(0x10000004)
       c.clock.step()
 

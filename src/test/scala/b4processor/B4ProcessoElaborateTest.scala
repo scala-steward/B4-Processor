@@ -13,18 +13,20 @@ class B4ProcessoElaborateTest extends AnyFlatSpec with ChiselScalatestTester {
 
   behavior of "B4Processor connections"
   // コンパイルが通ることを確認（信号をつなぎきれていないとエラーになる）
-  for (runParallel <- 1 to 3)
-    for (maxCommitCount <- 1 to 3)
-      for (tagWidth <- 2 to 3)
-        it should s"elaborate runParallel${runParallel} maxCommitCount=${maxCommitCount} tagWidth=${tagWidth}" in {
-          (new ChiselStage).emitFirrtl(
-            new B4ProcessorWithMemory()(
-              defaultParams.copy(
-                runParallel = runParallel,
-                maxRegisterFileCommitCount = maxCommitCount,
-                tagWidth = tagWidth
+  for (threads <- 1 to 2)
+    for (decoderPerThread <- 1 to 3)
+      for (maxCommitCount <- 1 to 3)
+        for (tagWidth <- 2 to 3)
+          it should s"elaborate threads=${threads} decoder=${decoderPerThread} maxCommitCount=${maxCommitCount} tagWidth=${tagWidth}" in {
+            (new ChiselStage).emitFirrtl(
+              new B4ProcessorWithMemory()(
+                defaultParams.copy(
+                  threads = threads,
+                  decoderPerThread = decoderPerThread,
+                  maxRegisterFileCommitCount = maxCommitCount,
+                  tagWidth = tagWidth
+                )
               )
             )
-          )
-        }
+          }
 }

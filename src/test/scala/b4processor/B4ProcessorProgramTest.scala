@@ -9,11 +9,16 @@ import org.scalatest.flatspec.AnyFlatSpec
 class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "B4Processor"
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
-  implicit val defaultParams = Parameters(debug = true, tagWidth = 4)
+  implicit val defaultParams =
+    Parameters(debug = true, tagWidth = 4, threads = 1, decoderPerThread = 1)
 
   // branchプログラムが実行できる
   it should "execute branch with no parallel" in {
-    test(new B4ProcessorWithMemory()(defaultParams.copy(runParallel = 1)))
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 1, decoderPerThread = 1)
+      )
+    )
       .withAnnotations(
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
@@ -24,7 +29,11 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // フィボナッチ数列の計算が同時発行数1でできる
   it should "execute fibonacci with no parallel" in {
-    test(new B4ProcessorWithMemory()(defaultParams.copy(runParallel = 1)))
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 1, decoderPerThread = 1)
+      )
+    )
       .withAnnotations(
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
@@ -46,7 +55,11 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // フィボナッチ数列の計算が同時発行数4でできる
   it should "execute fibonacci with 4 parallel" in {
-    test(new B4ProcessorWithMemory()(defaultParams.copy(runParallel = 4)))
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 1, decoderPerThread = 4)
+      )
+    )
       .withAnnotations(
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
@@ -70,7 +83,11 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // 並列実行できそうな大量のadd命令を同時発行数1で試す
   it should "execute many_add with no parallel" in {
-    test(new B4ProcessorWithMemory()(defaultParams.copy(runParallel = 1)))
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 1, decoderPerThread = 1)
+      )
+    )
       .withAnnotations(
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
@@ -94,7 +111,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute many_add with 4 parallel" in {
     test(
       new B4ProcessorWithMemory()(
-        defaultParams.copy(runParallel = 4, fetchWidth = 8)
+        defaultParams.copy(threads = 1, decoderPerThread = 4, fetchWidth = 8)
       )
     )
       .withAnnotations(
@@ -109,7 +126,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute many_add with 4 parallel with very low tag width" in {
     test(
       new B4ProcessorWithMemory()(
-        defaultParams.copy(runParallel = 4, fetchWidth = 8, tagWidth = 2)
+        defaultParams
+          .copy(threads = 1, decoderPerThread = 4, fetchWidth = 8, tagWidth = 2)
       )
     )
       .withAnnotations(
@@ -125,7 +143,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
     test(
       new B4ProcessorWithMemory()(
         defaultParams.copy(
-          runParallel = 8,
+          threads = 1,
+          decoderPerThread = 8,
           fetchWidth = 8,
           maxRegisterFileCommitCount = 10
         )
@@ -145,7 +164,12 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams
-          .copy(runParallel = 4, fetchWidth = 8, maxRegisterFileCommitCount = 8)
+          .copy(
+            threads = 1,
+            decoderPerThread = 4,
+            fetchWidth = 8,
+            maxRegisterFileCommitCount = 8
+          )
       )
     )
       .withAnnotations(
@@ -174,7 +198,11 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run load_store" in {
     test(
       new B4ProcessorWithMemory()(
-        defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1)
+        defaultParams.copy(
+          threads = 1,
+          decoderPerThread = 1,
+          maxRegisterFileCommitCount = 1
+        )
       )
     )
       .withAnnotations(
@@ -184,7 +212,11 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // 単純な値をストアしてロードするプログラム同時発行数2
   it should "run load_store with 2 parallel" in {
-    test(new B4ProcessorWithMemory()(defaultParams.copy(runParallel = 2)))
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 1, decoderPerThread = 2)
+      )
+    )
       .withAnnotations(
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
@@ -201,7 +233,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 1,
+          threads = 1,
+          decoderPerThread = 1,
           maxRegisterFileCommitCount = 1,
           loadStoreQueueIndexWidth = 2
         )
@@ -220,7 +253,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 2,
+          threads = 1,
+          decoderPerThread = 2,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 3
         )
@@ -239,7 +273,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )
@@ -261,7 +296,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )
@@ -279,7 +315,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
     test(
       new B4ProcessorWithMemory()(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )
@@ -299,7 +336,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )
@@ -318,7 +356,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
     test(
       new B4ProcessorWithMemory()(
         defaultParams.copy(
-          runParallel = 1,
+          threads = 1,
+          decoderPerThread = 1,
           maxRegisterFileCommitCount = 1,
           loadStoreQueueIndexWidth = 2
         )
@@ -337,7 +376,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
     test(
       new B4ProcessorWithMemory()(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )
@@ -357,7 +397,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 1,
+          threads = 1,
+          decoderPerThread = 1,
           maxRegisterFileCommitCount = 1,
           loadStoreQueueIndexWidth = 2
         )
@@ -377,7 +418,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )
@@ -397,7 +439,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 1,
+          threads = 1,
+          decoderPerThread = 1,
           maxRegisterFileCommitCount = 1,
           loadStoreQueueIndexWidth = 2
         )
@@ -418,7 +461,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )

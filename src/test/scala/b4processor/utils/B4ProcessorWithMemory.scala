@@ -75,7 +75,8 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
 object B4ProcessorWithMemory extends App {
   implicit val params = Parameters(
     debug = true,
-    runParallel = 2,
+    threads = 1,
+    decoderPerThread = 2,
     maxRegisterFileCommitCount = 4,
     tagWidth = 5,
     loadStoreQueueIndexWidth = 3

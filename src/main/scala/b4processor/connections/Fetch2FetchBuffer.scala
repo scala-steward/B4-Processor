@@ -8,7 +8,7 @@ import chisel3.util._
   */
 class Fetch2FetchBuffer(implicit params: Parameters) extends Bundle {
   val decoder = Vec(
-    params.runParallel,
+    params.decoderPerThread,
     Decoupled(new Bundle {
       val instruction = UInt(32.W)
       val programCounter = UInt(64.W)

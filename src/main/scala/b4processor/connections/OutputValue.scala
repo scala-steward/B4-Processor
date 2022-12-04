@@ -3,14 +3,16 @@ package b4processor.connections
 import b4processor.Parameters
 import b4processor.utils.Tag
 import chisel3._
+import chisel3.experimental.ChiselEnum
+
+object ResultType extends ChiselEnum {
+  val Result, LoadStoreAddress = Value
+}
 
 class OutputValue(implicit params: Parameters) extends Bundle {
 
   /** 計算結果として値を使用できる。リオーダバッファに結果として保存できる */
-  val validAsResult = Output(Bool())
-
-  /** ロードストアに使うアドレスの計算結果として使うことができる */
-  val validAsLoadStoreAddress = Output(Bool())
+  val resultType = new ResultType.Type()
 
   /** 値 */
   val value = Output(UInt(64.W))

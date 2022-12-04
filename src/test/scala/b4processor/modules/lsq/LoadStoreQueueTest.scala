@@ -1,6 +1,7 @@
 package b4processor.modules.lsq
 
 import b4processor.Parameters
+import b4processor.connections.ResultType
 import b4processor.structures.memoryAccess.MemoryAccessInfo
 import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
@@ -26,31 +27,30 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
     this.setReorderBuffer()
   }
 
-  def setOutputs(
-    values: Seq[Option[LSQfromALU]] = Seq.fill(params.runParallel + 1)(None)
-  ): Unit = {
-    for (i <- 0 until params.runParallel + 1) {
-      val output = this.io.outputCollector.outputs(i)
-      val value = values(i)
-      output.validAsResult.poke(value.exists(_.valid))
-      output.validAsLoadStoreAddress.poke(value.exists(_.valid))
-      output.value.poke(value.map(_.value).getOrElse(0))
-      output.tag.poke(Tag(value.map(_.destinationtag).getOrElse(0)))
-      //      output.programCounter.poke(value.map(_.ProgramCounter).getOrElse(0))
-    }
+  def setOutputs(values: Option[LSQfromALU] = None): Unit = {
+    val output = this.io.outputCollector.outputs
+    val value = values
+    output.valid.poke(value.exists(_.valid))
+    output.bits.resultType.poke(
+      value.map(_.resultType).getOrElse(ResultType.Result)
+    )
+    output.bits.value.poke(value.map(_.value).getOrElse(0))
+    output.bits.tag.poke(Tag(0, value.map(_.destinationtag).getOrElse(0)))
+    //      output.programCounter.poke(value.map(_.ProgramCounter).getOrElse(0))
+
   }
 
   def setDecoder(
-    values: Seq[Option[DecodeEnqueue]] = Seq.fill(params.runParallel)(None)
+    values: Seq[Option[DecodeEnqueue]] = Seq.fill(params.decoderPerThread)(None)
   ): Unit = {
-    for (i <- 0 until params.runParallel) {
+    for (i <- 0 until params.decoderPerThread) {
       val decoder = this.io.decoders(i)
       val value = values(i)
       decoder.valid.poke(value.isDefined)
       if (value.isDefined) {
         val v = value.get
-        decoder.bits.addressAndLoadResultTag.poke(Tag(v.addressTag))
-        decoder.bits.storeDataTag.poke(Tag(v.storeDataTag))
+        decoder.bits.addressAndLoadResultTag.poke(Tag(0, v.addressTag))
+        decoder.bits.storeDataTag.poke(Tag(0, v.storeDataTag))
         decoder.bits.storeData.poke(v.storeData.getOrElse(0L))
         decoder.bits.storeDataValid.poke(v.storeData.isDefined)
 
@@ -67,46 +67,34 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
     for (i <- 0 until params.maxRegisterFileCommitCount) {
       val tag = DestinationTags(i)
       val v = valids(i)
-      io.reorderBuffer.destinationTag(i).poke(Tag(tag))
+      io.reorderBuffer.destinationTag(i).poke(Tag(0, tag))
       io.reorderBuffer.valid(i).poke(v)
     }
   }
 
-  def expectMemory(values: Seq[Option[LSQ2Memory]]): Unit = {
-    for (i <- 0 until params.maxRegisterFileCommitCount) {
-      this.io.memory(i).valid.expect(values(i).isDefined)
-      if (values(i).isDefined) {
-        this.io.memory(i).bits.address.expect(values(i).get.address)
-        this.io.memory(i).bits.tag.id.expect(values(i).get.tag)
-        this.io
-          .memory(i)
-          .bits
-          .accessInfo
-          .accessType
-          .expect(values(i).get.accessInfo.accessType)
-        this.io
-          .memory(i)
-          .bits
-          .accessInfo
-          .accessWidth
-          .expect(values(i).get.accessInfo.accessWidth)
-        this.io
-          .memory(i)
-          .bits
-          .accessInfo
-          .signed
-          .expect(values(i).get.accessInfo.signed)
-        this.io.memory(i).bits.data.expect(values(i).get.data)
-      }
+  def expectMemory(values: Option[LSQ2Memory]): Unit = {
+    this.io.memory.valid.expect(values.isDefined)
+    if (values.isDefined) {
+      this.io.memory.bits.address.expect(values.get.address)
+      this.io.memory.bits.tag.id.expect(values.get.tag)
+      this.io.memory.bits.accessInfo.accessType
+        .expect(values.get.accessInfo.accessType)
+      this.io.memory.bits.accessInfo.accessWidth
+        .expect(values.get.accessInfo.accessWidth)
+      this.io.memory.bits.accessInfo.signed
+        .expect(values.get.accessInfo.signed)
+      this.io.memory.bits.data.expect(values.get.data)
     }
   }
+
 }
 
 class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Load Store Queue"
   implicit val defaultParams = Parameters(
     tagWidth = 4,
-    runParallel = 2,
+    threads = 1,
+    decoderPerThread = 2,
     maxRegisterFileCommitCount = 2,
     debug = true
   )
@@ -164,9 +152,9 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.head.get.expect(0)
         c.io.tail.get.expect(0)
         c.io.decoders(0).ready.expect(true)
-        c.io.memory(0).ready.poke(true)
+        c.io.memory.ready.poke(true)
         // c.io.memory(1).ready.poke(true) (if runParallel = 2)
-        c.expectMemory(Seq(None, None))
+        c.expectMemory(None)
         // c.expectMemory(Seq(None, None)) (if runParallel = 2)
 
         // 値のセット
@@ -191,38 +179,38 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
         c.setDecoder()
         c.setOutputs(values =
-          Seq(
-            Some(LSQfromALU(valid = true, destinationtag = 10, value = 150)),
-            None,
-            None
+          Some(
+            LSQfromALU(
+              valid = true,
+              destinationtag = 10,
+              value = 150,
+              resultType = ResultType.LoadStoreAddress
+            )
           )
         )
         c.io.head.get.expect(1)
         c.io.tail.get.expect(0)
-        c.expectMemory(Seq(None, None))
+        c.expectMemory(None)
         c.clock.step(1)
 
         // 値の確認
         c.expectMemory(values =
-          Seq(
-            Some(
-              LSQ2Memory(
-                address = 150,
-                tag = 10,
-                data = 0,
-                accessInfo = (new MemoryAccessInfo).Lit(
-                  _.accessType -> Load,
-                  _.accessWidth -> Byte,
-                  _.signed -> false.B
-                )
+          Some(
+            LSQ2Memory(
+              address = 150,
+              tag = 10,
+              data = 0,
+              accessInfo = (new MemoryAccessInfo).Lit(
+                _.accessType -> Load,
+                _.accessWidth -> Byte,
+                _.signed -> false.B
               )
-            ),
-            None
+            )
           )
         )
         c.io.tail.get.expect(0)
         c.io.head.get.expect(1)
-        c.clock.step(1)
+        c.clock.step(2)
 
         c.io.head.get.expect(1)
         c.io.tail.get.expect(1)
@@ -250,10 +238,10 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.head.get.expect(0)
         c.io.tail.get.expect(0)
         c.io.decoders(0).ready.expect(true)
-        c.io.memory(0).ready.poke(true)
-        c.io.memory(1).ready.poke(true)
+        c.io.memory.ready.poke(true)
+        c.io.memory.ready.poke(true)
         // c.io.memory(1).ready.poke(true) (if runParallel = 2)
-        c.expectMemory(Seq(None, None))
+        c.expectMemory(None)
         // c.expectMemory(Seq(None, None)) (if runParallel = 2)
 
         // 値のセット
@@ -278,21 +266,20 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
         c.setDecoder()
         c.setOutputs(values =
-          Seq(
-            Some(LSQfromALU(valid = true, destinationtag = 5, value = 123)),
-            None,
-            None
-          )
+          Some(LSQfromALU(valid = true, destinationtag = 5, value = 123))
         )
         c.io.head.get.expect(1)
         c.io.tail.get.expect(0)
         c.clock.step(1)
 
         c.setOutputs(values =
-          Seq(
-            Some(LSQfromALU(valid = true, destinationtag = 10, value = 150)),
-            None,
-            None
+          Some(
+            LSQfromALU(
+              valid = true,
+              destinationtag = 10,
+              value = 150,
+              resultType = ResultType.LoadStoreAddress
+            )
           )
         )
         c.setReorderBuffer(
@@ -301,46 +288,33 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         )
         c.io.head.get.expect(1)
         c.io.tail.get.expect(0)
-        c.expectMemory(Seq(None, None))
-        c.clock.step(1)
+        c.expectMemory(None)
+        c.clock.step()
 
         // 値の確認
         c.expectMemory(values =
-          Seq(
-            Some(
-              LSQ2Memory(
-                address = 150,
-                tag = 10,
-                data = 123,
-                accessInfo = (new MemoryAccessInfo).Lit(
-                  _.accessType -> Store,
-                  _.accessWidth -> Byte,
-                  _.signed -> false.B
-                )
+          Some(
+            LSQ2Memory(
+              address = 150,
+              tag = 10,
+              data = 123,
+              accessInfo = (new MemoryAccessInfo).Lit(
+                _.accessType -> Store,
+                _.accessWidth -> Byte,
+                _.signed -> false.B
               )
-            ),
-            None
+            )
           )
         )
         c.io.head.get.expect(1)
         c.io.tail.get.expect(0)
-        c.clock.step(1)
+        c.clock.step(2)
 
         c.io.head.get.expect(1)
         c.io.tail.get.expect(1)
         c.clock.step(1)
     }
   }
-  // (if runParallel = 2)
-  // c.setDecoder(values =
-  //   Seq(Some(DecodeEnqueue(addressTag = ???, storeDataTag = ???, storeData = ???, opcode = ???, function3 = ???)),
-  //     Some(DecodeEnqueue(addressTag = ???, storeDataTag = ???, storeData = ???, opcode = ???, function3 = ???))))
-  // c.setExecutor(values =
-  //   Seq(Some(LSQfromALU(valid = ???, destinationtag = ???, value = ???)),
-  //     Some(LSQfromALU(valid = ???, destinationtag = ???, value = ???))))
-  //  c.expectMemory(values =
-  //    Seq(Some(LSQ2Memory(address = ???, tag = ???, data = ???, opcode = ???, function3 = ???)),
-  //      Some(LSQ2Memory(address = ???, tag = ???, data = ???, opcode = ???, function3 = ???))))
 
   it should "2 Parallel load check" in {
     test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
@@ -351,9 +325,9 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.tail.get.expect(0)
         c.io.decoders(0).ready.expect(true)
         c.io.decoders(1).ready.expect(true)
-        c.io.memory(0).ready.poke(true)
-        c.io.memory(1).ready.poke(true)
-        c.expectMemory(Seq(None, None))
+        c.io.memory.ready.poke(true)
+        c.io.memory.ready.poke(true)
+        c.expectMemory(None)
 
         // 値のセット
         c.setDecoder(values =
@@ -390,40 +364,56 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.head.get.expect(2)
         c.io.tail.get.expect(0)
         c.setOutputs(values =
-          Seq(
-            Some(LSQfromALU(valid = true, destinationtag = 10, value = 150)),
-            Some(LSQfromALU(valid = true, destinationtag = 11, value = 100)),
-            None
+          Some(
+            LSQfromALU(
+              valid = true,
+              destinationtag = 10,
+              value = 150,
+              resultType = ResultType.LoadStoreAddress
+            )
           )
         )
-        c.clock.step(1)
+        c.clock.step()
+
+        c.expectMemory(values =
+          Some(
+            LSQ2Memory(
+              address = 150,
+              tag = 10,
+              data = 0,
+              accessInfo = (new MemoryAccessInfo).Lit(
+                _.accessType -> Load,
+                _.accessWidth -> Byte,
+                _.signed -> false.B
+              )
+            )
+          )
+        )
+
+        c.setOutputs(
+          Some(
+            LSQfromALU(
+              valid = true,
+              destinationtag = 11,
+              value = 100,
+              resultType = ResultType.LoadStoreAddress
+            )
+          )
+        )
+        c.clock.step()
 
         // 値の確認
         c.setOutputs()
         c.expectMemory(values =
-          Seq(
-            Some(
-              LSQ2Memory(
-                address = 150,
-                tag = 10,
-                data = 0,
-                accessInfo = (new MemoryAccessInfo).Lit(
-                  _.accessType -> Load,
-                  _.accessWidth -> Byte,
-                  _.signed -> false.B
-                )
-              )
-            ),
-            Some(
-              LSQ2Memory(
-                address = 100,
-                tag = 11,
-                data = 0,
-                accessInfo = (new MemoryAccessInfo).Lit(
-                  _.accessType -> Load,
-                  _.accessWidth -> Byte,
-                  _.signed -> false.B
-                )
+          Some(
+            LSQ2Memory(
+              address = 100,
+              tag = 11,
+              data = 0,
+              accessInfo = (new MemoryAccessInfo).Lit(
+                _.accessType -> Load,
+                _.accessWidth -> Byte,
+                _.signed -> false.B
               )
             )
           )
@@ -442,9 +432,9 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.tail.get.expect(0)
         c.io.decoders(0).ready.expect(true)
         c.io.decoders(1).ready.expect(true)
-        c.io.memory(0).ready.poke(true)
-        c.io.memory(1).ready.poke(true)
-        c.expectMemory(Seq(None, None))
+        c.io.memory.ready.poke(true)
+        c.io.memory.ready.poke(true)
+        c.expectMemory(None)
 
         // 値のセット
         c.setDecoder(values =
@@ -481,19 +471,29 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.head.get.expect(2)
         c.io.tail.get.expect(0)
         c.setOutputs(values =
-          Seq(
-            Some(LSQfromALU(valid = true, destinationtag = 10, value = 150)),
-            Some(LSQfromALU(valid = true, destinationtag = 5, value = 100)),
-            None
+          Some(
+            LSQfromALU(
+              valid = true,
+              destinationtag = 10,
+              value = 150,
+              resultType = ResultType.LoadStoreAddress
+            )
           )
+        )
+        c.clock.step(1)
+        c.setOutputs(values =
+          Some(LSQfromALU(valid = true, destinationtag = 5, value = 100))
         )
         c.clock.step(1)
 
         c.setOutputs(values =
-          Seq(
-            Some(LSQfromALU(valid = true, destinationtag = 8, value = 456)),
-            Some(LSQfromALU(valid = true, destinationtag = 11, value = 789)),
-            None
+          Some(
+            LSQfromALU(
+              valid = true,
+              destinationtag = 11,
+              value = 456,
+              resultType = ResultType.LoadStoreAddress
+            )
           )
         )
         c.setReorderBuffer(
@@ -509,40 +509,34 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
           DestinationTags = Seq(11, 15)
         )
         c.expectMemory(values =
-          Seq(
-            Some(
-              LSQ2Memory(
-                address = 150,
-                tag = 10,
-                data = 100,
-                accessInfo = (new MemoryAccessInfo).Lit(
-                  _.accessType -> Store,
-                  _.accessWidth -> Byte,
-                  _.signed -> false.B
-                )
+          Some(
+            LSQ2Memory(
+              address = 150,
+              tag = 10,
+              data = 100,
+              accessInfo = (new MemoryAccessInfo).Lit(
+                _.accessType -> Store,
+                _.accessWidth -> Byte,
+                _.signed -> false.B
               )
-            ),
-            None
+            )
           )
         )
         c.clock.step(1)
 
         c.setReorderBuffer()
         c.expectMemory(values =
-          Seq(
-            Some(
-              LSQ2Memory(
-                address = 789,
-                tag = 11,
-                data = 123,
-                accessInfo = (new MemoryAccessInfo).Lit(
-                  _.accessType -> Store,
-                  _.accessWidth -> Byte,
-                  _.signed -> false.B
-                )
+          Some(
+            LSQ2Memory(
+              address = 456,
+              tag = 11,
+              data = 123,
+              accessInfo = (new MemoryAccessInfo).Lit(
+                _.accessType -> Store,
+                _.accessWidth -> Byte,
+                _.signed -> false.B
               )
-            ),
-            None
+            )
           )
         )
         c.clock.step(2)
@@ -559,9 +553,9 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.tail.get.expect(0)
         c.io.decoders(0).ready.expect(true)
         c.io.decoders(1).ready.expect(true)
-        c.io.memory(0).ready.poke(true)
-        c.io.memory(1).ready.poke(true)
-        c.expectMemory(Seq(None, None))
+        c.io.memory.ready.poke(true)
+        c.io.memory.ready.poke(true)
+        c.expectMemory(None)
 
         // 値のセット
         c.setDecoder(values =
@@ -615,74 +609,79 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         // invalid instruction + load instruction
         c.io.head.get.expect(2)
         c.io.tail.get.expect(0)
-        c.setOutputs(values =
-          Seq(
-            Some(
-              LSQfromALU(valid = true, destinationtag = 10, value = 150)
-            ), // 1st load address
-            Some(LSQfromALU(valid = true, destinationtag = 11, value = 100)),
-            None
-          )
-        ) // store address
+        c.setOutputs(
+          Some(
+            LSQfromALU(
+              valid = true,
+              destinationtag = 10,
+              value = 150,
+              resultType = ResultType.LoadStoreAddress
+            )
+          ) // 1st load address
+        )
         c.clock.step(1)
+        c.setDecoder()
+
+        c.expectMemory(values =
+          Some(
+            LSQ2Memory(
+              address = 150,
+              tag = 10,
+              data = 0,
+              accessInfo = (new MemoryAccessInfo).Lit(
+                _.accessType -> Load,
+                _.accessWidth -> Byte,
+                _.signed -> false.B
+              )
+            )
+          )
+        )
+
+        c.setOutputs(
+          Some(
+            LSQfromALU(
+              valid = true,
+              destinationtag = 11,
+              value = 100,
+              resultType = ResultType.LoadStoreAddress
+            )
+          ) // store address
+        )
+        c.clock.step()
 
         // 値の確認
         c.setDecoder()
+
         c.io.head.get.expect(3)
         c.io.tail.get.expect(0)
         c.setOutputs(values =
-          Seq(
-            Some(
-              LSQfromALU(valid = true, destinationtag = 12, value = 123)
-            ), // invalid
-            Some(LSQfromALU(valid = true, destinationtag = 13, value = 500)),
-            None
+          Some(
+            LSQfromALU(
+              valid = true,
+              destinationtag = 13,
+              value = 123,
+              resultType = ResultType.LoadStoreAddress
+            )
           )
         ) // 2nd load address
-        c.expectMemory(values =
-          Seq(
-            Some(
-              LSQ2Memory(
-                address = 150,
-                tag = 10,
-                data = 0,
-                accessInfo = (new MemoryAccessInfo).Lit(
-                  _.accessType -> Load,
-                  _.accessWidth -> Byte,
-                  _.signed -> false.B
-                )
-              )
-            ),
-            None
-          )
-        )
         c.clock.step(1)
 
         c.setOutputs(values =
-          Seq(
-            Some(
-              LSQfromALU(valid = true, destinationtag = 6, value = 456)
-            ), // store data
-            Some(
-              LSQfromALU(valid = true, destinationtag = 14, value = 200)
-            ), // invalid
-            None
-          )
+          Some(
+            LSQfromALU(valid = true, destinationtag = 6, value = 456)
+          ) // store data
         )
         // store命令を飛び越えてload命令を送出
         c.expectMemory(values =
-          Seq(
-            None,
-            Some(
-              LSQ2Memory(
-                address = 500,
-                tag = 13,
-                data = 0,
-                accessInfo = (new MemoryAccessInfo).Lit(
-                  _.accessType -> Load,
-                  _.accessWidth -> Byte,
-                  _.signed -> false.B
-                )
+          Some(
+            LSQ2Memory(
+              address = 123,
+              tag = 13,
+              data = 0,
+              accessInfo = (new MemoryAccessInfo).Lit(
+                _.accessType -> Load,
+                _.accessWidth -> Byte,
+                _.signed -> false.B
               )
             )
           )
@@ -694,24 +693,21 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
           DestinationTags = Seq(1, 11)
         )
         c.setOutputs()
-        c.expectMemory(Seq(None, None))
+        c.expectMemory(None)
         c.clock.step(1)
 
         c.expectMemory(values =
-          Seq(
-            Some(
-              LSQ2Memory(
-                address = 100,
-                tag = 11,
-                data = 456,
-                accessInfo = (new MemoryAccessInfo).Lit(
-                  _.accessType -> Store,
-                  _.accessWidth -> Byte,
-                  _.signed -> false.B
-                )
+          Some(
+            LSQ2Memory(
+              address = 100,
+              tag = 11,
+              data = 456,
+              accessInfo = (new MemoryAccessInfo).Lit(
+                _.accessType -> Store,
+                _.accessWidth -> Byte,
+                _.signed -> false.B
               )
-            ),
-            None
+            )
           )
         )
         c.clock.step(2)
@@ -724,7 +720,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
     // runParallel = 1, maxRegisterFileCommitCount = 1
     test(
       new LoadStoreQueueWrapper()(
-        defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1)
+        defaultParams.copy(decoderPerThread = 1, maxRegisterFileCommitCount = 1)
       )
     ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize()
@@ -732,9 +728,9 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.head.get.expect(0)
       c.io.tail.get.expect(0)
       c.io.decoders(0).ready.expect(true)
-      c.io.memory(0).ready.poke(true)
+      c.io.memory.ready.poke(true)
       // c.io.memory(1).ready.poke(true) (if runParallel = 2)
-      c.expectMemory(Seq(None))
+      c.expectMemory(None)
       // c.expectMemory(Seq(None, None)) (if runParallel = 2)
 
       // ストア命令を追加
@@ -784,25 +780,30 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.clock.step(2)
       // ロード命令のアドレス値を先に指定
       c.setOutputs(values =
-        Seq(
-          Some(LSQfromALU(valid = true, destinationtag = 11, value = 150)),
-          None
+        Some(
+          LSQfromALU(
+            valid = true,
+            destinationtag = 11,
+            value = 150,
+            resultType = ResultType.LoadStoreAddress
+          )
         )
       )
-      c.expectMemory(Seq(None))
+      c.expectMemory(None)
 
       c.clock.step()
       c.initialize()
       // まだ出力はない
-      c.expectMemory(Seq(None))
+      c.expectMemory(None)
 
       c.clock.step()
       // ストア命令の値確定
       c.setOutputs(values =
-        Seq(
-          Some(LSQfromALU(valid = true, destinationtag = 10, value = 150)),
-          Some(LSQfromALU(valid = true, destinationtag = 5, value = 300))
-        )
+        Some(LSQfromALU(valid = true, destinationtag = 10, value = 150,resultType = ResultType.LoadStoreAddress))
+      )
+      c.clock.step()
+      c.setOutputs(values =
+        Some(LSQfromALU(valid = true, destinationtag = 5, value = 300))
       )
       c.setReorderBuffer(Seq(10), Seq(true))
 
@@ -810,17 +811,15 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize()
       // ストア命令送出
       c.expectMemory(values =
-        Seq(
-          Some(
-            LSQ2Memory(
-              address = 150,
-              tag = 10,
-              data = 300,
-              accessInfo = (new MemoryAccessInfo).Lit(
-                _.accessType -> Store,
-                _.accessWidth -> Byte,
-                _.signed -> false.B
-              )
+        Some(
+          LSQ2Memory(
+            address = 150,
+            tag = 10,
+            data = 300,
+            accessInfo = (new MemoryAccessInfo).Lit(
+              _.accessType -> Store,
+              _.accessWidth -> Byte,
+              _.signed -> false.B
             )
           )
         )
@@ -829,23 +828,21 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.clock.step()
       // ロード命令送出
       c.expectMemory(values =
-        Seq(
-          Some(
-            LSQ2Memory(
-              address = 150,
-              tag = 11,
-              data = 0,
-              accessInfo = (new MemoryAccessInfo).Lit(
-                _.accessType -> Load,
-                _.accessWidth -> Byte,
-                _.signed -> false.B
-              )
+        Some(
+          LSQ2Memory(
+            address = 150,
+            tag = 11,
+            data = 0,
+            accessInfo = (new MemoryAccessInfo).Lit(
+              _.accessType -> Load,
+              _.accessWidth -> Byte,
+              _.signed -> false.B
             )
           )
         )
       )
 
-      c.clock.step()
+      c.clock.step(2)
 
       c.io.tail.get.expect(2)
       c.io.head.get.expect(2)

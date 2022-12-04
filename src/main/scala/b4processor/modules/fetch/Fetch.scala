@@ -12,14 +12,15 @@ import chisel3.util._
 import chisel3.stage.ChiselStage
 
 /** 命令フェッチ用モジュール */
-class Fetch(implicit params: Parameters) extends Module {
+class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
 
     /** 命令キャッシュ */
-    val cache = Flipped(Vec(params.runParallel, new InstructionCache2Fetch))
+    val cache =
+      Flipped(Vec(params.decoderPerThread, new InstructionCache2Fetch))
 
     /** 分岐予測 */
-    val prediction = Vec(params.runParallel, new Fetch2BranchPrediction)
+    val prediction = Vec(params.decoderPerThread, new Fetch2BranchPrediction)
 
     /** リオーダバッファの中身が空である */
     val reorderBufferEmpty = Input(Bool())
@@ -38,7 +39,7 @@ class Fetch(implicit params: Parameters) extends Module {
     val nextPC = if (params.debug) Some(Output(UInt(64.W))) else None
     val branchTypes =
       if (params.debug)
-        Some(Output(Vec(params.runParallel, new BranchType.Type)))
+        Some(Output(Vec(params.decoderPerThread, new BranchType.Type)))
       else None
   })
 
@@ -50,7 +51,7 @@ class Fetch(implicit params: Parameters) extends Module {
 
   var nextPC = pc
   var nextWait = waiting
-  for (i <- 0 until params.runParallel) {
+  for (i <- 0 until params.decoderPerThread) {
     val decoder = io.fetchBuffer.decoder(i)
     val cache = io.cache(i)
 
@@ -105,11 +106,10 @@ class Fetch(implicit params: Parameters) extends Module {
   // 停止している際の挙動
   when(waiting =/= WaitingReason.None) {
     when(waiting === WaitingReason.Branch || waiting === WaitingReason.JALR) {
-      for (e <- io.collectedBranchAddresses.addresses) {
-        when(e.valid) {
-          waiting := WaitingReason.None
-          pc := e.programCounter
-        }
+      val e = io.collectedBranchAddresses.addresses
+      when(e.valid && e.bits.threadId === threadId.U) {
+        waiting := WaitingReason.None
+        pc := e.bits.programCounter
       }
     }
     when(waiting === WaitingReason.Fence || waiting === WaitingReason.FenceI) {
@@ -141,7 +141,7 @@ class Fetch(implicit params: Parameters) extends Module {
 object Fetch extends App {
   implicit val params = Parameters()
   (new ChiselStage).emitVerilog(
-    new Fetch(),
+    new Fetch(0),
     args = Array(
       "--emission-options=disableMemRandomization,disableRegisterRandomization"
     )

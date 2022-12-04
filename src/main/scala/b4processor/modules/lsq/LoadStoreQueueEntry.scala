@@ -71,11 +71,11 @@ object LoadStoreQueueEntry {
 
     entry.info := DontCare
 
-    entry.addressAndLoadResultTag := Tag(0)
+    entry.addressAndLoadResultTag := Tag(0,0)
     entry.address := 0.U
     entry.addressValid := false.B
 
-    entry.storeDataTag := Tag(0)
+    entry.storeDataTag := Tag(0,0)
     entry.storeData := 0.U
     entry.storeDataValid := false.B
 

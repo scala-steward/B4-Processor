@@ -1,7 +1,7 @@
 package b4processor.modules.memory
 
 import b4processor.Parameters
-import b4processor.connections.OutputValue
+import b4processor.connections.{OutputValue, ResultType}
 import b4processor.structures.memoryAccess.MemoryAccessWidth
 import b4processor.utils.{AXI, BurstSize, BurstType, FIFO, Lock, Response, Tag}
 import chisel3._
@@ -14,10 +14,10 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     val dataWriteRequests = Flipped(Irrevocable(new MemoryWriteTransaction))
     val dataReadRequests = Flipped(Irrevocable(new MemoryReadTransaction))
     val instructionFetchRequest =
-      Flipped(Irrevocable(new MemoryReadTransaction))
+      Vec(params.threads, Flipped(Irrevocable(new MemoryReadTransaction)))
     val dataReadOut = new OutputValue
     val dataWriteOut = Valid(new WriteResponse)
-    val instructionOut = Valid(new InstructionResponse)
+    val instructionOut = Vec(params.threads, Valid(new InstructionResponse))
     val coordinator = new AXI(64, 64)
   })
 
@@ -58,17 +58,18 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     readAddress.bits.BURST := BurstType.Incr
   }
   io.dataWriteRequests.ready := false.B
-  io.dataReadOut.validAsResult := false.B
-  io.dataReadOut.validAsLoadStoreAddress := false.B
+  io.dataReadOut.resultType := ResultType.Result
   io.dataReadOut.value := 0.U
   io.dataReadOut.isError := false.B
-  io.dataReadOut.tag := Tag(0)
-  io.instructionFetchRequest.ready := false.B
+  io.dataReadOut.tag := Tag(0, 0)
   io.dataReadRequests.ready := false.B
   io.dataWriteOut.valid := false.B
-  io.instructionOut.valid := false.B
-  io.instructionOut.bits.inner := 0.U
   io.dataWriteOut.bits := DontCare
+  for (tid <- 0 until params.threads) {
+    io.instructionFetchRequest(tid).ready := false.B
+    io.instructionOut(tid).valid := false.B
+    io.instructionOut(tid).bits.inner := 0.U
+  }
 
   // READ OPERATION -------------------------------------------
   val readQueue = Module(new FIFO(3)(new Bundle {
@@ -83,10 +84,18 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
   readQueue.input.valid := false.B
   readQueue.input.bits := DontCare
 
-  private val arbiter = Module(new RRArbiter(new MemoryReadTransaction(), 2))
-  arbiter.io.in(0) <> io.instructionFetchRequest
-  arbiter.io.in(1) <> io.dataReadRequests
-  private val readTransaction = arbiter.io.out
+  private val instructionsArbiter = Module(
+    new RRArbiter(new MemoryReadTransaction(), params.threads)
+  )
+  for (tid <- 0 until params.threads)
+    instructionsArbiter.io.in(tid) <> io.instructionFetchRequest(tid)
+
+  private val instructionOrReadDataArbiter = Module(
+    new Arbiter(new MemoryReadTransaction(), 2)
+  )
+  instructionOrReadDataArbiter.io.in(0) <> instructionsArbiter.io.out
+  instructionOrReadDataArbiter.io.in(1) <> io.dataReadRequests
+  private val readTransaction = instructionOrReadDataArbiter.io.out
   readTransaction.ready := false.B
 
   when(!readQueue.full) {
@@ -119,9 +128,10 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
           burstLen := 0.U
         }
         when(readQueue.output.bits.isInstruction) {
-          io.instructionOut.valid := true.B
+          val tid = readQueue.output.bits.tag.threadId
+          io.instructionOut(tid).valid := true.B
           val data = io.coordinator.read.bits.DATA
-          io.instructionOut.bits.inner := data
+          io.instructionOut(tid).bits.inner := data
         }.otherwise {
           io.dataReadOut.tag := readQueue.output.bits.tag
           val data = io.coordinator.read.bits.DATA
@@ -166,8 +176,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
               (readQueue.output.bits.size === MemoryAccessWidth.DoubleWord) -> data
             )
           )
-          io.dataReadOut.validAsResult := true.B
-          io.dataReadOut.validAsLoadStoreAddress := false.B
+          io.dataReadOut.resultType := ResultType.Result
           io.dataReadOut.isError := io.coordinator.read.bits.RESP =/= Response.Okay
         }
       }
@@ -234,7 +243,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
 
 object ExternalMemoryInterface extends App {
   implicit val params = {
-    Parameters(runParallel = 1, tagWidth = 4)
+    Parameters(decoderPerThread = 1, tagWidth = 4)
   }
   (new ChiselStage).emitVerilog(
     new ExternalMemoryInterface,

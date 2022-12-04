@@ -12,11 +12,12 @@ import chisel3.util._
   *
   * とても単純なキャッシュ機構
   */
-class InstructionMemoryCache(implicit params: Parameters) extends Module {
+class InstructionMemoryCache(threadId: Int)(implicit params: Parameters)
+    extends Module {
   val io = IO(new Bundle {
 
     /** フェッチ */
-    val fetch = Vec(params.runParallel, new InstructionCache2Fetch)
+    val fetch = Vec(params.decoderPerThread, new InstructionCache2Fetch)
 
     val memory = new Bundle {
       val request = Irrevocable(new MemoryReadTransaction())
@@ -82,7 +83,8 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
 
     val tmp_transaction = MemoryReadTransaction.ReadInstruction(
       Cat(request, readIndex, 0.U(3.W)),
-      2
+      2,
+      threadId
     )
     transaction := tmp_transaction
     io.memory.request.valid := true.B
@@ -123,7 +125,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
 object InstructionMemoryCache extends App {
   implicit val params = Parameters()
   (new ChiselStage).emitVerilog(
-    new InstructionMemoryCache(),
+    new InstructionMemoryCache(0),
     args = Array(
       "--emission-options=disableMemRandomization,disableRegisterRandomization"
     )

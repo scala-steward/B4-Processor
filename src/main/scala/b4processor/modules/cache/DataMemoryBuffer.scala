@@ -6,11 +6,8 @@ import b4processor.modules.memory.{
   MemoryReadTransaction,
   MemoryWriteTransaction
 }
-import b4processor.structures.memoryAccess.{
-  MemoryAccessInfo,
-  MemoryAccessType,
-  MemoryAccessWidth
-}
+import b4processor.structures.memoryAccess.{MemoryAccessType, MemoryAccessWidth}
+import b4processor.utils.FIFO
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
@@ -23,55 +20,30 @@ import chisel3.stage.ChiselStage
 class DataMemoryBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val dataIn =
-      Vec(params.maxRegisterFileCommitCount, Flipped(new LoadStoreQueue2Memory))
+      Vec(params.threads, Flipped(Irrevocable(new LoadStoreQueue2Memory)))
     val dataReadRequest = Irrevocable(new MemoryReadTransaction())
     val dataWriteRequest = Irrevocable(new MemoryWriteTransaction())
-    val head =
-      if (params.debug) Some(Output(UInt(params.loadStoreQueueIndexWidth.W)))
-      else None
-    val tail =
-      if (params.debug) Some(Output(UInt(params.loadStoreQueueIndexWidth.W)))
-      else None
   })
 
-  // isLoad = 1(load), 0(store) (bit数削減)
-  val defaultEntry = DataMemoryBufferEntry.default
-
-  val head = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
-  val tail = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
-  private val empty = tail === head
-  private val full = head + 1.U === tail
-  val buffer = RegInit(
-    VecInit(
-      Seq.fill(math.pow(2, params.loadStoreQueueIndexWidth).toInt)(defaultEntry)
-    )
+  private val inputArbiter = Module(
+    new RRArbiter(new DataMemoryBufferEntry, params.threads)
   )
+  for (tid <- 0 until params.threads)
+    inputArbiter.io.in(tid) <> io.dataIn(tid)
 
-  var insertIndex = head
-  // enqueue
-  for (i <- 0 until params.maxRegisterFileCommitCount) {
-    val Input = io.dataIn(i)
-    Input.ready := tail =/= insertIndex + 1.U
-
-    when(Input.valid) {
-      buffer(insertIndex) := DataMemoryBufferEntry.validEntry(
-        address = Input.bits.address,
-        tag = Input.bits.tag,
-        data = Input.bits.data,
-        accessInfo = Input.bits.accessInfo
-      )
-    }
-    insertIndex = insertIndex + Input.valid.asUInt
-  }
-  head := insertIndex
+  private val buffer = Module(
+    new FIFO(params.loadStoreQueueIndexWidth)(new DataMemoryBufferEntry)
+  )
+  buffer.input <> inputArbiter.io.out
+  buffer.output.ready := false.B
 
   io.dataReadRequest.bits := DontCare
   io.dataReadRequest.valid := false.B
   io.dataWriteRequest.bits := DontCare
   io.dataWriteRequest.valid := false.B
 
-  when(!empty) {
-    val entry = buffer(tail)
+  when(!buffer.empty) {
+    val entry = buffer.output.bits
     when(entry.accessInfo.accessType === MemoryAccessType.Load) {
       io.dataReadRequest.valid := true.B
       io.dataReadRequest.bits.address := entry.address
@@ -79,9 +51,9 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
       io.dataReadRequest.bits.outputTag := entry.tag
       io.dataReadRequest.bits.signed := entry.accessInfo.signed
       when(io.dataReadRequest.ready) {
-        tail := tail + 1.U
+        buffer.output.ready := true.B
       }
-    }.elsewhen(buffer(tail).accessInfo.accessType === MemoryAccessType.Store) {
+    }.elsewhen(entry.accessInfo.accessType === MemoryAccessType.Store) {
       io.dataWriteRequest.valid := true.B
       val addressUpper = entry.address(63, 3)
       val addressLower = entry.address(2, 0)
@@ -127,25 +99,9 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
       )
       io.dataReadRequest.bits.outputTag := entry.tag
       when(io.dataWriteRequest.ready) {
-        tail := tail + 1.U
+        buffer.output.ready := true.B
       }
     }
-  }
-
-  if (params.debug) {
-    io.head.get := head
-    io.tail.get := tail
-    //    for (i <- 0 until params.maxRegisterFileCommitCount) {
-    //      printf(p"io.dataIn(${i}).valid = ${io.dataIn(i).valid}\n")
-    //    }
-    //    for (i <- 0 until pow(2, params.loadStoreQueueIndexWidth).toInt) {
-    //      printf(p"buffer(${i}).tag = ${buffer(i).tag}\n")
-    //    }
-    //    printf(p"io.dataOut.ready = ${io.dataOut.ready}\n")
-    //    printf(p"io.dataOut.valid = ${io.dataOut.valid}\n")
-    //    printf(p"io.dataOut.tag = ${io.dataOut.bits.tag}\n")
-    //    printf(p"head = ${head}\n")
-    //    printf(p"tail = ${tail}\n\n")
   }
 }
 

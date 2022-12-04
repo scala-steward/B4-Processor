@@ -22,8 +22,9 @@ import chisel3.util._
   * @param params
   *   パラメータ
   */
-class Decoder(instructionOffset: Int)(implicit params: Parameters)
-    extends Module {
+class Decoder(instructionOffset: Int, threadId: Int)(implicit
+  params: Parameters
+) extends Module {
   val io = IO(new Bundle {
     val instructionFetch = Flipped(new FetchBuffer2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer
@@ -171,7 +172,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
     io.decodersAfter(instructionOffset).destinationRegister := instRd
     io.decodersAfter(instructionOffset).valid := true.B
   } otherwise {
-    io.decodersAfter(instructionOffset).destinationTag := Tag(0)
+    io.decodersAfter(instructionOffset).destinationTag := Tag(threadId, 0)
     io.decodersAfter(instructionOffset).destinationRegister := 0.U
     io.decodersAfter(instructionOffset).valid := false.B
   }
@@ -202,8 +203,16 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
     )
   )
   rs.destinationTag := io.reorderBuffer.destination.destinationTag
-  rs.sourceTag1 := Mux(valueSelector1.io.value.valid, Tag(0), sourceTag1.tag)
-  rs.sourceTag2 := Mux(valueSelector2.io.value.valid, Tag(0), sourceTag2.tag)
+  rs.sourceTag1 := Mux(
+    valueSelector1.io.value.valid,
+    Tag(threadId, 0),
+    sourceTag1.tag
+  )
+  rs.sourceTag2 := Mux(
+    valueSelector2.io.value.valid,
+    Tag(threadId, 0),
+    sourceTag2.tag
+  )
   rs.ready1 := valueSelector1.io.value.valid
   rs.ready2 := valueSelector2.io.value.valid
   rs.value1 := valueSelector1.io.value.bits
@@ -223,7 +232,7 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
       io.loadStoreQueue.bits.storeData := valueSelector2.io.value.bits
       io.loadStoreQueue.bits.storeDataValid := valueSelector2.io.value.valid
     }.otherwise {
-      io.loadStoreQueue.bits.storeDataTag := Tag(0)
+      io.loadStoreQueue.bits.storeDataTag := Tag(threadId, 0)
       io.loadStoreQueue.bits.storeData := 0.U
       io.loadStoreQueue.bits.storeDataValid := true.B
     }
@@ -234,5 +243,5 @@ class Decoder(instructionOffset: Int)(implicit params: Parameters)
 
 object Decoder extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitVerilog(new Decoder(0))
+  (new ChiselStage).emitVerilog(new Decoder(0, 0))
 }
