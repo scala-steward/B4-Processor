@@ -99,7 +99,7 @@ jobs:
           name: sbt-target
 
       - name: Run tests
-        run: sbt "testOnly *B4ProcessorCompileTest"
+        run: sbt "testOnly *B4ProcessorElaborateTest"
 
   test-programs:
     name: プログラムの動作テスト

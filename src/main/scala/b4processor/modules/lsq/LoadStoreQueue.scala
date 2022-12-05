@@ -82,13 +82,15 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   for (buf <- buffer) {
     when(output.valid && buf.valid) {
       when(output.bits.resultType === ResultType.LoadStoreAddress) {
-        when(buf.addressAndLoadResultTag === output.bits.tag) {
+        when(
+          buf.addressAndLoadResultTag === output.bits.tag && !buf.addressValid
+        ) {
           buf.address := output.bits.value
           buf.addressValid := true.B
         }
       }
       when(output.bits.resultType === ResultType.Result) {
-        when(buf.storeDataTag === output.bits.tag) {
+        when(buf.storeDataTag === output.bits.tag && !buf.storeDataValid) {
           buf.storeData := output.bits.value
           buf.storeDataValid := true.B
         }

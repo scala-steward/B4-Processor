@@ -64,11 +64,16 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
     this.clock.step(10)
   }
 
-  def checkForRegister(regNum: Int, value: BigInt, timeout: Int = 500): Unit = {
+  def checkForRegister(
+                        regNum: Int,
+                        value: BigInt,
+                        timeout: Int = 500,
+                        thread: Int = 0
+                      ): Unit = {
     this.clock.setTimeout(timeout)
-    while (this.io.registerFileContents.get(0)(regNum).peekInt() != value)
+    while (this.io.registerFileContents.get(thread)(regNum).peekInt() != value)
       this.clock.step()
-    this.io.registerFileContents.get(0)(regNum).expect(value)
+    this.io.registerFileContents.get(thread)(regNum).expect(value)
     this.clock.step(3)
   }
 }

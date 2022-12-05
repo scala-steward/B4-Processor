@@ -15,7 +15,7 @@ class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
     )
 
   it should "save a value" in {
-    test(new RegisterFile) { c =>
+    test(new RegisterFile(0)) { c =>
       c.io.reorderBuffer(0).valid.poke(true)
       c.io.reorderBuffer(0).bits.value.poke(123)
       c.io.reorderBuffer(0).bits.destinationRegister.poke(5)
@@ -28,7 +28,7 @@ class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "have no op on 0" in {
-    test(new RegisterFile) { c =>
+    test(new RegisterFile(0)) { c =>
       c.io.reorderBuffer(0).valid.poke(true)
       c.io.reorderBuffer(0).bits.value.poke(123)
       c.io.reorderBuffer(0).bits.destinationRegister.poke(0)
@@ -42,7 +42,7 @@ class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "resolve multiple inputs and outputs" in {
     test(
-      new RegisterFile()(detfaultParams.copy(maxRegisterFileCommitCount = 2))
+      new RegisterFile(0)(detfaultParams.copy(maxRegisterFileCommitCount = 2))
     ) { c =>
       c.io.reorderBuffer(0).valid.poke(true)
       c.io.reorderBuffer(0).bits.value.poke(123)
@@ -62,7 +62,7 @@ class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "resolve multiple inputs overlapping" in {
     test(
-      new RegisterFile()(detfaultParams.copy(maxRegisterFileCommitCount = 2))
+      new RegisterFile(0)(detfaultParams.copy(maxRegisterFileCommitCount = 2))
     ) { c =>
       c.io.reorderBuffer(0).valid.poke(true)
       c.io.reorderBuffer(0).bits.value.poke(123)

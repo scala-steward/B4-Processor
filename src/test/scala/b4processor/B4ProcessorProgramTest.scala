@@ -26,6 +26,21 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         c.checkForRegister(13, 20, 40)
       }
   }
+  // branchプログラムが実行できる
+  it should "execute branch with no parallel 2 thread" in {
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 2, decoderPerThread = 1)
+      )
+    )
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.initialize("riscv-sample-programs/branch/branch")
+        c.checkForRegister(13, 20, 40, 0)
+        c.checkForRegister(13, 20, 40, 1)
+      }
+  }
 
   // フィボナッチ数列の計算が同時発行数1でできる
   it should "execute fibonacci with no parallel" in {
@@ -93,6 +108,22 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       ) { c =>
         c.initialize("riscv-sample-programs/many_add/many_add")
         c.checkForRegister(1, 8, 70)
+      }
+  }
+
+  // 並列実行できそうな大量のadd命令を同時発行数1で試す
+  it should "execute many_add with no parallel 2 thread" in {
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 2, decoderPerThread = 1)
+      )
+    )
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.initialize("riscv-sample-programs/many_add/many_add")
+        c.checkForRegister(1, 8, 70, 0)
+        c.checkForRegister(1, 8, 70, 1)
       }
   }
 

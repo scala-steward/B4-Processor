@@ -48,7 +48,7 @@ Disassembly of section .debug_line:
 0000000000000000 <.debug_line>:
    0:	0094                	c.addi4spn	x13,x2,64
    2:	0000                	c.unimp
-   4:	00220003          	lb	x0,2(x4) # fffffffffffe1002 <__STACK_START_+0xffffffffbffe0bc2>
+   4:	00220003          	lb	x0,2(x4) # fffffffffffe1002 <L3+0xffffffffbffe0fca>
    8:	0000                	c.unimp
    a:	0101                	c.addi	x2,0
    c:	000d0efb          	0xd0efb

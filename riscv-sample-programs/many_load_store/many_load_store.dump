@@ -27,7 +27,7 @@ Disassembly of section .text:
 
 Disassembly of section .data:
 
-000000004000004c <__STACK_START_-0x414>:
+000000004000004c <.data>:
     4000004c:	0000                	c.unimp
 	...
 

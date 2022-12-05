@@ -31,7 +31,7 @@ Disassembly of section .debug_line:
 
 0000000000000000 <.debug_line>:
    0:	00000053          	fadd.s	f0,f0,f0,rne
-   4:	00230003          	lb	x0,2(x6) # ffffffffffffa002 <__STACK_START_+0xffffffffbfff9be2>
+   4:	00230003          	lb	x0,2(x6) # ffffffffffffa002 <__var_place+0xffffffffbfff9fea>
    8:	0000                	c.unimp
    a:	0101                	c.addi	x2,0
    c:	000d0efb          	0xd0efb
@@ -53,7 +53,7 @@ Disassembly of section .debug_line:
   32:	4000                	c.lw	x8,0(x8)
   34:	0000                	c.unimp
   36:	0000                	c.unimp
-  38:	09020313          	addi	x6,x4,144 # fffffffffffe1090 <__STACK_START_+0xffffffffbffe0c70>
+  38:	09020313          	addi	x6,x4,144 # fffffffffffe1090 <__var_place+0xffffffffbffe1078>
   3c:	0008                	0x8
   3e:	0301                	c.addi	x6,0
   40:	0902                	c.slli64	x18

@@ -10,11 +10,11 @@ import chisel3.stage.ChiselStage
 import chisel3.util._
 
 /** レジスタファイル
-  *
-  * @param params
-  *   パラメータ
-  */
-class RegisterFile(implicit params: Parameters) extends Module {
+ *
+ * @param params
+ * パラメータ
+ */
+class RegisterFile(threadId: Int)(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
 
     /** デコーダへ */
@@ -29,8 +29,11 @@ class RegisterFile(implicit params: Parameters) extends Module {
     val values = if (params.debug) Some(Output(Vec(32, UInt(64.W)))) else None
   })
 
-  /** レジスタx1~x31 */
-  val registers = RegInit(VecInit(Seq.fill(31)(0.U(64.W))))
+  /** レジスタx1~x31 tpのみthreadIdで初期化
+   */
+  val registers = RegInit(
+    VecInit((1 until 32).map(n => if (n == 4) threadId.U(64.W) else 0.U(64.W)))
+  )
 
   for (regIndex <- 1 until 32) {
     // 最新の情報に更新したいのでリオーダバッファから渡されたデータを逆順に見る
@@ -72,7 +75,7 @@ class RegisterFile(implicit params: Parameters) extends Module {
 object RegisterFile extends App {
   implicit val params = Parameters()
   (new ChiselStage).emitVerilog(
-    new RegisterFile,
+    new RegisterFile(0),
     args = Array(
       "--emission-options=disableMemRandomization,disableRegisterRandomization"
     )

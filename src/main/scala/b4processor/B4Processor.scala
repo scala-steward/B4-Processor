@@ -42,7 +42,8 @@ class B4Processor(implicit params: Parameters) extends Module {
   val fetchBuffer = (0 until params.threads).map(n => Module(new FetchBuffer))
   val reorderBuffer =
     (0 until params.threads).map(n => Module(new ReorderBuffer(n)))
-  val registerFile = (0 until params.threads).map(n => Module(new RegisterFile))
+  val registerFile =
+    (0 until params.threads).map(n => Module(new RegisterFile(n)))
   val loadStoreQueue =
     (0 until params.threads).map(n => Module(new LoadStoreQueue))
   val dataMemoryBuffer = Module(new DataMemoryBuffer)
