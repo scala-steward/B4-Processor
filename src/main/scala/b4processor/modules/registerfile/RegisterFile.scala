@@ -10,10 +10,10 @@ import chisel3.stage.ChiselStage
 import chisel3.util._
 
 /** レジスタファイル
- *
- * @param params
- * パラメータ
- */
+  *
+  * @param params
+  *   パラメータ
+  */
 class RegisterFile(threadId: Int)(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
 
@@ -30,7 +30,7 @@ class RegisterFile(threadId: Int)(implicit params: Parameters) extends Module {
   })
 
   /** レジスタx1~x31 tpのみthreadIdで初期化
-   */
+    */
   val registers = RegInit(
     VecInit((1 until 32).map(n => if (n == 4) threadId.U(64.W) else 0.U(64.W)))
   )

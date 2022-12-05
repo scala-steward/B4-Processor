@@ -42,10 +42,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
 
   // 実行ユニットへ
   when(io.executor.ready && hasReady) {
-    reservation(executeIndex) := 0.U.asTypeOf(new ReservationStationEntry)
-    //      printf(p"from reserved $executeIndex\n")
-  }.otherwise {
-    //      printf("no output\n")
+    reservation(executeIndex) := ReservationStationEntry.default
   }
   io.executor.valid := hasReady
   when(io.executor.valid) {

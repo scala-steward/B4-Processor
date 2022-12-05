@@ -45,8 +45,6 @@ class Executor(implicit params: Parameters) extends Module {
   io.out.valid := false.B
   executionResult64bit := 0.U
 
-  // set destinationRegister
-  io.reservationStation.ready := true.B
   when(io.reservationStation.valid) {
     io.out.valid := true.B
     //    printf("pc=%x, immediate=%d\n", io.reservationStation.bits.programCounter, immediateOrFunction7Extended.asSInt)
@@ -134,20 +132,20 @@ class Executor(implicit params: Parameters) extends Module {
           // Less Than (signed)
           (instructionChecker.output.branch === BranchOperations.LessThan)
             -> Mux(
-            a.asSInt < b.asSInt,
-            branchedProgramCounter,
-            nextProgramCounter
-          ),
+              a.asSInt < b.asSInt,
+              branchedProgramCounter,
+              nextProgramCounter
+            ),
           // Less Than (unsigned)
           (instructionChecker.output.branch === BranchOperations.LessThanUnsigned)
             -> Mux(a < b, branchedProgramCounter, nextProgramCounter),
           // Greater Than (signed)
           (instructionChecker.output.branch === BranchOperations.GreaterOrEqual)
             -> Mux(
-            a.asSInt >= b.asSInt,
-            branchedProgramCounter,
-            nextProgramCounter
-          ),
+              a.asSInt >= b.asSInt,
+              branchedProgramCounter,
+              nextProgramCounter
+            ),
           // Greater Than (unsigned)
           (instructionChecker.output.branch === BranchOperations.GreaterOrEqualUnsigned)
             -> Mux(a >= b, branchedProgramCounter, nextProgramCounter),
