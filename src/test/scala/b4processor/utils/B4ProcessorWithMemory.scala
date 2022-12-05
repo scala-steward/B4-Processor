@@ -10,7 +10,8 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val simulation = Flipped(Valid(UInt(64.W)))
     val registerFileContents =
-      if (params.debug) Some(Output(Vec(32, UInt(64.W)))) else None
+      if (params.debug) Some(Output(Vec(params.threads, Vec(32, UInt(64.W)))))
+      else None
     val accessMemoryAddress = new Bundle {
       val read = Valid(UInt(64.W))
       val write = Valid(UInt(64.W))
@@ -65,9 +66,9 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
 
   def checkForRegister(regNum: Int, value: BigInt, timeout: Int = 500): Unit = {
     this.clock.setTimeout(timeout)
-    while (this.io.registerFileContents.get(regNum).peekInt() != value)
+    while (this.io.registerFileContents.get(0)(regNum).peekInt() != value)
       this.clock.step()
-    this.io.registerFileContents.get(regNum).expect(value)
+    this.io.registerFileContents.get(0)(regNum).expect(value)
     this.clock.step(3)
   }
 }

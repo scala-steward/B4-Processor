@@ -15,7 +15,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     val dataReadRequests = Flipped(Irrevocable(new MemoryReadTransaction))
     val instructionFetchRequest =
       Vec(params.threads, Flipped(Irrevocable(new MemoryReadTransaction)))
-    val dataReadOut = new OutputValue
+    val dataReadOut = Irrevocable(new OutputValue)
     val dataWriteOut = Valid(new WriteResponse)
     val instructionOut = Vec(params.threads, Valid(new InstructionResponse))
     val coordinator = new AXI(64, 64)
@@ -58,13 +58,14 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     readAddress.bits.BURST := BurstType.Incr
   }
   io.dataWriteRequests.ready := false.B
-  io.dataReadOut.resultType := ResultType.Result
-  io.dataReadOut.value := 0.U
-  io.dataReadOut.isError := false.B
-  io.dataReadOut.tag := Tag(0, 0)
+  io.dataReadOut.bits.resultType := ResultType.Result
+  io.dataReadOut.bits.value := 0.U
+  io.dataReadOut.bits.isError := false.B
+  io.dataReadOut.bits.tag := Tag(0, 0)
   io.dataReadRequests.ready := false.B
   io.dataWriteOut.valid := false.B
   io.dataWriteOut.bits := DontCare
+  io.dataReadOut.valid := false.B
   for (tid <- 0 until params.threads) {
     io.instructionFetchRequest(tid).ready := false.B
     io.instructionOut(tid).valid := false.B
@@ -120,8 +121,8 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     }
     val burstLen = RegInit(0.U(8.W))
     when(!readQueue.empty) {
-      io.coordinator.read.ready := true.B
-      when(io.coordinator.read.valid) {
+      io.coordinator.read.ready := io.dataReadOut.ready
+      when(io.coordinator.read.valid && io.coordinator.read.ready) {
         burstLen := burstLen + 1.U
         when(burstLen === readQueue.output.bits.burstLength) {
           readQueue.output.ready := true.B
@@ -133,9 +134,9 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
           val data = io.coordinator.read.bits.DATA
           io.instructionOut(tid).bits.inner := data
         }.otherwise {
-          io.dataReadOut.tag := readQueue.output.bits.tag
+          io.dataReadOut.bits.tag := readQueue.output.bits.tag
           val data = io.coordinator.read.bits.DATA
-          io.dataReadOut.value := Mux1H(
+          io.dataReadOut.bits.value := Mux1H(
             Seq(
               (readQueue.output.bits.size === MemoryAccessWidth.Byte) -> Mux1H(
                 (0 until 8).map(i =>
@@ -176,8 +177,8 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
               (readQueue.output.bits.size === MemoryAccessWidth.DoubleWord) -> data
             )
           )
-          io.dataReadOut.resultType := ResultType.Result
-          io.dataReadOut.isError := io.coordinator.read.bits.RESP =/= Response.Okay
+          io.dataReadOut.bits.resultType := ResultType.Result
+          io.dataReadOut.bits.isError := io.coordinator.read.bits.RESP =/= Response.Okay
         }
       }
     }

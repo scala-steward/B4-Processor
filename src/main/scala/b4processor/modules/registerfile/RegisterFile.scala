@@ -18,14 +18,15 @@ class RegisterFile(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
 
     /** デコーダへ */
-    val decoders = Flipped(Vec(params.decoderPerThread, new Decoder2RegisterFile))
+    val decoders =
+      Flipped(Vec(params.decoderPerThread, new Decoder2RegisterFile))
 
     /** リオーダバッファ */
     val reorderBuffer = Flipped(
       Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
     )
 
-    val values = if (params.debug) Some(Output(Vec(31, UInt(64.W)))) else None
+    val values = if (params.debug) Some(Output(Vec(32, UInt(64.W)))) else None
   })
 
   /** レジスタx1~x31 */
@@ -61,8 +62,11 @@ class RegisterFile(implicit params: Parameters) extends Module {
   }
 
   // デバッグ用信号
-  if (params.debug)
-    io.values.get := registers
+  if (params.debug) {
+    io.values.get(0) := 0.U
+    for (i <- 0 until 31)
+      io.values.get(i + 1) := registers(i)
+  }
 }
 
 object RegisterFile extends App {

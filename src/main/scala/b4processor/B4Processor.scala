@@ -61,11 +61,10 @@ class B4Processor(implicit params: Parameters) extends Module {
   axi <> externalMemoryInterface.io.coordinator
 
   /** 出力コレクタとデータメモリ */
-  outputCollector.io.dataMemory := externalMemoryInterface.io.dataReadOut
+  outputCollector.io.dataMemory <> externalMemoryInterface.io.dataReadOut
 
   /** レジスタのコンテンツをデバッグ時に接続 */
   if (params.debug) {
-    registerFileContents.get(0) := 0.U
     for (tid <- 0 until params.threads)
       for (i <- 0 until 32)
         registerFileContents.get(tid)(i) <> registerFile(tid).io.values.get(i)
@@ -81,13 +80,13 @@ class B4Processor(implicit params: Parameters) extends Module {
   reservationStation.io.executor <> executor.io.reservationStation
 
   /** 出力コレクタと実行ユニットの接続 */
-  outputCollector.io.executor := executor.io.out
+  outputCollector.io.executor <> executor.io.out
 
   /** リザベーションステーションと実行ユニットの接続 */
   reservationStation.io.collectedOutput <> outputCollector.io.outputs
 
   /** 分岐結果コレクタと実行ユニットの接続 */
-  branchAddressCollector.io.executor := executor.io.fetch
+  branchAddressCollector.io.executor <> executor.io.fetch
 
   for (tid <- 0 until params.threads) {
 

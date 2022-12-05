@@ -29,8 +29,7 @@ class FIFO[T <: Data](width: Int)(t: T) extends Module {
   }
 
   output.valid := false.B
-  private val outputReg = Reg(t)
-  val rwport = buffer(Mux(output.ready, tail + 1.U, tail))
+  val rwport = buffer(Mux(output.ready && output.valid, tail + 1.U, tail))
   when(!empty) {
     output.valid := true.B
     when(output.ready) {
