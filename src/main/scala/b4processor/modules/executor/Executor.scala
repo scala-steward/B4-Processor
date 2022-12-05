@@ -51,90 +51,66 @@ class Executor(implicit params: Parameters) extends Module {
     io.out.valid := true.B
     //    printf("pc=%x, immediate=%d\n", io.reservationStation.bits.programCounter, immediateOrFunction7Extended.asSInt)
     //    printf("a = %d b = %d\n", io.reservationStation.bits.value1, io.reservationStation.bits.value2)
+    val a = io.reservationStation.bits.value1
+    val b = io.reservationStation.bits.value2
+
     executionResult64bit := MuxCase(
       0.U,
       Seq(
         // ストア
-        (instructionChecker.output.instruction === Instructions.Store)
-          -> (io.reservationStation.bits.value1.asSInt + immediateOrFunction7Extended.asSInt).asUInt,
+        (instructionChecker.output.instruction === Instructions.Store) -> (a.asSInt + immediateOrFunction7Extended.asSInt).asUInt,
         // 加算
         (instructionChecker.output.instruction === Instructions.Load ||
-          (instructionChecker.output.arithmetic === ArithmeticOperations.Addition))
-          -> (io.reservationStation.bits.value1 + io.reservationStation.bits.value2),
+          (instructionChecker.output.arithmetic === ArithmeticOperations.Addition)) -> (a + b),
         // 減算
-        (instructionChecker.output.arithmetic === ArithmeticOperations.Subtraction)
-          -> (io.reservationStation.bits.value1 - io.reservationStation.bits.value2),
+        (instructionChecker.output.arithmetic === ArithmeticOperations.Subtraction) -> (a - b),
         // 論理積
-        (instructionChecker.output.arithmetic === ArithmeticOperations.And)
-          -> (io.reservationStation.bits.value1 & io.reservationStation.bits.value2),
+        (instructionChecker.output.arithmetic === ArithmeticOperations.And) -> (a & b),
         // 論理和
-        (instructionChecker.output.arithmetic === ArithmeticOperations.Or)
-          -> (io.reservationStation.bits.value1 | io.reservationStation.bits.value2),
+        (instructionChecker.output.arithmetic === ArithmeticOperations.Or) -> (a | b),
         // 排他的論理和
-        (instructionChecker.output.arithmetic === ArithmeticOperations.Xor)
-          -> (io.reservationStation.bits.value1 ^ io.reservationStation.bits.value2),
+        (instructionChecker.output.arithmetic === ArithmeticOperations.Xor) -> (a ^ b),
         // 左シフト
-        (instructionChecker.output.arithmetic === ArithmeticOperations.ShiftLeftLogical)
-          -> Mux(
-            instructionChecker.output.operationWidth === OperationWidth.Word,
-            io.reservationStation.bits
-              .value1(31, 0) << io.reservationStation.bits.value2(4, 0),
-            io.reservationStation.bits.value1 << io.reservationStation.bits
-              .value2(5, 0)
-          ),
+        (instructionChecker.output.arithmetic === ArithmeticOperations.ShiftLeftLogical) -> Mux(
+          instructionChecker.output.operationWidth === OperationWidth.Word,
+          a(31, 0) << b(4, 0),
+          a << b(5, 0)
+        ),
         // 右シフト(論理)
-        (instructionChecker.output.arithmetic === ArithmeticOperations.ShiftRightLogical)
-          -> Mux(
-            instructionChecker.output.operationWidth === OperationWidth.Word,
-            io.reservationStation.bits
-              .value1(31, 0) >> io.reservationStation.bits.value2(4, 0),
-            io.reservationStation.bits.value1 >> io.reservationStation.bits
-              .value2(5, 0)
-          ),
+        (instructionChecker.output.arithmetic === ArithmeticOperations.ShiftRightLogical) -> Mux(
+          instructionChecker.output.operationWidth === OperationWidth.Word,
+          a(31, 0) >> b(4, 0),
+          a >> b(5, 0)
+        ),
         // 右シフト(算術)
-        (instructionChecker.output.arithmetic === ArithmeticOperations.ShiftRightArithmetic)
-          -> Mux(
-            instructionChecker.output.operationWidth === OperationWidth.Word,
-            (io.reservationStation.bits
-              .value1(31, 0)
-              .asSInt >> io.reservationStation.bits.value2(4, 0)).asUInt,
-            (io.reservationStation.bits.value1.asSInt >> io.reservationStation.bits
-              .value2(5, 0)).asUInt
-          ),
+        (instructionChecker.output.arithmetic === ArithmeticOperations.ShiftRightArithmetic) -> Mux(
+          instructionChecker.output.operationWidth === OperationWidth.Word,
+          (a(31, 0).asSInt >> b(4, 0)).asUInt,
+          (a.asSInt >> b(5, 0)).asUInt
+        ),
         // 比較(格納先：rd)(符号付き)
-        (instructionChecker.output.arithmetic === ArithmeticOperations.SetLessThan)
-          -> (io.reservationStation.bits.value1.asSInt < io.reservationStation.bits.value2.asSInt).asUInt,
+        (instructionChecker.output.arithmetic === ArithmeticOperations.SetLessThan) -> (a.asSInt < b.asSInt).asUInt,
         // 比較(格納先：rd)(符号なし)
-        (instructionChecker.output.arithmetic === ArithmeticOperations.SetLessThanUnsigned)
-          -> (io.reservationStation.bits.value1 < io.reservationStation.bits.value2),
+        (instructionChecker.output.arithmetic === ArithmeticOperations.SetLessThanUnsigned) -> (a < b),
         // 無条件ジャンプ
-        (instructionChecker.output.instruction === Instructions.jal || instructionChecker.output.instruction === Instructions.jalr)
-          -> (io.reservationStation.bits.programCounter.asUInt + 4.U),
+        (instructionChecker.output.instruction === Instructions.jal || instructionChecker.output.instruction === Instructions.jalr) -> (io.reservationStation.bits.programCounter.asUInt + 4.U),
         // lui
-        (instructionChecker.output.instruction === Instructions.lui)
-          -> (io.reservationStation.bits.value2.asSInt).asUInt,
+        (instructionChecker.output.instruction === Instructions.lui) -> (b.asSInt).asUInt,
         // auipc
-        (instructionChecker.output.instruction === Instructions.auipc)
-          -> (io.reservationStation.bits.value2 + io.reservationStation.bits.programCounter.asUInt),
+        (instructionChecker.output.instruction === Instructions.auipc) -> (b + io.reservationStation.bits.programCounter.asUInt),
         // 分岐((
         // Equal
-        (instructionChecker.output.branch === BranchOperations.Equal)
-          -> (io.reservationStation.bits.value1 === io.reservationStation.bits.value2),
+        (instructionChecker.output.branch === BranchOperations.Equal) -> (a === b),
         // NotEqual
-        (instructionChecker.output.branch === BranchOperations.NotEqual)
-          -> (io.reservationStation.bits.value1 =/= io.reservationStation.bits.value2),
+        (instructionChecker.output.branch === BranchOperations.NotEqual) -> (a =/= b),
         // Less Than (signed)
-        (instructionChecker.output.branch === BranchOperations.LessThan)
-          -> (io.reservationStation.bits.value1.asSInt < io.reservationStation.bits.value2.asSInt),
+        (instructionChecker.output.branch === BranchOperations.LessThan) -> (a.asSInt < b.asSInt),
         // Less Than (unsigned)
-        (instructionChecker.output.branch === BranchOperations.LessThanUnsigned)
-          -> (io.reservationStation.bits.value1 < io.reservationStation.bits.value2),
+        (instructionChecker.output.branch === BranchOperations.LessThanUnsigned) -> (a < b),
         // Greater Than (signed)
-        (instructionChecker.output.branch === BranchOperations.GreaterOrEqual)
-          -> (io.reservationStation.bits.value1.asSInt >= io.reservationStation.bits.value2.asSInt),
+        (instructionChecker.output.branch === BranchOperations.GreaterOrEqual) -> (a.asSInt >= b.asSInt),
         // Greater Than (unsigned)
-        (instructionChecker.output.branch === BranchOperations.GreaterOrEqualUnsigned)
-          -> (io.reservationStation.bits.value1 >= io.reservationStation.bits.value2)
+        (instructionChecker.output.branch === BranchOperations.GreaterOrEqualUnsigned) -> (a >= b)
       )
     )
 
@@ -151,58 +127,36 @@ class Executor(implicit params: Parameters) extends Module {
           // 分岐
           // Equal
           (instructionChecker.output.branch === BranchOperations.Equal)
-            -> Mux(
-              io.reservationStation.bits.value1 === io.reservationStation.bits.value2,
-              branchedProgramCounter,
-              nextProgramCounter
-            ),
+            -> Mux(a === b, branchedProgramCounter, nextProgramCounter),
           // NotEqual
           (instructionChecker.output.branch === BranchOperations.NotEqual)
-            -> Mux(
-              io.reservationStation.bits.value1 =/= io.reservationStation.bits.value2,
-              branchedProgramCounter,
-              nextProgramCounter
-            ),
+            -> Mux(a =/= b, branchedProgramCounter, nextProgramCounter),
           // Less Than (signed)
           (instructionChecker.output.branch === BranchOperations.LessThan)
             -> Mux(
-              io.reservationStation.bits.value1.asSInt < io.reservationStation.bits.value2.asSInt,
-              branchedProgramCounter,
-              nextProgramCounter
-            ),
+            a.asSInt < b.asSInt,
+            branchedProgramCounter,
+            nextProgramCounter
+          ),
           // Less Than (unsigned)
           (instructionChecker.output.branch === BranchOperations.LessThanUnsigned)
-            -> Mux(
-              io.reservationStation.bits.value1 < io.reservationStation.bits.value2,
-              branchedProgramCounter,
-              nextProgramCounter
-            ),
+            -> Mux(a < b, branchedProgramCounter, nextProgramCounter),
           // Greater Than (signed)
           (instructionChecker.output.branch === BranchOperations.GreaterOrEqual)
             -> Mux(
-              io.reservationStation.bits.value1.asSInt >= io.reservationStation.bits.value2.asSInt,
-              branchedProgramCounter,
-              nextProgramCounter
-            ),
+            a.asSInt >= b.asSInt,
+            branchedProgramCounter,
+            nextProgramCounter
+          ),
           // Greater Than (unsigned)
           (instructionChecker.output.branch === BranchOperations.GreaterOrEqualUnsigned)
-            -> Mux(
-              io.reservationStation.bits.value1 >= io.reservationStation.bits.value2,
-              branchedProgramCounter,
-              nextProgramCounter
-            ),
+            -> Mux(a >= b, branchedProgramCounter, nextProgramCounter),
           // jal or auipc
           (instructionChecker.output.instruction === Instructions.auipc || instructionChecker.output.instruction === Instructions.jal)
-            -> (io.reservationStation.bits.programCounter.asSInt + io.reservationStation.bits.value2.asSInt).asUInt,
+            -> (io.reservationStation.bits.programCounter.asSInt + b.asSInt).asUInt,
           // jalr
           (instructionChecker.output.instruction === Instructions.jalr)
-            -> Cat(
-              (io.reservationStation.bits.value1 + io.reservationStation.bits.value2)(
-                63,
-                1
-              ),
-              0.U
-            ).asUInt
+            -> Cat((a + b)(63, 1), 0.U).asUInt
         )
       )
     }

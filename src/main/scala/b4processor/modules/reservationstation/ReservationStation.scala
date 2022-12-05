@@ -73,14 +73,14 @@ class ReservationStation(implicit params: Parameters) extends Module {
   private var nextHead = head
   for (i <- 0 until (params.decoderPerThread * params.threads)) {
     io.decoder(i).ready := false.B
-    when(!reservation(head).valid) {
+    when(!reservation(nextHead).valid) {
       io.decoder(i).ready := true.B
       when(io.decoder(i).entry.valid) {
         reservation(nextHead) := io.decoder(i).entry
       }
     }
     nextHead = Mux(
-      !reservation(head).valid && io.decoder(i).entry.valid,
+      !reservation(nextHead).valid && io.decoder(i).entry.valid,
       nextHead + 1.U,
       nextHead
     )
@@ -88,7 +88,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
   head := nextHead
 
   private val output = io.collectedOutput.outputs
-  when(output.bits.resultType === ResultType.Result) {
+  when(output.valid && output.bits.resultType === ResultType.Result) {
     for (entry <- reservation) {
       when(entry.valid) {
         when(!entry.ready1 && entry.sourceTag1 === output.bits.tag) {

@@ -179,18 +179,18 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
           "riscv-sample-programs/many_add_out_of_order/many_add_out_of_order"
         )
         c.clock.step(30)
-        c.io.registerFileContents.get(1).expect(1)
-        c.io.registerFileContents.get(2).expect(2)
-        c.io.registerFileContents.get(3).expect(3)
-        c.io.registerFileContents.get(4).expect(4)
-        c.io.registerFileContents.get(5).expect(1)
-        c.io.registerFileContents.get(6).expect(2)
-        c.io.registerFileContents.get(7).expect(3)
-        c.io.registerFileContents.get(8).expect(4)
-        c.io.registerFileContents.get(9).expect(1)
-        c.io.registerFileContents.get(10).expect(2)
-        c.io.registerFileContents.get(11).expect(3)
-        c.io.registerFileContents.get(12).expect(4)
+        c.io.registerFileContents.get(0)(1).expect(1)
+        c.io.registerFileContents.get(0)(2).expect(2)
+        c.io.registerFileContents.get(0)(3).expect(3)
+        c.io.registerFileContents.get(0)(4).expect(4)
+        c.io.registerFileContents.get(0)(5).expect(1)
+        c.io.registerFileContents.get(0)(6).expect(2)
+        c.io.registerFileContents.get(0)(7).expect(3)
+        c.io.registerFileContents.get(0)(8).expect(4)
+        c.io.registerFileContents.get(0)(9).expect(1)
+        c.io.registerFileContents.get(0)(10).expect(2)
+        c.io.registerFileContents.get(0)(11).expect(3)
+        c.io.registerFileContents.get(0)(12).expect(4)
       }
   }
 
@@ -222,9 +222,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       ) { c =>
         c.initialize("riscv-sample-programs/load_store/load_store")
         c.checkForRegister(3, 10, 120)
-        c.io.registerFileContents.get(1).expect(0x4000_0018L)
-        c.io.registerFileContents.get(2).expect(10)
-        c.io.registerFileContents.get(3).expect(10)
+        c.io.registerFileContents.get(0)(1).expect(0x4000_0018L)
+        c.io.registerFileContents.get(0)(2).expect(10)
+        c.io.registerFileContents.get(0)(3).expect(10)
       }
   }
 
@@ -286,8 +286,8 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         c.initialize(
           "riscv-sample-programs/load_plus_arithmetic/load_plus_arithmetic"
         )
-        c.checkForRegister(2, 20, 30)
-        c.checkForRegister(3, 1, 30)
+        c.checkForRegister(2, 20, 50)
+        c.checkForRegister(3, 1, 50)
       }
   }
 
