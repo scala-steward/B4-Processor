@@ -799,7 +799,14 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.clock.step()
       // ストア命令の値確定
       c.setOutputs(values =
-        Some(LSQfromALU(valid = true, destinationtag = 10, value = 150,resultType = ResultType.LoadStoreAddress))
+        Some(
+          LSQfromALU(
+            valid = true,
+            destinationtag = 10,
+            value = 150,
+            resultType = ResultType.LoadStoreAddress
+          )
+        )
       )
       c.clock.step()
       c.setOutputs(values =

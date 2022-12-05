@@ -57,6 +57,6 @@ class SourceTagSelector(instructionOffset: Int)(implicit params: Parameters)
     )
     // 最大発行命令数(i)を増やすならばMux -> MuxCase に変更
   }.otherwise { // valid = 0
-    io.sourceTag.tag := Tag(0,0) // source tagが存在しなければsourceTag = 0に設定
+    io.sourceTag.tag := Tag(0, 0) // source tagが存在しなければsourceTag = 0に設定
   }
 }

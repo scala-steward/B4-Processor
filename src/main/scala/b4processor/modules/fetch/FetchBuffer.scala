@@ -13,7 +13,9 @@ class FetchBuffer(implicit params: Parameters) extends Module {
     val fetch = Flipped(new Fetch2FetchBuffer)
   })
 
-  val buffer = Reg(Vec(pow(2, params.decoderPerThread + 1).toInt, new BufferEntry))
+  val buffer = Reg(
+    Vec(pow(2, params.decoderPerThread + 1).toInt, new BufferEntry)
+  )
 
   val head = RegInit(0.U((params.decoderPerThread + 1).W))
   val tail = RegInit(0.U((params.decoderPerThread + 1).W))

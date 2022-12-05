@@ -13,7 +13,9 @@ class B4ProcessorRISCVTestWrapper()(implicit params: Parameters)
     }
     val reg3_value = this.io.registerFileContents.get(0)(3).peekInt()
     val fail_num = reg3_value >> 1
-    this.io.registerFileContents.get(0)(3).expect(1, s"failed on test ${fail_num}")
+    this.io.registerFileContents
+      .get(0)(3)
+      .expect(1, s"failed on test ${fail_num}")
   }
 }
 

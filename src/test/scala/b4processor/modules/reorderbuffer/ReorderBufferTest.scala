@@ -622,7 +622,6 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.setOutputs(None)
 
-
       c.clock.step(5)
     }
   }
