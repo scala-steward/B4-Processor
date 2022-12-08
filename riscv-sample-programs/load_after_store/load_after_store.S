@@ -1,6 +1,5 @@
 _start:
-    addi x1, x0, 1
-    slli x1, x1, 31
+    la x1, scratchpad
 
     li x2, 10
     li x4, 20
@@ -21,3 +20,6 @@ _start:
     sd x4, 0(x1)
 
     j .
+
+.section .data
+scratchpad: .dword 0

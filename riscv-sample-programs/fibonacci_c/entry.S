@@ -6,11 +6,11 @@ _start:
     la sp, __BINARY_END_
     mv a0,tp
     addi sp,sp,1024
-LOOP:
-    beq a0,zero,PROGRAM
+.L_LOOP:
+    beq a0,zero,.L_PROGRAM
     addi sp,sp,1024
     addi a0,a0,-1
-PROGRAM:
+.L_PROGRAM:
 
     la a1, loop_count
     lw a0, 0(a1)
