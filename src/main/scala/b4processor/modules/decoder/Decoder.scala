@@ -181,7 +181,9 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready
   // リオーダバッファやリザベーションステーションに新しいエントリを追加するのは命令がある時
   io.reorderBuffer.valid := io.instructionFetch.ready && io.instructionFetch.valid
-  io.reservationStation.entry.valid := io.instructionFetch.ready && io.instructionFetch.valid
+  io.reservationStation.entry.valid := io.instructionFetch.ready &&
+    io.instructionFetch.valid &&
+    !(instOp === BitPat("b0?00011") && valueSelector1.io.value.valid)
 
   // RSへの出力を埋める
   val rs = io.reservationStation.entry
@@ -227,9 +229,11 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   when(io.loadStoreQueue.valid) {
     io.loadStoreQueue.bits.accessInfo := MemoryAccessInfo(instOp, instFunct3)
     io.loadStoreQueue.bits.addressAndLoadResultTag := rs.destinationTag
+    io.loadStoreQueue.bits.addressValid := valueSelector1.io.value.valid
+    io.loadStoreQueue.bits.address := valueSelector1.io.value.bits
     when(instOp === "b0100011".U) {
       io.loadStoreQueue.bits.storeDataTag := valueSelector2.io.sourceTag.tag
-      io.loadStoreQueue.bits.storeData := valueSelector2.io.value.bits
+      io.loadStoreQueue.bits.storeData := (valueSelector2.io.value.bits.asSInt + rs.immediateOrFunction7.asSInt).asUInt
       io.loadStoreQueue.bits.storeDataValid := valueSelector2.io.value.valid
     }.otherwise {
       io.loadStoreQueue.bits.storeDataTag := Tag(threadId, 0)

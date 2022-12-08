@@ -36,8 +36,7 @@ case class Parameters(
   maxDataMemoryCommitCount: Int = 4,
   fetchWidth: Int = 4,
   branchPredictionWidth: Int = 4,
-  instructionStart: Long = 0x4000_0000L,
-  ramStart: Long = 0x8000_0000L,
+  instructionStart: Long = 0x8000_0000L,
   debug: Boolean = false,
   dataMemorySize: Long = pow(2, 10).toInt
 )

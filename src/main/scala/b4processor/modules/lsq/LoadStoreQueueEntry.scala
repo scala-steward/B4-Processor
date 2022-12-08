@@ -44,6 +44,8 @@ object LoadStoreQueueEntry {
   def validEntry(
     accessInfo: MemoryAccessInfo,
     addressAndStoreResultTag: Tag,
+    address: UInt,
+    addressValid: Bool,
     storeDataTag: Tag,
     storeData: UInt,
     storeDataValid: Bool
@@ -54,8 +56,8 @@ object LoadStoreQueueEntry {
     entry.info := accessInfo
 
     entry.addressAndLoadResultTag := addressAndStoreResultTag
-    entry.address := 0.U
-    entry.addressValid := false.B
+    entry.address := address
+    entry.addressValid := addressValid
 
     entry.storeDataTag := storeDataTag
     entry.storeData := storeData

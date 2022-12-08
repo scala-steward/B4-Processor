@@ -66,6 +66,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         // opcode = 1(load), 0(store) (bit数削減)
         accessInfo = decoder.bits.accessInfo,
         addressAndStoreResultTag = decoder.bits.addressAndLoadResultTag,
+        address = decoder.bits.address,
+        addressValid = decoder.bits.addressValid,
         storeDataTag = decoder.bits.storeDataTag,
         storeData = decoder.bits.storeData,
         storeDataValid = decoder.bits.storeDataValid
