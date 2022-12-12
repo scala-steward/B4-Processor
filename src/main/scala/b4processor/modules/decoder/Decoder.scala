@@ -94,7 +94,6 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
     opcodeFormatChecker.io.format === B
 
   // リオーダバッファへの入力
-  io.reorderBuffer.programCounter := io.instructionFetch.bits.programCounter
   io.reorderBuffer.source1.sourceRegister := Mux(source1IsValid, instRs1, 0.U)
   io.reorderBuffer.source2.sourceRegister := Mux(source2IsValid, instRs2, 0.U)
   io.reorderBuffer.destination.destinationRegister := Mux(
@@ -226,14 +225,20 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
     "b0?00011"
   ) && io.instructionFetch.ready && io.instructionFetch.valid
 
+  val STORE = "b0100011".U
+
   when(io.loadStoreQueue.valid) {
     io.loadStoreQueue.bits.accessInfo := MemoryAccessInfo(instOp, instFunct3)
     io.loadStoreQueue.bits.addressAndLoadResultTag := rs.destinationTag
     io.loadStoreQueue.bits.addressValid := valueSelector1.io.value.valid
-    io.loadStoreQueue.bits.address := valueSelector1.io.value.bits
-    when(instOp === "b0100011".U) {
+    io.loadStoreQueue.bits.address := (valueSelector1.io.value.bits.asSInt + Mux(
+      instOp === STORE,
+      instImmS.asSInt,
+      instImmI.asSInt
+    )).asUInt
+    when(instOp === STORE) {
       io.loadStoreQueue.bits.storeDataTag := valueSelector2.io.sourceTag.tag
-      io.loadStoreQueue.bits.storeData := (valueSelector2.io.value.bits.asSInt + rs.immediateOrFunction7.asSInt).asUInt
+      io.loadStoreQueue.bits.storeData := valueSelector2.io.value.bits
       io.loadStoreQueue.bits.storeDataValid := valueSelector2.io.value.valid
     }.otherwise {
       io.loadStoreQueue.bits.storeDataTag := Tag(threadId, 0)

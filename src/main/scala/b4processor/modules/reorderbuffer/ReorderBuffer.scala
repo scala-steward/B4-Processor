@@ -58,7 +58,6 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
         val entry = Wire(new ReorderBufferEntry)
         entry.value := 0.U
         entry.valueReady := false.B
-        entry.programCounter := decoder.programCounter
         entry.destinationRegister := decoder.destination.destinationRegister
         entry.storeSign := decoder.destination.storeSign
         entry

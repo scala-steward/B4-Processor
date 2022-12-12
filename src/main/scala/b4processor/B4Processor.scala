@@ -1,10 +1,6 @@
 package b4processor
 
-import b4processor.connections.{
-  InstructionMemory2Cache,
-  LoadStoreQueue2Memory,
-  OutputValue
-}
+import b4processor.connections.{InstructionMemory2Cache, LoadStoreQueue2Memory, OutputValue}
 import b4processor.modules.branch_output_collector.BranchOutputCollector
 import b4processor.modules.cache.{DataMemoryBuffer, InstructionMemoryCache}
 import b4processor.modules.decoder.Decoder
@@ -30,7 +26,6 @@ class B4Processor(implicit params: Parameters) extends Module {
   require(params.decoderPerThread >= 1, "スレッド毎にデコーダは1以上必要です。")
   require(params.threads >= 1, "スレッド数は1以上です。")
   require(params.tagWidth >= 1, "タグ幅は1以上である必要があります。")
-  require(params.fetchWidth >= 1, "フェッチ幅は1以上である必要があります。")
   require(
     params.maxRegisterFileCommitCount >= 1,
     "レジスタファイルへのコミット数は1以上である必要があります。"
@@ -163,11 +158,12 @@ class B4Processor(implicit params: Parameters) extends Module {
 }
 
 object B4Processor extends App {
-  implicit val params = Parameters()
+  implicit val params = Parameters(
+    threads = 2,
+    decoderPerThread = 2,
+    instructionStart = 0x2000_0000L
+  )
   (new ChiselStage).emitVerilog(
-    new B4Processor(),
-    args = Array(
-      "--emission-options=disableMemRandomization,disableRegisterRandomization"
-    )
+    new B4Processor()
   )
 }

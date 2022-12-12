@@ -14,7 +14,7 @@ class FIFO[T <: Data](width: Int)(t: T) extends Module {
 
   private val head = RegInit(0.U(width.W))
   private val tail = RegInit(0.U(width.W))
-  private val buffer = SyncReadMem(pow(2, width).toInt, t)
+  private val buffer = SyncReadMem(pow(2, width).toInt, UInt())
 
   full := head + 1.U === tail
   empty := head === tail
@@ -23,7 +23,7 @@ class FIFO[T <: Data](width: Int)(t: T) extends Module {
   when(!full) {
     input.ready := true.B
     when(input.valid) {
-      buffer.write(head, input.bits)
+      buffer.write(head, input.bits.asUInt)
       head := head + 1.U
     }
   }
@@ -36,9 +36,11 @@ class FIFO[T <: Data](width: Int)(t: T) extends Module {
       tail := tail + 1.U
     }
   }
-  output.bits := rwport
+  output.bits := rwport.asTypeOf(t)
 }
 
 object FIFO extends App {
-  (new ChiselStage).emitVerilog(new FIFO(3)(UInt(32.W)))
+  (new ChiselStage).emitVerilog(new FIFO(8)(new Bundle {
+    val a = UInt(32.W)
+  }))
 }
