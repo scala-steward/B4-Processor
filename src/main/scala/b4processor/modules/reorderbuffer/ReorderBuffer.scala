@@ -46,6 +46,11 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
     VecInit(Seq.fill(math.pow(2, tagWidth).toInt)(ReorderBufferEntry.default))
   )
 
+  class RegisterTagMapContent extends Bundle {
+    val valid = Bool()
+    val tagId = UInt(tagWidth.W)
+  }
+
   val registerTagMap = RegInit(
     VecInit(
       Seq.fill(32)(
@@ -53,13 +58,9 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
       )
     )
   )
+
   // レジスタファイルへの書き込み
   var lastValid = true.B
-
-  class RegisterTagMapContent extends Bundle {
-    val valid = Bool()
-    val tagId = UInt(tagWidth.W)
-  }
   for (i <- 0 until params.maxRegisterFileCommitCount) {
     val index = tail + i.U
 

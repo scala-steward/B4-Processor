@@ -25,8 +25,6 @@ class ReservationStationWrapper(implicit params: Parameters)
   ): Unit = {
     this.io.decoder(0).entry.poke(ReservationStationEntry.default)
     this.io.decoder(0).entry.valid.poke(programCounter.isDefined)
-    if (programCounter.isDefined)
-      this.io.decoder(0).entry.programCounter.poke(programCounter.get)
     if (value1.isDefined) {
       this.io.decoder(0).entry.value1.poke(value1.get)
       this.io.decoder(0).entry.ready1.poke(true)
@@ -56,8 +54,8 @@ class ReservationStationWrapper(implicit params: Parameters)
 
   def expectExecutor(programCounter: Option[Int]): Unit = {
     this.io.executor.valid.expect(programCounter.isDefined)
-    if (programCounter.isDefined)
-      this.io.executor.bits.programCounter.expect(programCounter.get)
+    //    if (programCounter.isDefined)
+    //      this.io.executor.bits.programCounter.expect(programCounter.get)
   }
 }
 

@@ -50,7 +50,6 @@ class ReservationStation(implicit params: Parameters) extends Module {
     io.executor.bits.destinationTag := reservation(executeIndex).destinationTag
     io.executor.bits.value1 := reservation(executeIndex).value1
     io.executor.bits.value2 := reservation(executeIndex).value2
-    io.executor.bits.programCounter := reservation(executeIndex).programCounter
     io.executor.bits.function3 := reservation(executeIndex).function3
     io.executor.bits.immediateOrFunction7 := reservation(
       executeIndex
@@ -60,7 +59,6 @@ class ReservationStation(implicit params: Parameters) extends Module {
     io.executor.bits.destinationTag := Tag(0, 0)
     io.executor.bits.value1 := 0.U
     io.executor.bits.value2 := 0.U
-    io.executor.bits.programCounter := 0.U
     io.executor.bits.function3 := 0.U
     io.executor.bits.immediateOrFunction7 := 0.U
   }

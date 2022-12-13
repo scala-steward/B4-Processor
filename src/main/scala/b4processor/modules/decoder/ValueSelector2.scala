@@ -16,8 +16,8 @@ class ValueSelector2(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reorderBufferValue = Flipped(Valid(UInt(64.W)))
     val registerFileValue = Input(UInt(64.W))
+    val programCounter = Input(UInt(64.W))
     val outputCollector = Flipped(new CollectedOutput)
-    val immediateValue = Input(SInt(64.W))
     val opcodeFormat = Input(OpcodeFormat())
     val sourceTag = Input(new SourceTagInfo)
     val value = Valid(UInt(64.W))
@@ -41,8 +41,7 @@ class ValueSelector2(implicit params: Parameters) extends Module {
   io.value.bits := MuxCase(
     0.U,
     Seq(
-      // I形式である(即値優先)
-      (io.opcodeFormat === I || io.opcodeFormat === U || io.opcodeFormat === J) -> io.immediateValue.asUInt,
+      (io.opcodeFormat === I || io.opcodeFormat === J || io.opcodeFormat === U) -> io.programCounter,
       (io.sourceTag.from === SourceTagFrom.BeforeDecoder) -> 0.U,
       (io.sourceTag.valid && io.reorderBufferValue.valid) -> io.reorderBufferValue.bits,
       (io.sourceTag.valid && outputMatchingTagExists) -> o.bits.value,

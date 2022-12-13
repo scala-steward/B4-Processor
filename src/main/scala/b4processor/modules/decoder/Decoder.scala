@@ -68,7 +68,7 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
 
   // 即値を64bitに符号拡張
   val immIExtended =
-    instImmI.asSInt // FIXME 結果は変わらないが，正確性のため，srai, srliの場合のみ，特別処理を入れるべきか？
+    instImmI.asSInt
   val immUExtended = Cat(instImmU, 0.U(12.W)).asSInt
   val immJExtended = Cat(instImmJ, 0.U(1.W)).asSInt
 
@@ -107,6 +107,17 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   io.registerFile.sourceRegister1 := instRs1
   io.registerFile.sourceRegister2 := instRs2
 
+  // 各値の配置
+  // ---------------------------------------
+  // type || rs-val1 | rs-val2 | rs-imm
+  // -----||---------|---------|------------
+  // R    || rs1     | rs2     | funct7
+  // I    || rs1     | pc      | imm
+  // S    || rs1     | rs2     | imm
+  // B    || rs1     | rs2     | imm
+  // U    || imm     | pc      | 0
+  // J    || imm     | pc      | 0
+
   // リオーダバッファから一致するタグを取得する
   // セレクタ1
   val sourceTagSelector1 = Module(new SourceTagSelector(instructionOffset))
@@ -143,20 +154,18 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   valueSelector1.io.reorderBufferValue <> io.reorderBuffer.source1.value
   valueSelector1.io.registerFileValue := io.registerFile.value1
   valueSelector1.io.outputCollector <> io.outputCollector
+  valueSelector1.io.opcodeFormat := opcodeFormatChecker.io.format
+  valueSelector1.io.immediateValue := MuxLookup(
+    opcodeFormatChecker.io.format.asUInt,
+    0.S,
+    Seq(U.asUInt -> immUExtended, J.asUInt -> immJExtended)
+  )
   // value2
   val valueSelector2 = Module(new ValueSelector2)
   valueSelector2.io.sourceTag <> sourceTag2
   valueSelector2.io.reorderBufferValue <> io.reorderBuffer.source2.value
   valueSelector2.io.registerFileValue := io.registerFile.value2
-  valueSelector2.io.immediateValue := MuxLookup(
-    opcodeFormatChecker.io.format.asUInt,
-    0.S,
-    Seq(
-      I.asUInt -> immIExtended,
-      U.asUInt -> immUExtended,
-      J.asUInt -> immJExtended
-    )
-  )
+  valueSelector2.io.programCounter := io.instructionFetch.bits.programCounter
   valueSelector2.io.opcodeFormat := opcodeFormatChecker.io.format
   valueSelector2.io.outputCollector <> io.outputCollector
 
@@ -188,19 +197,14 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   val rs = io.reservationStation.entry
   rs.opcode := instOp
   rs.function3 := instFunct3
-  rs.immediateOrFunction7 := Mux(
-    instOp === BitPat(
-      "b001?011"
-    ) && instFunct3 === "b101".U, // "srai(w)" or "srli(w)"
-    Cat(io.instructionFetch.bits.instruction(31, 26), 0.U(1.W)),
-    MuxLookup(
-      opcodeFormatChecker.io.format.asUInt,
-      0.U,
-      Seq(
-        R.asUInt -> Cat("b000000".U, instFunct7),
-        S.asUInt -> instImmS,
-        B.asUInt -> instImmB
-      )
+  rs.immediateOrFunction7 := MuxLookup(
+    opcodeFormatChecker.io.format.asUInt,
+    0.U,
+    Seq(
+      R.asUInt -> Cat(instFunct7, "b00000".U(5.W)),
+      S.asUInt -> instImmS,
+      B.asUInt -> instImmB,
+      I.asUInt -> immIExtended.asUInt
     )
   )
   rs.destinationTag := io.reorderBuffer.destination.destinationTag
@@ -218,7 +222,6 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   rs.ready2 := valueSelector2.io.value.valid
   rs.value1 := valueSelector1.io.value.bits
   rs.value2 := valueSelector2.io.value.bits
-  rs.programCounter := io.instructionFetch.bits.programCounter
 
   // load or store命令の場合，LSQへ発送
   io.loadStoreQueue.valid := io.loadStoreQueue.ready && instOp === BitPat(

@@ -1,6 +1,8 @@
 package b4processor.modules.executor
 
 import b4processor.Parameters
+import b4processor.common.ArithmeticOperations._
+import b4processor.common.Instructions._
 import b4processor.common.{
   ArithmeticOperations,
   BranchOperations,
@@ -23,23 +25,24 @@ class Executor(implicit params: Parameters) extends Module {
   })
 
   /** リザベーションステーションから実行ユニットへデータを送信 op,fuctionによって命令を判断し，計算を実行
-    */
+   */
   io.reservationStation.ready := io.out.ready && io.fetch.ready
   val instructionChecker = Module(new InstructionChecker)
 
   instructionChecker.input.opcode := io.reservationStation.bits.opcode
   instructionChecker.input.function3bits := io.reservationStation.bits.function3
-  instructionChecker.input.function7bits := io.reservationStation.bits.immediateOrFunction7
+  instructionChecker.input.function7bits := io.reservationStation.bits
+    .immediateOrFunction7(11, 5)
 
   val executionResult64bit = Wire(UInt(64.W))
   val immediateOrFunction7Extended =
-    io.reservationStation.bits.immediateOrFunction7
-  val branchedProgramCounter =
-    (io.reservationStation.bits.programCounter.asSInt + (immediateOrFunction7Extended ## 0
-      .U(1.W)).asSInt).asUInt
-  val nextProgramCounter = io.reservationStation.bits.programCounter + 4.U
+    io.reservationStation.bits.immediateOrFunction7.asSInt
+  val IJU_ProgramCounter = io.reservationStation.bits.value2
+  val B_branchedOffset =
+    (immediateOrFunction7Extended.asUInt ## 0.U(1.W)).asSInt
+  val nextOffset = 4.S
 
-  io.fetch.bits.programCounter := 0.U
+  io.fetch.bits.programCounterOffset := 0.S
   io.fetch.valid := false.B
   io.fetch.bits.threadId := 0.U
   io.out.valid := false.B
@@ -50,7 +53,11 @@ class Executor(implicit params: Parameters) extends Module {
     //    printf("pc=%x, immediate=%d\n", io.reservationStation.bits.programCounter, immediateOrFunction7Extended.asSInt)
     //    printf("a = %d b = %d\n", io.reservationStation.bits.value1, io.reservationStation.bits.value2)
     val a = io.reservationStation.bits.value1
-    val b = io.reservationStation.bits.value2
+    val b = Mux(
+      instructionChecker.output.instruction === ArithmeticImmediate || instructionChecker.output.instruction === Load,
+      immediateOrFunction7Extended,
+      io.reservationStation.bits.value2.asSInt
+    ).asUInt
 
     executionResult64bit := MuxCase(
       0.U,
@@ -59,17 +66,17 @@ class Executor(implicit params: Parameters) extends Module {
         (instructionChecker.output.instruction === Instructions.Store) -> (a.asSInt + immediateOrFunction7Extended.asSInt).asUInt,
         // 加算
         (instructionChecker.output.instruction === Instructions.Load ||
-          (instructionChecker.output.arithmetic === ArithmeticOperations.Addition)) -> (a + b),
+          (instructionChecker.output.arithmetic === Addition)) -> (a + b),
         // 減算
-        (instructionChecker.output.arithmetic === ArithmeticOperations.Subtraction) -> (a - b),
+        (instructionChecker.output.arithmetic === Subtraction) -> (a - b),
         // 論理積
-        (instructionChecker.output.arithmetic === ArithmeticOperations.And) -> (a & b),
+        (instructionChecker.output.arithmetic === And) -> (a & b),
         // 論理和
-        (instructionChecker.output.arithmetic === ArithmeticOperations.Or) -> (a | b),
+        (instructionChecker.output.arithmetic === Or) -> (a | b),
         // 排他的論理和
-        (instructionChecker.output.arithmetic === ArithmeticOperations.Xor) -> (a ^ b),
+        (instructionChecker.output.arithmetic === Xor) -> (a ^ b),
         // 左シフト
-        (instructionChecker.output.arithmetic === ArithmeticOperations.ShiftLeftLogical) -> Mux(
+        (instructionChecker.output.arithmetic === ShiftLeftLogical) -> Mux(
           instructionChecker.output.operationWidth === OperationWidth.Word,
           a(31, 0) << b(4, 0),
           a << b(5, 0)
@@ -91,12 +98,12 @@ class Executor(implicit params: Parameters) extends Module {
         // 比較(格納先：rd)(符号なし)
         (instructionChecker.output.arithmetic === ArithmeticOperations.SetLessThanUnsigned) -> (a < b),
         // 無条件ジャンプ
-        (instructionChecker.output.instruction === Instructions.jal || instructionChecker.output.instruction === Instructions.jalr) -> (io.reservationStation.bits.programCounter.asUInt + 4.U),
+        (instructionChecker.output.instruction === Instructions.jal || instructionChecker.output.instruction === Instructions.jalr) -> (IJU_ProgramCounter.asUInt + 4.U),
         // lui
-        (instructionChecker.output.instruction === Instructions.lui) -> (b.asSInt).asUInt,
+        (instructionChecker.output.instruction === Instructions.lui) -> a,
         // auipc
-        (instructionChecker.output.instruction === Instructions.auipc) -> (b + io.reservationStation.bits.programCounter.asUInt),
-        // 分岐((
+        (instructionChecker.output.instruction === Instructions.auipc) -> (a.asSInt + IJU_ProgramCounter.asSInt).asUInt,
+        // 分岐
         // Equal
         (instructionChecker.output.branch === BranchOperations.Equal) -> (a === b),
         // NotEqual
@@ -113,48 +120,37 @@ class Executor(implicit params: Parameters) extends Module {
     )
 
     io.fetch.valid := (instructionChecker.output.instruction === Instructions.Branch) ||
-      // FIXME 用途がわからないからコメントアウトしたけど必要かもしれない
-      //      (instructionChecker.output.instruction === Instructions.jal) ||
-      //      (instructionChecker.output.instruction === Instructions.auipc) ||
       (instructionChecker.output.instruction === Instructions.jalr)
     when(io.fetch.valid) {
       io.fetch.bits.threadId := io.reservationStation.bits.destinationTag.threadId
-      io.fetch.bits.programCounter := MuxCase(
-        io.reservationStation.bits.programCounter,
+      io.fetch.bits.programCounterOffset := MuxCase(
+        0.S,
         Seq(
           // 分岐
           // Equal
           (instructionChecker.output.branch === BranchOperations.Equal)
-            -> Mux(a === b, branchedProgramCounter, nextProgramCounter),
+            -> Mux(a === b, B_branchedOffset, nextOffset),
           // NotEqual
           (instructionChecker.output.branch === BranchOperations.NotEqual)
-            -> Mux(a =/= b, branchedProgramCounter, nextProgramCounter),
+            -> Mux(a =/= b, B_branchedOffset, nextOffset),
           // Less Than (signed)
           (instructionChecker.output.branch === BranchOperations.LessThan)
-            -> Mux(
-              a.asSInt < b.asSInt,
-              branchedProgramCounter,
-              nextProgramCounter
-            ),
+            -> Mux(a.asSInt < b.asSInt, B_branchedOffset, nextOffset),
           // Less Than (unsigned)
           (instructionChecker.output.branch === BranchOperations.LessThanUnsigned)
-            -> Mux(a < b, branchedProgramCounter, nextProgramCounter),
+            -> Mux(a < b, B_branchedOffset, nextOffset),
           // Greater Than (signed)
           (instructionChecker.output.branch === BranchOperations.GreaterOrEqual)
-            -> Mux(
-              a.asSInt >= b.asSInt,
-              branchedProgramCounter,
-              nextProgramCounter
-            ),
+            -> Mux(a.asSInt >= b.asSInt, B_branchedOffset, nextOffset),
           // Greater Than (unsigned)
           (instructionChecker.output.branch === BranchOperations.GreaterOrEqualUnsigned)
-            -> Mux(a >= b, branchedProgramCounter, nextProgramCounter),
-          // jal or auipc
-          (instructionChecker.output.instruction === Instructions.auipc || instructionChecker.output.instruction === Instructions.jal)
-            -> (io.reservationStation.bits.programCounter.asSInt + b.asSInt).asUInt,
+            -> Mux(a >= b, B_branchedOffset, nextOffset),
           // jalr
           (instructionChecker.output.instruction === Instructions.jalr)
-            -> Cat((a + b)(63, 1), 0.U).asUInt
+            -> (Cat(
+            (a.asSInt + immediateOrFunction7Extended)(63, 1),
+            0.U
+          ).asSInt - IJU_ProgramCounter.asSInt)
         )
       )
     }

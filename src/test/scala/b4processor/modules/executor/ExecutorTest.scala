@@ -29,7 +29,6 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   executor.io.reservationStation.bits.function3 := io.reservationStation.bits.function3
   executor.io.reservationStation.bits.immediateOrFunction7 := io.reservationStation.bits.immediateOrFunction7
   executor.io.reservationStation.bits.opcode := io.reservationStation.bits.opcode
-  executor.io.reservationStation.bits.programCounter := io.reservationStation.bits.programCounter
   executor.io.reservationStation.valid := io.reservationStation.valid
   executor.io.out.ready := true.B
   io.reservationStation.ready := executor.io.reservationStation.ready
@@ -55,7 +54,6 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
       values.immediateOrFunction7
     )
     reservationstation.bits.opcode.poke(values.opcode)
-    reservationstation.bits.programCounter.poke(values.programCounter)
   }
 
   def expectout(values: Option[ExecutorValue], valid: Boolean = true): Unit = {
@@ -81,7 +79,7 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   def expectFetch(values: FetchValue): Unit = {
     val fetch = this.io.fetch
     fetch.valid.expect(values.valid)
-    fetch.bits.programCounter.expect(values.programCounter)
+    fetch.bits.programCounterOffset.expect(values.programCounter)
   }
 }
 
@@ -100,14 +98,13 @@ class ExecutorTest
       c.setALU(
         ReservationValue(
           destinationTag = 10,
-          value1 = 40,
-          value2 = 1048575,
-          opcode = 55,
-          programCounter = 100
+          value1 = 40 << 12,
+          value2 = 100,
+          opcode = 55
         )
       )
       c.expectout(values =
-        Some(ExecutorValue(destinationTag = 10, value = 1048575))
+        Some(ExecutorValue(destinationTag = 10, value = 40 << 12))
       )
       c.expectLSQ(None)
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
@@ -117,13 +114,14 @@ class ExecutorTest
       c.setALU(values =
         ReservationValue(
           destinationTag = 10,
-          value1 = 40,
-          value2 = 16,
-          opcode = 55,
-          programCounter = 100
+          value1 = 40 << 12,
+          value2 = 1000,
+          opcode = 55
         )
       )
-      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 16)))
+      c.expectout(values =
+        Some(ExecutorValue(destinationTag = 10, value = 40 << 12))
+      )
       c.expectLSQ(None)
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
 
@@ -132,10 +130,9 @@ class ExecutorTest
       c.setALU(values =
         ReservationValue(
           destinationTag = 10,
-          value1 = 40,
-          value2 = 16,
-          opcode = 111,
-          programCounter = 100
+          value1 = 40, // imm
+          value2 = 100, // PC
+          opcode = 111
         )
       )
       c.expectout(values =
@@ -149,17 +146,17 @@ class ExecutorTest
       c.setALU(values =
         ReservationValue(
           destinationTag = 10,
-          value1 = 40,
-          value2 = 16,
-          opcode = 103,
-          programCounter = 100
+          value1 = 104,
+          value2 = 100,
+          immediateOrFunction7 = 16,
+          opcode = 103
         )
       )
       c.expectout(values =
         Some(ExecutorValue(destinationTag = 10, value = 104))
       )
       c.expectLSQ(None)
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 56))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 20))
 
       When("beq -- NG")
       // rs1 = 40, rs = 30, offset = 200 (jump先： PC + (offset*2))
@@ -169,13 +166,12 @@ class ExecutorTest
           value1 = 40,
           value2 = 30,
           immediateOrFunction7 = 200,
-          opcode = 99,
-          programCounter = 100
+          opcode = 99
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
       c.expectLSQ(None)
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 104))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 4))
 
       When("beq -- OK")
       // rs1 = 40, rs = 40, offset = 200 (jump先： PC + (offset*2))
@@ -185,13 +181,12 @@ class ExecutorTest
           value1 = 40,
           value2 = 40,
           immediateOrFunction7 = 200,
-          opcode = 99,
-          programCounter = 100
+          opcode = 99
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
       c.expectLSQ(None)
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 400))
 
       When("bne -- NG")
       // rs1 = 40, rs = 40, offset = 200 (jump先： PC + (offset*2))
@@ -202,13 +197,12 @@ class ExecutorTest
           value2 = 40,
           function3 = 1,
           immediateOrFunction7 = 200,
-          opcode = 99,
-          programCounter = 100
+          opcode = 99
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
       c.expectLSQ(None)
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 104))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 4))
 
       When("bne -- OK")
       // rs1 = 40, rs = 30, offset = 200 (jump先： PC + (offset*2))
@@ -219,13 +213,12 @@ class ExecutorTest
           value2 = 30,
           function3 = 1,
           immediateOrFunction7 = 200,
-          opcode = 99,
-          programCounter = 100
+          opcode = 99
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
       c.expectLSQ(None)
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 400))
 
       When("blt -- NG")
       // rs1 = 40, rs = 30, offset = 200 (jump先： PC + (offset*2))
@@ -236,13 +229,12 @@ class ExecutorTest
           value2 = 30,
           function3 = 4,
           immediateOrFunction7 = 200,
-          opcode = 99,
-          programCounter = 100
+          opcode = 99
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
       c.expectLSQ(None)
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 104))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 4))
 
       When("blt -- OK")
       // rs1 = 20, rs = 30, offset = 200 (jump先： PC + (offset*2))
@@ -253,13 +245,12 @@ class ExecutorTest
           value2 = 30,
           function3 = 4,
           immediateOrFunction7 = 200,
-          opcode = 99,
-          programCounter = 100
+          opcode = 99
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
       c.expectLSQ(None)
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 400))
 
       When("bge -- NG")
       // rs1 = 20, rs = 30, offset = 200 (jump先： PC + (offset*2))
@@ -270,13 +261,12 @@ class ExecutorTest
           value2 = 30,
           function3 = 5,
           immediateOrFunction7 = 200,
-          opcode = 99,
-          programCounter = 100
+          opcode = 99
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
       c.expectLSQ(None)
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 104))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 4))
 
       When("bge -- OK")
       // rs1 = 40, rs = 30, offset = 200 (jump先： PC + (offset*2))
@@ -287,13 +277,12 @@ class ExecutorTest
           value2 = 30,
           function3 = 5,
           immediateOrFunction7 = 200,
-          opcode = 99,
-          programCounter = 100
+          opcode = 99
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
       c.expectLSQ(None)
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 400))
 
       When("bltu -- NG")
       // rs1 = 40, rs = 30, offset = 200 (jump先： PC + (offset*2))
@@ -304,13 +293,12 @@ class ExecutorTest
           value2 = 30,
           function3 = 6,
           immediateOrFunction7 = 200,
-          opcode = 99,
-          programCounter = 100
+          opcode = 99
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
       c.expectLSQ(None)
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 104))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 4))
 
       When("bltu -- OK")
       // rs1 = 20, rs = 30, offset = 200 (jump先： PC + (offset*2))
@@ -321,13 +309,12 @@ class ExecutorTest
           value2 = 30,
           function3 = 6,
           immediateOrFunction7 = 200,
-          opcode = 99,
-          programCounter = 100
+          opcode = 99
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
       c.expectLSQ(None)
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 400))
 
       When("bgeu -- OK")
       // rs1 = 20, rs = 30, offset = 200 (jump先： PC + (offset*2))
@@ -338,13 +325,12 @@ class ExecutorTest
           value2 = 30,
           function3 = 7,
           immediateOrFunction7 = 200,
-          opcode = 99,
-          programCounter = 100
+          opcode = 99
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
       c.expectLSQ(None)
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 104))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 4))
 
       When("bgeu -- OK")
       // rs1 = 40, rs = 30, offset = 200 (jump先： PC + (offset*2))
@@ -355,13 +341,12 @@ class ExecutorTest
           value2 = 30,
           function3 = 7,
           immediateOrFunction7 = 200,
-          opcode = 99,
-          programCounter = 100
+          opcode = 99
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
       c.expectLSQ(None)
-      c.expectFetch(values = FetchValue(valid = true, programCounter = 500))
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 400))
 
       When("lb")
       // rs1 = 40, rs = 30
@@ -369,9 +354,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 40,
-          value2 = 30,
-          opcode = 3,
-          programCounter = 100
+          value2 = 1000,
+          immediateOrFunction7 = 30,
+          opcode = 3
         )
       )
       c.expectout(values = None)
@@ -384,10 +369,10 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 40,
-          value2 = 30,
+          value2 = 1000,
+          immediateOrFunction7 = 30,
           function3 = 1,
-          opcode = 3,
-          programCounter = 100
+          opcode = 3
         )
       )
       c.expectout(values = None)
@@ -400,10 +385,10 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 40,
-          value2 = 30,
+          value2 = 1000,
+          immediateOrFunction7 = 30,
           function3 = 2,
-          opcode = 3,
-          programCounter = 100
+          opcode = 3
         )
       )
       c.expectout(values = None)
@@ -416,10 +401,10 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 40,
-          value2 = 30,
+          value2 = 1000,
+          immediateOrFunction7 = 30,
           function3 = 3,
-          opcode = 3,
-          programCounter = 100
+          opcode = 3
         )
       )
       c.expectout(values = None)
@@ -432,10 +417,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 40,
-          value2 = 30,
+          immediateOrFunction7 = 30,
           function3 = 4,
-          opcode = 3,
-          programCounter = 100
+          opcode = 3
         )
       )
       c.expectout(values = None)
@@ -448,10 +432,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 40,
-          value2 = 30,
+          immediateOrFunction7 = 30,
           function3 = 5,
-          opcode = 3,
-          programCounter = 100
+          opcode = 3
         )
       )
       c.expectout(values = None)
@@ -464,10 +447,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 40,
-          value2 = 30,
+          immediateOrFunction7 = 30,
           function3 = 6,
-          opcode = 3,
-          programCounter = 100
+          opcode = 3
         )
       )
       c.expectout(values = None)
@@ -482,8 +464,7 @@ class ExecutorTest
           value1 = 40,
           value2 = 30,
           immediateOrFunction7 = 200,
-          opcode = 35,
-          programCounter = 100
+          opcode = 35
         )
       )
       c.expectout(values = None)
@@ -501,8 +482,7 @@ class ExecutorTest
           value2 = 30,
           function3 = 1,
           immediateOrFunction7 = 200,
-          opcode = 35,
-          programCounter = 100
+          opcode = 35
         )
       )
       c.expectout(values = None)
@@ -520,8 +500,7 @@ class ExecutorTest
           value2 = 30,
           function3 = 2,
           immediateOrFunction7 = 200,
-          opcode = 35,
-          programCounter = 100
+          opcode = 35
         )
       )
       c.expectout(values = None)
@@ -539,8 +518,7 @@ class ExecutorTest
           value2 = 30,
           function3 = 3,
           immediateOrFunction7 = 200,
-          opcode = 35,
-          programCounter = 100
+          opcode = 35
         )
       )
       c.expectout(values = None)
@@ -555,9 +533,8 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 40,
-          value2 = 30,
-          opcode = 19,
-          programCounter = 100
+          immediateOrFunction7 = 30,
+          opcode = 19
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
@@ -571,8 +548,7 @@ class ExecutorTest
           destinationTag = 10,
           value1 = 0xffff_ffffL,
           value2 = 10,
-          opcode = 59,
-          programCounter = 100
+          opcode = 59
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 9)))
@@ -586,8 +562,7 @@ class ExecutorTest
           destinationTag = 10,
           value1 = 5,
           value2 = -10,
-          opcode = 59,
-          programCounter = 100
+          opcode = 59
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = -5)))
@@ -600,9 +575,8 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 40,
-          value2 = 30,
-          opcode = 27,
-          programCounter = 100
+          immediateOrFunction7 = 30,
+          opcode = 27
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
@@ -615,10 +589,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 40,
-          value2 = 30,
+          immediateOrFunction7 = 30,
           function3 = 2,
-          opcode = 19,
-          programCounter = 100
+          opcode = 19
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
@@ -631,10 +604,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 20,
-          value2 = 30,
+          immediateOrFunction7 = 30,
           function3 = 2,
-          opcode = 19,
-          programCounter = 100
+          opcode = 19
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
@@ -647,10 +619,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 40,
-          value2 = 30,
+          immediateOrFunction7 = 30,
           function3 = 3,
-          opcode = 19,
-          programCounter = 100
+          opcode = 19
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
@@ -663,10 +634,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 20,
-          value2 = 30,
+          immediateOrFunction7 = 30,
           function3 = 3,
-          opcode = 19,
-          programCounter = 100
+          opcode = 19
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
@@ -679,10 +649,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 10,
-          value2 = 18,
+          immediateOrFunction7 = 18,
           function3 = 4,
-          opcode = 19,
-          programCounter = 100
+          opcode = 19
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 24)))
@@ -695,10 +664,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 10,
-          value2 = 18,
+          immediateOrFunction7 = 18,
           function3 = 6,
-          opcode = 19,
-          programCounter = 100
+          opcode = 19
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 26)))
@@ -711,10 +679,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 10,
-          value2 = 18,
+          immediateOrFunction7 = 18,
           function3 = 7,
-          opcode = 19,
-          programCounter = 100
+          opcode = 19
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 2)))
@@ -727,10 +694,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 10,
-          value2 = 2,
+          immediateOrFunction7 = 2,
           function3 = 1,
-          opcode = 19,
-          programCounter = 100
+          opcode = 19
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 40)))
@@ -743,10 +709,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 64,
-          value2 = 3,
+          immediateOrFunction7 = 3,
           function3 = 5,
-          opcode = 19,
-          programCounter = 100
+          opcode = 19
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 8)))
@@ -759,11 +724,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = 7,
-          value2 = 2,
+          immediateOrFunction7 = 2 + 2048,
           function3 = 5,
-          immediateOrFunction7 = 32,
-          opcode = 19,
-          programCounter = 100
+          opcode = 19
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
@@ -776,11 +739,9 @@ class ExecutorTest
         ReservationValue(
           destinationTag = 10,
           value1 = -123,
-          value2 = 2,
           function3 = 5,
-          immediateOrFunction7 = 32,
-          opcode = 19,
-          programCounter = 100
+          immediateOrFunction7 = 2 + 2048,
+          opcode = 19
         )
       )
       c.expectout(values =
@@ -796,8 +757,7 @@ class ExecutorTest
           destinationTag = 10,
           value1 = 40,
           value2 = 30,
-          opcode = 51,
-          programCounter = 100
+          opcode = 51
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 70)))
@@ -812,8 +772,7 @@ class ExecutorTest
           value1 = 40,
           value2 = 30,
           immediateOrFunction7 = 32,
-          opcode = 51,
-          programCounter = 100
+          opcode = 51
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 10)))
@@ -828,8 +787,7 @@ class ExecutorTest
           value1 = 10,
           value2 = 2,
           function3 = 1,
-          opcode = 51,
-          programCounter = 100
+          opcode = 51
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 40)))
@@ -844,8 +802,7 @@ class ExecutorTest
           value1 = 40,
           value2 = 30,
           function3 = 2,
-          opcode = 51,
-          programCounter = 100
+          opcode = 51
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
@@ -860,8 +817,7 @@ class ExecutorTest
           value1 = 20,
           value2 = 30,
           function3 = 2,
-          opcode = 51,
-          programCounter = 100
+          opcode = 51
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
@@ -876,8 +832,7 @@ class ExecutorTest
           value1 = 40,
           value2 = 30,
           function3 = 3,
-          opcode = 51,
-          programCounter = 100
+          opcode = 51
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
@@ -892,8 +847,7 @@ class ExecutorTest
           value1 = 20,
           value2 = 30,
           function3 = 3,
-          opcode = 51,
-          programCounter = 100
+          opcode = 51
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
@@ -908,8 +862,7 @@ class ExecutorTest
           value1 = 10,
           value2 = 18,
           function3 = 4,
-          opcode = 51,
-          programCounter = 100
+          opcode = 51
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 24)))
@@ -924,8 +877,7 @@ class ExecutorTest
           value1 = 64,
           value2 = 3,
           function3 = 5,
-          opcode = 51,
-          programCounter = 100
+          opcode = 51
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 8)))
@@ -941,8 +893,7 @@ class ExecutorTest
           value2 = 2,
           function3 = 5,
           immediateOrFunction7 = 32,
-          opcode = 51,
-          programCounter = 100
+          opcode = 51
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 2)))
@@ -958,8 +909,7 @@ class ExecutorTest
           value2 = 2,
           function3 = 5,
           immediateOrFunction7 = 32,
-          opcode = 51,
-          programCounter = 100
+          opcode = 51
         )
       )
       c.expectout(values =
@@ -976,8 +926,7 @@ class ExecutorTest
           value1 = 10,
           value2 = 18,
           function3 = 6,
-          opcode = 51,
-          programCounter = 100
+          opcode = 51
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 26)))
@@ -992,8 +941,7 @@ class ExecutorTest
           value1 = 10,
           value2 = 18,
           function3 = 7,
-          opcode = 51,
-          programCounter = 100
+          opcode = 51
         )
       )
       c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 2)))

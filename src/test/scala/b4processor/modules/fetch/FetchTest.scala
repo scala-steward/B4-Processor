@@ -116,7 +116,7 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
   /** 分岐先をセット */
   def setExecutorBranchResult(results: Option[Int] = None): Unit = {
     io.collectedBranchAddresses.addresses.valid.poke(results.isDefined)
-    io.collectedBranchAddresses.addresses.bits.programCounter
+    io.collectedBranchAddresses.addresses.bits.programCounterOffset
       .poke(results.getOrElse(0))
   }
 }
@@ -128,7 +128,7 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       debug = true,
       threads = 1,
       decoderPerThread = 2,
-      instructionStart = 0x10000000
+      instructionStart = 0x1000_0000
     )
 
   // 普通の命令と分岐を区別できるか
@@ -268,7 +268,7 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.nextPC.expect(0x10000004)
       c.clock.step()
 
-      c.setExecutorBranchResult(Some(0x10000000))
+      c.setExecutorBranchResult(Some(0x00000000))
       c.io.nextPC.expect(0x10000004)
       c.clock.step()
 

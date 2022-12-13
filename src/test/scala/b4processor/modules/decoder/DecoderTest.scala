@@ -15,8 +15,8 @@ import org.scalatest.flatspec.AnyFlatSpec
   */
 class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
     extends Decoder(instructionOffset, 0)(params) {
-  def initialize(instruction: UInt): Unit = {
-    this.setImem(instruction)
+  def initialize(instruction: UInt, programCounter: Int = 1000): Unit = {
+    this.setImem(instruction, programCounter)
     this.setReorderBuffer()
     this.setRegisterFile()
     this.setLoadStoreQueueReady()
@@ -24,17 +24,21 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
     this.io.reservationStation.ready.poke(true.B)
   }
 
-  def setImem(instruction: UInt, isPrediction: Boolean = false): Unit = {
+  def setImem(
+               instruction: UInt,
+               programCounter: Int,
+               isPrediction: Boolean = false
+             ): Unit = {
     this.io.instructionFetch.bits.instruction.poke(instruction)
-    this.io.instructionFetch.bits.programCounter.poke(0)
+    this.io.instructionFetch.bits.programCounter.poke(programCounter)
     this.io.instructionFetch.valid.poke(true)
   }
 
   def setReorderBuffer(
-    destinationTag: Int = 0,
-    sourceTag1: Option[Int] = None,
-    value1: Option[Int] = None,
-    sourceTag2: Option[Int] = None,
+                        destinationTag: Int = 0,
+                        sourceTag1: Option[Int] = None,
+                        value1: Option[Int] = None,
+                        sourceTag2: Option[Int] = None,
     value2: Option[Int] = None
   ): Unit = {
     this.io.reorderBuffer.destination.destinationTag
@@ -222,7 +226,8 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectReservationStation(
         destinationTag = 5,
         sourceTag1 = 6,
-        value2 = 20
+        value2 = 1000,
+        immediateOrFunction7 = 20
       )
       c.clock.step(1)
     }
@@ -287,7 +292,11 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setReorderBuffer(destinationTag = 5)
 
       c.expectReorderBuffer(destinationRegister = 3)
-      c.expectReservationStation(destinationTag = 5, value2 = 123 << 12)
+      c.expectReservationStation(
+        destinationTag = 5,
+        value1 = 123 << 12,
+        value2 = 1000
+      )
     }
   }
 
@@ -299,14 +308,14 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setReorderBuffer(destinationTag = 5)
 
       c.expectReorderBuffer(destinationRegister = 10)
-      c.expectReservationStation(destinationTag = 5, value2 = 4)
+      c.expectReservationStation(destinationTag = 5, value1 = 4, value2 = 1000)
     }
   }
 
   it should "pass isPrediction" in {
     test(new DecoderWrapper(0)(testParams)) { c =>
       c.initialize("x0040056f".U)
-      c.setImem("x0040056f".U, isPrediction = true)
+      c.setImem("x0040056f".U, 0, isPrediction = true)
     }
   }
 }

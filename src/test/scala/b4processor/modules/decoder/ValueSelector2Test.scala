@@ -23,13 +23,14 @@ class ValueSelector2Wrapper(implicit params: Parameters)
     *   ALUからバイパスされてきた値。タプルの1つめの値がdestination tag、2つめがvalue。
     */
   def initialize(
-    sourceTag: Option[Int] = None,
-    registerFileValue: Int = 0,
-    reorderBufferValue: Option[Int] = None,
-    aluBypassValue: Option[(Int, Int)] = None,
-    opcodeFormat: OpcodeFormat.Type = R,
-    immediate: Int = 0
-  ): Unit = {
+                  sourceTag: Option[Int] = None,
+                  registerFileValue: Int = 0,
+                  reorderBufferValue: Option[Int] = None,
+                  aluBypassValue: Option[(Int, Int)] = None,
+                  programCounter: Int = 0,
+                  opcodeFormat: OpcodeFormat.Type = R,
+                  immediate: Int = 0
+                ): Unit = {
     this.io.outputCollector.outputs.valid
       .poke(aluBypassValue.isDefined)
     this.io.outputCollector.outputs.bits.tag
@@ -42,8 +43,8 @@ class ValueSelector2Wrapper(implicit params: Parameters)
     this.io.registerFileValue.poke(registerFileValue)
     this.io.sourceTag.valid.poke(sourceTag.isDefined)
     this.io.sourceTag.tag.poke(Tag(0, sourceTag.getOrElse(0)))
-    this.io.immediateValue.poke(immediate)
     this.io.opcodeFormat.poke(opcodeFormat)
+    this.io.programCounter.poke(programCounter)
   }
 
   def expectValue(value: Option[Int]): Unit = {
@@ -109,10 +110,10 @@ class ValueSelector2Test extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "use immediate" in {
+  it should "use programCounter" in {
     test(new ValueSelector2Wrapper) { c =>
-      c.initialize(immediate = 9, opcodeFormat = I)
-      c.expectValue(Some(9))
+      c.initialize(immediate = 9, opcodeFormat = I, programCounter = 8000)
+      c.expectValue(Some(8000))
     }
   }
 

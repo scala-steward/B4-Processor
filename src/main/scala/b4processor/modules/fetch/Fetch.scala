@@ -95,6 +95,7 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
       Seq(
         (!decoder.ready || !decoder.valid) -> 0.S,
         (branch.io.branchType === BranchType.JAL) -> branch.io.offset,
+        (branch.io.branchType === BranchType.Branch) -> 0.S,
         (nextWait =/= WaitingReason.None) -> 0.S
       )
     )).asUInt
@@ -109,7 +110,7 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
       val e = io.collectedBranchAddresses.addresses
       when(e.valid && e.bits.threadId === threadId.U) {
         waiting := WaitingReason.None
-        pc := e.bits.programCounter
+        pc := (pc.asSInt + e.bits.programCounterOffset).asUInt
       }
     }
     when(waiting === WaitingReason.Fence || waiting === WaitingReason.FenceI) {

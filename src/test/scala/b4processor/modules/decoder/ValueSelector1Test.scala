@@ -1,16 +1,18 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
+import b4processor.common.OpcodeFormat
+import b4processor.common.OpcodeFormat._
 import b4processor.utils.Tag
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ValueSelector1Wrapper(implicit params: Parameters)
-    extends ValueSelector1 {
+  extends ValueSelector1 {
 
   /** 初期化
-    *
+   *
     * @param sourceTag
     *   ソースタグ
     * @param registerFileValue
@@ -21,11 +23,13 @@ class ValueSelector1Wrapper(implicit params: Parameters)
     *   ALUからバイパスされてきた値。タプルの1つめの値がdestination tag、2つめがvalue。
     */
   def initialize(
-    sourceTag: Option[Int] = None,
-    registerFileValue: Int = 0,
-    reorderBufferValue: Option[Int] = None,
-    aluBypassValue: Option[(Int, Int)] = None
-  ): Unit = {
+                  sourceTag: Option[Int] = None,
+                  registerFileValue: Int = 0,
+                  reorderBufferValue: Option[Int] = None,
+                  aluBypassValue: Option[(Int, Int)] = None,
+                  opcodeFormat: OpcodeFormat.Type = R,
+                  immediate: Int = 0
+                ): Unit = {
     this.io.outputCollector.outputs.valid
       .poke(aluBypassValue.isDefined.B)
     this.io.outputCollector.outputs.bits.tag
@@ -38,6 +42,8 @@ class ValueSelector1Wrapper(implicit params: Parameters)
     this.io.registerFileValue.poke(registerFileValue)
     this.io.sourceTag.valid.poke(sourceTag.isDefined)
     this.io.sourceTag.tag.poke(Tag(0, sourceTag.getOrElse(0)))
+    this.io.opcodeFormat.poke(opcodeFormat)
+    this.io.immediateValue.poke(immediate)
   }
 
   def expectValue(value: Option[Int]): Unit = {
@@ -94,6 +100,13 @@ class ValueSelector1Test extends AnyFlatSpec with ChiselScalatestTester {
         aluBypassValue = Some(3, 12)
       )
       c.expectValue(Some(12))
+    }
+  }
+
+  it should "use immediate" in {
+    test(new ValueSelector1Wrapper) { c =>
+      c.initialize(immediate = 9, opcodeFormat = U)
+      c.expectValue(Some(9))
     }
   }
 
