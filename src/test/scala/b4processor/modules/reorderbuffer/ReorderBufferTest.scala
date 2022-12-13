@@ -35,7 +35,6 @@ class ReorderBufferWrapper(implicit params: Parameters)
       decoder.source1.sourceRegister.poke(values.source1)
       decoder.source2.sourceRegister.poke(values.source2)
       decoder.destination.destinationRegister.poke(values.destination)
-      decoder.programCounter.poke(values.programCounter)
     }
   }
 

@@ -1,6 +1,5 @@
 _start:
-    addi x1, x0, 1
-    slli x1, x1, 31
+    la x1, __BINARY_END_
 
     li x2, 10
 
