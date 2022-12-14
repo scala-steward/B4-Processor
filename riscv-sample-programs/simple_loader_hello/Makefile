@@ -1,10 +1,13 @@
+PROGRAMNAME := loader
+SOURCES := entry.S
+
 TOOL_PREFIX := riscv64-unknown-elf-
 export CC := $(TOOL_PREFIX)gcc
 export OBJCOPY := $(TOOL_PREFIX)objcopy
 export OBJDUMP := $(TOOL_PREFIX)objdump
 export CFLAGS := -nodefaultlibs -nostdlib -march=rv64i -mabi=lp64 -no-pie -static -g
 
-CFLAGS += -T ../linker.ld
+CFLAGS += -T ./linker.ld
 
 .PHONY:clean
 all: $(PROGRAMNAME).hex $(PROGRAMNAME).o $(PROGRAMNAME).dump $(PROGRAMNAME).text64.hex
