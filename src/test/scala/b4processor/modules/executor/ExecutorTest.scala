@@ -740,7 +740,7 @@ class ExecutorTest
           destinationTag = 10,
           value1 = -123,
           function3 = 5,
-          immediateOrFunction7 = 2 + 2048,
+          immediateOrFunction7 = 2 + 1024,
           opcode = 19
         )
       )
@@ -771,7 +771,7 @@ class ExecutorTest
           destinationTag = 10,
           value1 = 40,
           value2 = 30,
-          immediateOrFunction7 = 32,
+          immediateOrFunction7 = 1024,
           opcode = 51
         )
       )
@@ -908,7 +908,7 @@ class ExecutorTest
           value1 = -100,
           value2 = 2,
           function3 = 5,
-          immediateOrFunction7 = 32,
+          immediateOrFunction7 = 1024,
           opcode = 51
         )
       )
