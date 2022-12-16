@@ -1,5 +1,6 @@
-package b4processor
+package b4processor.Z_B4ProcessorTests
 
+import b4processor.Parameters
 import b4processor.utils.B4ProcessorWithMemory
 import chiseltest._
 import chiseltest.internal.CachingAnnotation

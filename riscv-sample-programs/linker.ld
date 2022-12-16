@@ -1,7 +1,7 @@
 ENTRY(_start)
 
 MEMORY{
-	RAM (rwx) : ORIGIN = 0x80100000, LENGTH = 255M
+	RAM (rwx) : ORIGIN = 0x80000000 + 1M, LENGTH = 255M
 }
 
 SECTIONS{
@@ -19,7 +19,8 @@ SECTIONS{
 		PROVIDE(__DATA_START_ = .);
 	    *(.data)
 	    PROVIDE(__DATA_END_ = .);
+	    . = ALIGN(8);
+        PROVIDE(__BINARY_END_ = .);
 	} > RAM
-	. = ALIGN(8);
-	PROVIDE(__BINARY_END_ =.);
+
 }

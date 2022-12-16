@@ -15,56 +15,40 @@ import chisel3.util._
 class ReservationStation(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val collectedOutput = Flipped(new CollectedOutput)
-    val executor = new ReservationStation2Executor
+    val executor = Irrevocable(new ReservationStation2Executor)
     val decoder = Vec(
       params.threads * params.decoderPerThread,
       Flipped(new Decoder2ReservationStation)
     )
   })
 
+  val rsWidth = log2Up(params.threads * params.decoderPerThread * 2)
+
   val reservation = RegInit(
     VecInit(
-      Seq.fill(math.pow(2, params.reservationStationWidth).toInt)(
-        ReservationStationEntry.default
-      )
+      Seq.fill(math.pow(2, rsWidth).toInt)(ReservationStationEntry.default)
     )
   )
-  val readyList = reservation.map { r => r.ready1 && r.ready2 }
-
-  val hasReady = Cat(readyList).orR
-  val executeIndex = MuxCase(
-    0.U,
-    readyList.zipWithIndex.map { case (ready, index) => ready -> index.U }
+  private val outputArbiter = Module(
+    new RRArbiter(new ReservationStation2Executor, math.pow(2, rsWidth).toInt)
   )
 
-  //  printf(p"hasEmpty=$hasEmpty at $emptyIndex hasReady=$hasReady at $executeIndex\n")
-  //  printf(p"reserved0 valid=${reservation(0).valid} ready1=${reservation(0).ready1} value1=${reservation(0).value1}\n")
-
-  // 実行ユニットへ
-  when(io.executor.ready && hasReady) {
-    reservation(executeIndex) := ReservationStationEntry.default
+  for ((r, i) <- reservation.zipWithIndex) {
+    outputArbiter.io.in(i).bits.opcode := r.opcode
+    outputArbiter.io.in(i).bits.destinationTag := r.destinationTag
+    outputArbiter.io.in(i).bits.value1 := r.value1
+    outputArbiter.io.in(i).bits.value2 := r.value2
+    outputArbiter.io.in(i).bits.function3 := r.function3
+    outputArbiter.io.in(i).bits.immediateOrFunction7 := r.immediateOrFunction7
+    outputArbiter.io.in(i).valid := r.ready1 && r.ready2
+    when(outputArbiter.io.in(i).valid && outputArbiter.io.in(i).ready) {
+      r := ReservationStationEntry.default
+    }
   }
-  io.executor.valid := hasReady
-  when(io.executor.valid) {
-    io.executor.bits.opcode := reservation(executeIndex).opcode
-    io.executor.bits.destinationTag := reservation(executeIndex).destinationTag
-    io.executor.bits.value1 := reservation(executeIndex).value1
-    io.executor.bits.value2 := reservation(executeIndex).value2
-    io.executor.bits.function3 := reservation(executeIndex).function3
-    io.executor.bits.immediateOrFunction7 := reservation(
-      executeIndex
-    ).immediateOrFunction7
-  }.otherwise {
-    io.executor.bits.opcode := 0.U
-    io.executor.bits.destinationTag := Tag(0, 0)
-    io.executor.bits.value1 := 0.U
-    io.executor.bits.value2 := 0.U
-    io.executor.bits.function3 := 0.U
-    io.executor.bits.immediateOrFunction7 := 0.U
-  }
+  io.executor <> outputArbiter.io.out
 
   // デコーダから
-  private val head = RegInit(0.U(params.reservationStationWidth.W))
+  private val head = RegInit(0.U(rsWidth.W))
   private var nextHead = head
   for (i <- 0 until (params.decoderPerThread * params.threads)) {
     io.decoder(i).ready := false.B

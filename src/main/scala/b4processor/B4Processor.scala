@@ -1,6 +1,10 @@
 package b4processor
 
-import b4processor.connections.{InstructionMemory2Cache, LoadStoreQueue2Memory, OutputValue}
+import b4processor.connections.{
+  InstructionMemory2Cache,
+  LoadStoreQueue2Memory,
+  OutputValue
+}
 import b4processor.modules.branch_output_collector.BranchOutputCollector
 import b4processor.modules.cache.{DataMemoryBuffer, InstructionMemoryCache}
 import b4processor.modules.decoder.Decoder
@@ -101,7 +105,7 @@ class B4Processor(implicit params: Parameters) extends Module {
 
       /** デコーダとリザベーションステーションを接続 */
       decoders(tid)(d).io.reservationStation <>
-        reservationStation.io.decoder(tid * params.decoderPerThread + d)
+        reservationStation.io.decoder(tid + d * params.threads)
 
       /** デコーダとレジスタファイルの接続 */
       decoders(tid)(d).io.registerFile <> registerFile(tid).io.decoders(d)
@@ -163,7 +167,5 @@ object B4Processor extends App {
     decoderPerThread = 2,
     instructionStart = 0x2000_0000L
   )
-  (new ChiselStage).emitVerilog(
-    new B4Processor()
-  )
+  (new ChiselStage).emitVerilog(new B4Processor())
 }

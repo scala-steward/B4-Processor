@@ -18,7 +18,8 @@ import chisel3.{Mux, _}
 
 class Executor(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val reservationStation = Flipped(new ReservationStation2Executor)
+    val reservationStation =
+      Flipped(Irrevocable(new ReservationStation2Executor))
     val out = Irrevocable(new OutputValue)
     //    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
     val fetch = Irrevocable(new BranchOutput)

@@ -1,7 +1,7 @@
-package b4processor
+package b4processor.Z_B4ProcessorTests
 
-import b4processor.utils.{B4ProcessorWithMemory, InstructionUtil}
-import chisel3._
+import b4processor.Parameters
+import b4processor.utils.B4ProcessorWithMemory
 import chisel3.stage.ChiselStage
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -13,7 +13,7 @@ class B4ProcessoElaborateTest extends AnyFlatSpec with ChiselScalatestTester {
 
   behavior of "B4Processor connections"
   // コンパイルが通ることを確認（信号をつなぎきれていないとエラーになる）
-  for (threads <- 1 to 2)
+  for (threads <- 1 to 4)
     for (decoderPerThread <- 1 to 3)
       for (maxCommitCount <- 1 to 3)
         for (tagWidth <- 2 to 3)

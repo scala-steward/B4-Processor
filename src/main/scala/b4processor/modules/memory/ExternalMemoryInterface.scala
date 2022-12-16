@@ -96,7 +96,11 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
   )
   instructionOrReadDataArbiter.io.in(0) <> instructionsArbiter.io.out
   instructionOrReadDataArbiter.io.in(1) <> io.dataReadRequests
-  private val readTransaction = instructionOrReadDataArbiter.io.out
+  private val instructionOrReadDataQueue = Module(
+    new FIFO(2)(new MemoryReadTransaction())
+  )
+  instructionOrReadDataQueue.input <> instructionOrReadDataArbiter.io.out
+  private val readTransaction = instructionOrReadDataQueue.output
   readTransaction.ready := false.B
 
   val readQueued = RegInit(false.B)

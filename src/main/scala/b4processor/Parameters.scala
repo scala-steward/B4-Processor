@@ -27,7 +27,6 @@ import scala.math.pow
   */
 case class Parameters(
                        tagWidth: Int = 4,
-                       reservationStationWidth: Int = 3,
                        loadStoreQueueIndexWidth: Int = 3,
                        loadStoreQueueCheckLength: Int = 3,
                        decoderPerThread: Int = 2,
@@ -36,6 +35,6 @@ case class Parameters(
                        maxDataMemoryCommitCount: Int = 4,
                        fetchWidth: Int = 2,
                        branchPredictionWidth: Int = 4,
-                       instructionStart: Long = 0x8000_0000L,
+                       instructionStart: Long = 0x8010_0000L,
                        debug: Boolean = false
                      )

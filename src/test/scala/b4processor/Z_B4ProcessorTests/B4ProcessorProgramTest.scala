@@ -1,8 +1,8 @@
-package b4processor
+package b4processor.Z_B4ProcessorTests
 
-import b4processor.utils.{B4ProcessorWithMemory, InstructionUtil}
+import b4processor.Parameters
+import b4processor.utils.B4ProcessorWithMemory
 import chiseltest._
-import chisel3._
 import chiseltest.internal.CachingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -253,7 +253,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       ) { c =>
         c.initialize("riscv-sample-programs/load_store/load_store")
         c.checkForRegister(3, 10, 120)
-        c.io.registerFileContents.get(0)(1).expect(0x8000_0018L)
+        c.io.registerFileContents.get(0)(1).expect(defaultParams.instructionStart + 0x18)
         c.io.registerFileContents.get(0)(2).expect(10)
         c.io.registerFileContents.get(0)(3).expect(10)
       }
