@@ -25,11 +25,16 @@ class InstructionMemoryCache(threadId: Int)(implicit params: Parameters)
     }
   })
 
-  private val buf = RegInit(VecInit(Seq.fill(4)(new Bundle {
+  class InstructionMemoryBufferContent extends Bundle {
     val valid = Bool()
     val upper = UInt(60.W)
     val data = Vec(8, UInt(16.W))
-  }.Lit(_.valid -> false.B))))
+  }
+  private val buf = RegInit(
+    VecInit(
+      Seq.fill(4)(new InstructionMemoryBufferContent().Lit(_.valid -> false.B))
+    )
+  )
 
   private val request = WireDefault(0.U(60.W))
   private var didRequest = false.B
@@ -74,7 +79,7 @@ class InstructionMemoryCache(threadId: Int)(implicit params: Parameters)
   private val readIndex = Reg(UInt(1.W))
   private val requested = Reg(Bool())
   private val transaction = Reg(new MemoryReadTransaction)
-  private val requestDone = Reg(Bool())
+  private val requestDone = RegInit(false.B)
 
   when(didRequest && state === waiting) {
     state := requesting

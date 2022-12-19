@@ -5,54 +5,65 @@ loader.o:     file format elf64-littleriscv
 Disassembly of section .text:
 
 0000000020000000 <_start>:
-    20000000:	60000597          	auipc	x11,0x60000
-    20000004:	00058593          	addi	x11,x11,0 # 80000000 <__RAM_START>
-    20000008:	f0013617          	auipc	x12,0xf0013
-    2000000c:	ff860613          	addi	x12,x12,-8 # 10013000 <__UART_START>
-    20000010:	f0012697          	auipc	x13,0xf0012
-    20000014:	ff068693          	addi	x13,x13,-16 # 10012000 <__GPIO_START>
-    20000018:	00000717          	auipc	x14,0x0
-    2000001c:	04870713          	addi	x14,x14,72 # 20000060 <hello>
+    20000000:	00020263          	beq	x4,x0,20000004 <_write>
 
-0000000020000020 <NEXT_CHAR>:
-    20000020:	00070783          	lb	x15,0(x14)
-    20000024:	0ff0000f          	fence	iorw,iorw
-    20000028:	00c62883          	lw	x17,12(x12)
-    2000002c:	0ff0000f          	fence	iorw,iorw
-    20000030:	00f60223          	sb	x15,4(x12)
-    20000034:	0ff0000f          	fence	iorw,iorw
-    20000038:	00170713          	addi	x14,x14,1
-    2000003c:	fe5ff06f          	jal	x0,20000020 <NEXT_CHAR>
+0000000020000004 <_write>:
+    20000004:	f0012517          	auipc	x10,0xf0012
+    20000008:	ffc50513          	addi	x10,x10,-4 # 10012000 <__GPIO_START>
+    2000000c:	00f00593          	addi	x11,x0,15
+    20000010:	00b50023          	sb	x11,0(x10)
+    20000014:	f0013517          	auipc	x10,0xf0013
+    20000018:	fec50513          	addi	x10,x10,-20 # 10013000 <__UART_START>
+    2000001c:	00000717          	auipc	x14,0x0
+    20000020:	04c70713          	addi	x14,x14,76 # 20000068 <hello>
 
-0000000020000040 <END>:
-    20000040:	0000006f          	jal	x0,20000040 <END>
+0000000020000024 <NEXT_CHAR>:
+    20000024:	00070783          	lb	x15,0(x14)
+    20000028:	02078263          	beq	x15,x0,2000004c <END>
 
-0000000020000044 <wait>:
-    20000044:	000186b7          	lui	x13,0x18
-    20000048:	6a06869b          	addiw	x13,x13,1696
+000000002000002c <check_full>:
+    2000002c:	00852883          	lw	x17,8(x10)
+    20000030:	0088f893          	andi	x17,x17,8
+    20000034:	00088663          	beq	x17,x0,20000040 <write_char>
+    20000038:	018000ef          	jal	x1,20000050 <wait>
+    2000003c:	ff1ff06f          	jal	x0,2000002c <check_full>
 
-000000002000004c <_WTMP>:
-    2000004c:	00068663          	beq	x13,x0,20000058 <_WEND>
-    20000050:	fff68693          	addi	x13,x13,-1 # 17fff <__GPIO_START-0xfffa001>
-    20000054:	ff9ff06f          	jal	x0,2000004c <_WTMP>
+0000000020000040 <write_char>:
+    20000040:	00f50223          	sb	x15,4(x10)
+    20000044:	00170713          	addi	x14,x14,1
+    20000048:	fddff06f          	jal	x0,20000024 <NEXT_CHAR>
 
-0000000020000058 <_WEND>:
-    20000058:	00008067          	jalr	x0,0(x1)
+000000002000004c <END>:
+    2000004c:	0000006f          	jal	x0,2000004c <END>
+
+0000000020000050 <wait>:
+    20000050:	000186b7          	lui	x13,0x18
+    20000054:	6a06869b          	addiw	x13,x13,1696
+
+0000000020000058 <_WTMP>:
+    20000058:	00068663          	beq	x13,x0,20000064 <_WEND>
+    2000005c:	fff68693          	addi	x13,x13,-1 # 17fff <__GPIO_START-0xfffa001>
+    20000060:	ff9ff06f          	jal	x0,20000058 <_WTMP>
+
+0000000020000064 <_WEND>:
+    20000064:	00008067          	jalr	x0,0(x1)
 
 Disassembly of section .data:
 
-000000002000005c <hello-0x4>:
-    2000005c:	0000                	c.unimp
-	...
-
-0000000020000060 <hello>:
-    20000060:	6261                	c.lui	x4,0x18
-    20000062:	66656463          	bltu	x10,x6,200006ca <hello+0x66a>
-    20000066:	6a696867          	0x6a696867
-    2000006a:	6e6d6c6b          	0x6e6d6c6b
-    2000006e:	7271706f          	jal	x0,20017f94 <hello+0x17f34>
-    20000072:	76757473          	csrrci	x8,0x767,10
-    20000076:	7a797877          	0x7a797877
+0000000020000068 <hello>:
+    20000068:	6548                	c.ld	x10,136(x10)
+    2000006a:	6c6c                	c.ld	x11,216(x8)
+    2000006c:	6f57206f          	jal	x0,20072f60 <hello+0x72ef8>
+    20000070:	6c72                	c.ldsp	x24,280(x2)
+    20000072:	0d64                	c.addi4spn	x9,x2,668
+    20000074:	460a                	c.lwsp	x12,128(x2)
+    20000076:	6f72                	c.ldsp	x30,280(x2)
+    20000078:	206d                	0x206d
+    2000007a:	3442                	c.fldsp	f8,48(x2)
+    2000007c:	7250                	c.ld	x12,160(x12)
+    2000007e:	7365636f          	jal	x6,200567b4 <hello+0x5674c>
+    20000082:	21726f73          	csrrsi	x30,0x217,4
+    20000086:	0a0d                	c.addi	x20,3
 	...
 
 Disassembly of section .riscv.attributes:
@@ -73,7 +84,7 @@ Disassembly of section .riscv.attributes:
 Disassembly of section .debug_line:
 
 0000000000000000 <.debug_line>:
-   0:	009c                	c.addi4spn	x15,x2,64
+   0:	00b4                	c.addi4spn	x13,x2,72
    2:	0000                	c.unimp
    4:	001e0003          	lb	x0,1(x28)
    8:	0000                	c.unimp
@@ -96,21 +107,21 @@ Disassembly of section .debug_line:
   2e:	0020                	c.addi4spn	x8,x2,8
   30:	0000                	c.unimp
   32:	1700                	c.addi4spn	x8,x2,928
-  34:	08090103          	lb	x2,128(x18)
+  34:	04090203          	lb	x4,64(x18)
   38:	0100                	c.addi4spn	x8,x2,128
   3a:	08090103          	lb	x2,128(x18)
   3e:	0100                	c.addi4spn	x8,x2,128
-  40:	08090203          	lb	x4,128(x18)
+  40:	04090103          	lb	x2,64(x18)
   44:	0100                	c.addi4spn	x8,x2,128
-  46:	08090303          	lb	x6,128(x18)
+  46:	04090103          	lb	x2,64(x18)
   4a:	0100                	c.addi4spn	x8,x2,128
-  4c:	04090103          	lb	x2,64(x18)
+  4c:	08090103          	lb	x2,128(x18)
   50:	0100                	c.addi4spn	x8,x2,128
-  52:	04090103          	lb	x2,64(x18)
+  52:	08090203          	lb	x4,128(x18)
   56:	0100                	c.addi4spn	x8,x2,128
   58:	04090103          	lb	x2,64(x18)
   5c:	0100                	c.addi4spn	x8,x2,128
-  5e:	04090103          	lb	x2,64(x18)
+  5e:	04090203          	lb	x4,64(x18)
   62:	0100                	c.addi4spn	x8,x2,128
   64:	04090103          	lb	x2,64(x18)
   68:	0100                	c.addi4spn	x8,x2,128
@@ -118,21 +129,29 @@ Disassembly of section .debug_line:
   6e:	0100                	c.addi4spn	x8,x2,128
   70:	04090103          	lb	x2,64(x18)
   74:	0100                	c.addi4spn	x8,x2,128
-  76:	04090203          	lb	x4,64(x18)
+  76:	04090103          	lb	x2,64(x18)
   7a:	0100                	c.addi4spn	x8,x2,128
-  7c:	04090503          	lb	x10,64(x18)
+  7c:	04090203          	lb	x4,64(x18)
   80:	0100                	c.addi4spn	x8,x2,128
-  82:	08090203          	lb	x4,128(x18)
+  82:	04090103          	lb	x2,64(x18)
   86:	0100                	c.addi4spn	x8,x2,128
   88:	04090103          	lb	x2,64(x18)
   8c:	0100                	c.addi4spn	x8,x2,128
-  8e:	04090103          	lb	x2,64(x18)
+  8e:	04090203          	lb	x4,64(x18)
   92:	0100                	c.addi4spn	x8,x2,128
-  94:	04090203          	lb	x4,64(x18)
+  94:	04090503          	lb	x10,64(x18)
   98:	0100                	c.addi4spn	x8,x2,128
-  9a:	0409                	c.addi	x8,2
-  9c:	0000                	c.unimp
-  9e:	0101                	c.addi	x2,0
+  9a:	08090203          	lb	x4,128(x18)
+  9e:	0100                	c.addi4spn	x8,x2,128
+  a0:	04090103          	lb	x2,64(x18)
+  a4:	0100                	c.addi4spn	x8,x2,128
+  a6:	04090103          	lb	x2,64(x18)
+  aa:	0100                	c.addi4spn	x8,x2,128
+  ac:	04090203          	lb	x4,64(x18)
+  b0:	0100                	c.addi4spn	x8,x2,128
+  b2:	0409                	c.addi	x8,2
+  b4:	0000                	c.unimp
+  b6:	0101                	c.addi	x2,0
 
 Disassembly of section .debug_info:
 
@@ -149,7 +168,7 @@ Disassembly of section .debug_info:
   12:	2000                	c.fld	f8,0(x8)
   14:	0000                	c.unimp
   16:	0000                	c.unimp
-  18:	005c                	c.addi4spn	x15,x2,4
+  18:	0068                	c.addi4spn	x10,x2,12
   1a:	2000                	c.fld	f8,0(x8)
 	...
   24:	0008                	0x8
@@ -186,7 +205,7 @@ Disassembly of section .debug_aranges:
   12:	2000                	c.fld	f8,0(x8)
   14:	0000                	c.unimp
   16:	0000                	c.unimp
-  18:	005c                	c.addi4spn	x15,x2,4
+  18:	0068                	c.addi4spn	x10,x2,12
 	...
 
 Disassembly of section .debug_str:

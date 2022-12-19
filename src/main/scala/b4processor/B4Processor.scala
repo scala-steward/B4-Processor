@@ -167,5 +167,10 @@ object B4Processor extends App {
     decoderPerThread = 2,
     instructionStart = 0x2000_0000L
   )
-  (new ChiselStage).emitVerilog(new B4Processor())
+  (new ChiselStage).emitVerilog(
+    new B4Processor(),
+    args = Array(
+      "--emission-options=disableMemRandomization,disableRegisterRandomization"
+    )
+  )
 }
