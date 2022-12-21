@@ -3,15 +3,16 @@ export CC := $(TOOL_PREFIX)gcc
 export OBJCOPY := $(TOOL_PREFIX)objcopy
 export OBJDUMP := $(TOOL_PREFIX)objdump
 export CFLAGS := -nodefaultlibs -nostdlib -march=rv64i -mabi=lp64 -no-pie -static -g
+export LINKER_SCRIPT := ../linker.ld
 
-CFLAGS += -T ../linker.ld
+CFLAGS += -T$(LINKER_SCRIPT)
 
 .PHONY:clean
 all: $(PROGRAMNAME).hex $(PROGRAMNAME).o $(PROGRAMNAME).dump $(PROGRAMNAME).text64.hex
 
 
-$(PROGRAMNAME).o: $(SOURCES)
-	$(CC) $(CFLAGS) $^ -o $@
+$(PROGRAMNAME).o: $(SOURCES) $(LINKER_SCRIPT)
+	$(CC) $(CFLAGS) $(SOURCES) -o $@
 
 $(PROGRAMNAME).text.binary: $(PROGRAMNAME).o
 	$(OBJCOPY) -O binary  $< $@
