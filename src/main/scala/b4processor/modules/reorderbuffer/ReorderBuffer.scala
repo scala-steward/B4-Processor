@@ -30,7 +30,10 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
       Vec(params.decoderPerThread, Flipped(new Decoder2ReorderBuffer))
     val collectedOutputs = Flipped(new CollectedOutput)
     val registerFile =
-      Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
+      Vec(
+        params.maxRegisterFileCommitCount,
+        Valid(new ReorderBuffer2RegisterFile())
+      )
     val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
     val isEmpty = Output(Bool())
 
