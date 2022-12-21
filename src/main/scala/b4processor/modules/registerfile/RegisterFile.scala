@@ -41,7 +41,7 @@ class RegisterFile(threadId: Int)(implicit params: Parameters) extends Module {
     )
   )
 
-  for (rb <- io.reorderBuffer.reverse) {
+  for (rb <- io.reorderBuffer) {
     when(rb.valid) {
       registers(rb.bits.destinationRegister - 1.U) := rb.bits.value
     }
