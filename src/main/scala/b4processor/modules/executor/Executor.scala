@@ -26,7 +26,7 @@ class Executor(implicit params: Parameters) extends Module {
   })
 
   /** リザベーションステーションから実行ユニットへデータを送信 op,fuctionによって命令を判断し，計算を実行
-   */
+    */
   io.reservationStation.ready := io.out.ready && io.fetch.ready
   val instructionChecker = Module(new InstructionChecker)
 
@@ -149,9 +149,9 @@ class Executor(implicit params: Parameters) extends Module {
           // jalr
           (instructionChecker.output.instruction === Instructions.jalr)
             -> (Cat(
-            (a.asSInt + immediateOrFunction7Extended)(63, 1),
-            0.U
-          ).asSInt - IJU_ProgramCounter.asSInt)
+              (a.asSInt + immediateOrFunction7Extended)(63, 1),
+              0.U
+            ).asSInt - IJU_ProgramCounter.asSInt)
         )
       )
     }

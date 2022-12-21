@@ -9,10 +9,10 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ValueSelector1Wrapper(implicit params: Parameters)
-  extends ValueSelector1 {
+    extends ValueSelector1 {
 
   /** 初期化
-   *
+    *
     * @param sourceTag
     *   ソースタグ
     * @param registerFileValue
@@ -23,13 +23,13 @@ class ValueSelector1Wrapper(implicit params: Parameters)
     *   ALUからバイパスされてきた値。タプルの1つめの値がdestination tag、2つめがvalue。
     */
   def initialize(
-                  sourceTag: Option[Int] = None,
-                  registerFileValue: Int = 0,
-                  reorderBufferValue: Option[Int] = None,
-                  aluBypassValue: Option[(Int, Int)] = None,
-                  opcodeFormat: OpcodeFormat.Type = R,
-                  immediate: Int = 0
-                ): Unit = {
+    sourceTag: Option[Int] = None,
+    registerFileValue: Int = 0,
+    reorderBufferValue: Option[Int] = None,
+    aluBypassValue: Option[(Int, Int)] = None,
+    opcodeFormat: OpcodeFormat.Type = R,
+    immediate: Int = 0
+  ): Unit = {
     this.io.outputCollector.outputs.valid
       .poke(aluBypassValue.isDefined.B)
     this.io.outputCollector.outputs.bits.tag

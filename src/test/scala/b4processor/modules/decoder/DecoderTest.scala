@@ -25,20 +25,20 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
   }
 
   def setImem(
-               instruction: UInt,
-               programCounter: Int,
-               isPrediction: Boolean = false
-             ): Unit = {
+    instruction: UInt,
+    programCounter: Int,
+    isPrediction: Boolean = false
+  ): Unit = {
     this.io.instructionFetch.bits.instruction.poke(instruction)
     this.io.instructionFetch.bits.programCounter.poke(programCounter)
     this.io.instructionFetch.valid.poke(true)
   }
 
   def setReorderBuffer(
-                        destinationTag: Int = 0,
-                        sourceTag1: Option[Int] = None,
-                        value1: Option[Int] = None,
-                        sourceTag2: Option[Int] = None,
+    destinationTag: Int = 0,
+    sourceTag1: Option[Int] = None,
+    value1: Option[Int] = None,
+    sourceTag2: Option[Int] = None,
     value2: Option[Int] = None
   ): Unit = {
     this.io.reorderBuffer.destination.destinationTag

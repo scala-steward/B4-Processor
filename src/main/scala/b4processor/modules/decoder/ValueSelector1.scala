@@ -8,10 +8,10 @@ import chisel3._
 import chisel3.util._
 
 /** ソースタグ1の値を選択する回路
- *
- * @param params
- * パラメータ
- */
+  *
+  * @param params
+  *   パラメータ
+  */
 class ValueSelector1(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reorderBufferValue = Flipped(Valid(UInt(64.W)))

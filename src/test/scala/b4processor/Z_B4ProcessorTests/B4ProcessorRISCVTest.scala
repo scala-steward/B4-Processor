@@ -7,7 +7,7 @@ import chiseltest.internal.CachingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
 class B4ProcessorRISCVTestWrapper()(implicit params: Parameters)
-  extends B4ProcessorWithMemory() {
+    extends B4ProcessorWithMemory() {
   def riscv_test(): Unit = {
     while (this.io.registerFileContents.get(0)(17).peekInt() != 93) {
       this.clock.step()

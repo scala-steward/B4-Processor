@@ -253,7 +253,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       ) { c =>
         c.initialize("riscv-sample-programs/load_store/load_store")
         c.checkForRegister(3, 10, 120)
-        c.io.registerFileContents.get(0)(1).expect(defaultParams.instructionStart + 0x18)
+        c.io.registerFileContents
+          .get(0)(1)
+          .expect(defaultParams.instructionStart + 0x18)
         c.io.registerFileContents.get(0)(2).expect(10)
         c.io.registerFileContents.get(0)(3).expect(10)
       }

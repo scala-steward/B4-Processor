@@ -23,14 +23,14 @@ class ValueSelector2Wrapper(implicit params: Parameters)
     *   ALUからバイパスされてきた値。タプルの1つめの値がdestination tag、2つめがvalue。
     */
   def initialize(
-                  sourceTag: Option[Int] = None,
-                  registerFileValue: Int = 0,
-                  reorderBufferValue: Option[Int] = None,
-                  aluBypassValue: Option[(Int, Int)] = None,
-                  programCounter: Int = 0,
-                  opcodeFormat: OpcodeFormat.Type = R,
-                  immediate: Int = 0
-                ): Unit = {
+    sourceTag: Option[Int] = None,
+    registerFileValue: Int = 0,
+    reorderBufferValue: Option[Int] = None,
+    aluBypassValue: Option[(Int, Int)] = None,
+    programCounter: Int = 0,
+    opcodeFormat: OpcodeFormat.Type = R,
+    immediate: Int = 0
+  ): Unit = {
     this.io.outputCollector.outputs.valid
       .poke(aluBypassValue.isDefined)
     this.io.outputCollector.outputs.bits.tag

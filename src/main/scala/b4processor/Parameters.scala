@@ -26,15 +26,15 @@ import scala.math.pow
   *   データメモリのサイズ
   */
 case class Parameters(
-                       tagWidth: Int = 4,
-                       loadStoreQueueIndexWidth: Int = 3,
-                       loadStoreQueueCheckLength: Int = 3,
-                       decoderPerThread: Int = 2,
-                       threads: Int = 2,
-                       maxRegisterFileCommitCount: Int = 4,
-                       maxDataMemoryCommitCount: Int = 4,
-                       fetchWidth: Int = 2,
-                       branchPredictionWidth: Int = 4,
-                       instructionStart: Long = 0x8010_0000L,
-                       debug: Boolean = false
-                     )
+  tagWidth: Int = 4,
+  loadStoreQueueIndexWidth: Int = 3,
+  loadStoreQueueCheckLength: Int = 3,
+  decoderPerThread: Int = 2,
+  threads: Int = 2,
+  maxRegisterFileCommitCount: Int = 4,
+  maxDataMemoryCommitCount: Int = 4,
+  fetchWidth: Int = 2,
+  branchPredictionWidth: Int = 4,
+  instructionStart: Long = 0x8010_0000L,
+  debug: Boolean = false
+)
