@@ -22,7 +22,7 @@ class B4ProcessorRISCVTestWrapper()(implicit params: Parameters)
 
 class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
-  implicit val defaultParams =
+  implicit val defaultParams = {
     Parameters(
       debug = true,
       threads = 1,
@@ -31,6 +31,8 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
       loadStoreQueueIndexWidth = 2,
       maxRegisterFileCommitCount = 2
     )
+  }
+  val backendAnnotation = IcarusBackendAnnotation
 
   behavior of s"RISC-V tests rv64i"
 
@@ -42,7 +44,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
         .withAnnotations(
-          Seq(WriteVcdAnnotation, CachingAnnotation, VerilatorBackendAnnotation)
+          Seq(WriteVcdAnnotation, CachingAnnotation, backendAnnotation)
         ) { c =>
           c.clock.setTimeout(timeout)
           c.initialize(s"riscv-tests-files/rv64ui-p-${test_name}")

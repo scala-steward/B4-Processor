@@ -33,7 +33,7 @@ class SimpleAXIMemory(size: Int = 1024 * 10) extends Module {
   val sourceReady = RegInit(false.B)
   val gotSize = RegInit(false.B)
   val sourceSize = RegInit("xFFFFFFFF".U)
-  val sourceWriteIndex = Reg(UInt(32.W))
+  val sourceWriteIndex = RegInit(0.U(32.W))
 
   when(!sourceReady) {
     when(!gotSize) {

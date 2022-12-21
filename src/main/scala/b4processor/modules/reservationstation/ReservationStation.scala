@@ -7,7 +7,7 @@ import b4processor.connections.{
   ReservationStation2Executor,
   ResultType
 }
-import b4processor.utils.Tag
+import b4processor.utils.B4RRArbiter
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
@@ -30,18 +30,18 @@ class ReservationStation(implicit params: Parameters) extends Module {
     )
   )
   private val outputArbiter = Module(
-    new RRArbiter(new ReservationStation2Executor, math.pow(2, rsWidth).toInt)
+    new B4RRArbiter(new ReservationStation2Executor, math.pow(2, rsWidth).toInt)
   )
 
-  for ((r, i) <- reservation.zipWithIndex) {
-    outputArbiter.io.in(i).bits.opcode := r.opcode
-    outputArbiter.io.in(i).bits.destinationTag := r.destinationTag
-    outputArbiter.io.in(i).bits.value1 := r.value1
-    outputArbiter.io.in(i).bits.value2 := r.value2
-    outputArbiter.io.in(i).bits.function3 := r.function3
-    outputArbiter.io.in(i).bits.immediateOrFunction7 := r.immediateOrFunction7
-    outputArbiter.io.in(i).valid := r.ready1 && r.ready2
-    when(outputArbiter.io.in(i).valid && outputArbiter.io.in(i).ready) {
+  for ((r, a) <- reservation.zip(outputArbiter.io.in)) {
+    a.bits.opcode := r.opcode
+    a.bits.destinationTag := r.destinationTag
+    a.bits.value1 := r.value1
+    a.bits.value2 := r.value2
+    a.bits.function3 := r.function3
+    a.bits.immediateOrFunction7 := r.immediateOrFunction7
+    a.valid := r.ready1 && r.ready2
+    when(a.valid && a.ready) {
       r := ReservationStationEntry.default
     }
   }

@@ -2,7 +2,7 @@ package b4processor.modules.ourputcollector
 
 import b4processor.Parameters
 import b4processor.connections.{CollectedOutput, OutputValue}
-import b4processor.utils.FIFO
+import b4processor.utils.{B4RRArbiter, FIFO}
 import chisel3._
 import chisel3.util._
 
@@ -19,7 +19,7 @@ class OutputCollector(implicit params: Parameters) extends Module {
   val dataMemoryOutputQueue = Module(new FIFO(2)(new OutputValue))
   dataMemoryOutputQueue.input <> io.dataMemory
 
-  val outputArbitar = Module(new RRArbiter(new OutputValue, 2))
+  val outputArbitar = Module(new B4RRArbiter(new OutputValue, 2))
   outputArbitar.io.in(0) <> executionUnitOutputQueue.output
   outputArbitar.io.in(1) <> dataMemoryOutputQueue.output
 

@@ -3,7 +3,16 @@ package b4processor.modules.memory
 import b4processor.Parameters
 import b4processor.connections.{OutputValue, ResultType}
 import b4processor.structures.memoryAccess.MemoryAccessWidth
-import b4processor.utils.{AXI, BurstSize, BurstType, FIFO, Lock, Response, Tag}
+import b4processor.utils.{
+  AXI,
+  B4RRArbiter,
+  BurstSize,
+  BurstType,
+  FIFO,
+  Lock,
+  Response,
+  Tag
+}
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util._
@@ -86,7 +95,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
   readQueue.input.bits := DontCare
 
   private val instructionsArbiter = Module(
-    new RRArbiter(new MemoryReadTransaction(), params.threads)
+    new B4RRArbiter(new MemoryReadTransaction(), params.threads)
   )
   for (tid <- 0 until params.threads)
     instructionsArbiter.io.in(tid) <> io.instructionFetchRequest(tid)

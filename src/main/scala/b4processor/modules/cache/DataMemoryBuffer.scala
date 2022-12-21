@@ -7,7 +7,7 @@ import b4processor.modules.memory.{
   MemoryWriteTransaction
 }
 import b4processor.structures.memoryAccess.{MemoryAccessType, MemoryAccessWidth}
-import b4processor.utils.FIFO
+import b4processor.utils.{B4RRArbiter, FIFO}
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
@@ -26,7 +26,7 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
   })
 
   private val inputArbiter = Module(
-    new RRArbiter(new DataMemoryBufferEntry, params.threads)
+    new B4RRArbiter(new DataMemoryBufferEntry, params.threads)
   )
   for (tid <- 0 until params.threads)
     inputArbiter.io.in(tid) <> io.dataIn(tid)

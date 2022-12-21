@@ -5,6 +5,7 @@ import b4processor.utils.B4ProcessorWithMemory
 import chiseltest._
 import chiseltest.internal.CachingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
+import treadle.RandomizeAtStartupAnnotation
 
 class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "B4Processor with many parameters"
@@ -30,8 +31,9 @@ class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
                 .withAnnotations(
                   Seq(
                     WriteVcdAnnotation,
-                    VerilatorBackendAnnotation,
-                    CachingAnnotation
+                    IcarusBackendAnnotation,
+                    CachingAnnotation,
+                    RandomizeAtStartupAnnotation
                   )
                 ) { c =>
                   c.initialize("riscv-sample-programs/fibonacci_c/fibonacci_c")
