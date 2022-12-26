@@ -5,12 +5,7 @@ import b4processor.connections.ResultType
 import b4processor.structures.memoryAccess.MemoryAccessInfo
 import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
-import b4processor.utils.{
-  DecodeEnqueue,
-  LSQ2Memory,
-  LSQfromALU,
-  Tag
-}
+import b4processor.utils.{DecodeEnqueue, LSQ2Memory, LSQfromALU, Tag}
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.util.{BitPat, DecoupledIO}
