@@ -1,4 +1,4 @@
-package b4processor.Z_B4ProcessorTests
+package b4processor.z_B4ProcessorTests
 
 import b4processor.Parameters
 import b4processor.utils.B4ProcessorWithMemory
