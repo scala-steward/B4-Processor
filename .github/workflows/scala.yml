@@ -65,12 +65,6 @@ jobs:
       - name: Run tests
         run: sbt "testOnly *modules*"
 
-      # コンパイルされたファイルを共有するためにtargetをアップロードする
-      - uses: actions/upload-artifact@v2
-        with:
-          name: sbt-target
-          path: target
-
   test-compilation:
     name: B4プロセッサのコンパイルチェック
     needs: [ test-components ]
@@ -93,10 +87,6 @@ jobs:
             ~/.ivy2/cache
             ~/.sbt
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: sbt-target
 
       - name: Run tests
         run: sbt "testOnly *B4ProcessorElaborateTest"
@@ -125,12 +115,8 @@ jobs:
             ~/.sbt
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
 
-      - uses: actions/download-artifact@v2
-        with:
-          name: sbt-target
-
-      - name: install verilator
-        run: sudo apt update && sudo apt install verilator
+      - name: install runner
+        run: sudo apt update && sudo apt install verilator iverilog
 
       - name: Run tests
         run: sbt "testOnly *B4ProcessorProgramTest"
@@ -159,12 +145,8 @@ jobs:
             ~/.sbt
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
 
-      - uses: actions/download-artifact@v2
-        with:
-          name: sbt-target
-
-      - name: install verilator
-        run: sudo apt update && sudo apt install verilator
+      - name: install runner
+        run: sudo apt update && sudo apt install verilator iverilog
 
       - name: Run tests
         run: sbt "testOnly *B4ProcessorRISCVTest"
@@ -193,12 +175,8 @@ jobs:
             ~/.sbt
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
 
-      - uses: actions/download-artifact@v2
-        with:
-          name: sbt-target
-
-      - name: install verilator
-        run: sudo apt update && sudo apt install verilator
+      - name: install runner
+        run: sudo apt update && sudo apt install verilator iverilog
 
       - name: Run tests
         run: sbt "testOnly *B4ProcessorParameterTest"
