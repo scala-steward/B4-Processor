@@ -7,7 +7,6 @@ import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
 import b4processor.utils.{
   DecodeEnqueue,
-  ExecutorValue,
   LSQ2Memory,
   LSQfromALU,
   Tag
@@ -67,8 +66,8 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
     for (i <- 0 until params.maxRegisterFileCommitCount) {
       val tag = DestinationTags(i)
       val v = valids(i)
-      io.reorderBuffer.destinationTag(i).poke(Tag(0, tag))
-      io.reorderBuffer.valid(i).poke(v)
+      io.reorderBuffer(i).bits.destinationTag.poke(Tag(0, tag))
+      io.reorderBuffer(i).valid.poke(v)
     }
   }
 

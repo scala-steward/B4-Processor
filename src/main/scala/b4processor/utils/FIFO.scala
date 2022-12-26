@@ -12,31 +12,13 @@ class FIFO[T <: Data](width: Int)(t: T) extends Module {
   val full = IO(Bool())
   val empty = IO(Bool())
 
-  private val head = RegInit(0.U(width.W))
-  private val tail = RegInit(0.U(width.W))
-  private val buffer = SyncReadMem(pow(2, width).toInt, UInt())
-
-  full := head + 1.U === tail
-  empty := head === tail
-
-  input.ready := false.B
-  when(!full) {
-    input.ready := true.B
-    when(input.valid) {
-      buffer.write(head, input.bits.asUInt)
-      head := head + 1.U
-    }
-  }
-
-  output.valid := false.B
-  val rwport = buffer(Mux(output.ready && output.valid, tail + 1.U, tail))
-  when(!empty) {
-    output.valid := true.B
-    when(output.ready) {
-      tail := tail + 1.U
-    }
-  }
-  output.bits := rwport.asTypeOf(t)
+  private val queue = Module(
+    new Queue(t, pow(2, width).toInt, useSyncReadMem = true)
+  )
+  queue.io.enq <> input
+  output <> queue.io.deq
+  full := !queue.io.enq.ready
+  empty := !queue.io.deq.valid
 }
 
 object FIFO extends App {

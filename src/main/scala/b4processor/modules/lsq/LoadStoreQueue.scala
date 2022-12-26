@@ -24,7 +24,12 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         Flipped(Decoupled(new Decoder2LoadStoreQueue()))
       )
     val outputCollector = Flipped(new CollectedOutput)
-    val reorderBuffer = Input(new LoadStoreQueue2ReorderBuffer())
+    val reorderBuffer = Flipped(
+      Vec(
+        params.maxRegisterFileCommitCount,
+        Valid(new LoadStoreQueue2ReorderBuffer)
+      )
+    )
     val memory = Decoupled(new LoadStoreQueue2Memory)
     val isEmpty = Output(Bool())
 
@@ -100,12 +105,11 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     }
   }
 
-  for (i <- 0 until params.maxRegisterFileCommitCount) {
-    when(io.reorderBuffer.valid(i)) {
+  for (rb <- io.reorderBuffer) {
+    when(rb.valid) {
       for (buf <- buffer) {
         when(
-          buf.valid && (io.reorderBuffer
-            .destinationTag(i) === buf.addressAndLoadResultTag)
+          buf.valid && (rb.bits.destinationTag === buf.addressAndLoadResultTag)
         ) {
           buf.readyReorderSign := true.B
         }
@@ -195,20 +199,6 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   if (params.debug) {
     io.head.get := head
     io.tail.get := tail
-    //            printf(p"io.memory(0) = ${io.memory(0).valid}\n")
-    //                printf(p"io.memory(1) = ${io.memory(1).valid}\n")
-    //                printf(p"buffer(0).valid = ${buffer(0).valid}\n")
-    //                printf(p"buffer(1).valid = ${buffer(1).valid}\n")
-    //                printf(p"buffer(0).storeDataValid = ${buffer(0).storeDataValid}\n")
-    //                printf(p"buffer(1).storeDataValid = ${buffer(1).storeDataValid}\n")
-    //                printf(p"buffer(0).readyReorderSign = ${buffer(0).readyReorderSign}\n")
-    //                printf(p"buffer(1).readyReorderSign = ${buffer(1).readyReorderSign}\n")
-    //                printf(p"Address(0) = ${Address(0)}\n")
-    //                printf(p"Address(1) = ${Address(1)}\n")
-    //                printf(p"Overlap(0) = ${Overlap(0)}\n")
-    //                printf(p"Overlap(1) = ${Overlap(1)}\n")
-    //            printf(p"head = $head\n")
-    //            printf(p"tail = $tail\n\n")
   }
 }
 

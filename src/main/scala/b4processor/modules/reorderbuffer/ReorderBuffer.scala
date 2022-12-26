@@ -34,7 +34,10 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
         params.maxRegisterFileCommitCount,
         Valid(new ReorderBuffer2RegisterFile())
       )
-    val loadStoreQueue = Output(new LoadStoreQueue2ReorderBuffer)
+    val loadStoreQueue = Vec(
+      params.maxRegisterFileCommitCount,
+      Valid(new LoadStoreQueue2ReorderBuffer)
+    )
     val isEmpty = Output(Bool())
 
     val head = if (params.debug) Some(Output(UInt(tagWidth.W))) else None
@@ -64,36 +67,34 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
 
   // レジスタファイルへの書き込み
   var lastValid = true.B
-  for (i <- 0 until params.maxRegisterFileCommitCount) {
+  for (((rf, lsq), i) <- io.registerFile.zip(io.loadStoreQueue).zipWithIndex) {
     val index = tail + i.U
 
     val instructionOk = buffer(index).valueReady || buffer(index).storeSign
     val canCommit = lastValid && index =/= head && instructionOk
 
-    io.registerFile(i).valid := canCommit
+    rf.valid := canCommit
     when(canCommit) {
-      io.registerFile(i).bits.value := buffer(index).value
-      io.registerFile(i).bits.destinationRegister := buffer(
-        index
-      ).destinationRegister
+      rf.bits.value := buffer(index).value
+      rf.bits.destinationRegister := buffer(index).destinationRegister
       when(index === registerTagMap(buffer(index).destinationRegister).tagId) {
         registerTagMap(
           buffer(index).destinationRegister
         ) := new RegisterTagMapContent().Lit(_.valid -> false.B, _.tagId -> 0.U)
       }
     }.otherwise {
-      io.registerFile(i).bits.value := 0.U
-      io.registerFile(i).bits.destinationRegister := 0.U
+      rf.bits.value := 0.U
+      rf.bits.destinationRegister := 0.U
     }
 
     when(canCommit) {
       // LSQへストア実行信号
-      io.loadStoreQueue.destinationTag(i) := Tag.fromWires(threadId.U, index)
-      io.loadStoreQueue.valid(i) := buffer(index).storeSign
+      lsq.bits.destinationTag := Tag.fromWires(threadId.U, index)
+      lsq.valid := buffer(index).storeSign
       buffer(index) := ReorderBufferEntry.default
     }.otherwise {
-      io.loadStoreQueue.destinationTag(i) := Tag(threadId, 0)
-      io.loadStoreQueue.valid(i) := false.B
+      lsq.bits.destinationTag := Tag(threadId, 0)
+      lsq.valid := false.B
     }
     lastValid = canCommit
   }
@@ -106,7 +107,7 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
 
   // デコーダからの読み取りと書き込み
   var insertIndex = head
-  var lastReady = true.B
+  private var lastReady = true.B
   for (i <- 0 until params.decoderPerThread) {
     val decoder = io.decoders(i)
     decoder.ready := lastReady && (insertIndex + 1.U) =/= tail
