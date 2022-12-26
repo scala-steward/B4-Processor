@@ -8,10 +8,9 @@ import chisel3.util._
 
 /** LSQとメモリをつなぐ
   */
-class LoadStoreQueue2Memory(implicit params: Parameters)
-    extends ReadyValidIO(new Bundle {
-      val address = UInt(64.W)
-      val tag = new Tag()
-      val data = UInt(64.W)
-      val accessInfo = new MemoryAccessInfo()
-    })
+class LoadStoreQueue2Memory(implicit params: Parameters) extends Bundle {
+  val address = UInt(64.W)
+  val tag = new Tag()
+  val data = UInt(64.W)
+  val accessInfo = new MemoryAccessInfo()
+}

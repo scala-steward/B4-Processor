@@ -8,7 +8,5 @@ import chisel3.util._
 /** LSQとリオーダバッファをつなぐ
   */
 class LoadStoreQueue2ReorderBuffer(implicit params: Parameters) extends Bundle {
-  val destinationTag =
-    Vec(params.maxRegisterFileCommitCount, new Tag)
-  val valid = Vec(params.maxRegisterFileCommitCount, Bool())
+  val destinationTag = new Tag
 }

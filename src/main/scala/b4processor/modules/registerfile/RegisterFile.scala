@@ -14,36 +14,38 @@ import chisel3.util._
   * @param params
   *   パラメータ
   */
-class RegisterFile(implicit params: Parameters) extends Module {
+class RegisterFile(threadId: Int)(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
 
     /** デコーダへ */
-    val decoders = Flipped(Vec(params.runParallel, new Decoder2RegisterFile))
+    val decoders =
+      Flipped(Vec(params.decoderPerThread, new Decoder2RegisterFile))
 
     /** リオーダバッファ */
     val reorderBuffer = Flipped(
-      Vec(params.maxRegisterFileCommitCount, new ReorderBuffer2RegisterFile())
+      Vec(
+        params.maxRegisterFileCommitCount,
+        Valid(new ReorderBuffer2RegisterFile())
+      )
     )
 
-    val values = if (params.debug) Some(Output(Vec(31, UInt(64.W)))) else None
+    val values = if (params.debug) Some(Output(Vec(32, UInt(64.W)))) else None
   })
 
-  /** レジスタx1~x31 */
-  val registers = RegInit(VecInit(Seq.fill(31)(0.U(64.W))))
-
-  for (regIndex <- 1 until 32) {
-    // 最新の情報に更新したいのでリオーダバッファから渡されたデータを逆順に見る
-    registers(regIndex - 1) := MuxCase(
-      registers(regIndex - 1),
-      io.reorderBuffer.reverse.map { rb =>
-        (rb.valid && rb.bits.destinationRegister === regIndex.U) -> rb.bits.value
-      }
+  /** レジスタx1~x31 tpのみthreadIdで初期化
+    */
+  val registers = RegInit(
+    VecInit(
+      (1 until 32)
+        .map(n => if (n == 4 /* tp */ ) threadId.U(64.W) else 0.U(64.W))
     )
-  }
+  )
 
-  // リオーダバッファからくる信号はすべてtrueにして置く
-  for (rb <- io.reorderBuffer)
-    rb.ready := true.B
+  for (rb <- io.reorderBuffer) {
+    when(rb.valid) {
+      registers(rb.bits.destinationRegister - 1.U) := rb.bits.value
+    }
+  }
 
   // それぞれのデコーダへの信号
   for (dec <- io.decoders) {
@@ -61,14 +63,17 @@ class RegisterFile(implicit params: Parameters) extends Module {
   }
 
   // デバッグ用信号
-  if (params.debug)
-    io.values.get := registers
+  if (params.debug) {
+    io.values.get(0) := 0.U
+    for (i <- 0 until 31)
+      io.values.get(i + 1) := registers(i)
+  }
 }
 
 object RegisterFile extends App {
   implicit val params = Parameters()
   (new ChiselStage).emitVerilog(
-    new RegisterFile,
+    new RegisterFile(0),
     args = Array(
       "--emission-options=disableMemRandomization,disableRegisterRandomization"
     )

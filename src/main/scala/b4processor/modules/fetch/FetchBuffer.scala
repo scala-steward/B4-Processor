@@ -9,14 +9,16 @@ import scala.math.pow
 
 class FetchBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val decoders = Vec(params.runParallel, new FetchBuffer2Decoder)
+    val decoders = Vec(params.decoderPerThread, new FetchBuffer2Decoder)
     val fetch = Flipped(new Fetch2FetchBuffer)
   })
 
-  val buffer = Reg(Vec(pow(2, params.runParallel + 1).toInt, new BufferEntry))
+  val buffer = Reg(
+    Vec(pow(2, params.decoderPerThread + 1).toInt, new BufferEntry)
+  )
 
-  val head = RegInit(0.U((params.runParallel + 1).W))
-  val tail = RegInit(0.U((params.runParallel + 1).W))
+  val head = RegInit(0.U((params.decoderPerThread + 1).W))
+  val tail = RegInit(0.U((params.decoderPerThread + 1).W))
 
   {
     var nextHead = head
@@ -60,7 +62,7 @@ sealed class BufferEntry extends Bundle {
 }
 
 object BufferEntry extends App {
-  implicit val params = Parameters(tagWidth = 2, runParallel = 1)
+  implicit val params = Parameters(tagWidth = 2, decoderPerThread = 1)
   (new ChiselStage).emitVerilog(
     new FetchBuffer(),
     args = Array(

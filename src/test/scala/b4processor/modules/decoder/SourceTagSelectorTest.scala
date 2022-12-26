@@ -23,19 +23,19 @@ class SourceTagSelectorWrapper(instruction_offset: Int)(implicit
       this.io
         .beforeDestinationTag(i)
         .bits
-        .poke(Tag(destinationTag(i).getOrElse(0)))
+        .poke(Tag(0, destinationTag(i).getOrElse(0)))
     }
   }
 
   def initializeReorderBuffer(value: Option[Int]): Unit = {
     this.io.reorderBufferDestinationTag.valid.poke(value.isDefined.B)
-    this.io.reorderBufferDestinationTag.bits.poke(Tag(value.getOrElse(0)))
+    this.io.reorderBufferDestinationTag.bits.poke(Tag(0, value.getOrElse(0)))
   }
 
   def expect(value: Option[Int]): Unit = {
     this.io.sourceTag.valid.expect(value.isDefined.B, "source tagが出力されていません")
     if (value.isDefined) {
-      this.io.sourceTag.tag.expect(Tag(value.get), "source tagの値が間違っています")
+      this.io.sourceTag.tag.expect(Tag(0, value.get), "source tagの値が間違っています")
     }
   }
 }

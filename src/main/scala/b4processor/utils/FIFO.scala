@@ -12,34 +12,17 @@ class FIFO[T <: Data](width: Int)(t: T) extends Module {
   val full = IO(Bool())
   val empty = IO(Bool())
 
-  private val head = RegInit(0.U(width.W))
-  private val tail = RegInit(0.U(width.W))
-  private val buffer = SyncReadMem(pow(2, width).toInt, t)
-
-  full := head + 1.U === tail
-  empty := head === tail
-
-  input.ready := false.B
-  when(!full) {
-    input.ready := true.B
-    when(input.valid) {
-      buffer.write(head, input.bits)
-      head := head + 1.U
-    }
-  }
-
-  output.valid := false.B
-  private val outputReg = Reg(t)
-  val rwport = buffer(Mux(output.ready, tail + 1.U, tail))
-  when(!empty) {
-    output.valid := true.B
-    when(output.ready) {
-      tail := tail + 1.U
-    }
-  }
-  output.bits := rwport
+  private val queue = Module(
+    new Queue(t, pow(2, width).toInt, useSyncReadMem = true)
+  )
+  queue.io.enq <> input
+  output <> queue.io.deq
+  full := !queue.io.enq.ready
+  empty := !queue.io.deq.valid
 }
 
 object FIFO extends App {
-  (new ChiselStage).emitVerilog(new FIFO(3)(UInt(32.W)))
+  (new ChiselStage).emitVerilog(new FIFO(8)(new Bundle {
+    val a = UInt(32.W)
+  }))
 }

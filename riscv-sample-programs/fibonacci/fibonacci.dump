@@ -4,29 +4,29 @@ fibonacci.o:     file format elf64-littleriscv
 
 Disassembly of section .text:
 
-0000000040000000 <main>:
-    40000000:	00a00113          	addi	x2,x0,10
-    40000004:	00100193          	addi	x3,x0,1
-    40000008:	0021c663          	blt	x3,x2,40000014 <L1>
-    4000000c:	00010193          	addi	x3,x2,0
-    40000010:	0280006f          	jal	x0,40000038 <L3>
+0000000080100000 <main>:
+    80100000:	00a00113          	addi	x2,x0,10
+    80100004:	00100193          	addi	x3,x0,1
+    80100008:	0021c663          	blt	x3,x2,80100014 <L1>
+    8010000c:	00010193          	addi	x3,x2,0
+    80100010:	0280006f          	jal	x0,80100038 <L3>
 
-0000000040000014 <L1>:
-    40000014:	00100193          	addi	x3,x0,1
-    40000018:	00100213          	addi	x4,x0,1
-    4000001c:	00200093          	addi	x1,x0,2
+0000000080100014 <L1>:
+    80100014:	00100193          	addi	x3,x0,1
+    80100018:	00100213          	addi	x4,x0,1
+    8010001c:	00200093          	addi	x1,x0,2
 
-0000000040000020 <L2>:
-    40000020:	0020dc63          	bge	x1,x2,40000038 <L3>
-    40000024:	00018293          	addi	x5,x3,0
-    40000028:	004181b3          	add	x3,x3,x4
-    4000002c:	00028213          	addi	x4,x5,0
-    40000030:	00108093          	addi	x1,x1,1
-    40000034:	fedff06f          	jal	x0,40000020 <L2>
+0000000080100020 <L2>:
+    80100020:	0020dc63          	bge	x1,x2,80100038 <L3>
+    80100024:	00018293          	addi	x5,x3,0
+    80100028:	004181b3          	add	x3,x3,x4
+    8010002c:	00028213          	addi	x4,x5,0
+    80100030:	00108093          	addi	x1,x1,1
+    80100034:	fedff06f          	jal	x0,80100020 <L2>
 
-0000000040000038 <L3>:
-    40000038:	00018313          	addi	x6,x3,0
-    4000003c:	0000006f          	jal	x0,4000003c <L3+0x4>
+0000000080100038 <L3>:
+    80100038:	00018313          	addi	x6,x3,0
+    8010003c:	0000006f          	jal	x0,8010003c <L3+0x4>
 
 Disassembly of section .riscv.attributes:
 
@@ -35,7 +35,7 @@ Disassembly of section .riscv.attributes:
    2:	0000                	c.unimp
    4:	7200                	c.ld	x8,32(x12)
    6:	7369                	c.lui	x6,0xffffa
-   8:	01007663          	bgeu	x0,x16,14 <main-0x3fffffec>
+   8:	01007663          	bgeu	x0,x16,14 <main-0x800fffec>
    c:	0000000f          	fence	unknown,unknown
   10:	7205                	c.lui	x4,0xfffe1
   12:	3676                	c.fldsp	f12,376(x2)
@@ -48,7 +48,7 @@ Disassembly of section .debug_line:
 0000000000000000 <.debug_line>:
    0:	0094                	c.addi4spn	x13,x2,64
    2:	0000                	c.unimp
-   4:	00220003          	lb	x0,2(x4) # fffffffffffe1002 <__STACK_START_+0xffffffffbffe0bc2>
+   4:	00220003          	lb	x0,2(x4) # fffffffffffe1002 <L3+0xffffffff7fee0fca>
    8:	0000                	c.unimp
    a:	0101                	c.addi	x2,0
    c:	000d0efb          	0xd0efb
@@ -61,13 +61,13 @@ Disassembly of section .debug_line:
   1c:	6966                	c.ldsp	x18,88(x2)
   1e:	6f62                	c.ldsp	x30,24(x2)
   20:	616e                	c.ldsp	x2,216(x2)
-  22:	2e696363          	bltu	x18,x6,308 <main-0x3ffffcf8>
+  22:	2e696363          	bltu	x18,x6,308 <main-0x800ffcf8>
   26:	00000053          	fadd.s	f0,f0,f0,rne
   2a:	0000                	c.unimp
   2c:	0900                	c.addi4spn	x8,x2,144
   2e:	0002                	c.slli64	x0
-  30:	0000                	c.unimp
-  32:	0040                	c.addi4spn	x8,x2,4
+  30:	1000                	c.addi4spn	x8,x2,32
+  32:	0080                	c.addi4spn	x8,x2,64
   34:	0000                	c.unimp
   36:	1300                	c.addi4spn	x8,x2,416
   38:	04090103          	lb	x2,64(x18)
@@ -116,11 +116,11 @@ Disassembly of section .debug_info:
    c:	0000                	c.unimp
    e:	0000                	c.unimp
   10:	0000                	c.unimp
-  12:	4000                	c.lw	x8,0(x8)
+  12:	8010                	0x8010
   14:	0000                	c.unimp
   16:	0000                	c.unimp
   18:	0040                	c.addi4spn	x8,x2,4
-  1a:	4000                	c.lw	x8,0(x8)
+  1a:	8010                	0x8010
 	...
   24:	000c                	0xc
   26:	0000                	c.unimp
@@ -154,7 +154,7 @@ Disassembly of section .debug_aranges:
    c:	0000                	c.unimp
    e:	0000                	c.unimp
   10:	0000                	c.unimp
-  12:	4000                	c.lw	x8,0(x8)
+  12:	8010                	0x8010
   14:	0000                	c.unimp
   16:	0000                	c.unimp
   18:	0040                	c.addi4spn	x8,x2,4
@@ -166,29 +166,29 @@ Disassembly of section .debug_str:
    0:	6966                	c.ldsp	x18,88(x2)
    2:	6f62                	c.ldsp	x30,24(x2)
    4:	616e                	c.ldsp	x2,216(x2)
-   6:	2e696363          	bltu	x18,x6,2ec <main-0x3ffffd14>
+   6:	2e696363          	bltu	x18,x6,2ec <main-0x800ffd14>
    a:	682f0053          	0x682f0053
-   e:	2f656d6f          	jal	x26,56304 <main-0x3ffa9cfc>
+   e:	2f656d6f          	jal	x26,56304 <main-0x800a9cfc>
   12:	676f6873          	csrrsi	x16,0x676,30
-  16:	65442f6f          	jal	x30,4266a <main-0x3ffbd996>
+  16:	65442f6f          	jal	x30,4266a <main-0x800bd996>
   1a:	6f746b73          	csrrsi	x22,0x6f7,8
   1e:	2f70                	c.fld	f12,216(x14)
   20:	3442                	c.fldsp	f8,48(x2)
   22:	702d                	c.lui	x0,0xfffeb
   24:	6f72                	c.ldsp	x30,280(x2)
-  26:	73736563          	bltu	x6,x23,750 <main-0x3ffff8b0>
-  2a:	722f726f          	jal	x4,f774c <main-0x3ff088b4>
+  26:	73736563          	bltu	x6,x23,750 <main-0x800ff8b0>
+  2a:	722f726f          	jal	x4,f774c <main-0x800088b4>
   2e:	7369                	c.lui	x6,0xffffa
-  30:	732d7663          	bgeu	x26,x18,75c <main-0x3ffff8a4>
+  30:	732d7663          	bgeu	x26,x18,75c <main-0x800ff8a4>
   34:	6d61                	c.lui	x26,0x18
   36:	6c70                	c.ld	x12,216(x8)
   38:	2d65                	c.addiw	x26,25
   3a:	7270                	c.ld	x12,224(x12)
-  3c:	6172676f          	jal	x14,26e52 <main-0x3ffd91ae>
+  3c:	6172676f          	jal	x14,26e52 <main-0x800d91ae>
   40:	736d                	c.lui	x6,0xffffb
   42:	6269662f          	0x6269662f
-  46:	63616e6f          	jal	x28,1667c <main-0x3ffe9984>
-  4a:	47006963          	bltu	x0,x16,4bc <main-0x3ffffb44>
+  46:	63616e6f          	jal	x28,1667c <main-0x800e9984>
+  4a:	47006963          	bltu	x0,x16,4bc <main-0x800ffb44>
   4e:	554e                	c.lwsp	x10,240(x2)
   50:	4120                	c.lw	x8,64(x10)
   52:	2e322053          	0x2e322053

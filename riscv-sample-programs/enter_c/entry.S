@@ -1,10 +1,14 @@
 .section .text.init
 .global _start
 _start:
-    li sp, 1
-    slli sp, sp, 31
-    addi sp, sp, 512
-
+    la sp, __BINARY_END_
+    mv a0,tp
+.L_update_sp:
+    addi sp,sp,1024
+    beqz a0, .L_program
+    addi a0, a0, -1
+    j .L_update_sp
+.L_program:
     call main
 
     mv x3,a0

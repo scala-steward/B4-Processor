@@ -1,32 +1,57 @@
-package b4processor
+package b4processor.z_B4ProcessorTests
 
-import b4processor.utils.{B4ProcessorWithMemory, InstructionUtil}
+import b4processor.Parameters
+import b4processor.utils.B4ProcessorWithMemory
 import chiseltest._
-import chisel3._
 import chiseltest.internal.CachingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
 class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "B4Processor"
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
-  implicit val defaultParams = Parameters(debug = true, tagWidth = 4)
+  implicit val defaultParams =
+    Parameters(debug = true, tagWidth = 4, threads = 1, decoderPerThread = 1)
+  val backendAnnotation = IcarusBackendAnnotation
 
   // branchプログラムが実行できる
   it should "execute branch with no parallel" in {
-    test(new B4ProcessorWithMemory()(defaultParams.copy(runParallel = 1)))
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 1, decoderPerThread = 1)
+      )
+    )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/branch/branch")
         c.checkForRegister(13, 20, 40)
       }
   }
+  // branchプログラムが実行できる
+  it should "execute branch with no parallel 2 thread" in {
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 2, decoderPerThread = 1)
+      )
+    )
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.initialize("riscv-sample-programs/branch/branch")
+        c.checkForRegister(13, 20, 40, 0)
+        c.checkForRegister(13, 20, 40, 1)
+      }
+  }
 
   // フィボナッチ数列の計算が同時発行数1でできる
   it should "execute fibonacci with no parallel" in {
-    test(new B4ProcessorWithMemory()(defaultParams.copy(runParallel = 1)))
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 1, decoderPerThread = 1)
+      )
+    )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/fibonacci/fibonacci")
         c.checkForRegister(6, 55, 200)
@@ -37,7 +62,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute fibonacci with 2 parallel" in {
     test(new B4ProcessorWithMemory())
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/fibonacci/fibonacci")
         c.checkForRegister(6, 55, 200)
@@ -46,7 +71,11 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // フィボナッチ数列の計算が同時発行数4でできる
   it should "execute fibonacci with 4 parallel" in {
-    test(new B4ProcessorWithMemory()(defaultParams.copy(runParallel = 4)))
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 1, decoderPerThread = 4)
+      )
+    )
       .withAnnotations(
         Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
       ) { c =>
@@ -59,7 +88,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute call_ret with 2 parallel" in {
     test(new B4ProcessorWithMemory())
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/call_ret/call_ret")
         c.checkForRegister(5, 1, 20)
@@ -70,12 +99,32 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // 並列実行できそうな大量のadd命令を同時発行数1で試す
   it should "execute many_add with no parallel" in {
-    test(new B4ProcessorWithMemory()(defaultParams.copy(runParallel = 1)))
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 1, decoderPerThread = 1)
+      )
+    )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/many_add/many_add")
         c.checkForRegister(1, 8, 70)
+      }
+  }
+
+  // 並列実行できそうな大量のadd命令を同時発行数1で試す
+  it should "execute many_add with no parallel 2 thread" in {
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 2, decoderPerThread = 1)
+      )
+    )
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.initialize("riscv-sample-programs/many_add/many_add")
+        c.checkForRegister(1, 8, 70, 0)
+        c.checkForRegister(1, 8, 70, 1)
       }
   }
 
@@ -83,7 +132,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute many_add with 2 parallel" in {
     test(new B4ProcessorWithMemory()(defaultParams.copy(fetchWidth = 8)))
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/many_add/many_add")
         c.checkForRegister(1, 8, 70)
@@ -94,11 +143,11 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute many_add with 4 parallel" in {
     test(
       new B4ProcessorWithMemory()(
-        defaultParams.copy(runParallel = 4, fetchWidth = 8)
+        defaultParams.copy(threads = 1, decoderPerThread = 4, fetchWidth = 8)
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/many_add/many_add")
         c.checkForRegister(1, 8, 70)
@@ -109,11 +158,12 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "execute many_add with 4 parallel with very low tag width" in {
     test(
       new B4ProcessorWithMemory()(
-        defaultParams.copy(runParallel = 4, fetchWidth = 8, tagWidth = 2)
+        defaultParams
+          .copy(threads = 1, decoderPerThread = 4, fetchWidth = 8, tagWidth = 2)
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/many_add/many_add")
         c.checkForRegister(1, 8, 70)
@@ -125,14 +175,15 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
     test(
       new B4ProcessorWithMemory()(
         defaultParams.copy(
-          runParallel = 8,
+          threads = 1,
+          decoderPerThread = 8,
           fetchWidth = 8,
           maxRegisterFileCommitCount = 10
         )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/many_add/many_add")
         c.checkForRegister(1, 8, 70)
@@ -145,54 +196,69 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams
-          .copy(runParallel = 4, fetchWidth = 8, maxRegisterFileCommitCount = 8)
+          .copy(
+            threads = 1,
+            decoderPerThread = 4,
+            fetchWidth = 8,
+            maxRegisterFileCommitCount = 8
+          )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize(
           "riscv-sample-programs/many_add_out_of_order/many_add_out_of_order"
         )
         c.clock.step(30)
-        c.io.registerFileContents.get(1).expect(1)
-        c.io.registerFileContents.get(2).expect(2)
-        c.io.registerFileContents.get(3).expect(3)
-        c.io.registerFileContents.get(4).expect(4)
-        c.io.registerFileContents.get(5).expect(1)
-        c.io.registerFileContents.get(6).expect(2)
-        c.io.registerFileContents.get(7).expect(3)
-        c.io.registerFileContents.get(8).expect(4)
-        c.io.registerFileContents.get(9).expect(1)
-        c.io.registerFileContents.get(10).expect(2)
-        c.io.registerFileContents.get(11).expect(3)
-        c.io.registerFileContents.get(12).expect(4)
+        c.io.registerFileContents.get(0)(1).expect(1)
+        c.io.registerFileContents.get(0)(2).expect(2)
+        c.io.registerFileContents.get(0)(3).expect(3)
+        c.io.registerFileContents.get(0)(4).expect(4)
+        c.io.registerFileContents.get(0)(5).expect(1)
+        c.io.registerFileContents.get(0)(6).expect(2)
+        c.io.registerFileContents.get(0)(7).expect(3)
+        c.io.registerFileContents.get(0)(8).expect(4)
+        c.io.registerFileContents.get(0)(9).expect(1)
+        c.io.registerFileContents.get(0)(10).expect(2)
+        c.io.registerFileContents.get(0)(11).expect(3)
+        c.io.registerFileContents.get(0)(12).expect(4)
       }
   }
 
-  // 単純な値をストアしてロードするプログラム
-  it should "run load_store" in {
-    test(
-      new B4ProcessorWithMemory()(
-        defaultParams.copy(runParallel = 1, maxRegisterFileCommitCount = 1)
-      )
-    )
-      .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
-      ) { c => }
-  }
+//  // 単純な値をストアしてロードするプログラム
+//  it should "run load_store" in {
+//    test(
+//      new B4ProcessorWithMemory()(
+//        defaultParams.copy(
+//          threads = 1,
+//          decoderPerThread = 1,
+//          maxRegisterFileCommitCount = 1
+//        )
+//      )
+//    )
+//      .withAnnotations(
+//        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
+//      ) { c => }
+//  }
 
   // 単純な値をストアしてロードするプログラム同時発行数2
   it should "run load_store with 2 parallel" in {
-    test(new B4ProcessorWithMemory()(defaultParams.copy(runParallel = 2)))
+    test(
+      new B4ProcessorWithMemory()(
+        defaultParams.copy(threads = 1, decoderPerThread = 2)
+      )
+    )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/load_store/load_store")
         c.checkForRegister(3, 10, 120)
-        c.io.registerFileContents.get(1).expect(0x4000_0018L)
-        c.io.registerFileContents.get(2).expect(10)
-        c.io.registerFileContents.get(3).expect(10)
+        c.io.registerFileContents
+          .get(0)(1)
+          .expect(defaultParams.instructionStart + 0x18)
+        c.io.registerFileContents.get(0)(2).expect(10)
+        c.io.registerFileContents.get(0)(3).expect(10)
       }
   }
 
@@ -201,14 +267,15 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 1,
+          threads = 1,
+          decoderPerThread = 1,
           maxRegisterFileCommitCount = 1,
           loadStoreQueueIndexWidth = 2
         )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/fibonacci_c/fibonacci_c")
         c.checkForRegister(3, 21, 1500)
@@ -220,14 +287,15 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 2,
+          threads = 1,
+          decoderPerThread = 2,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 3
         )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/fibonacci_c/fibonacci_c")
         c.checkForRegister(3, 21, 1000)
@@ -239,20 +307,21 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize(
           "riscv-sample-programs/load_plus_arithmetic/load_plus_arithmetic"
         )
-        c.checkForRegister(2, 20, 30)
-        c.checkForRegister(3, 1, 30)
+        c.checkForRegister(2, 20, 50)
+        c.checkForRegister(3, 1, 50)
       }
   }
 
@@ -261,14 +330,15 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/load_after_store/load_after_store")
         c.checkForRegister(3, 10, 100)
@@ -279,14 +349,15 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
     test(
       new B4ProcessorWithMemory()(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/enter_c/enter_c")
         c.checkForRegister(3, 5, 100)
@@ -299,14 +370,15 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/calculation_c/calculation_c")
         c.checkForRegister(3, 18, 400)
@@ -318,17 +390,18 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
     test(
       new B4ProcessorWithMemory()(
         defaultParams.copy(
-          runParallel = 1,
+          threads = 1,
+          decoderPerThread = 1,
           maxRegisterFileCommitCount = 1,
           loadStoreQueueIndexWidth = 2
         )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/loop_c/loop_c")
-        c.checkForRegister(3, 30, 500)
+        c.checkForRegister(3, 30)
 
       }
   }
@@ -337,17 +410,18 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
     test(
       new B4ProcessorWithMemory()(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/loop_c/loop_c")
-        c.checkForRegister(3, 30, 500)
+        c.checkForRegister(3, 30)
 
       }
   }
@@ -357,17 +431,18 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 1,
+          threads = 1,
+          decoderPerThread = 1,
           maxRegisterFileCommitCount = 1,
           loadStoreQueueIndexWidth = 2
         )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/many_load_store/many_load_store")
-        c.checkForRegister(2, 36, 500)
+        c.checkForRegister(2, 36)
 
       }
   }
@@ -377,14 +452,15 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/many_load_store/many_load_store")
         c.checkForRegister(2, 36, 100)
@@ -397,14 +473,15 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 1,
+          threads = 1,
+          decoderPerThread = 1,
           maxRegisterFileCommitCount = 1,
           loadStoreQueueIndexWidth = 2
         )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/load_store_cross/load_store_cross")
         c.checkForRegister(2, 101, 100)
@@ -418,14 +495,15 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       new B4ProcessorWithMemory(
       )(
         defaultParams.copy(
-          runParallel = 4,
+          threads = 1,
+          decoderPerThread = 4,
           maxRegisterFileCommitCount = 4,
           loadStoreQueueIndexWidth = 2
         )
       )
     )
       .withAnnotations(
-        Seq(WriteVcdAnnotation, VerilatorBackendAnnotation, CachingAnnotation)
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("riscv-sample-programs/load_store_cross/load_store_cross")
         c.checkForRegister(2, 101, 100)

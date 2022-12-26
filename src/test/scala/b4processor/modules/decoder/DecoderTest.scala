@@ -14,9 +14,9 @@ import org.scalatest.flatspec.AnyFlatSpec
   *   パラメータ
   */
 class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
-    extends Decoder(instructionOffset)(params) {
-  def initialize(instruction: UInt): Unit = {
-    this.setImem(instruction)
+    extends Decoder(instructionOffset, 0)(params) {
+  def initialize(instruction: UInt, programCounter: Int = 1000): Unit = {
+    this.setImem(instruction, programCounter)
     this.setReorderBuffer()
     this.setRegisterFile()
     this.setLoadStoreQueueReady()
@@ -24,9 +24,13 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
     this.io.reservationStation.ready.poke(true.B)
   }
 
-  def setImem(instruction: UInt, isPrediction: Boolean = false): Unit = {
+  def setImem(
+    instruction: UInt,
+    programCounter: Int,
+    isPrediction: Boolean = false
+  ): Unit = {
     this.io.instructionFetch.bits.instruction.poke(instruction)
-    this.io.instructionFetch.bits.programCounter.poke(0)
+    this.io.instructionFetch.bits.programCounter.poke(programCounter)
     this.io.instructionFetch.valid.poke(true)
   }
 
@@ -37,15 +41,16 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
     sourceTag2: Option[Int] = None,
     value2: Option[Int] = None
   ): Unit = {
-    this.io.reorderBuffer.destination.destinationTag.poke(Tag(destinationTag))
+    this.io.reorderBuffer.destination.destinationTag
+      .poke(Tag(0, destinationTag))
     this.io.reorderBuffer.source1.matchingTag.valid.poke(sourceTag1.isDefined)
     this.io.reorderBuffer.source1.matchingTag.bits
-      .poke(Tag(sourceTag1.getOrElse(0)))
+      .poke(Tag(0, sourceTag1.getOrElse(0)))
     this.io.reorderBuffer.source1.value.valid.poke(value1.isDefined)
     this.io.reorderBuffer.source1.value.bits.poke(value1.getOrElse(0))
     this.io.reorderBuffer.source2.matchingTag.valid.poke(sourceTag2.isDefined)
     this.io.reorderBuffer.source2.matchingTag.bits
-      .poke(Tag(sourceTag2.getOrElse(0)))
+      .poke(Tag(0, sourceTag2.getOrElse(0)))
     this.io.reorderBuffer.source2.value.valid.poke(value2.isDefined)
     this.io.reorderBuffer.source2.value.bits.poke(value2.getOrElse(0))
     this.io.reorderBuffer.ready.poke(true)
@@ -56,34 +61,24 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
     this.io.registerFile.value2.poke(value2)
   }
 
-  def setOutputs(
-    bypassedValues: Seq[Option[ExecutorValue]] =
-      Seq.fill(params.runParallel + 1)(None)
-  ): Unit = {
-    for (i <- 0 until params.runParallel + 1) {
-      this.io.outputCollector
-        .outputs(i)
-        .validAsResult
-        .poke(bypassedValues(i).isDefined)
-      this.io.outputCollector
-        .outputs(i)
-        .tag
-        .poke(
-          Tag(
-            bypassedValues(i)
-              .getOrElse(ExecutorValue(destinationTag = 0, value = 0))
-              .destinationTag
-          )
-        )
-      this.io.outputCollector
-        .outputs(i)
-        .value
-        .poke(
-          bypassedValues(i)
+  def setOutputs(bypassedValues: Option[ExecutorValue] = None): Unit = {
+    this.io.outputCollector.outputs.valid
+      .poke(bypassedValues.isDefined)
+    this.io.outputCollector.outputs.bits.tag
+      .poke(
+        Tag(
+          0,
+          bypassedValues
             .getOrElse(ExecutorValue(destinationTag = 0, value = 0))
-            .value
+            .destinationTag
         )
-    }
+      )
+    this.io.outputCollector.outputs.bits.value
+      .poke(
+        bypassedValues
+          .getOrElse(ExecutorValue(destinationTag = 0, value = 0))
+          .value
+      )
   }
 
   def setLoadStoreQueueReady(ready: Boolean = true): Unit = {
@@ -114,9 +109,10 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
     value2: Int = 0,
     immediateOrFunction7: Int = 0
   ): Unit = {
-    this.io.reservationStation.entry.destinationTag.expect(Tag(destinationTag))
-    this.io.reservationStation.entry.sourceTag1.expect(Tag(sourceTag1))
-    this.io.reservationStation.entry.sourceTag2.expect(Tag(sourceTag2))
+    this.io.reservationStation.entry.destinationTag
+      .expect(Tag(0, destinationTag))
+    this.io.reservationStation.entry.sourceTag1.expect(Tag(0, sourceTag1))
+    this.io.reservationStation.entry.sourceTag2.expect(Tag(0, sourceTag2))
     this.io.reservationStation.entry.value1.expect(value1)
     this.io.reservationStation.entry.value2.expect(value2)
     this.io.reservationStation.entry.immediateOrFunction7
@@ -128,7 +124,7 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
   */
 class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "decoder"
-  implicit val testParams = Parameters(runParallel = 1)
+  implicit val testParams = Parameters(threads = 1, decoderPerThread = 1)
 
   // rs1 rs2 rdが正しくリオーダバッファに渡されているか
   it should "pass rs1 rs2 rd to reorder buffer" in {
@@ -230,7 +226,8 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.expectReservationStation(
         destinationTag = 5,
         sourceTag1 = 6,
-        value2 = 20
+        value2 = 1000,
+        immediateOrFunction7 = 20
       )
       c.clock.step(1)
     }
@@ -238,7 +235,9 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // ALUからの値を使える
   it should "do register bypass" in {
-    test(new DecoderWrapper(0)(testParams.copy(runParallel = 2))) { c =>
+    test(
+      new DecoderWrapper(0)(testParams.copy(threads = 1, decoderPerThread = 2))
+    ) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
       c.setReorderBuffer(
@@ -246,16 +245,18 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
         sourceTag1 = Some(6),
         sourceTag2 = Some(7)
       )
-      c.setOutputs(
-        Seq(Some(ExecutorValue(6, 20)), Some(ExecutorValue(7, 21)), None)
-      )
+      c.setOutputs(Some(ExecutorValue(6, 20)))
 
       c.expectReorderBuffer(
         destinationRegister = 1,
         sourceRegister1 = 2,
         sourceRegister2 = 3
       )
-      c.expectReservationStation(destinationTag = 5, value1 = 20, value2 = 21)
+      c.expectReservationStation(
+        destinationTag = 5,
+        value1 = 20,
+        sourceTag2 = 7
+      )
     }
   }
 
@@ -291,7 +292,11 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setReorderBuffer(destinationTag = 5)
 
       c.expectReorderBuffer(destinationRegister = 3)
-      c.expectReservationStation(destinationTag = 5, value2 = 123 << 12)
+      c.expectReservationStation(
+        destinationTag = 5,
+        value1 = 123 << 12,
+        value2 = 1000
+      )
     }
   }
 
@@ -303,14 +308,14 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setReorderBuffer(destinationTag = 5)
 
       c.expectReorderBuffer(destinationRegister = 10)
-      c.expectReservationStation(destinationTag = 5, value2 = 4)
+      c.expectReservationStation(destinationTag = 5, value1 = 4, value2 = 1000)
     }
   }
 
   it should "pass isPrediction" in {
     test(new DecoderWrapper(0)(testParams)) { c =>
       c.initialize("x0040056f".U)
-      c.setImem("x0040056f".U, isPrediction = true)
+      c.setImem("x0040056f".U, 0, isPrediction = true)
     }
   }
 }

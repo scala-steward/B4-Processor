@@ -4,37 +4,37 @@ load_plus_arithmetic.o:     file format elf64-littleriscv
 
 Disassembly of section .text:
 
-0000000040000000 <_start>:
-    40000000:	00100093          	addi	x1,x0,1
-    40000004:	01f09093          	slli	x1,x1,0x1f
-    40000008:	00a00113          	addi	x2,x0,10
-    4000000c:	ff000193          	addi	x3,x0,-16
-    40000010:	0020b023          	sd	x2,0(x1)
-    40000014:	0000b203          	ld	x4,0(x1)
-    40000018:	003101b3          	add	x3,x2,x3
-    4000001c:	00410133          	add	x2,x2,x4
-    40000020:	00100193          	addi	x3,x0,1
-    40000024:	00118193          	addi	x3,x3,1
-    40000028:	00118193          	addi	x3,x3,1
-    4000002c:	00118193          	addi	x3,x3,1
-    40000030:	00118193          	addi	x3,x3,1
-    40000034:	00118193          	addi	x3,x3,1
-    40000038:	00118193          	addi	x3,x3,1
-    4000003c:	00118193          	addi	x3,x3,1
-    40000040:	00118193          	addi	x3,x3,1
-    40000044:	00118193          	addi	x3,x3,1
-    40000048:	00118193          	addi	x3,x3,1
-    4000004c:	40100213          	addi	x4,x0,1025
-    40000050:	0030b023          	sd	x3,0(x1)
-    40000054:	00408423          	sb	x4,8(x1)
-    40000058:	0000b203          	ld	x4,0(x1)
-    4000005c:	00808183          	lb	x3,8(x1)
-    40000060:	0000006f          	jal	x0,40000060 <_start+0x60>
+0000000080100000 <_start>:
+    80100000:	00000097          	auipc	x1,0x0
+    80100004:	06808093          	addi	x1,x1,104 # 80100068 <scratchpad>
+    80100008:	00a00113          	addi	x2,x0,10
+    8010000c:	ff000193          	addi	x3,x0,-16
+    80100010:	0020b023          	sd	x2,0(x1)
+    80100014:	0000b203          	ld	x4,0(x1)
+    80100018:	003101b3          	add	x3,x2,x3
+    8010001c:	00410133          	add	x2,x2,x4
+    80100020:	00100193          	addi	x3,x0,1
+    80100024:	00118193          	addi	x3,x3,1
+    80100028:	00118193          	addi	x3,x3,1
+    8010002c:	00118193          	addi	x3,x3,1
+    80100030:	00118193          	addi	x3,x3,1
+    80100034:	00118193          	addi	x3,x3,1
+    80100038:	00118193          	addi	x3,x3,1
+    8010003c:	00118193          	addi	x3,x3,1
+    80100040:	00118193          	addi	x3,x3,1
+    80100044:	00118193          	addi	x3,x3,1
+    80100048:	00118193          	addi	x3,x3,1
+    8010004c:	40100213          	addi	x4,x0,1025
+    80100050:	0030b023          	sd	x3,0(x1)
+    80100054:	00408423          	sb	x4,8(x1)
+    80100058:	0000b203          	ld	x4,0(x1)
+    8010005c:	00808183          	lb	x3,8(x1)
+    80100060:	0000006f          	jal	x0,80100060 <_start+0x60>
 
 Disassembly of section .data:
 
-0000000040000064 <__STACK_START_-0x41c>:
-    40000064:	0000                	c.unimp
+0000000080100064 <scratchpad-0x4>:
+    80100064:	0000                	c.unimp
 	...
 
 Disassembly of section .riscv.attributes:
@@ -44,7 +44,7 @@ Disassembly of section .riscv.attributes:
    2:	0000                	c.unimp
    4:	7200                	c.ld	x8,32(x12)
    6:	7369                	c.lui	x6,0xffffa
-   8:	01007663          	bgeu	x0,x16,14 <_start-0x3fffffec>
+   8:	01007663          	bgeu	x0,x16,14 <_start-0x800fffec>
    c:	0000000f          	fence	unknown,unknown
   10:	7205                	c.lui	x4,0xfffe1
   12:	3676                	c.fldsp	f12,376(x2)
@@ -55,8 +55,7 @@ Disassembly of section .riscv.attributes:
 Disassembly of section .debug_line:
 
 0000000000000000 <.debug_line>:
-   0:	00d5                	c.addi	x1,21
-   2:	0000                	c.unimp
+   0:	000000cf          	fnmadd.s	f1,f0,f0,f0,rne
    4:	002d0003          	lb	x0,2(x26)
    8:	0000                	c.unimp
    a:	0101                	c.addi	x2,0
@@ -81,11 +80,11 @@ Disassembly of section .debug_line:
   36:	0000                	c.unimp
   38:	0209                	c.addi	x4,2
   3a:	0000                	c.unimp
-  3c:	4000                	c.lw	x8,0(x8)
+  3c:	8010                	0x8010
   3e:	0000                	c.unimp
   40:	0000                	c.unimp
   42:	09010313          	addi	x6,x2,144
-  46:	0004                	0x4
+  46:	0008                	0x8
   48:	0301                	c.addi	x6,0
   4a:	0902                	c.slli64	x18
   4c:	0004                	0x4
@@ -93,19 +92,19 @@ Disassembly of section .debug_line:
   50:	0902                	c.slli64	x18
   52:	0004                	0x4
   54:	0301                	c.addi	x6,0
-  56:	0902                	c.slli64	x18
+  56:	0901                	c.addi	x18,0
   58:	0004                	0x4
   5a:	0301                	c.addi	x6,0
-  5c:	0901                	c.addi	x18,0
+  5c:	0902                	c.slli64	x18
   5e:	0004                	0x4
   60:	0301                	c.addi	x6,0
-  62:	0902                	c.slli64	x18
+  62:	0901                	c.addi	x18,0
   64:	0004                	0x4
   66:	0301                	c.addi	x6,0
-  68:	0901                	c.addi	x18,0
+  68:	0902                	c.slli64	x18
   6a:	0004                	0x4
   6c:	0301                	c.addi	x6,0
-  6e:	0902                	c.slli64	x18
+  6e:	0901                	c.addi	x18,0
   70:	0004                	0x4
   72:	0301                	c.addi	x6,0
   74:	0901                	c.addi	x18,0
@@ -135,13 +134,13 @@ Disassembly of section .debug_line:
   a4:	0901                	c.addi	x18,0
   a6:	0004                	0x4
   a8:	0301                	c.addi	x6,0
-  aa:	0901                	c.addi	x18,0
+  aa:	0902                	c.slli64	x18
   ac:	0004                	0x4
   ae:	0301                	c.addi	x6,0
   b0:	0902                	c.slli64	x18
   b2:	0004                	0x4
   b4:	0301                	c.addi	x6,0
-  b6:	0902                	c.slli64	x18
+  b6:	0901                	c.addi	x18,0
   b8:	0004                	0x4
   ba:	0301                	c.addi	x6,0
   bc:	0901                	c.addi	x18,0
@@ -150,15 +149,12 @@ Disassembly of section .debug_line:
   c2:	0901                	c.addi	x18,0
   c4:	0004                	0x4
   c6:	0301                	c.addi	x6,0
-  c8:	0901                	c.addi	x18,0
+  c8:	0902                	c.slli64	x18
   ca:	0004                	0x4
-  cc:	0301                	c.addi	x6,0
-  ce:	0902                	c.slli64	x18
-  d0:	0004                	0x4
-  d2:	0901                	c.addi	x18,0
-  d4:	0004                	0x4
-  d6:	0100                	c.addi4spn	x8,x2,128
-  d8:	01              	Address 0x00000000000000d8 is out of bounds.
+  cc:	0901                	c.addi	x18,0
+  ce:	0004                	0x4
+  d0:	0100                	c.addi4spn	x8,x2,128
+  d2:	01              	Address 0x00000000000000d2 is out of bounds.
 
 
 Disassembly of section .debug_info:
@@ -173,14 +169,14 @@ Disassembly of section .debug_info:
    c:	0000                	c.unimp
    e:	0000                	c.unimp
   10:	0000                	c.unimp
-  12:	4000                	c.lw	x8,0(x8)
+  12:	8010                	0x8010
   14:	0000                	c.unimp
   16:	0000                	c.unimp
   18:	0064                	c.addi4spn	x9,x2,12
-  1a:	4000                	c.lw	x8,0(x8)
+  1a:	8010                	0x8010
 	...
   24:	00000017          	auipc	x0,0x0
-  28:	00000063          	beq	x0,x0,28 <_start-0x3fffffd8>
+  28:	00000063          	beq	x0,x0,28 <_start-0x800fffd8>
   2c:	8001                	c.srli64	x8
 
 Disassembly of section .debug_abbrev:
@@ -209,7 +205,7 @@ Disassembly of section .debug_aranges:
    c:	0000                	c.unimp
    e:	0000                	c.unimp
   10:	0000                	c.unimp
-  12:	4000                	c.lw	x8,0(x8)
+  12:	8010                	0x8010
   14:	0000                	c.unimp
   16:	0000                	c.unimp
   18:	0064                	c.addi4spn	x9,x2,12
@@ -236,7 +232,7 @@ Disassembly of section .debug_str:
   26:	706f746b          	0x706f746b
   2a:	2d34422f          	0x2d34422f
   2e:	7270                	c.ld	x12,224(x12)
-  30:	7365636f          	jal	x6,56766 <_start-0x3ffa989a>
+  30:	7365636f          	jal	x6,56766 <_start-0x800a989a>
   34:	2f726f73          	csrrsi	x30,0x2f7,4
   38:	6972                	c.ldsp	x18,280(x2)
   3a:	2d766373          	csrrsi	x6,0x2d7,12

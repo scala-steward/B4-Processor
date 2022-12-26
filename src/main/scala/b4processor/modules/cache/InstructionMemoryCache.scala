@@ -1,10 +1,9 @@
 package b4processor.modules.cache
 
 import b4processor.Parameters
-import b4processor.connections.{InstructionCache2Fetch, InstructionMemory2Cache}
+import b4processor.connections.InstructionCache2Fetch
 import b4processor.modules.memory.{InstructionResponse, MemoryReadTransaction}
 import chisel3._
-import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.stage.ChiselStage
 import chisel3.util._
 
@@ -12,11 +11,12 @@ import chisel3.util._
   *
   * とても単純なキャッシュ機構
   */
-class InstructionMemoryCache(implicit params: Parameters) extends Module {
+class InstructionMemoryCache(threadId: Int)(implicit params: Parameters)
+    extends Module {
   val io = IO(new Bundle {
 
     /** フェッチ */
-    val fetch = Vec(params.runParallel, new InstructionCache2Fetch)
+    val fetch = Vec(params.decoderPerThread, new InstructionCache2Fetch)
 
     val memory = new Bundle {
       val request = Irrevocable(new MemoryReadTransaction())
@@ -24,11 +24,21 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     }
   })
 
-  private val buf = RegInit(VecInit(Seq.fill(4)(new Bundle {
+  private class CacheBufferEntry extends Bundle {
     val valid = Bool()
     val upper = UInt(60.W)
     val data = Vec(8, UInt(16.W))
-  }.Lit(_.valid -> false.B))))
+  }
+  private object CacheBufferEntry {
+    def default: CacheBufferEntry = {
+      val w = Wire(new CacheBufferEntry)
+      w.valid := false.B
+      w.upper := DontCare
+      w.data.foreach(p => p := DontCare)
+      w
+    }
+  }
+  private val buf = RegInit(VecInit(Seq.fill(4)(CacheBufferEntry.default)))
 
   private val request = WireDefault(0.U(60.W))
   private var didRequest = false.B
@@ -80,10 +90,8 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     requested := false.B
     readIndex := 0.U
 
-    val tmp_transaction = MemoryReadTransaction.ReadInstruction(
-      Cat(request, readIndex, 0.U(3.W)),
-      2
-    )
+    val tmp_transaction =
+      MemoryReadTransaction.ReadInstruction(Cat(request, 0.U(4.W)), 2, threadId)
     transaction := tmp_transaction
     io.memory.request.valid := true.B
     io.memory.request.bits := tmp_transaction
@@ -122,10 +130,5 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
 
 object InstructionMemoryCache extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitVerilog(
-    new InstructionMemoryCache(),
-    args = Array(
-      "--emission-options=disableMemRandomization,disableRegisterRandomization"
-    )
-  )
+  (new ChiselStage).emitVerilog(new InstructionMemoryCache(0))
 }

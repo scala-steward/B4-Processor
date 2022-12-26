@@ -1,7 +1,5 @@
 _start:
-    addi x1, x0, 1
-    slli x1, x1, 31
-
+    la x1, scratchpad
     addi x2, x0, 10
 
     addi x3, x0, -16
@@ -32,3 +30,6 @@ _start:
     lb x3, 8(x1)
 
     j .
+
+.section .data
+scratchpad:

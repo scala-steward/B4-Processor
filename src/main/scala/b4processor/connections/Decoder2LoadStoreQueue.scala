@@ -18,6 +18,12 @@ class Decoder2LoadStoreQueue(implicit params: Parameters) extends Bundle {
   /** 命令自体を識別するためのタグ(Destination Tag) */
   val addressAndLoadResultTag = new Tag
 
+  /** アドレス値が有効である */
+  val address = UInt(64.W)
+
+  /** アドレス値が有効である */
+  val addressValid = Bool()
+
   /** ストアに使用するデータが格納されるタグ(SourceRegister2 Tag) */
   val storeDataTag = new Tag
 

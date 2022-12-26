@@ -1,5 +1,6 @@
-package b4processor
+package b4processor.z_B4ProcessorTests
 
+import b4processor.Parameters
 import b4processor.utils.B4ProcessorWithMemory
 import chiseltest._
 import chiseltest.internal.CachingAnnotation
@@ -8,25 +9,30 @@ import org.scalatest.flatspec.AnyFlatSpec
 class B4ProcessorRISCVTestWrapper()(implicit params: Parameters)
     extends B4ProcessorWithMemory() {
   def riscv_test(): Unit = {
-    while (this.io.registerFileContents.get(17).peekInt() != 93) {
+    while (this.io.registerFileContents.get(0)(17).peekInt() != 93) {
       this.clock.step()
     }
-    val reg3_value = this.io.registerFileContents.get(3).peekInt()
+    val reg3_value = this.io.registerFileContents.get(0)(3).peekInt()
     val fail_num = reg3_value >> 1
-    this.io.registerFileContents.get(3).expect(1, s"failed on test ${fail_num}")
+    this.io.registerFileContents
+      .get(0)(3)
+      .expect(1, s"failed on test ${fail_num}")
   }
 }
 
 class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
-  implicit val defaultParams =
+  implicit val defaultParams = {
     Parameters(
       debug = true,
-      runParallel = 1,
+      threads = 1,
+      decoderPerThread = 1,
       tagWidth = 4,
       loadStoreQueueIndexWidth = 2,
       maxRegisterFileCommitCount = 2
     )
+  }
+  val backendAnnotation = IcarusBackendAnnotation
 
   behavior of s"RISC-V tests rv64i"
 
@@ -38,7 +44,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
         .withAnnotations(
-          Seq(WriteVcdAnnotation, CachingAnnotation, VerilatorBackendAnnotation)
+          Seq(WriteVcdAnnotation, CachingAnnotation, backendAnnotation)
         ) { c =>
           c.clock.setTimeout(timeout)
           c.initialize(s"riscv-tests-files/rv64ui-p-${test_name}")

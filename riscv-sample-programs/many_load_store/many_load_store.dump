@@ -4,31 +4,31 @@ many_load_store.o:     file format elf64-littleriscv
 
 Disassembly of section .text:
 
-0000000040000000 <_start>:
-    40000000:	00100093          	addi	x1,x0,1
-    40000004:	01f09093          	slli	x1,x1,0x1f
-    40000008:	00a00113          	addi	x2,x0,10
-    4000000c:	0020b023          	sd	x2,0(x1)
-    40000010:	0000b103          	ld	x2,0(x1)
-    40000014:	0000b183          	ld	x3,0(x1)
-    40000018:	0000b203          	ld	x4,0(x1)
-    4000001c:	00110113          	addi	x2,x2,1
-    40000020:	00218193          	addi	x3,x3,2
-    40000024:	00320213          	addi	x4,x4,3 # 3 <_start-0x3ffffffd>
-    40000028:	0020b823          	sd	x2,16(x1)
-    4000002c:	0030b423          	sd	x3,8(x1)
-    40000030:	0040b023          	sd	x4,0(x1)
-    40000034:	0000b103          	ld	x2,0(x1)
-    40000038:	0080b183          	ld	x3,8(x1)
-    4000003c:	0100b203          	ld	x4,16(x1)
-    40000040:	00310133          	add	x2,x2,x3
-    40000044:	00410133          	add	x2,x2,x4
-    40000048:	0000006f          	jal	x0,40000048 <_start+0x48>
+0000000080100000 <_start>:
+    80100000:	00000097          	auipc	x1,0x0
+    80100004:	05008093          	addi	x1,x1,80 # 80100050 <__BINARY_END_>
+    80100008:	00a00113          	addi	x2,x0,10
+    8010000c:	0020b023          	sd	x2,0(x1)
+    80100010:	0000b103          	ld	x2,0(x1)
+    80100014:	0000b183          	ld	x3,0(x1)
+    80100018:	0000b203          	ld	x4,0(x1)
+    8010001c:	00110113          	addi	x2,x2,1
+    80100020:	00218193          	addi	x3,x3,2
+    80100024:	00320213          	addi	x4,x4,3 # 3 <_start-0x800ffffd>
+    80100028:	0020b823          	sd	x2,16(x1)
+    8010002c:	0030b423          	sd	x3,8(x1)
+    80100030:	0040b023          	sd	x4,0(x1)
+    80100034:	0000b103          	ld	x2,0(x1)
+    80100038:	0080b183          	ld	x3,8(x1)
+    8010003c:	0100b203          	ld	x4,16(x1)
+    80100040:	00310133          	add	x2,x2,x3
+    80100044:	00410133          	add	x2,x2,x4
+    80100048:	0000006f          	jal	x0,80100048 <_start+0x48>
 
 Disassembly of section .data:
 
-000000004000004c <__STACK_START_-0x414>:
-    4000004c:	0000                	c.unimp
+000000008010004c <__BINARY_END_-0x4>:
+    8010004c:	0000                	c.unimp
 	...
 
 Disassembly of section .riscv.attributes:
@@ -38,7 +38,7 @@ Disassembly of section .riscv.attributes:
    2:	0000                	c.unimp
    4:	7200                	c.ld	x8,32(x12)
    6:	7369                	c.lui	x6,0xffffa
-   8:	01007663          	bgeu	x0,x16,14 <_start-0x3fffffec>
+   8:	01007663          	bgeu	x0,x16,14 <_start-0x800fffec>
    c:	0000000f          	fence	unknown,unknown
   10:	7205                	c.lui	x4,0xfffe1
   12:	3676                	c.fldsp	f12,376(x2)
@@ -49,7 +49,7 @@ Disassembly of section .riscv.attributes:
 Disassembly of section .debug_line:
 
 0000000000000000 <.debug_line>:
-   0:	00ac                	c.addi4spn	x11,x2,72
+   0:	00a6                	c.slli	x1,0x9
    2:	0000                	c.unimp
    4:	00280003          	lb	x0,2(x16)
    8:	0000                	c.unimp
@@ -70,49 +70,47 @@ Disassembly of section .debug_line:
   30:	0000                	c.unimp
   32:	0900                	c.addi4spn	x8,x2,144
   34:	0002                	c.slli64	x0
-  36:	0000                	c.unimp
-  38:	0040                	c.addi4spn	x8,x2,4
+  36:	1000                	c.addi4spn	x8,x2,32
+  38:	0080                	c.addi4spn	x8,x2,64
   3a:	0000                	c.unimp
   3c:	1300                	c.addi4spn	x8,x2,416
-  3e:	04090103          	lb	x2,64(x18)
+  3e:	08090203          	lb	x4,128(x18)
   42:	0100                	c.addi4spn	x8,x2,128
   44:	04090203          	lb	x4,64(x18)
   48:	0100                	c.addi4spn	x8,x2,128
   4a:	04090203          	lb	x4,64(x18)
   4e:	0100                	c.addi4spn	x8,x2,128
-  50:	04090203          	lb	x4,64(x18)
+  50:	04090103          	lb	x2,64(x18)
   54:	0100                	c.addi4spn	x8,x2,128
   56:	04090103          	lb	x2,64(x18)
   5a:	0100                	c.addi4spn	x8,x2,128
-  5c:	04090103          	lb	x2,64(x18)
+  5c:	04090203          	lb	x4,64(x18)
   60:	0100                	c.addi4spn	x8,x2,128
-  62:	04090203          	lb	x4,64(x18)
+  62:	04090103          	lb	x2,64(x18)
   66:	0100                	c.addi4spn	x8,x2,128
   68:	04090103          	lb	x2,64(x18)
   6c:	0100                	c.addi4spn	x8,x2,128
-  6e:	04090103          	lb	x2,64(x18)
+  6e:	04090203          	lb	x4,64(x18)
   72:	0100                	c.addi4spn	x8,x2,128
-  74:	04090203          	lb	x4,64(x18)
+  74:	04090103          	lb	x2,64(x18)
   78:	0100                	c.addi4spn	x8,x2,128
   7a:	04090103          	lb	x2,64(x18)
   7e:	0100                	c.addi4spn	x8,x2,128
-  80:	04090103          	lb	x2,64(x18)
+  80:	04090203          	lb	x4,64(x18)
   84:	0100                	c.addi4spn	x8,x2,128
-  86:	04090203          	lb	x4,64(x18)
+  86:	04090103          	lb	x2,64(x18)
   8a:	0100                	c.addi4spn	x8,x2,128
   8c:	04090103          	lb	x2,64(x18)
   90:	0100                	c.addi4spn	x8,x2,128
-  92:	04090103          	lb	x2,64(x18)
+  92:	04090203          	lb	x4,64(x18)
   96:	0100                	c.addi4spn	x8,x2,128
-  98:	04090203          	lb	x4,64(x18)
+  98:	04090103          	lb	x2,64(x18)
   9c:	0100                	c.addi4spn	x8,x2,128
-  9e:	04090103          	lb	x2,64(x18)
+  9e:	04090203          	lb	x4,64(x18)
   a2:	0100                	c.addi4spn	x8,x2,128
-  a4:	04090203          	lb	x4,64(x18)
-  a8:	0100                	c.addi4spn	x8,x2,128
-  aa:	0409                	c.addi	x8,2
-  ac:	0000                	c.unimp
-  ae:	0101                	c.addi	x2,0
+  a4:	0409                	c.addi	x8,2
+  a6:	0000                	c.unimp
+  a8:	0101                	c.addi	x2,0
 
 Disassembly of section .debug_info:
 
@@ -126,11 +124,11 @@ Disassembly of section .debug_info:
    c:	0000                	c.unimp
    e:	0000                	c.unimp
   10:	0000                	c.unimp
-  12:	4000                	c.lw	x8,0(x8)
+  12:	8010                	0x8010
   14:	0000                	c.unimp
   16:	0000                	c.unimp
   18:	004c                	c.addi4spn	x11,x2,4
-  1a:	4000                	c.lw	x8,0(x8)
+  1a:	8010                	0x8010
 	...
   24:	0012                	c.slli	x0,0x4
   26:	0000                	c.unimp
@@ -164,7 +162,7 @@ Disassembly of section .debug_aranges:
    c:	0000                	c.unimp
    e:	0000                	c.unimp
   10:	0000                	c.unimp
-  12:	4000                	c.lw	x8,0(x8)
+  12:	8010                	0x8010
   14:	0000                	c.unimp
   16:	0000                	c.unimp
   18:	004c                	c.addi4spn	x11,x2,4
@@ -179,23 +177,23 @@ Disassembly of section .debug_str:
    a:	726f7473          	csrrci	x8,0x726,30
    e:	2e65                	c.addiw	x28,25
   10:	682f0053          	0x682f0053
-  14:	2f656d6f          	jal	x26,5630a <_start-0x3ffa9cf6>
+  14:	2f656d6f          	jal	x26,5630a <_start-0x800a9cf6>
   18:	676f6873          	csrrsi	x16,0x676,30
-  1c:	65442f6f          	jal	x30,42670 <_start-0x3ffbd990>
+  1c:	65442f6f          	jal	x30,42670 <_start-0x800bd990>
   20:	6f746b73          	csrrsi	x22,0x6f7,8
   24:	2f70                	c.fld	f12,216(x14)
   26:	3442                	c.fldsp	f8,48(x2)
   28:	702d                	c.lui	x0,0xfffeb
   2a:	6f72                	c.ldsp	x30,280(x2)
-  2c:	73736563          	bltu	x6,x23,756 <_start-0x3ffff8aa>
-  30:	722f726f          	jal	x4,f7752 <_start-0x3ff088ae>
+  2c:	73736563          	bltu	x6,x23,756 <_start-0x800ff8aa>
+  30:	722f726f          	jal	x4,f7752 <_start-0x800088ae>
   34:	7369                	c.lui	x6,0xffffa
-  36:	732d7663          	bgeu	x26,x18,762 <_start-0x3ffff89e>
+  36:	732d7663          	bgeu	x26,x18,762 <_start-0x800ff89e>
   3a:	6d61                	c.lui	x26,0x18
   3c:	6c70                	c.ld	x12,216(x8)
   3e:	2d65                	c.addiw	x26,25
   40:	7270                	c.ld	x12,224(x12)
-  42:	6172676f          	jal	x14,26e58 <_start-0x3ffd91a8>
+  42:	6172676f          	jal	x14,26e58 <_start-0x800d91a8>
   46:	736d                	c.lui	x6,0xffffb
   48:	6e616d2f          	0x6e616d2f
   4c:	5f79                	c.li	x30,-2

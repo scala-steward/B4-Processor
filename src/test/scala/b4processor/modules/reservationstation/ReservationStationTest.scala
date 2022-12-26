@@ -11,7 +11,7 @@ class ReservationStationWrapper(implicit params: Parameters)
   def initialize(): Unit = {
     setExecutorReady(true)
     setDecoderInput(None)
-    setExecutors(Seq.fill(params.runParallel)(None))
+    setExecutors(None)
   }
 
   def setExecutorReady(value: Boolean): Unit = {
@@ -23,45 +23,46 @@ class ReservationStationWrapper(implicit params: Parameters)
     value1: Option[Int] = None,
     value2: Option[Int] = None
   ): Unit = {
-    this.io.decoder.entry.poke(ReservationStationEntry.default)
-    this.io.decoder.entry.valid.poke(programCounter.isDefined)
-    if (programCounter.isDefined)
-      this.io.decoder.entry.programCounter.poke(programCounter.get)
+    this.io.decoder(0).entry.poke(ReservationStationEntry.default)
+    this.io.decoder(0).entry.valid.poke(programCounter.isDefined)
     if (value1.isDefined) {
-      this.io.decoder.entry.value1.poke(value1.get)
-      this.io.decoder.entry.ready1.poke(true)
+      this.io.decoder(0).entry.value1.poke(value1.get)
+      this.io.decoder(0).entry.ready1.poke(true)
     }
     if (value2.isDefined) {
-      this.io.decoder.entry.value2.poke(value2.get)
-      this.io.decoder.entry.ready2.poke(true)
+      this.io.decoder(0).entry.value2.poke(value2.get)
+      this.io.decoder(0).entry.ready2.poke(true)
     }
   }
 
-  def setExecutors(values: Seq[Option[ExecutorValue]]): Unit = {
-    for ((bypassValue, v) <- io.collectedOutput.outputs.zip(values)) {
-      bypassValue.validAsResult.poke(v.isDefined)
-      bypassValue.value.poke(
-        v.getOrElse(ExecutorValue(destinationTag = 0, value = 0)).value
+  def setExecutors(values: Option[ExecutorValue]): Unit = {
+    val bypassValue = io.collectedOutput.outputs
+    bypassValue.valid.poke(values.isDefined)
+    bypassValue.bits.value.poke(
+      values.getOrElse(ExecutorValue(destinationTag = 0, value = 0)).value
+    )
+    bypassValue.bits.tag.poke(
+      Tag(
+        0,
+        values
+          .getOrElse(ExecutorValue(destinationTag = 0, value = 0))
+          .destinationTag
       )
-      bypassValue.tag.poke(
-        Tag(
-          v.getOrElse(ExecutorValue(destinationTag = 0, value = 0))
-            .destinationTag
-        )
-      )
-    }
+    )
+
   }
 
   def expectExecutor(programCounter: Option[Int]): Unit = {
     this.io.executor.valid.expect(programCounter.isDefined)
-    if (programCounter.isDefined)
-      this.io.executor.bits.programCounter.expect(programCounter.get)
+    //    if (programCounter.isDefined)
+    //      this.io.executor.bits.programCounter.expect(programCounter.get)
   }
 }
 
 class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Reservation Station"
-  implicit val params = Parameters(runParallel = 1, tagWidth = 4)
+  implicit val params =
+    Parameters(threads = 1, decoderPerThread = 1, tagWidth = 4)
 
   // エントリを追加してALUから値をうけとり、実行ユニットに回す
   it should "store a entry and release it" in {
@@ -71,7 +72,7 @@ class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
         c.setDecoderInput(programCounter = Some(1))
         c.clock.step()
         c.setDecoderInput(None)
-        c.setExecutors(Seq(Some(ExecutorValue(destinationTag = 0, value = 0))))
+        c.setExecutors(Some(ExecutorValue(destinationTag = 0, value = 0)))
         c.expectExecutor(None)
         c.clock.step()
         c.expectExecutor(Some(1))
@@ -88,7 +89,7 @@ class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
         c.initialize()
         c.setExecutorReady(false)
         var loop = 0
-        while (loop < 100 && c.io.decoder.ready.peek().litToBoolean) {
+        while (loop < 100 && c.io.decoder(0).ready.peek().litToBoolean) {
           loop += 1
           c.setDecoderInput(
             programCounter = Some(1),
@@ -97,7 +98,7 @@ class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
           )
           c.clock.step()
         }
-        c.io.decoder.ready.expect(false)
+        c.io.decoder(0).ready.expect(false)
 
         c.clock.step()
       }
@@ -110,7 +111,7 @@ class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
         c.initialize()
         c.setExecutorReady(false)
         var loop = 0
-        while (loop < 100 && c.io.decoder.ready.peekBoolean()) {
+        while (loop < 100 && c.io.decoder(0).ready.peekBoolean()) {
           loop += 1
           c.setDecoderInput(
             programCounter = Some(1),
@@ -119,7 +120,7 @@ class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
           )
           c.clock.step()
         }
-        c.io.decoder.ready.expect(false)
+        c.io.decoder(0).ready.expect(false)
 
         c.clock.step()
 

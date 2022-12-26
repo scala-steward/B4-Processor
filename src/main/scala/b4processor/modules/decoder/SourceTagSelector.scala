@@ -46,7 +46,7 @@ class SourceTagSelector(instructionOffset: Int)(implicit params: Parameters)
       beforeDestinationRegisterValid,
       // これまですべてのデコーダのうち、validがtrueならばその値を返すというMuxCase。第二引数の値は配列になっている。
       MuxCase(
-        Tag(0), // デフォルト値0
+        Tag(0, 0), // デフォルト値0
         // これまでのdestinationTagを遡っていき(reverse)、validなものを選ぶ
         (0 until instructionOffset).reverse.map(i =>
           io.beforeDestinationTag(i).valid -> io.beforeDestinationTag(i).bits
@@ -57,6 +57,6 @@ class SourceTagSelector(instructionOffset: Int)(implicit params: Parameters)
     )
     // 最大発行命令数(i)を増やすならばMux -> MuxCase に変更
   }.otherwise { // valid = 0
-    io.sourceTag.tag := Tag(0) // source tagが存在しなければsourceTag = 0に設定
+    io.sourceTag.tag := Tag(0, 0) // source tagが存在しなければsourceTag = 0に設定
   }
 }
