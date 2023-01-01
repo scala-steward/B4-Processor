@@ -7,12 +7,18 @@ import b4processor.connections.{
 }
 import b4processor.modules.branch_output_collector.BranchOutputCollector
 import b4processor.modules.cache.{DataMemoryBuffer, InstructionMemoryCache}
+import b4processor.modules.csr.{
+  CSR,
+  CSRReservationStation,
+  CycleCounter,
+  RetireCounter
+}
 import b4processor.modules.decoder.Decoder
 import b4processor.modules.executor.Executor
 import b4processor.modules.fetch.{Fetch, FetchBuffer}
 import b4processor.modules.lsq.LoadStoreQueue
 import b4processor.modules.memory.ExternalMemoryInterface
-import b4processor.modules.ourputcollector.OutputCollector
+import b4processor.modules.outputcollector.OutputCollector
 import b4processor.modules.registerfile.RegisterFile
 import b4processor.modules.reorderbuffer.ReorderBuffer
 import b4processor.modules.reservationstation.ReservationStation
@@ -58,6 +64,10 @@ class B4Processor(implicit params: Parameters) extends Module {
 
   val externalMemoryInterface = Module(new ExternalMemoryInterface)
 
+  val csrReservationStation =
+    Seq.fill(params.threads)(Module(new CSRReservationStation))
+  val csr = (0 until params.threads).map(i => Module(new CSR(i)))
+
   axi <> externalMemoryInterface.io.coordinator
 
   /** 出力コレクタとデータメモリ */
@@ -96,8 +106,19 @@ class B4Processor(implicit params: Parameters) extends Module {
     /** フェッチとフェッチバッファの接続 */
     fetch(tid).io.fetchBuffer <> fetchBuffer(tid).io.fetch
 
+    csrReservationStation(tid).io.toCSR <> csr(tid).io.decoderInput
+
+    csr(tid).io.CSROutput <> outputCollector.io.csr(tid)
+
+    csrReservationStation(tid).io.output <> outputCollector.io.outputs
+
+    reorderBuffer(tid).io.csr <> csr(tid).io.reorderBuffer
+
     /** フェッチとデコーダの接続 */
     for (d <- 0 until params.decoderPerThread) {
+      decoders(tid)(d).io.csr <> csrReservationStation(tid).io.decoderInput(d)
+
+      /** デコーダとフェッチバッファ */
       decoders(tid)(d).io.instructionFetch <> fetchBuffer(tid).io.decoders(d)
 
       /** デコーダとリオーダバッファを接続 */
@@ -167,10 +188,5 @@ object B4Processor extends App {
     decoderPerThread = 2,
     instructionStart = 0x2000_0000L
   )
-  (new ChiselStage).emitVerilog(
-    new B4Processor(),
-    args = Array(
-      "--emission-options=disableMemRandomization,disableRegisterRandomization"
-    )
-  )
+  (new ChiselStage).emitSystemVerilog(new B4Processor())
 }

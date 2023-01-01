@@ -26,7 +26,7 @@ Disassembly of section .text:
 Disassembly of section .data:
 
 0000000080100044 <scratchpad-0x4>:
-    80100044:	0000                	c.unimp
+    80100044:	0000                	.2byte	0x0
 	...
 
 0000000080100048 <scratchpad>:
@@ -35,182 +35,210 @@ Disassembly of section .data:
 Disassembly of section .riscv.attributes:
 
 0000000000000000 <.riscv.attributes>:
-   0:	1941                	c.addi	x18,-16
-   2:	0000                	c.unimp
-   4:	7200                	c.ld	x8,32(x12)
-   6:	7369                	c.lui	x6,0xffffa
+   0:	1941                	.2byte	0x1941
+   2:	0000                	.2byte	0x0
+   4:	7200                	.2byte	0x7200
+   6:	7369                	.2byte	0x7369
    8:	01007663          	bgeu	x0,x16,14 <_start-0x800fffec>
    c:	0000000f          	fence	unknown,unknown
-  10:	7205                	c.lui	x4,0xfffe1
-  12:	3676                	c.fldsp	f12,376(x2)
-  14:	6934                	c.ld	x13,80(x10)
-  16:	7032                	0x7032
-  18:	0030                	c.addi4spn	x12,x2,8
+  10:	7205                	.2byte	0x7205
+  12:	3676                	.2byte	0x3676
+  14:	6934                	.2byte	0x6934
+  16:	7032                	.2byte	0x7032
+  18:	0031                	.2byte	0x31
 
 Disassembly of section .debug_line:
 
 0000000000000000 <.debug_line>:
-   0:	0000009b          	addiw	x1,x0,0
-   4:	00290003          	lb	x0,2(x18)
-   8:	0000                	c.unimp
-   a:	0101                	c.addi	x2,0
-   c:	000d0efb          	0xd0efb
-  10:	0101                	c.addi	x2,0
-  12:	0101                	c.addi	x2,0
-  14:	0000                	c.unimp
-  16:	0100                	c.addi4spn	x8,x2,128
-  18:	0000                	c.unimp
-  1a:	0001                	c.addi	x0,0
-  1c:	6f6c                	c.ld	x11,216(x14)
-  1e:	6461                	c.lui	x8,0x18
-  20:	615f 7466 7265      	0x72657466615f
-  26:	735f 6f74 6572      	0x65726f74735f
-  2c:	532e                	c.lwsp	x6,232(x2)
-  2e:	0000                	c.unimp
-  30:	0000                	c.unimp
-  32:	0000                	c.unimp
-  34:	0209                	c.addi	x4,2
-  36:	0000                	c.unimp
-  38:	8010                	0x8010
-  3a:	0000                	c.unimp
-  3c:	0000                	c.unimp
-  3e:	09020313          	addi	x6,x4,144 # fffffffffffe1090 <scratchpad+0xffffffff7fee1048>
-  42:	0008                	0x8
-  44:	0301                	c.addi	x6,0
-  46:	0901                	c.addi	x18,0
-  48:	0004                	0x4
-  4a:	0301                	c.addi	x6,0
-  4c:	0902                	c.slli64	x18
-  4e:	0004                	0x4
-  50:	0301                	c.addi	x6,0
-  52:	0902                	c.slli64	x18
-  54:	0004                	0x4
-  56:	0301                	c.addi	x6,0
-  58:	0901                	c.addi	x18,0
-  5a:	0004                	0x4
-  5c:	0301                	c.addi	x6,0
-  5e:	0901                	c.addi	x18,0
-  60:	0004                	0x4
-  62:	0301                	c.addi	x6,0
-  64:	0901                	c.addi	x18,0
-  66:	0004                	0x4
-  68:	0301                	c.addi	x6,0
-  6a:	0901                	c.addi	x18,0
-  6c:	0004                	0x4
-  6e:	0301                	c.addi	x6,0
-  70:	0901                	c.addi	x18,0
-  72:	0004                	0x4
-  74:	0301                	c.addi	x6,0
-  76:	0901                	c.addi	x18,0
-  78:	0004                	0x4
-  7a:	0301                	c.addi	x6,0
-  7c:	0901                	c.addi	x18,0
-  7e:	0004                	0x4
-  80:	0301                	c.addi	x6,0
-  82:	0901                	c.addi	x18,0
-  84:	0004                	0x4
-  86:	0301                	c.addi	x6,0
-  88:	0902                	c.slli64	x18
-  8a:	0004                	0x4
-  8c:	0301                	c.addi	x6,0
-  8e:	0901                	c.addi	x18,0
-  90:	0004                	0x4
-  92:	0301                	c.addi	x6,0
-  94:	0902                	c.slli64	x18
-  96:	0004                	0x4
-  98:	0901                	c.addi	x18,0
-  9a:	0004                	0x4
-  9c:	0100                	c.addi4spn	x8,x2,128
-  9e:	01              	Address 0x000000000000009e is out of bounds.
+   0:	009e                	.2byte	0x9e
+   2:	0000                	.2byte	0x0
+   4:	0005                	.2byte	0x5
+   6:	0008                	.2byte	0x8
+   8:	002a                	.2byte	0x2a
+   a:	0000                	.2byte	0x0
+   c:	0101                	.2byte	0x101
+   e:	fb01                	.2byte	0xfb01
+  10:	0d0e                	.2byte	0xd0e
+  12:	0100                	.2byte	0x100
+  14:	0101                	.2byte	0x101
+  16:	0001                	.2byte	0x1
+  18:	0000                	.2byte	0x0
+  1a:	0001                	.2byte	0x1
+  1c:	0100                	.2byte	0x100
+  1e:	0101                	.2byte	0x101
+  20:	011f 0000 0000      	.byte	0x1f, 0x01, 0x00, 0x00, 0x00, 0x00
+  26:	0102                	.2byte	0x102
+  28:	021f 020f 0050      	.byte	0x1f, 0x02, 0x0f, 0x02, 0x50, 0x00
+  2e:	0000                	.2byte	0x0
+  30:	5000                	.2byte	0x5000
+  32:	0000                	.2byte	0x0
+  34:	0000                	.2byte	0x0
+  36:	0900                	.2byte	0x900
+  38:	0002                	.2byte	0x2
+  3a:	1000                	.2byte	0x1000
+  3c:	0080                	.2byte	0x80
+  3e:	0000                	.2byte	0x0
+  40:	1300                	.2byte	0x1300
+  42:	08090203          	lb	x4,128(x18)
+  46:	0100                	.2byte	0x100
+  48:	04090103          	lb	x2,64(x18)
+  4c:	0100                	.2byte	0x100
+  4e:	04090203          	lb	x4,64(x18)
+  52:	0100                	.2byte	0x100
+  54:	04090203          	lb	x4,64(x18)
+  58:	0100                	.2byte	0x100
+  5a:	04090103          	lb	x2,64(x18)
+  5e:	0100                	.2byte	0x100
+  60:	04090103          	lb	x2,64(x18)
+  64:	0100                	.2byte	0x100
+  66:	04090103          	lb	x2,64(x18)
+  6a:	0100                	.2byte	0x100
+  6c:	04090103          	lb	x2,64(x18)
+  70:	0100                	.2byte	0x100
+  72:	04090103          	lb	x2,64(x18)
+  76:	0100                	.2byte	0x100
+  78:	04090103          	lb	x2,64(x18)
+  7c:	0100                	.2byte	0x100
+  7e:	04090103          	lb	x2,64(x18)
+  82:	0100                	.2byte	0x100
+  84:	04090103          	lb	x2,64(x18)
+  88:	0100                	.2byte	0x100
+  8a:	04090203          	lb	x4,64(x18)
+  8e:	0100                	.2byte	0x100
+  90:	04090103          	lb	x2,64(x18)
+  94:	0100                	.2byte	0x100
+  96:	04090203          	lb	x4,64(x18)
+  9a:	0100                	.2byte	0x100
+  9c:	0409                	.2byte	0x409
+  9e:	0000                	.2byte	0x0
+  a0:	0101                	.2byte	0x101
 
+Disassembly of section .debug_line_str:
+
+0000000000000000 <.debug_line_str>:
+   0:	6d6f682f          	.4byte	0x6d6f682f
+   4:	2f65                	.2byte	0x2f65
+   6:	676f6873          	.4byte	0x676f6873
+   a:	72502f6f          	jal	x30,2f2e <_start-0x800fd0d2>
+   e:	63656a6f          	jal	x20,56644 <_start-0x800a99bc>
+  12:	7374                	.2byte	0x7374
+  14:	6968632f          	.4byte	0x6968632f
+  18:	2f6c6573          	.4byte	0x2f6c6573
+  1c:	3442                	.2byte	0x3442
+  1e:	502d                	.2byte	0x502d
+  20:	6f72                	.2byte	0x6f72
+  22:	73736563          	bltu	x6,x23,74c <_start-0x800ff8b4>
+  26:	722f726f          	jal	x4,f7748 <_start-0x800088b8>
+  2a:	7369                	.2byte	0x7369
+  2c:	732d7663          	bgeu	x26,x18,758 <_start-0x800ff8a8>
+  30:	6d61                	.2byte	0x6d61
+  32:	6c70                	.2byte	0x6c70
+  34:	2d65                	.2byte	0x2d65
+  36:	7270                	.2byte	0x7270
+  38:	6172676f          	jal	x14,26e4e <_start-0x800d91b2>
+  3c:	736d                	.2byte	0x736d
+  3e:	616f6c2f          	.4byte	0x616f6c2f
+  42:	5f64                	.2byte	0x5f64
+  44:	6661                	.2byte	0x6661
+  46:	6574                	.2byte	0x6574
+  48:	5f72                	.2byte	0x5f72
+  4a:	726f7473          	.4byte	0x726f7473
+  4e:	0065                	.2byte	0x65
+  50:	6f6c                	.2byte	0x6f6c
+  52:	6461                	.2byte	0x6461
+  54:	615f 7466 7265      	.byte	0x5f, 0x61, 0x66, 0x74, 0x65, 0x72
+  5a:	735f 6f74 6572      	.byte	0x5f, 0x73, 0x74, 0x6f, 0x72, 0x65
+  60:	532e                	.2byte	0x532e
+	...
 
 Disassembly of section .debug_info:
 
 0000000000000000 <.debug_info>:
-   0:	002a                	c.slli	x0,0xa
-   2:	0000                	c.unimp
-   4:	0002                	c.slli64	x0
-   6:	0000                	c.unimp
-   8:	0000                	c.unimp
-   a:	0108                	c.addi4spn	x10,x2,128
-   c:	0000                	c.unimp
-   e:	0000                	c.unimp
-  10:	0000                	c.unimp
-  12:	8010                	0x8010
-  14:	0000                	c.unimp
-  16:	0000                	c.unimp
-  18:	0044                	c.addi4spn	x9,x2,4
-  1a:	8010                	0x8010
-	...
-  24:	00000013          	addi	x0,x0,0
-  28:	0000005b          	0x5b
-  2c:	8001                	c.srli64	x8
+   0:	0024                	.2byte	0x24
+   2:	0000                	.2byte	0x0
+   4:	0005                	.2byte	0x5
+   6:	0801                	.2byte	0x801
+   8:	0000                	.2byte	0x0
+   a:	0000                	.2byte	0x0
+   c:	0001                	.2byte	0x1
+   e:	0000                	.2byte	0x0
+  10:	0000                	.2byte	0x0
+  12:	1000                	.2byte	0x1000
+  14:	0080                	.2byte	0x80
+  16:	0000                	.2byte	0x0
+  18:	4400                	.2byte	0x4400
+  1a:	0000                	.2byte	0x0
+  1c:	0000                	.2byte	0x0
+  1e:	00000013          	addi	x0,x0,0
+  22:	00000063          	beq	x0,x0,22 <_start-0x800fffde>
+  26:	8001                	.2byte	0x8001
 
 Disassembly of section .debug_abbrev:
 
 0000000000000000 <.debug_abbrev>:
-   0:	1101                	c.addi	x2,-32
-   2:	1000                	c.addi4spn	x8,x2,32
-   4:	1106                	c.slli	x2,0x21
-   6:	1201                	c.addi	x4,-32
-   8:	0301                	c.addi	x6,0
-   a:	1b0e                	c.slli	x22,0x23
-   c:	250e                	c.fldsp	f10,192(x2)
-   e:	130e                	c.slli	x6,0x23
-  10:	0005                	c.addi	x0,1
+   0:	1101                	.2byte	0x1101
+   2:	1000                	.2byte	0x1000
+   4:	12011117          	auipc	x2,0x12011
+   8:	1b0e030f          	.4byte	0x1b0e030f
+   c:	250e                	.2byte	0x250e
+   e:	130e                	.2byte	0x130e
+  10:	0005                	.2byte	0x5
 	...
 
 Disassembly of section .debug_aranges:
 
 0000000000000000 <.debug_aranges>:
-   0:	002c                	c.addi4spn	x11,x2,8
-   2:	0000                	c.unimp
-   4:	0002                	c.slli64	x0
-   6:	0000                	c.unimp
-   8:	0000                	c.unimp
-   a:	0008                	0x8
-   c:	0000                	c.unimp
-   e:	0000                	c.unimp
-  10:	0000                	c.unimp
-  12:	8010                	0x8010
-  14:	0000                	c.unimp
-  16:	0000                	c.unimp
-  18:	0044                	c.addi4spn	x9,x2,4
+   0:	002c                	.2byte	0x2c
+   2:	0000                	.2byte	0x0
+   4:	0002                	.2byte	0x2
+   6:	0000                	.2byte	0x0
+   8:	0000                	.2byte	0x0
+   a:	0008                	.2byte	0x8
+   c:	0000                	.2byte	0x0
+   e:	0000                	.2byte	0x0
+  10:	0000                	.2byte	0x0
+  12:	8010                	.2byte	0x8010
+  14:	0000                	.2byte	0x0
+  16:	0000                	.2byte	0x0
+  18:	0044                	.2byte	0x44
 	...
 
 Disassembly of section .debug_str:
 
 0000000000000000 <.debug_str>:
-   0:	6f6c                	c.ld	x11,216(x14)
-   2:	6461                	c.lui	x8,0x18
-   4:	615f 7466 7265      	0x72657466615f
-   a:	735f 6f74 6572      	0x65726f74735f
-  10:	532e                	c.lwsp	x6,232(x2)
-  12:	2f00                	c.fld	f8,24(x14)
-  14:	6f68                	c.ld	x10,216(x14)
-  16:	656d                	c.lui	x10,0x1b
-  18:	6f68732f          	0x6f68732f
-  1c:	442f6f67          	0x442f6f67
-  20:	7365                	c.lui	x6,0xffff9
-  22:	706f746b          	0x706f746b
-  26:	2d34422f          	0x2d34422f
-  2a:	7270                	c.ld	x12,224(x12)
-  2c:	7365636f          	jal	x6,56762 <_start-0x800a989e>
-  30:	2f726f73          	csrrsi	x30,0x2f7,4
-  34:	6972                	c.ldsp	x18,280(x2)
-  36:	2d766373          	csrrsi	x6,0x2d7,12
-  3a:	706d6173          	csrrsi	x2,0x706,26
-  3e:	656c                	c.ld	x11,200(x10)
-  40:	702d                	c.lui	x0,0xfffeb
-  42:	6f72                	c.ldsp	x30,280(x2)
-  44:	6d617267          	0x6d617267
-  48:	6f6c2f73          	csrrs	x30,0x6f6,x24
-  4c:	6461                	c.lui	x8,0x18
-  4e:	615f 7466 7265      	0x72657466615f
-  54:	735f 6f74 6572      	0x65726f74735f
-  5a:	4700                	c.lw	x8,8(x14)
-  5c:	554e                	c.lwsp	x10,240(x2)
-  5e:	4120                	c.lw	x8,64(x10)
-  60:	2e322053          	0x2e322053
-  64:	312e3533          	0x312e3533
-	...
+   0:	6f6c                	.2byte	0x6f6c
+   2:	6461                	.2byte	0x6461
+   4:	615f 7466 7265      	.byte	0x5f, 0x61, 0x66, 0x74, 0x65, 0x72
+   a:	735f 6f74 6572      	.byte	0x5f, 0x73, 0x74, 0x6f, 0x72, 0x65
+  10:	532e                	.2byte	0x532e
+  12:	2f00                	.2byte	0x2f00
+  14:	6f68                	.2byte	0x6f68
+  16:	656d                	.2byte	0x656d
+  18:	6f68732f          	.4byte	0x6f68732f
+  1c:	502f6f67          	.4byte	0x502f6f67
+  20:	6f72                	.2byte	0x6f72
+  22:	656a                	.2byte	0x656a
+  24:	2f737463          	bgeu	x6,x23,30c <_start-0x800ffcf4>
+  28:	73696863          	bltu	x18,x22,758 <_start-0x800ff8a8>
+  2c:	6c65                	.2byte	0x6c65
+  2e:	2d34422f          	.4byte	0x2d34422f
+  32:	7250                	.2byte	0x7250
+  34:	7365636f          	jal	x6,5676a <_start-0x800a9896>
+  38:	2f726f73          	.4byte	0x2f726f73
+  3c:	6972                	.2byte	0x6972
+  3e:	2d766373          	.4byte	0x2d766373
+  42:	706d6173          	.4byte	0x706d6173
+  46:	656c                	.2byte	0x656c
+  48:	702d                	.2byte	0x702d
+  4a:	6f72                	.2byte	0x6f72
+  4c:	6d617267          	.4byte	0x6d617267
+  50:	6f6c2f73          	.4byte	0x6f6c2f73
+  54:	6461                	.2byte	0x6461
+  56:	615f 7466 7265      	.byte	0x5f, 0x61, 0x66, 0x74, 0x65, 0x72
+  5c:	735f 6f74 6572      	.byte	0x5f, 0x73, 0x74, 0x6f, 0x72, 0x65
+  62:	4700                	.2byte	0x4700
+  64:	554e                	.2byte	0x554e
+  66:	4120                	.2byte	0x4120
+  68:	2e322053          	.4byte	0x2e322053
+  6c:	33 39 00            	Address 0x000000000000006c is out of bounds.
+

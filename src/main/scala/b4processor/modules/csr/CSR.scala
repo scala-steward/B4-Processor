@@ -1,7 +1,7 @@
 package b4processor.modules.csr
 
 import b4processor.Parameters
-import b4processor.connections.{CSR2Fetch, OutputValue, ResultType}
+import b4processor.connections.{CSR2Fetch, CSRReservationStation2CSR, OutputValue, ReorderBuffer2CSR, ResultType}
 import b4processor.utils.Tag
 import chisel3._
 import chisel3.stage.ChiselStage
@@ -9,17 +9,13 @@ import chisel3.util._
 
 class CSR(hartid: Int)(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val decoderInput = Flipped(Valid(new Bundle {
-      val address = UInt(12.W)
-      val value = UInt(64.W)
-      val destinationTag = new Tag
-    }))
-    val CSROutput = Valid(new OutputValue)
-    val collectedOutput = Flipped(Valid(new OutputValue))
+    val decoderInput = Flipped(Decoupled(new CSRReservationStation2CSR))
+    val CSROutput = Irrevocable(new OutputValue)
     val fetch = Valid(new CSR2Fetch)
     val reorderBuffer = Flipped(new ReorderBuffer2CSR)
   })
 
+  io.decoderInput.ready := io.CSROutput.ready
   io.CSROutput.valid := false.B
   io.CSROutput.bits.tag := io.decoderInput.bits.destinationTag
   io.CSROutput.bits.value := 0.U

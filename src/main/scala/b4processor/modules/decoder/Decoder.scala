@@ -4,6 +4,7 @@ import b4processor.Parameters
 import b4processor.common.OpcodeFormat._
 import b4processor.common.OpcodeFormatChecker
 import b4processor.connections._
+import b4processor.modules.csr.CSRAccessType
 import b4processor.modules.reservationstation.ReservationStationEntry
 import b4processor.structures.memoryAccess.{
   MemoryAccessInfo,
@@ -38,6 +39,7 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
     val reservationStation = new Decoder2ReservationStation
 
     val loadStoreQueue = Decoupled(new Decoder2LoadStoreQueue)
+    val csr = Decoupled(new Decoder2CSRReservationStation())
   })
 
   // 命令からそれぞれの昨日のブロックを取り出す
@@ -186,12 +188,14 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   }
 
   // 命令をデコードするのはリオーダバッファにエントリの空きがあり、リザベーションステーションにも空きがあるとき
-  io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready
+  io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready && io.csr.ready
   // リオーダバッファやリザベーションステーションに新しいエントリを追加するのは命令がある時
   io.reorderBuffer.valid := io.instructionFetch.ready && io.instructionFetch.valid
   io.reservationStation.entry.valid := io.instructionFetch.ready &&
     io.instructionFetch.valid &&
-    !(instOp === BitPat("b0?00011") && valueSelector1.io.value.valid)
+    !(instOp === BitPat(
+      "b0?00011"
+    ) && valueSelector1.io.value.valid) && instOp =/= "b1110011".U
 
   // RSへの出力を埋める
   val rs = io.reservationStation.entry
@@ -250,6 +254,36 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
     }
   }.otherwise {
     io.loadStoreQueue.bits := DontCare
+  }
+
+  io.csr.valid := io.csr.ready && io.instructionFetch.ready && io.instructionFetch.valid && "b1110011".U === instOp && instFunct3 =/= 0.U
+  io.csr.bits := DontCare
+  when(io.csr.valid) {
+    io.csr.bits.csrAccessType := MuxLookup(
+      instFunct3,
+      CSRAccessType.ReadWrite,
+      Seq(
+        "b001".U -> CSRAccessType.ReadWrite,
+        "b010".U -> CSRAccessType.ReadSet,
+        "b011".U -> CSRAccessType.ReadClear,
+        "b101".U -> CSRAccessType.ReadWriteImmediate,
+        "b110".U -> CSRAccessType.ReadSetImmediate,
+        "b111".U -> CSRAccessType.ReadClearImmediate
+      )
+    )
+    io.csr.bits.address := instImmI
+    io.csr.bits.sourceTag := valueSelector1.io.sourceTag.tag
+    io.csr.bits.value := Mux(
+      instFunct3(2),
+      instRs1,
+      valueSelector1.io.value.bits
+    )
+    io.csr.bits.ready := Mux(
+      instFunct3(2),
+      true.B,
+      valueSelector1.io.value.valid
+    )
+    io.csr.bits.destinationTag := io.reorderBuffer.destination.destinationTag
   }
 }
 

@@ -2,6 +2,7 @@ package b4processor.modules.csr
 
 import b4processor.Parameters
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util._
 
 class RetireCounter(implicit params: Parameters) extends Module {
@@ -13,4 +14,9 @@ class RetireCounter(implicit params: Parameters) extends Module {
   val c = RegInit(0.U(64.W))
   c := c + io.retireInCycle
   io.count := c
+}
+
+object RetireCounter extends App {
+  implicit val params = Parameters()
+  (new ChiselStage).emitSystemVerilog(new RetireCounter)
 }

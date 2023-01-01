@@ -1,61 +1,56 @@
 
-led_show.o:     file format elf64-littleriscv
+csrtest.o:     file format elf64-littleriscv
 
 
 Disassembly of section .text:
 
 0000000080100000 <_start>:
-    80100000:	00000513          	addi	x10,x0,0
-    80100004:	300005b7          	lui	x11,0x30000
-    80100008:	00010637          	lui	x12,0x10
+    80100000:	f1402273          	csrrs	x4,mhartid,x0
+    80100004:	fe021ee3          	bne	x4,x0,80100000 <_start>
+    80100008:	c0002573          	csrrs	x10,cycle,x0
+    8010000c:	c02025f3          	csrrs	x11,instret,x0
+    80100010:	00a00793          	addi	x15,x0,10
 
-000000008010000c <_LOOP>:
-    8010000c:	00150513          	addi	x10,x10,1
-    80100010:	00a5a023          	sw	x10,0(x11) # 30000000 <_start-0x50100000>
-    80100014:	010000ef          	jal	x1,80100024 <wait>
-    80100018:	fec51ae3          	bne	x10,x12,8010000c <_LOOP>
-    8010001c:	00000513          	addi	x10,x0,0
-    80100020:	fedff06f          	jal	x0,8010000c <_LOOP>
+0000000080100014 <_loop>:
+    80100014:	fff78793          	addi	x15,x15,-1
+    80100018:	fe079ee3          	bne	x15,x0,80100014 <_loop>
 
-0000000080100024 <wait>:
-    80100024:	3e800693          	addi	x13,x0,1000
+000000008010001c <LABEL>:
+    8010001c:	c0002673          	csrrs	x12,cycle,x0
+    80100020:	c02026f3          	csrrs	x13,instret,x0
+    80100024:	40a60533          	sub	x10,x12,x10
+    80100028:	40b685b3          	sub	x11,x13,x11
 
-0000000080100028 <_WTMP>:
-    80100028:	00068663          	beq	x13,x0,80100034 <_WEND>
-    8010002c:	fff68693          	addi	x13,x13,-1
-    80100030:	ff9ff06f          	jal	x0,80100028 <_WTMP>
-
-0000000080100034 <_WEND>:
-    80100034:	00008067          	jalr	x0,0(x1)
-
-0000000080100038 <END>:
-    80100038:	0000006f          	jal	x0,80100038 <END>
-
-Disassembly of section .data:
-
-000000008010003c <.data>:
-    8010003c:	0000                	.2byte	0x0
-	...
+000000008010002c <END>:
+    8010002c:	0000006f          	jal	x0,8010002c <END>
 
 Disassembly of section .riscv.attributes:
 
 0000000000000000 <.riscv.attributes>:
-   0:	1941                	.2byte	0x1941
+   0:	2641                	.2byte	0x2641
    2:	0000                	.2byte	0x0
    4:	7200                	.2byte	0x7200
    6:	7369                	.2byte	0x7369
    8:	01007663          	bgeu	x0,x16,14 <_start-0x800fffec>
-   c:	0000000f          	fence	unknown,unknown
+   c:	001c                	.2byte	0x1c
+   e:	0000                	.2byte	0x0
   10:	7205                	.2byte	0x7205
   12:	3676                	.2byte	0x3676
   14:	6934                	.2byte	0x6934
   16:	7032                	.2byte	0x7032
-  18:	0031                	.2byte	0x31
+  18:	5f31                	.2byte	0x5f31
+  1a:	697a                	.2byte	0x697a
+  1c:	32727363          	bgeu	x4,x7,342 <_start-0x800ffcbe>
+  20:	3070                	.2byte	0x3070
+  22:	0800                	.2byte	0x800
+  24:	0a01                	.2byte	0xa01
+  26:	0b              	Address 0x0000000000000026 is out of bounds.
+
 
 Disassembly of section .debug_line:
 
 0000000000000000 <.debug_line>:
-   0:	0098                	.2byte	0x98
+   0:	0086                	.2byte	0x86
    2:	0000                	.2byte	0x0
    4:	0005                	.2byte	0x5
    6:	0008                	.2byte	0x8
@@ -73,9 +68,9 @@ Disassembly of section .debug_line:
   1e:	0101                	.2byte	0x101
   20:	011f 0000 0000      	.byte	0x1f, 0x01, 0x00, 0x00, 0x00, 0x00
   26:	0102                	.2byte	0x102
-  28:	021f 020f 0048      	.byte	0x1f, 0x02, 0x0f, 0x02, 0x48, 0x00
+  28:	021f 020f 0047      	.byte	0x1f, 0x02, 0x0f, 0x02, 0x47, 0x00
   2e:	0000                	.2byte	0x0
-  30:	4800                	.2byte	0x4800
+  30:	4700                	.2byte	0x4700
   32:	0000                	.2byte	0x0
   34:	0000                	.2byte	0x0
   36:	0900                	.2byte	0x900
@@ -88,45 +83,39 @@ Disassembly of section .debug_line:
   46:	0100                	.2byte	0x100
   48:	04090103          	lb	x2,64(x18)
   4c:	0100                	.2byte	0x100
-  4e:	04090203          	lb	x4,64(x18)
+  4e:	04090103          	lb	x2,64(x18)
   52:	0100                	.2byte	0x100
   54:	04090103          	lb	x2,64(x18)
   58:	0100                	.2byte	0x100
   5a:	04090203          	lb	x4,64(x18)
   5e:	0100                	.2byte	0x100
-  60:	04090203          	lb	x4,64(x18)
+  60:	04090103          	lb	x2,64(x18)
   64:	0100                	.2byte	0x100
-  66:	04090103          	lb	x2,64(x18)
+  66:	04090203          	lb	x4,64(x18)
   6a:	0100                	.2byte	0x100
   6c:	04090103          	lb	x2,64(x18)
   70:	0100                	.2byte	0x100
-  72:	04090403          	lb	x8,64(x18)
+  72:	04090103          	lb	x2,64(x18)
   76:	0100                	.2byte	0x100
-  78:	04090203          	lb	x4,64(x18)
+  78:	04090103          	lb	x2,64(x18)
   7c:	0100                	.2byte	0x100
-  7e:	04090103          	lb	x2,64(x18)
+  7e:	04090303          	lb	x6,64(x18)
   82:	0100                	.2byte	0x100
-  84:	04090103          	lb	x2,64(x18)
-  88:	0100                	.2byte	0x100
-  8a:	04090203          	lb	x4,64(x18)
-  8e:	0100                	.2byte	0x100
-  90:	04090303          	lb	x6,64(x18)
-  94:	0100                	.2byte	0x100
-  96:	0409                	.2byte	0x409
-  98:	0000                	.2byte	0x0
-  9a:	0101                	.2byte	0x101
+  84:	0409                	.2byte	0x409
+  86:	0000                	.2byte	0x0
+  88:	0101                	.2byte	0x101
 
 Disassembly of section .debug_line_str:
 
 0000000000000000 <.debug_line_str>:
    0:	6d6f682f          	.4byte	0x6d6f682f
    4:	2f65                	.2byte	0x2f65
-   6:	676f6873          	.4byte	0x676f6873
+   6:	676f6873          	csrrsi	x16,0x676,30
    a:	72502f6f          	jal	x30,2f2e <_start-0x800fd0d2>
    e:	63656a6f          	jal	x20,56644 <_start-0x800a99bc>
   12:	7374                	.2byte	0x7374
   14:	6968632f          	.4byte	0x6968632f
-  18:	2f6c6573          	.4byte	0x2f6c6573
+  18:	2f6c6573          	csrrsi	x10,0x2f6,24
   1c:	3442                	.2byte	0x3442
   1e:	502d                	.2byte	0x502d
   20:	6f72                	.2byte	0x6f72
@@ -140,12 +129,11 @@ Disassembly of section .debug_line_str:
   36:	7270                	.2byte	0x7270
   38:	6172676f          	jal	x14,26e4e <_start-0x800d91b2>
   3c:	736d                	.2byte	0x736d
-  3e:	64656c2f          	.4byte	0x64656c2f
-  42:	735f 6f68 0077      	.byte	0x5f, 0x73, 0x68, 0x6f, 0x77, 0x00
-  48:	656c                	.2byte	0x656c
-  4a:	5f64                	.2byte	0x5f64
-  4c:	776f6873          	.4byte	0x776f6873
-  50:	532e                	.2byte	0x532e
+  3e:	7273632f          	.4byte	0x7273632f
+  42:	6574                	.2byte	0x6574
+  44:	63007473          	csrrci	x8,0x630,0
+  48:	65747273          	csrrci	x4,0x657,8
+  4c:	532e7473          	csrrci	x8,0x532,28
 	...
 
 Disassembly of section .debug_info:
@@ -163,11 +151,13 @@ Disassembly of section .debug_info:
   12:	1000                	.2byte	0x1000
   14:	0080                	.2byte	0x80
   16:	0000                	.2byte	0x0
-  18:	4000                	.2byte	0x4000
+  18:	3000                	.2byte	0x3000
   1a:	0000                	.2byte	0x0
   1c:	0000                	.2byte	0x0
-  1e:	0000000b          	.4byte	0xb
-  22:	00000053          	.4byte	0x53
+  1e:	000a                	.2byte	0xa
+  20:	0000                	.2byte	0x0
+  22:	0051                	.2byte	0x51
+  24:	0000                	.2byte	0x0
   26:	8001                	.2byte	0x8001
 
 Disassembly of section .debug_abbrev:
@@ -197,43 +187,41 @@ Disassembly of section .debug_aranges:
   12:	8010                	.2byte	0x8010
   14:	0000                	.2byte	0x0
   16:	0000                	.2byte	0x0
-  18:	003c                	.2byte	0x3c
+  18:	0030                	.2byte	0x30
 	...
 
 Disassembly of section .debug_str:
 
 0000000000000000 <.debug_str>:
-   0:	656c                	.2byte	0x656c
-   2:	5f64                	.2byte	0x5f64
-   4:	776f6873          	.4byte	0x776f6873
-   8:	532e                	.2byte	0x532e
-   a:	2f00                	.2byte	0x2f00
-   c:	6f68                	.2byte	0x6f68
-   e:	656d                	.2byte	0x656d
-  10:	6f68732f          	.4byte	0x6f68732f
-  14:	502f6f67          	.4byte	0x502f6f67
-  18:	6f72                	.2byte	0x6f72
-  1a:	656a                	.2byte	0x656a
-  1c:	2f737463          	bgeu	x6,x23,304 <_start-0x800ffcfc>
-  20:	73696863          	bltu	x18,x22,750 <_start-0x800ff8b0>
-  24:	6c65                	.2byte	0x6c65
-  26:	2d34422f          	.4byte	0x2d34422f
-  2a:	7250                	.2byte	0x7250
-  2c:	7365636f          	jal	x6,56762 <_start-0x800a989e>
-  30:	2f726f73          	.4byte	0x2f726f73
-  34:	6972                	.2byte	0x6972
-  36:	2d766373          	.4byte	0x2d766373
-  3a:	706d6173          	.4byte	0x706d6173
-  3e:	656c                	.2byte	0x656c
-  40:	702d                	.2byte	0x702d
-  42:	6f72                	.2byte	0x6f72
-  44:	6d617267          	.4byte	0x6d617267
-  48:	656c2f73          	.4byte	0x656c2f73
-  4c:	5f64                	.2byte	0x5f64
-  4e:	776f6873          	.4byte	0x776f6873
-  52:	4700                	.2byte	0x4700
-  54:	554e                	.2byte	0x554e
-  56:	4120                	.2byte	0x4120
-  58:	2e322053          	.4byte	0x2e322053
-  5c:	33 39 00            	Address 0x000000000000005c is out of bounds.
+   0:	74727363          	bgeu	x4,x7,746 <_start-0x800ff8ba>
+   4:	7365                	.2byte	0x7365
+   6:	2e74                	.2byte	0x2e74
+   8:	682f0053          	.4byte	0x682f0053
+   c:	2f656d6f          	jal	x26,56302 <_start-0x800a9cfe>
+  10:	676f6873          	csrrsi	x16,0x676,30
+  14:	72502f6f          	jal	x30,2f38 <_start-0x800fd0c8>
+  18:	63656a6f          	jal	x20,5664e <_start-0x800a99b2>
+  1c:	7374                	.2byte	0x7374
+  1e:	6968632f          	.4byte	0x6968632f
+  22:	2f6c6573          	csrrsi	x10,0x2f6,24
+  26:	3442                	.2byte	0x3442
+  28:	502d                	.2byte	0x502d
+  2a:	6f72                	.2byte	0x6f72
+  2c:	73736563          	bltu	x6,x23,756 <_start-0x800ff8aa>
+  30:	722f726f          	jal	x4,f7752 <_start-0x800088ae>
+  34:	7369                	.2byte	0x7369
+  36:	732d7663          	bgeu	x26,x18,762 <_start-0x800ff89e>
+  3a:	6d61                	.2byte	0x6d61
+  3c:	6c70                	.2byte	0x6c70
+  3e:	2d65                	.2byte	0x2d65
+  40:	7270                	.2byte	0x7270
+  42:	6172676f          	jal	x14,26e58 <_start-0x800d91a8>
+  46:	736d                	.2byte	0x736d
+  48:	7273632f          	.4byte	0x7273632f
+  4c:	6574                	.2byte	0x6574
+  4e:	47007473          	csrrci	x8,0x470,0
+  52:	554e                	.2byte	0x554e
+  54:	4120                	.2byte	0x4120
+  56:	2e322053          	.4byte	0x2e322053
+  5a:	33 39 00            	Address 0x000000000000005a is out of bounds.
 

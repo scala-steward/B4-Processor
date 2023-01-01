@@ -1,4 +1,4 @@
-package b4processor.modules.csr
+package b4processor.connections
 
 import b4processor.Parameters
 import chisel3._

@@ -9,7 +9,7 @@ import b4processor.connections.{
   LoadStoreQueue2ReorderBuffer,
   ResultType
 }
-import b4processor.modules.ourputcollector.OutputCollector
+import b4processor.modules.outputcollector.OutputCollector
 import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
 import chisel3._

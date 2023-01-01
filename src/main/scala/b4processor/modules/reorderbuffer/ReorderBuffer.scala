@@ -6,6 +6,7 @@ import b4processor.connections.{
   CollectedOutput,
   Decoder2ReorderBuffer,
   LoadStoreQueue2ReorderBuffer,
+  ReorderBuffer2CSR,
   ReorderBuffer2RegisterFile,
   ResultType
 }
@@ -39,6 +40,7 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
       Valid(new LoadStoreQueue2ReorderBuffer)
     )
     val isEmpty = Output(Bool())
+    val csr = new ReorderBuffer2CSR
 
     val head = if (params.debug) Some(Output(UInt(tagWidth.W))) else None
     val tail = if (params.debug) Some(Output(UInt(tagWidth.W))) else None
@@ -98,12 +100,14 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
     }
     lastValid = canCommit
   }
-  tail := tail + MuxCase(
+  val tailDelta = MuxCase(
     params.maxRegisterFileCommitCount.U,
     io.registerFile.zipWithIndex.map { case (entry, index) =>
       !entry.valid -> index.U
     }
   )
+  tail := tail + tailDelta
+  io.csr.retireCount := tailDelta
 
   // デコーダからの読み取りと書き込み
   var insertIndex = head

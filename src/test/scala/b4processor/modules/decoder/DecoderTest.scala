@@ -15,13 +15,15 @@ import org.scalatest.flatspec.AnyFlatSpec
   */
 class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
     extends Decoder(instructionOffset, 0)(params) {
+
   def initialize(instruction: UInt, programCounter: Int = 1000): Unit = {
     this.setImem(instruction, programCounter)
     this.setReorderBuffer()
     this.setRegisterFile()
     this.setLoadStoreQueueReady()
     this.setOutputs()
-    this.io.reservationStation.ready.poke(true.B)
+    this.io.reservationStation.ready.poke(true)
+    this.io.csr.ready.poke(true)
   }
 
   def setImem(
@@ -117,6 +119,14 @@ class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
     this.io.reservationStation.entry.value2.expect(value2)
     this.io.reservationStation.entry.immediateOrFunction7
       .expect(immediateOrFunction7)
+  }
+
+  def expectCSR(destinationTag: Int, value: Int, valueReady: Boolean): Unit = {
+    import this.io.csr._
+    valid.expect(true)
+    bits.destinationTag.expect(Tag(0, destinationTag))
+    bits.value.expect(value)
+    bits.ready.expect(valueReady)
   }
 }
 
@@ -309,6 +319,18 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.expectReorderBuffer(destinationRegister = 10)
       c.expectReservationStation(destinationTag = 5, value1 = 4, value2 = 1000)
+    }
+  }
+
+  it should "do csr" in {
+    test(new DecoderWrapper(0)(testParams)) { c =>
+      // jal x10,LABEL
+      // LABEL:
+      c.initialize("xc0002573".U)
+      c.setReorderBuffer(destinationTag = 5)
+
+      c.expectReorderBuffer(destinationRegister = 10)
+      c.expectCSR(destinationTag = 5, value = 0, valueReady = true)
     }
   }
 

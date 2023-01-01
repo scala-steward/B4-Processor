@@ -510,4 +510,24 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         c.checkForRegister(3, 201, 100)
       }
   }
+
+  it should "run csrtest" in {
+    test(
+      new B4ProcessorWithMemory(
+      )(
+        defaultParams.copy(
+          threads = 1,
+          decoderPerThread = 1,
+          maxRegisterFileCommitCount = 2,
+          loadStoreQueueIndexWidth = 2
+        )
+      )
+    )
+      .withAnnotations(
+        Seq(WriteVcdAnnotation, backendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.initialize("riscv-sample-programs/csrtest/csrtest")
+        c.clock.step(300)
+      }
+  }
 }
