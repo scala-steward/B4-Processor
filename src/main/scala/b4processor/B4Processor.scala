@@ -114,6 +114,11 @@ class B4Processor(implicit params: Parameters) extends Module {
 
     reorderBuffer(tid).io.csr <> csr(tid).io.reorderBuffer
 
+    fetch(tid).io.csr <> csr(tid).io.fetch
+
+    fetch(tid).io.csrReservationStationEmpty :=
+      csrReservationStation(tid).io.empty
+
     /** フェッチとデコーダの接続 */
     for (d <- 0 until params.decoderPerThread) {
       decoders(tid)(d).io.csr <> csrReservationStation(tid).io.decoderInput(d)

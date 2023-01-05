@@ -21,4 +21,7 @@ object WaitingReason extends ChiselEnum {
 
   /** JAL命令で同じ場所を移動していると、ReservationStationが圧迫されてしまうので遅延させる */
   val BusyLoop = Value
+
+  /** mret */
+  val mret = Value
 }

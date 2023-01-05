@@ -22,4 +22,7 @@ object BranchType extends ChiselEnum {
 
   /** Fense.iによる停止 */
   val FenceI = Value
+
+  /** mret */
+  val mret = Value
 }

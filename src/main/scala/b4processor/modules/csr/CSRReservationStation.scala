@@ -21,6 +21,7 @@ class CSRReservationStation(implicit params: Parameters) extends Module {
     val toCSR =
       Decoupled(new CSRReservationStation2CSR())
     val output = Flipped(new CollectedOutput())
+    val empty = Output(Bool())
   })
 
   io.toCSR.valid := false.B
@@ -29,6 +30,7 @@ class CSRReservationStation(implicit params: Parameters) extends Module {
   private val head = RegInit(0.U(2.W))
   private val tail = RegInit(0.U(2.W))
   private val buf = Reg(Vec(4, new CSRReservationStationEntry()))
+  io.empty := head === tail
 
   var insertIndex = head
   for (d <- io.decoderInput) {

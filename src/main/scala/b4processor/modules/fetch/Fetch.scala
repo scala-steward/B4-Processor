@@ -2,6 +2,7 @@ package b4processor.modules.fetch
 
 import b4processor.Parameters
 import b4processor.connections.{
+  CSR2Fetch,
   Fetch2BranchPrediction,
   Fetch2FetchBuffer,
   InstructionCache2Fetch
@@ -34,6 +35,11 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
     /** デコーダ */
     val fetchBuffer = new Fetch2FetchBuffer
 
+    /** CSR */
+    val csr = Input(new CSR2Fetch)
+
+    val csrReservationStationEmpty = Input(Bool())
+
     /** デバッグ用 */
     val PC = if (params.debug) Some(Output(UInt(64.W))) else None
     val nextPC = if (params.debug) Some(Output(UInt(64.W))) else None
@@ -63,7 +69,8 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
       io.branchTypes.get(i) := branch.io.branchType
 
     // キャッシュからの値があり、待つ必要はなく、JAL命令ではない（JALはアドレスを変えるだけとして処理できて、デコーダ以降を使う必要はない）
-    decoder.valid := cache.output.valid && nextWait === WaitingReason.None
+    val instructionValid = cache.output.valid && nextWait === WaitingReason.None
+    decoder.valid := instructionValid && branch.io.branchType =/= BranchType.mret
     decoder.bits.programCounter := nextPC
     decoder.bits.instruction := cache.output.bits
 
@@ -71,7 +78,7 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
 
     // 次に停止する必要があるか確認
     nextWait = Mux(
-      nextWait =/= WaitingReason.None || !decoder.ready || !decoder.valid,
+      nextWait =/= WaitingReason.None || !decoder.ready || !instructionValid,
       nextWait,
       MuxLookup(
         branch.io.branchType.asUInt,
@@ -85,7 +92,8 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
             branch.io.offset === 0.S,
             WaitingReason.BusyLoop,
             WaitingReason.None
-          )
+          ),
+          BranchType.mret.asUInt -> WaitingReason.mret
         )
       )
     )
@@ -114,7 +122,9 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
       }
     }
     when(waiting === WaitingReason.Fence || waiting === WaitingReason.FenceI) {
-      when(io.reorderBufferEmpty && io.loadStoreQueueEmpty) {
+      when(
+        io.reorderBufferEmpty && io.loadStoreQueueEmpty && io.fetchBuffer.empty
+      ) {
         waiting := WaitingReason.None
         pc := pc + 4.U
       }
@@ -123,6 +133,12 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
 
 //      /** 1クロック遅らせるだけ */
 //      waiting := WaitingReason.None
+    }
+    when(waiting === WaitingReason.mret) {
+      when(io.csrReservationStationEmpty) {
+        waiting := WaitingReason.None
+        pc := io.csr.mepc
+      }
     }
   }
 

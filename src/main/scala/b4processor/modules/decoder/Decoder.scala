@@ -104,6 +104,7 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
     0.U
   )
   io.reorderBuffer.destination.storeSign := instOp === "b0100011".U
+  io.reorderBuffer.programCounter := io.instructionFetch.bits.programCounter
 
   // レジスタファイルへの入力
   io.registerFile.sourceRegister1 := instRs1
@@ -260,15 +261,12 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   io.csr.bits := DontCare
   when(io.csr.valid) {
     io.csr.bits.csrAccessType := MuxLookup(
-      instFunct3,
+      instFunct3(1, 0),
       CSRAccessType.ReadWrite,
       Seq(
-        "b001".U -> CSRAccessType.ReadWrite,
-        "b010".U -> CSRAccessType.ReadSet,
-        "b011".U -> CSRAccessType.ReadClear,
-        "b101".U -> CSRAccessType.ReadWriteImmediate,
-        "b110".U -> CSRAccessType.ReadSetImmediate,
-        "b111".U -> CSRAccessType.ReadClearImmediate
+        "b01".U -> CSRAccessType.ReadWrite,
+        "b10".U -> CSRAccessType.ReadSet,
+        "b11".U -> CSRAccessType.ReadClear
       )
     )
     io.csr.bits.address := instImmI
@@ -289,5 +287,5 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
 
 object Decoder extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitVerilog(new Decoder(0, 0))
+  (new ChiselStage).emitSystemVerilog(new Decoder(0, 0))
 }

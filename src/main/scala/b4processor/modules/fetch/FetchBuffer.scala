@@ -19,6 +19,7 @@ class FetchBuffer(implicit params: Parameters) extends Module {
 
   val head = RegInit(0.U((params.decoderPerThread + 1).W))
   val tail = RegInit(0.U((params.decoderPerThread + 1).W))
+  io.fetch.empty := head === tail
 
   {
     var nextHead = head

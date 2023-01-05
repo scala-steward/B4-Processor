@@ -14,4 +14,5 @@ class Fetch2FetchBuffer(implicit params: Parameters) extends Bundle {
       val programCounter = UInt(64.W)
     })
   )
+  val empty = Input(Bool())
 }

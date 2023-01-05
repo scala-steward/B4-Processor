@@ -22,6 +22,9 @@ class CheckBranch extends Module {
   // オペコードを取り出す
   val opcode = io.instruction(6, 0)
 
+  // funct3
+  val funct3 = io.instruction(14, 12)
+
   // オフセットの抽出
   io.offset := MuxLookup(
     opcode,
@@ -66,7 +69,8 @@ class CheckBranch extends Module {
         io.instruction(12),
         BranchType.FenceI,
         BranchType.Fence
-      )
+      ),
+      "b1110011".U -> Mux(funct3 === 0.U, BranchType.mret, BranchType.None)
     )
   )
 }

@@ -14,6 +14,9 @@ class ReorderBufferEntry extends Bundle {
   /** 実行結果の値 */
   val value = UInt(64.W)
 
+  /** プログラムカウンタ */
+  val programCounter = UInt(64.W)
+
   /** 該当のbufferがStore命令かどうか */
   val storeSign = Bool()
 }

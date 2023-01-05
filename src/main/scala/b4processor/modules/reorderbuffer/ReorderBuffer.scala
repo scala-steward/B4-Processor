@@ -24,7 +24,7 @@ import scala.math.pow
   *   パラメータ
   */
 class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
-  private val tagWidth = new Tag().id.getWidth
+  private val tagWidth = params.tagWidth
 
   val io = IO(new Bundle {
     val decoders =
@@ -82,7 +82,7 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
       when(index === registerTagMap(buffer(index).destinationRegister).tagId) {
         registerTagMap(
           buffer(index).destinationRegister
-        ) := new RegisterTagMapContent().Lit(_.valid -> false.B, _.tagId -> 0.U)
+        ) := new RegisterTagMapContent().Lit(_.valid -> false.B)
       }
     }.otherwise {
       rf.bits.value := 0.U
@@ -124,6 +124,7 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
         entry.valueReady := false.B
         entry.destinationRegister := decoder.destination.destinationRegister
         entry.storeSign := decoder.destination.storeSign
+        entry.programCounter := decoder.programCounter
         entry
       }
     }
