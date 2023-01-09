@@ -37,6 +37,8 @@ class CSR(hartid: Int)(implicit params: Parameters) extends Module {
   io.fetch.mtvec := mtvec
   val mepc = RegInit(0.U(64.W))
   io.fetch.mepc := mepc
+  val mcause = RegInit(0.U(64.W))
+  io.fetch.mcause := mcause
 
   when(io.decoderInput.valid) {
     val address = io.decoderInput.bits.address
@@ -71,6 +73,19 @@ class CSR(hartid: Int)(implicit params: Parameters) extends Module {
             CSRAccessType.ReadWrite.asUInt -> io.decoderInput.bits.value,
             CSRAccessType.ReadSet.asUInt -> (mepc | io.decoderInput.bits.value),
             CSRAccessType.ReadClear.asUInt -> (mepc & io.decoderInput.bits.value)
+          )
+        )
+      }
+    }.elsewhen(address === CSRName.mcause) {
+      io.CSROutput.bits.value := mcause
+      when(io.CSROutput.ready && io.CSROutput.valid) {
+        mcause := MuxLookup(
+          io.decoderInput.bits.csrAccessType.asUInt,
+          0.U,
+          Seq(
+            CSRAccessType.ReadWrite.asUInt -> io.decoderInput.bits.value,
+            CSRAccessType.ReadSet.asUInt -> (mcause | io.decoderInput.bits.value),
+            CSRAccessType.ReadClear.asUInt -> (mcause & io.decoderInput.bits.value)
           )
         )
       }

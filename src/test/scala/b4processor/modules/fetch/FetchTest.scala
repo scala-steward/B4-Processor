@@ -64,6 +64,9 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
   fetch.io.reorderBufferEmpty <> io.reorderBufferEmpty
   fetch.io.loadStoreQueueEmpty <> io.loadStoreQueueEmpty
   fetch.io.branchTypes.get <> io.branchTypes
+  fetch.io.csr := DontCare
+  fetch.io.csrReservationStationEmpty := true.B
+  fetch.io.fetchBuffer.empty := true.B
 
   cache.io.fetch <> fetch.io.cache
   cache.io.memory.request <> memoryInterface.io.instructionFetchRequest(0)
@@ -351,7 +354,7 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
     test(
       new FetchWrapper(
       )
-    ) { c =>
+    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize(
         InstructionUtil.fromStringSeq32bit(
           Seq("00000013", "0ff0000f", "00000013", "00000013")

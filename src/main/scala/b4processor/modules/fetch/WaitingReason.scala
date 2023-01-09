@@ -24,4 +24,7 @@ object WaitingReason extends ChiselEnum {
 
   /** mret */
   val mret = Value
+
+  /** exception */
+  val Exception = Value
 }

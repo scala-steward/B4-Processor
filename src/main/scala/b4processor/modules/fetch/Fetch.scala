@@ -140,6 +140,12 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
         pc := io.csr.mepc
       }
     }
+    when(waiting === WaitingReason.Exception) {
+      when(io.csrReservationStationEmpty) {
+        waiting := WaitingReason.None
+        pc := (io.csr.mtvec(63, 2) + io.csr.mcause(62, 0)) ## 0.U(2.W)
+      }
+    }
   }
 
   if (params.debug) {

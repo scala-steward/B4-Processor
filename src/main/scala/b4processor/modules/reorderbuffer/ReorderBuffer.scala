@@ -59,30 +59,41 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
     val tagId = UInt(tagWidth.W)
   }
 
-  val registerTagMap = RegInit(
-    VecInit(
-      Seq.fill(32)(
-        new RegisterTagMapContent().Lit(_.valid -> false.B, _.tagId -> 0.U)
-      )
-    )
+  private object RegisterTagMapContent {
+    def default: RegisterTagMapContent =
+      new RegisterTagMapContent().Lit(_.valid -> false.B, _.tagId -> 0.U)
+  }
+
+  private val registerTagMap = RegInit(
+    VecInit(Seq.fill(31)(RegisterTagMapContent.default))
   )
 
   // レジスタファイルへの書き込み
-  var lastValid = true.B
+  private var lastValid = true.B
   for (((rf, lsq), i) <- io.registerFile.zip(io.loadStoreQueue).zipWithIndex) {
     val index = tail + i.U
 
     val instructionOk = buffer(index).valueReady || buffer(index).storeSign
     val canCommit = lastValid && index =/= head && instructionOk
+    val isError = buffer(index).isError
 
-    rf.valid := canCommit
+    rf.valid := canCommit && !isError
     when(canCommit) {
-      rf.bits.value := buffer(index).value
-      rf.bits.destinationRegister := buffer(index).destinationRegister
-      when(index === registerTagMap(buffer(index).destinationRegister).tagId) {
-        registerTagMap(
-          buffer(index).destinationRegister
-        ) := new RegisterTagMapContent().Lit(_.valid -> false.B)
+      when(!isError) {
+        rf.bits.value := buffer(index).value
+        rf.bits.destinationRegister := buffer(index).destinationRegister
+        when(
+          index === registerTagMap(
+            buffer(index).destinationRegister - 1.U
+          ).tagId
+        ) {
+          registerTagMap(
+            buffer(index).destinationRegister - 1.U
+          ) := new RegisterTagMapContent().Lit(_.valid -> false.B)
+        }
+      }.otherwise {
+        io.csr.mcause.valid := true.B
+        io.csr.mcause.bits := buffer(index).value
       }
     }.otherwise {
       rf.bits.value := 0.U
@@ -100,7 +111,7 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
     }
     lastValid = canCommit
   }
-  val tailDelta = MuxCase(
+  private val tailDelta = MuxCase(
     params.maxRegisterFileCommitCount.U,
     io.registerFile.zipWithIndex.map { case (entry, index) =>
       !entry.valid -> index.U
@@ -110,7 +121,7 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
   io.csr.retireCount := tailDelta
 
   // デコーダからの読み取りと書き込み
-  var insertIndex = head
+  private var insertIndex = head
   private var lastReady = true.B
   for (i <- 0 until params.decoderPerThread) {
     val decoder = io.decoders(i)
@@ -125,18 +136,21 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
         entry.destinationRegister := decoder.destination.destinationRegister
         entry.storeSign := decoder.destination.storeSign
         entry.programCounter := decoder.programCounter
+        entry.isError := false.B
         entry
       }
     }
     decoder.destination.destinationTag := Tag.fromWires(threadId.U, insertIndex)
     when(decoder.destination.destinationRegister =/= 0.U) {
-      registerTagMap(decoder.destination.destinationRegister).valid := true.B
       registerTagMap(
-        decoder.destination.destinationRegister
+        decoder.destination.destinationRegister - 1.U
+      ).valid := true.B
+      registerTagMap(
+        decoder.destination.destinationRegister - 1.U
       ).tagId := insertIndex
     }
     when(decoder.source1.sourceRegister =/= 0.U) {
-      val matchingBits = registerTagMap(decoder.source1.sourceRegister)
+      val matchingBits = registerTagMap(decoder.source1.sourceRegister - 1.U)
       val hasMatching = matchingBits.valid
 
       decoder.source1.matchingTag.valid := hasMatching
@@ -154,7 +168,7 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
     }
 
     when(decoder.source2.sourceRegister =/= 0.U) {
-      val matchingBits = registerTagMap(decoder.source2.sourceRegister)
+      val matchingBits = registerTagMap(decoder.source2.sourceRegister - 1.U)
       val hasMatching = matchingBits.valid
       decoder.source2.matchingTag.valid := hasMatching
       decoder.source2.matchingTag.bits := Tag.fromWires(
@@ -186,6 +200,7 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
     output.valid && output.bits.resultType === ResultType.Result && output.bits.tag.threadId === threadId.U
   ) {
     buffer(output.bits.tag.id).value := output.bits.value
+    buffer(output.bits.tag.id).isError := output.bits.isError
     buffer(output.bits.tag.id).valueReady := true.B
   }
 

@@ -9,16 +9,19 @@ import scala.math.pow
 class FIFO[T <: Data](width: Int)(t: T) extends Module {
   val input = IO(Flipped(Irrevocable(t)))
   val output = IO(Irrevocable(t))
-  val full = IO(Bool())
-  val empty = IO(Bool())
+  val full = IO(Output(Bool()))
+  val empty = IO(Output(Bool()))
+  val flush = IO(Input(Bool()))
 
   private val queue = Module(
-    new Queue(t, pow(2, width).toInt, useSyncReadMem = true)
+    new Queue(t, pow(2, width).toInt, useSyncReadMem = true, hasFlush = true)
   )
   queue.io.enq <> input
   output <> queue.io.deq
   full := !queue.io.enq.ready
   empty := !queue.io.deq.valid
+  queue.flush := flush
+
 }
 
 object FIFO extends App {
