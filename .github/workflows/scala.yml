@@ -38,145 +38,26 @@ jobs:
       - name: Check formatting
         run: sbt scalafmtCheck
 
-  test-components:
-    name: 各モジュールのテスト
-    timeout-minutes: 10
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Cache SBT
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
-
-      - name: Run tests
-        run: sbt "testOnly *modules*"
-
-  test-compilation:
+  test-all:
     name: B4プロセッサのコンパイルチェック
-    needs: [ test-components ]
     timeout-minutes: 10
 
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+
+      - name: setup nix
+        uses: cachix/install-nix-action@v18
+
+      - name: test all
+        run: make test
+
+      - name: generate processor
+        run: make processor
+
+      - name: upload processor source as artifact
+        uses: actions/upload-artifact@v3
         with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Cache SBT
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
-
-      - name: Run tests
-        run: sbt "testOnly *B4ProcessorElaborateTest"
-
-  test-programs:
-    name: プログラムの動作テスト
-    needs: [ test-compilation ]
-    timeout-minutes: 20
-    if: github.event.pull_request.draft == false
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Cache SBT
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
-
-      - name: install runner
-        run: sudo apt update && sudo apt install verilator iverilog
-
-      - name: Run tests
-        run: sbt "testOnly *B4ProcessorProgramTest"
-
-  test-riscv-tests:
-    name: RISC-Vテスト
-    needs: [ test-compilation ]
-    timeout-minutes: 30
-    if: github.event.pull_request.draft == false
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Cache SBT
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
-
-      - name: install runner
-        run: sudo apt update && sudo apt install verilator iverilog
-
-      - name: Run tests
-        run: sbt "testOnly *B4ProcessorRISCVTest"
-
-  test-parameters:
-    name: パラメータのテスト
-    needs: [ test-compilation ]
-    timeout-minutes: 20
-    if: github.event.pull_request.draft == false
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Cache SBT
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
-
-      - name: install runner
-        run: sudo apt update && sudo apt install verilator iverilog
-
-      - name: Run tests
-        run: sbt "testOnly *B4ProcessorParameterTest"
+          name: processor
+          path: processor

@@ -9,7 +9,6 @@ OoOのプロセッサ
 intellijでsbtプロジェクトとして読み込む
 
 ## テスト方法
-
 intellij等でテスト、もしくは
 
 ```shell
