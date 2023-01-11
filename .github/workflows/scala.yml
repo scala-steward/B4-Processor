@@ -39,8 +39,8 @@ jobs:
         run: sbt scalafmtCheck
 
   test-all:
-    name: B4プロセッサのコンパイルチェック
-    timeout-minutes: 10
+    name: B4プロセッサのテスト
+    timeout-minutes: 60
 
     runs-on: ubuntu-latest
 
