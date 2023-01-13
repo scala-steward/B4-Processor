@@ -53,11 +53,11 @@ jobs:
       - name: test all
         run: make check
 
-      - name: generate processor
-        run: make processor
-
-      - name: upload processor source as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: processor
-          path: processor/*
+#      - name: generate processor
+#        run: make processor
+#
+#      - name: upload processor source as artifact
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: processor
+#          path: processor/*
