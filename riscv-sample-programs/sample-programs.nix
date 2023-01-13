@@ -5,7 +5,7 @@
   enableParallelBuilding = true;
   installPhase = "
     mkdir $out
-    cp **/*.{hex,bin,dump} $out
+    cp -fv **/*.{hex,bin,dump} $out
   ";
   fixupPhase = "true";
 }

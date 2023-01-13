@@ -66,6 +66,7 @@ class SimpleAXIMemory(size: Int = 1024 * 10) extends Module {
   writeState.input.valid := false.B
   writeState.output.ready := false.B
   writeState.input.bits := DontCare
+  writeState.flush := false.B
 
   val writeResponseState = Module(new FIFO(2)(new Bundle() {
     val isError = Bool()
@@ -73,6 +74,7 @@ class SimpleAXIMemory(size: Int = 1024 * 10) extends Module {
   writeResponseState.input.valid := false.B
   writeResponseState.output.ready := false.B
   writeResponseState.input.bits := DontCare
+  writeResponseState.flush := false.B
 
   val burstLen = RegInit(0.U(8.W))
 
@@ -122,6 +124,7 @@ class SimpleAXIMemory(size: Int = 1024 * 10) extends Module {
   readState.input.valid := false.B
   readState.output.ready := false.B
   readState.input.bits := DontCare
+  readState.flush := false.B
 
   val readBurstLen = RegInit(0.U(8.W))
   val readDone = RegInit(false.B)

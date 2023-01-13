@@ -1,0 +1,102 @@
+diff --git a/benchmarks/Makefile b/benchmarks/Makefile
+index c9469e2..2294b48 100644
+--- a/benchmarks/Makefile
++++ b/benchmarks/Makefile
+@@ -41,6 +41,7 @@ RISCV_GCC_OPTS ?= -DPREALLOCATE=1 -mcmodel=medany -static -std=gnu99 -O2 -ffast-
+ RISCV_LINK ?= $(RISCV_GCC) -T $(src_dir)/common/test.ld $(incs)
+ RISCV_LINK_OPTS ?= -static -nostdlib -nostartfiles -lm -lgcc -T $(src_dir)/common/test.ld
+ RISCV_OBJDUMP ?= $(RISCV_PREFIX)objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data
++RISCV_OBJCOPY ?= $(RISCV_PREFIX)objcopy
+ RISCV_SIM ?= spike --isa=rv$(XLEN)gc
+ 
+ incs  += -I$(src_dir)/../env -I$(src_dir)/common $(addprefix -I$(src_dir)/, $(bmarks))
+@@ -57,6 +58,9 @@ $(foreach bmark,$(bmarks),$(eval $(call compile_template,$(bmark))))
+ # Build and run benchmarks on riscv simulator
+ 
+ bmarks_riscv_bin  = $(addsuffix .riscv,  $(bmarks))
++bmarks_riscv_hex  = $(addsuffix .hex,  $(bmarks))
++bmarks_riscv_hex64  = $(addsuffix .64.hex,  $(bmarks))
++bmarks_riscv_binary  = $(addsuffix .binary,  $(bmarks))
+ bmarks_riscv_dump = $(addsuffix .riscv.dump, $(bmarks))
+ bmarks_riscv_out  = $(addsuffix .riscv.out,  $(bmarks))
+ 
+@@ -66,10 +70,19 @@ $(bmarks_riscv_dump): %.riscv.dump: %.riscv
+ $(bmarks_riscv_out): %.riscv.out: %.riscv
+ 	$(RISCV_SIM) $< > $@
+ 
+-riscv: $(bmarks_riscv_dump)
++%.binary: %.riscv
++	$(RISCV_OBJCOPY) $< -O binary $@
++
++%.hex: %.binary
++	od -An -t x1 $< -w1 -v | tr -d " " > $@
++
++%.64.hex: %.binary
++	od -An -t x8 $< -w8 -v | tr -d " " > $@
++
++riscv: $(bmarks_riscv_dump) $(bmarks_riscv_hex) $(bmarks_riscv_hex64)
+ run: $(bmarks_riscv_out)
+ 
+-junk += $(bmarks_riscv_bin) $(bmarks_riscv_dump) $(bmarks_riscv_hex) $(bmarks_riscv_out)
++junk += $(bmarks_riscv_bin) $(bmarks_riscv_dump) $(bmarks_riscv_hex) $(bmarks_riscv_hex64) $(bmarks_riscv_out)
+ 
+ #------------------------------------------------------------
+ # Default
+@@ -85,7 +98,7 @@ latest_install = $(shell ls -1 -d $(instbasedir)/$(instname)* | tail -n 1)
+ 
+ install:
+ 	mkdir $(install_dir)
+-	cp -r $(bmarks_riscv_bin) $(bmarks_riscv_dump) $(install_dir)
++	cp -r $(bmarks_riscv_bin) $(bmarks_riscv_dump) $(bmarks_riscv_hex) $(bmarks_riscv_hex64) $(install_dir)
+ 
+ install-link:
+ 	rm -rf $(instbasedir)/$(instname)
+diff --git a/isa/Makefile b/isa/Makefile
+index 0203a82..ea43550 100644
+--- a/isa/Makefile
++++ b/isa/Makefile
+@@ -39,6 +39,7 @@ RISCV_PREFIX ?= riscv$(XLEN)-unknown-elf-
+ RISCV_GCC ?= $(RISCV_PREFIX)gcc
+ RISCV_GCC_OPTS ?= -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles
+ RISCV_OBJDUMP ?= $(RISCV_PREFIX)objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data
++RISCV_OBJCOPY ?= $(RISCV_PREFIX)objcopy
+ RISCV_SIM ?= spike
+ 
+ vpath %.S $(src_dir)
+@@ -55,6 +56,15 @@ vpath %.S $(src_dir)
+ %.out32: %
+ 	$(RISCV_SIM) --isa=rv32gc_zfh_zicboz_svnapot $< 2> $@
+ 
++%.binary: %
++	$(RISCV_OBJCOPY) $< -O binary $@
++
++%.hex: %.binary
++	od -An -t x1 $< -w1 -v | tr -d " " > $@
++
++%.64.hex: %.binary
++	od -An -t x8 $< -w8 -v | tr -d " " > $@
++
+ define compile_template
+ 
+ $$($(1)_p_tests): $(1)-p-%: $(1)/%.S
+@@ -104,17 +114,18 @@ endif
+ 
+ tests_dump = $(addsuffix .dump, $(tests))
+ tests_hex = $(addsuffix .hex, $(tests))
++tests_hex64 = $(addsuffix .64.hex, $(tests))
+ tests_out = $(addsuffix .out, $(filter rv64%,$(tests)))
+ tests32_out = $(addsuffix .out32, $(filter rv32%,$(tests)))
+ 
+ run: $(tests_out) $(tests32_out)
+ 
+-junk += $(tests) $(tests_dump) $(tests_hex) $(tests_out) $(tests32_out)
++junk += $(tests) $(tests_dump) $(tests_hex) $(tests_hex64) $(tests_out) $(tests32_out)
+ 
+ #------------------------------------------------------------
+ # Default
+ 
+-all: $(tests_dump)
++all: $(tests_dump) $(tests_hex) $(tests_hex64)
+ 
+ #------------------------------------------------------------
+ # Clean up

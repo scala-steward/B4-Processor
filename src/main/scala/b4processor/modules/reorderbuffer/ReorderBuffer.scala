@@ -42,6 +42,8 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
     val isEmpty = Output(Bool())
     val csr = new ReorderBuffer2CSR
 
+    val isError = Output(Bool())
+
     val head = if (params.debug) Some(Output(UInt(tagWidth.W))) else None
     val tail = if (params.debug) Some(Output(UInt(tagWidth.W))) else None
     val bufferIndex0 =
@@ -69,6 +71,7 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
   )
 
   // レジスタファイルへの書き込み
+  io.isError := false.B
   private var lastValid = true.B
   for (((rf, lsq), i) <- io.registerFile.zip(io.loadStoreQueue).zipWithIndex) {
     val index = tail + i.U
@@ -78,6 +81,10 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
     val isError = buffer(index).isError
 
     rf.valid := canCommit && !isError
+    rf.bits.value := 0.U
+    rf.bits.destinationRegister := 0.U
+    io.csr.mcause.valid := false.B
+    io.csr.mcause.bits := DontCare
     when(canCommit) {
       when(!isError) {
         rf.bits.value := buffer(index).value
@@ -94,10 +101,8 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
       }.otherwise {
         io.csr.mcause.valid := true.B
         io.csr.mcause.bits := buffer(index).value
+        io.isError := true.B
       }
-    }.otherwise {
-      rf.bits.value := 0.U
-      rf.bits.destinationRegister := 0.U
     }
 
     when(canCommit) {
@@ -117,8 +122,6 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
       !entry.valid -> index.U
     }
   )
-  tail := tail + tailDelta
-  io.csr.retireCount := tailDelta
 
   // デコーダからの読み取りと書き込み
   private var insertIndex = head
@@ -191,7 +194,8 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
     lastReady = decoder.ready
   }
   head := insertIndex
-
+  tail := Mux(io.isError, head, tail + tailDelta)
+  io.csr.retireCount := Mux(io.isError, 0.U, tailDelta)
   io.isEmpty := head === tail
 
   // 出力の読み込み

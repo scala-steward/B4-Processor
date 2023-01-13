@@ -1,6 +1,6 @@
 package b4processor.modules.fetch
 
-import chisel3.experimental.ChiselEnum
+import chisel3._
 
 object WaitingReason extends ChiselEnum {
 

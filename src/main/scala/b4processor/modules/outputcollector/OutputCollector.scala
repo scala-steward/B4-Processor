@@ -13,23 +13,32 @@ class OutputCollector(implicit params: Parameters) extends Module {
     val executor = Flipped(Irrevocable(new OutputValue))
     val dataMemory = Flipped(Irrevocable(new OutputValue))
     val csr = Flipped(Vec(params.threads, Irrevocable(new OutputValue)))
+    val isError = Input(Vec(params.threads, Bool()))
   })
 
-  val executionUnitOutputQueue = Module(new FIFO(2)(new OutputValue))
-  executionUnitOutputQueue.input <> io.executor
+  val threadsOutputQueue =
+    Seq.fill(params.threads)(Module(new FIFO(3)(new OutputValue)))
+  val threadsArbiter =
+    Seq.fill(params.threads)(Module(new B4RRArbiter(new OutputValue, 3)))
 
-  val dataMemoryOutputQueue = Module(new FIFO(2)(new OutputValue))
-  dataMemoryOutputQueue.input <> io.dataMemory
+  for (tid <- 0 until params.threads) {
+    threadsArbiter(tid).io.in(0) <> io.executor
+    threadsArbiter(tid).io
+      .in(0)
+      .valid := io.executor.bits.tag.threadId === tid.U
+    threadsArbiter(tid).io.in(1) <> io.dataMemory
+    threadsArbiter(tid).io
+      .in(1)
+      .valid := io.dataMemory.bits.tag.threadId === tid.U
+    threadsArbiter(tid).io.in(2) <> io.csr(tid)
 
-  val csrArbiter = Module(new B4RRArbiter(new OutputValue, params.threads))
-  csrArbiter.io.in <> io.csr
-  val csrOutputQueue = Module(new FIFO(2)(new OutputValue))
-  csrOutputQueue.input <> csrArbiter.io.out
+    threadsOutputQueue(tid).input <> threadsArbiter(tid).io.out
+    threadsOutputQueue(tid).flush := io.isError(tid)
+  }
 
-  val outputArbitar = Module(new B4RRArbiter(new OutputValue, 3))
-  outputArbitar.io.in(0) <> executionUnitOutputQueue.output
-  outputArbitar.io.in(1) <> dataMemoryOutputQueue.output
-  outputArbitar.io.in(2) <> csrOutputQueue.output
+  val outputArbitar = Module(new B4RRArbiter(new OutputValue, params.threads))
+  for (tid <- 0 until params.threads)
+    outputArbitar.io.in(tid) <> threadsOutputQueue(tid).output
 
   io.outputs.outputs.valid := outputArbitar.io.out.valid
   io.outputs.outputs.bits := outputArbitar.io.out.bits

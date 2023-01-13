@@ -1,7 +1,6 @@
 package b4processor.modules.fetch
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.stage.ChiselStage
 import chisel3.util._
 

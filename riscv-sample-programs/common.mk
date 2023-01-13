@@ -8,7 +8,7 @@ export LINKER_SCRIPT := ../linker.ld
 CFLAGS += -T$(LINKER_SCRIPT)
 
 .PHONY:clean
-all: $(PROGRAMNAME).hex $(PROGRAMNAME).o $(PROGRAMNAME).dump $(PROGRAMNAME).text64.hex
+all: $(PROGRAMNAME).hex $(PROGRAMNAME).o $(PROGRAMNAME).dump $(PROGRAMNAME).64.hex
 
 
 $(PROGRAMNAME).o: $(SOURCES) $(LINKER_SCRIPT)
@@ -20,7 +20,7 @@ $(PROGRAMNAME).text.binary: $(PROGRAMNAME).o
 $(PROGRAMNAME).hex: $(PROGRAMNAME).text.binary
 	od -An -t x1 $< -w1 -v | tr -d " " > $@
 
-$(PROGRAMNAME).text64.hex: $(PROGRAMNAME).text.binary
+$(PROGRAMNAME).64.hex: $(PROGRAMNAME).text.binary
 	od -An -t x8 $< -w8 -v | tr -d " " > $@
 
 $(PROGRAMNAME).dump: $(PROGRAMNAME).o

@@ -6,13 +6,17 @@ import b4processor.utils.FIFO
 import chisel3._
 import chisel3.util._
 
-class BranchOutputCollector(implicit params: Parameters) extends Module {
+class BranchOutputCollector(threadId: Int)(implicit params: Parameters)
+    extends Module {
   val io = IO(new Bundle {
     val fetch = new CollectedBranchAddresses
     val executor = Flipped(Irrevocable(new BranchOutput))
+    val isError = Input(Bool())
   })
   val fifo = Module(new FIFO(2)(new BranchOutput()))
   fifo.input <> io.executor
+  fifo.input.valid := io.executor.bits.threadId === threadId.U
+  fifo.flush := io.isError
   io.fetch.addresses.valid := fifo.output.valid
   io.fetch.addresses.bits := fifo.output.bits
   fifo.output.ready := true.B

@@ -36,6 +36,7 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
   )
   buffer.input <> inputArbiter.io.out
   buffer.output.ready := false.B
+  buffer.flush := false.B
 
   io.dataReadRequest.bits := DontCare
   io.dataReadRequest.valid := false.B
