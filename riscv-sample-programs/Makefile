@@ -13,9 +13,8 @@ SUBDIRS := fibonacci \
 			loop_c \
 			load_store_cross \
 			led_show \
-			simple_loader_uart \
-			simple_loader_hello \
-			csrtest
+#			simple_loader_uart \
+#			simple_loader_hello
 
 all: $(SUBDIRS)
 

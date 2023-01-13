@@ -17,10 +17,10 @@ scalacOptions ++= Seq(
 scalaVersion := "2.13.10"
 
 addCompilerPlugin(
-  "edu.berkeley.cs" % "chisel3-plugin" % "3.5.5" cross CrossVersion.full
+  "edu.berkeley.cs" % "chisel3-plugin" % "3.5.6" cross CrossVersion.full
 )
 libraryDependencies ++= Seq(
-  "edu.berkeley.cs" %% "chisel3" % "3.5.5",
+  "edu.berkeley.cs" %% "chisel3" % "3.5.6",
   // We also recommend using chiseltest for writing unit tests
-  "edu.berkeley.cs" %% "chiseltest" % "0.5.5" % "test"
+  "edu.berkeley.cs" %% "chiseltest" % "0.5.6" % "test"
 )

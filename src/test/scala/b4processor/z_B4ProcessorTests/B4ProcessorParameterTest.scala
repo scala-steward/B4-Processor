@@ -40,7 +40,7 @@ class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
                     RandomizeAtStartupAnnotation
                   )
                 ) { c =>
-                  c.initialize("riscv-sample-programs/fibonacci_c/fibonacci_c")
+                  c.initialize("programs/riscv-sample-programs/fibonacci_c")
                   for (t <- 0 until threads)
                     c.checkForRegister(3, 21, 1500, t)
                   println(title)

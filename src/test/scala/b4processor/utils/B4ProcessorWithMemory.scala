@@ -32,8 +32,12 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
   io.accessMemoryAddress.writeData.valid := core.axi.write.valid
   io.accessMemoryAddress.writeData.bits := core.axi.write.bits.DATA
 
-  def initialize(instructions: String): Unit = {
-    val memoryInit = InstructionUtil.fromFile8bit(instructions + ".hex")
+  def initialize(instructions: String, binary: Boolean = false): Unit = {
+    val memoryInit =
+      if (binary)
+        InstructionUtil.fromBinaryFile(instructions)
+      else
+        InstructionUtil.fromFile8bit(instructions + ".hex")
     this.io.simulation.valid.poke(true)
     this.io.simulation.bits.poke(memoryInit.length)
     for (i <- memoryInit.indices) {
