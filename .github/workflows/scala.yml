@@ -51,7 +51,7 @@ jobs:
         uses: cachix/install-nix-action@v18
 
       - name: test all
-        run: make test
+        run: make check
 
       - name: generate processor
         run: make processor
@@ -60,4 +60,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: processor
-          path: processor
+          path: processor/*

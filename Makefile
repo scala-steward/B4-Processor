@@ -1,14 +1,14 @@
 all: programs
 
-.PHONY: programs test processor
+.PHONY: programs check check-artifacts processor clean
 
 programs:
 	nix -L build -o programs
 
-test:
+check:
 	nix -L flake check
 
-test-artifacts:
+check-artifacts:
 	nix -L build '.#checks.x86_64-linux.all'
 
 processor:
@@ -21,4 +21,4 @@ processor:
 #	cp $< $@
 
 clean:
-	rm programs
+	rm -rf programs processor result
