@@ -1,11 +1,24 @@
-all: ip/B4Processor_1_0/src/B4Processor.v
+all: programs
 
-B4Processor.v:
-	sbt "runMain b4processor.B4Processor"
+.PHONY: programs check check-artifacts processor clean
 
-ip/B4Processor_1_0/src/B4Processor.v: B4Processor.v
-	cp $< $@
+programs:
+	nix -L build -o programs
+
+check:
+	nix -L flake check
+
+check-artifacts:
+	nix -L build '.#checks.x86_64-linux.all'
+
+processor:
+	nix -L build '.#processor' -o processor
+
+#B4Processor.v:
+#	sbt "runMain b4processor.B4Processor"
+#
+#ip/B4Processor_1_0/src/B4Processor.v: B4Processor.v
+#	cp $< $@
 
 clean:
-	rm ip/B4Processor_1_0/src/B4Processor.v
-	rm B4Processor.v
+	rm -rf programs processor result

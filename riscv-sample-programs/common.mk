@@ -1,4 +1,4 @@
-TOOL_PREFIX := riscv64-unknown-elf-
+TOOL_PREFIX := riscv64-none-elf-
 export CC := $(TOOL_PREFIX)gcc
 export OBJCOPY := $(TOOL_PREFIX)objcopy
 export OBJDUMP := $(TOOL_PREFIX)objdump

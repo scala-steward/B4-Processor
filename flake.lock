@@ -1,0 +1,85 @@
+{
+  "nodes": {
+    "flake-utils": {
+      "locked": {
+        "lastModified": 1667395993,
+        "narHash": "sha256-nuEHfE/LcWyuSWnS8t12N1wc105Qtau+/OdUAjtQ0rA=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "5aed5285a952e0b949eb3ba02c12fa4fcfef535f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "nix-sbt": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1670683679,
+        "narHash": "sha256-6SNkggK5ki8iulmaAAYr8uOxbwxUpp6DD8bVM2Cv5Q0=",
+        "owner": "zaninime",
+        "repo": "sbt-derivation",
+        "rev": "847f28faf9d72d4f312dc20728994453bb250604",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zaninime",
+        "repo": "sbt-derivation",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1673450908,
+        "narHash": "sha256-b8em+kwrNtnB7gR8SyVf6WuTyQ+6tHS6dzt9D9wgKF0=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6c8644fc37b6e141cbfa6c7dc8d98846c4ff0c2e",
+        "type": "github"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "ref": "nixos-unstable",
+        "type": "indirect"
+      }
+    },
+    "riscv-test-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1673033924,
+        "narHash": "sha256-bf4Hzcn/lFvvRcVeC1LujLmPsJ2T5sdl7sWvud5GeeE=",
+        "ref": "refs/heads/master",
+        "rev": "c84daca8824635b7d896003c78f9c6245997cf7a",
+        "revCount": 857,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/riscv-software-src/riscv-tests"
+      },
+      "original": {
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/riscv-software-src/riscv-tests"
+      }
+    },
+    "root": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nix-sbt": "nix-sbt",
+        "nixpkgs": "nixpkgs",
+        "riscv-test-src": "riscv-test-src"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

@@ -2,6 +2,7 @@ package b4processor.utils
 
 import chisel3._
 
+import java.nio.file.{Files, Paths}
 import scala.io.Source
 
 object InstructionUtil {
@@ -22,6 +23,13 @@ object InstructionUtil {
         bytes = bytes :+ s.slice(i * 2 + offset, i * 2 + 2 + offset)
     }
     fromStringSeq8bit(bytes)
+  }
+
+  def fromBinaryFile(filename: String): Seq[UInt] = {
+    val bytes = Files.readAllBytes(Paths.get(filename))
+    val s = bytes.map("%02X" format _).toSeq
+    val output = fromStringSeq8bit(s)
+    output
   }
 
   def fromFile8bit(filename: String): Seq[UInt] = {

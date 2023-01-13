@@ -1,4 +1,4 @@
-PROGRAMNAME := loader
+PROGRAMNAME := loader_uart
 SOURCES := entry.S loader_binary.o
 
 TOOL_PREFIX := riscv64-unknown-elf-

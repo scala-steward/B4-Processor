@@ -1,0 +1,34 @@
+diff --git a/isa/Makefile b/isa/Makefile
+index 0203a82..00b5626 100644
+--- a/isa/Makefile
++++ b/isa/Makefile
+@@ -39,6 +39,7 @@ RISCV_PREFIX ?= riscv$(XLEN)-unknown-elf-
+ RISCV_GCC ?= $(RISCV_PREFIX)gcc
+ RISCV_GCC_OPTS ?= -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles
+ RISCV_OBJDUMP ?= $(RISCV_PREFIX)objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data
++RISCV_OBJCOPY ?= $(RISCV_PREFIX)objcopy
+ RISCV_SIM ?= spike
+ 
+ vpath %.S $(src_dir)
+@@ -55,6 +56,12 @@ vpath %.S $(src_dir)
+ %.out32: %
+ 	$(RISCV_SIM) --isa=rv32gc_zfh_zicboz_svnapot $< 2> $@
+ 
++%.binary: %
++	$(RISCV_OBJCOPY) $< -O binary $@
++
++%.hex: %.binary
++	od -An -t x1 $< -w1 -v | tr -d " " > $@
++
+ define compile_template
+ 
+ $$($(1)_p_tests): $(1)-p-%: $(1)/%.S
+@@ -114,7 +121,7 @@ junk += $(tests) $(tests_dump) $(tests_hex) $(tests_out) $(tests32_out)
+ #------------------------------------------------------------
+ # Default
+ 
+-all: $(tests_dump)
++all: $(tests_dump) $(tests_hex)
+ 
+ #------------------------------------------------------------
+ # Clean up

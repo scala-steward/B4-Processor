@@ -16,3 +16,7 @@ project/plugins/project/
 **/*.fir
 **/*.v
 **/*.anno.json
+
+/result
+/programs
+/processor
