@@ -39,12 +39,13 @@ class CSR(hartid: Int)(implicit params: Parameters) extends Module {
   io.fetch.mepc := mepc
   val mcause = RegInit(0.U(64.W))
   io.fetch.mcause := mcause
+  val mstatus = RegInit(0.U(64.W))
 
   when(io.decoderInput.valid) {
     val address = io.decoderInput.bits.address
     io.CSROutput.valid := true.B
 
-    when(address === CSRName.cycle) {
+    when(address === CSRName.cycle || address === CSRName.mcycle) {
       io.CSROutput.bits.value := cycleCounter.count
     }.elsewhen(address === CSRName.instret) {
       io.CSROutput.bits.value := retireCounter.io.count
@@ -86,6 +87,19 @@ class CSR(hartid: Int)(implicit params: Parameters) extends Module {
             CSRAccessType.ReadWrite.asUInt -> io.decoderInput.bits.value,
             CSRAccessType.ReadSet.asUInt -> (mcause | io.decoderInput.bits.value),
             CSRAccessType.ReadClear.asUInt -> (mcause & io.decoderInput.bits.value)
+          )
+        )
+      }
+    }.elsewhen(address === CSRName.mstatus) {
+      io.CSROutput.bits.value := mstatus
+      when(io.CSROutput.ready && io.CSROutput.valid) {
+        mstatus := MuxLookup(
+          io.decoderInput.bits.csrAccessType.asUInt,
+          0.U,
+          Seq(
+            CSRAccessType.ReadWrite.asUInt -> io.decoderInput.bits.value,
+            CSRAccessType.ReadSet.asUInt -> (mstatus | io.decoderInput.bits.value),
+            CSRAccessType.ReadClear.asUInt -> (mstatus & io.decoderInput.bits.value)
           )
         )
       }

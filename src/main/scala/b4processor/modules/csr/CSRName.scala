@@ -22,4 +22,5 @@ object CSRName {
   def mcause: UInt = "x342".U
   def mtval: UInt = "x343".U
   def mip: UInt = "x344".U
+  def mcycle: UInt = "xB00".U
 }

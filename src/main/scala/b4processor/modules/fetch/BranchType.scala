@@ -5,8 +5,11 @@ import chisel3._
 /** フェッチ用分岐の種類 */
 object BranchType extends ChiselEnum {
 
-  /** 分岐なし */
-  val None = Value
+  /** 分岐なし4byte進む */
+  val Next4 = Value
+
+  /** 分岐なし2byte進む */
+  val Next2 = Value
 
   /** 分岐命令 */
   val Branch = Value
@@ -25,4 +28,7 @@ object BranchType extends ChiselEnum {
 
   /** mret */
   val mret = Value
+
+  /** ebreak */
+  val Ebreak = Value
 }

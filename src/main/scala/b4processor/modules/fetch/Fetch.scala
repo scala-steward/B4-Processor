@@ -110,10 +110,10 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
         (!decoder.ready || !decoder.valid) -> 0.S,
         (branch.io.branchType === BranchType.JAL) -> branch.io.offset,
         (branch.io.branchType === BranchType.Branch) -> 0.S,
-        (nextWait =/= WaitingReason.None) -> 0.S
+        (nextWait =/= WaitingReason.None) -> 0.S,
+        (branch.io.branchType === BranchType.Next2) -> 2.S
       )
     )).asUInt
-
   }
   pc := nextPC
   waiting := nextWait
@@ -149,7 +149,11 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
     when(waiting === WaitingReason.Exception) {
       when(io.csrReservationStationEmpty) {
         waiting := WaitingReason.None
-        pc := (io.csr.mtvec(63, 2) + io.csr.mcause(62, 0)) ## 0.U(2.W)
+        when(io.csr.mcause(1, 0) === 0.U) {
+          pc := io.csr.mtvec(63, 2) ## 0.U(2.W)
+        }.elsewhen(io.csr.mcause(1, 0) === 1.U) {
+          pc := (io.csr.mtvec(63, 2) + io.csr.mcause(62, 0)) ## 0.U(2.W)
+        }
       }
     }
   }

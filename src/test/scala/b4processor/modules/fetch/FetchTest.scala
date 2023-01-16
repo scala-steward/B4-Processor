@@ -362,7 +362,7 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
       c.waitForCacheValid()
-      c.io.branchTypes(0).expect(BranchType.None)
+      c.io.branchTypes(0).expect(BranchType.Next4)
       c.io.branchTypes(1).expect(BranchType.Fence)
       c.io.decoders.decoder(0).valid.expect(true)
       c.io.decoders.decoder(1).valid.expect(true)
