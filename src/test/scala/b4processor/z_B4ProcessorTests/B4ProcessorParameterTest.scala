@@ -34,7 +34,7 @@ class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
               )
                 .withAnnotations(
                   Seq(
-                    WriteVcdAnnotation,
+                    WriteFstAnnotation,
                     IcarusBackendAnnotation,
                     CachingAnnotation,
                     RandomizeAtStartupAnnotation

@@ -44,8 +44,7 @@ class B4Processor(implicit params: Parameters) extends Module {
   val dataMemoryBuffer = Module(new DataMemoryBuffer)
 
   val outputCollector = Module(new OutputCollector)
-  val branchAddressCollector =
-    (0 until params.threads).map(tid => Module(new BranchOutputCollector(tid)))
+  val branchAddressCollector = Module(new BranchOutputCollector())
 
   val decoders = (0 until params.threads).map(tid =>
     (0 until params.decoderPerThread).map(n => Module(new Decoder(n, tid)))
@@ -86,11 +85,10 @@ class B4Processor(implicit params: Parameters) extends Module {
   /** リザベーションステーションと実行ユニットの接続 */
   reservationStation.io.collectedOutput <> outputCollector.io.outputs
 
+  /** 分岐結果コレクタと実行ユニットの接続 */
+  branchAddressCollector.io.executor <> executor.io.fetch
+
   for (tid <- 0 until params.threads) {
-
-    /** 分岐結果コレクタと実行ユニットの接続 */
-    branchAddressCollector(tid).io.executor <> executor.io.fetch
-
     /** 命令キャッシュとフェッチを接続 */
     instructionCache(tid).io.fetch <> fetch(tid).io.cache
 
@@ -111,7 +109,8 @@ class B4Processor(implicit params: Parameters) extends Module {
       csrReservationStation(tid).io.empty
 
     outputCollector.io.isError(tid) := reorderBuffer(tid).io.isError
-    branchAddressCollector(tid).io.isError := reorderBuffer(tid).io.isError
+    branchAddressCollector.io.isError(tid) := reorderBuffer(tid).io.isError
+    fetch(tid).io.isError := reorderBuffer(tid).io.isError
 
     /** フェッチとデコーダの接続 */
     for (d <- 0 until params.decoderPerThread) {
@@ -142,7 +141,7 @@ class B4Processor(implicit params: Parameters) extends Module {
 
     /** フェッチと分岐結果の接続 */
     fetch(tid).io.collectedBranchAddresses :=
-      branchAddressCollector(tid).io.fetch
+      branchAddressCollector.io.fetch(tid)
 
     /** LSQと出力コレクタ */
     loadStoreQueue(tid).io.outputCollector := outputCollector.io.outputs

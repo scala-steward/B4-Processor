@@ -115,6 +115,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
   readTransaction.ready := false.B
 
   val readQueued = RegInit(false.B)
+  val burstLen = RegInit(0.U(8.W))
   when(!readQueue.full) {
     when(readTransaction.valid) {
       locally {
@@ -138,16 +139,19 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
         readQueued := false.B
       }
     }
-    val burstLen = RegInit(0.U(8.W))
     when(!readQueue.empty) {
-      io.coordinator.read.ready := io.dataReadOut.ready
+      when(readQueue.output.bits.isInstruction) {
+        io.coordinator.read.ready := true.B
+      }.otherwise {
+        io.coordinator.read.ready := io.dataReadOut.ready
+      }
       when(io.coordinator.read.valid) {
         when(io.coordinator.read.ready) {
           burstLen := burstLen + 1.U
-        }
-        when(burstLen === readQueue.output.bits.burstLength) {
-          readQueue.output.ready := true.B
-          burstLen := 0.U
+          when(burstLen === readQueue.output.bits.burstLength) {
+            readQueue.output.ready := true.B
+            burstLen := 0.U
+          }
         }
         when(readQueue.output.bits.isInstruction) {
           val tid = readQueue.output.bits.tag.threadId

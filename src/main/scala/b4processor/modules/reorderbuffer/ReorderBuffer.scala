@@ -67,7 +67,7 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
   }
 
   private val registerTagMap = RegInit(
-    VecInit(Seq.fill(31)(RegisterTagMapContent.default))
+    VecInit(Seq.fill(32)(RegisterTagMapContent.default))
   )
 
   // レジスタファイルへの書き込み
@@ -90,12 +90,10 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
         rf.bits.value := buffer(index).value
         rf.bits.destinationRegister := buffer(index).destinationRegister
         when(
-          index === registerTagMap(
-            buffer(index).destinationRegister - 1.U
-          ).tagId
+          index === registerTagMap(buffer(index).destinationRegister).tagId
         ) {
           registerTagMap(
-            buffer(index).destinationRegister - 1.U
+            buffer(index).destinationRegister
           ) := new RegisterTagMapContent().Lit(_.valid -> false.B)
         }
       }.otherwise {
@@ -145,15 +143,13 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
     }
     decoder.destination.destinationTag := Tag.fromWires(threadId.U, insertIndex)
     when(decoder.destination.destinationRegister =/= 0.U) {
+      registerTagMap(decoder.destination.destinationRegister).valid := true.B
       registerTagMap(
-        decoder.destination.destinationRegister - 1.U
-      ).valid := true.B
-      registerTagMap(
-        decoder.destination.destinationRegister - 1.U
+        decoder.destination.destinationRegister
       ).tagId := insertIndex
     }
     when(decoder.source1.sourceRegister =/= 0.U) {
-      val matchingBits = registerTagMap(decoder.source1.sourceRegister - 1.U)
+      val matchingBits = registerTagMap(decoder.source1.sourceRegister)
       val hasMatching = matchingBits.valid
 
       decoder.source1.matchingTag.valid := hasMatching
@@ -171,7 +167,7 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
     }
 
     when(decoder.source2.sourceRegister =/= 0.U) {
-      val matchingBits = registerTagMap(decoder.source2.sourceRegister - 1.U)
+      val matchingBits = registerTagMap(decoder.source2.sourceRegister)
       val hasMatching = matchingBits.valid
       decoder.source2.matchingTag.valid := hasMatching
       decoder.source2.matchingTag.bits := Tag.fromWires(
@@ -194,19 +190,22 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
     lastReady = decoder.ready
   }
   head := insertIndex
-  tail := Mux(io.isError, head, tail + tailDelta)
+  tail := Mux(io.isError, insertIndex, tail + tailDelta)
   io.csr.retireCount := Mux(io.isError, 0.U, tailDelta)
   io.isEmpty := head === tail
 
   // 出力の読み込み
   private val output = io.collectedOutputs.outputs
   when(
-    output.valid && output.bits.resultType === ResultType.Result && output.bits.tag.threadId === threadId.U
+    output.valid && (output.bits.resultType === ResultType.Result) && (output.bits.tag.threadId === threadId.U)
   ) {
     buffer(output.bits.tag.id).value := output.bits.value
     buffer(output.bits.tag.id).isError := output.bits.isError
     buffer(output.bits.tag.id).valueReady := true.B
   }
+
+  registerTagMap(0).valid := false.B
+  registerTagMap(0).tagId := 0.U
 
   // デバッグ
   if (params.debug) {

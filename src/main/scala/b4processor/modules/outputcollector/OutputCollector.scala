@@ -19,22 +19,36 @@ class OutputCollector(implicit params: Parameters) extends Module {
   val threadsOutputQueue =
     Seq.fill(params.threads)(Module(new FIFO(3)(new OutputValue)))
   val threadsArbiter =
-    Seq.fill(params.threads)(Module(new B4RRArbiter(new OutputValue, 3)))
+    Seq.fill(params.threads)(Module(new Arbiter(new OutputValue, 3)))
 
   for (tid <- 0 until params.threads) {
     threadsArbiter(tid).io.in(0) <> io.executor
     threadsArbiter(tid).io
       .in(0)
-      .valid := io.executor.bits.tag.threadId === tid.U
+      .valid := io.executor.valid && io.executor.bits.tag.threadId === tid.U
     threadsArbiter(tid).io.in(1) <> io.dataMemory
     threadsArbiter(tid).io
       .in(1)
-      .valid := io.dataMemory.bits.tag.threadId === tid.U
+      .valid := io.dataMemory.valid && io.dataMemory.bits.tag.threadId === tid.U
     threadsArbiter(tid).io.in(2) <> io.csr(tid)
 
     threadsOutputQueue(tid).input <> threadsArbiter(tid).io.out
     threadsOutputQueue(tid).flush := io.isError(tid)
   }
+  io.executor.ready := (0 until params.threads)
+    .map(tid =>
+      threadsArbiter(tid).io
+        .in(0)
+        .ready && io.executor.bits.tag.threadId === tid.U
+    )
+    .reduce(_ || _)
+  io.dataMemory.ready := (0 until params.threads)
+    .map(tid =>
+      threadsArbiter(tid).io
+        .in(1)
+        .ready && io.dataMemory.bits.tag.threadId === tid.U
+    )
+    .reduce(_ || _)
 
   val outputArbitar = Module(new B4RRArbiter(new OutputValue, params.threads))
   for (tid <- 0 until params.threads)

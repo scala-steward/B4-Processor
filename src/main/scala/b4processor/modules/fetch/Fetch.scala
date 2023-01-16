@@ -40,6 +40,8 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
 
     val csrReservationStationEmpty = Input(Bool())
 
+    val isError = Input(Bool())
+
     /** デバッグ用 */
     val PC = if (params.debug) Some(Output(UInt(64.W))) else None
     val nextPC = if (params.debug) Some(Output(UInt(64.W))) else None
@@ -78,22 +80,26 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
 
     // 次に停止する必要があるか確認
     nextWait = Mux(
-      nextWait =/= WaitingReason.None || !decoder.ready || !instructionValid,
-      nextWait,
-      MuxLookup(
-        branch.io.branchType.asUInt,
+      io.isError,
+      WaitingReason.Exception,
+      Mux(
+        nextWait =/= WaitingReason.None || !decoder.ready || !instructionValid,
         nextWait,
-        Seq(
-          BranchType.Branch.asUInt -> WaitingReason.Branch,
-          BranchType.JALR.asUInt -> WaitingReason.JALR,
-          BranchType.Fence.asUInt -> WaitingReason.Fence,
-          BranchType.FenceI.asUInt -> WaitingReason.FenceI,
-          BranchType.JAL.asUInt -> Mux(
-            branch.io.offset === 0.S,
-            WaitingReason.BusyLoop,
-            WaitingReason.None
-          ),
-          BranchType.mret.asUInt -> WaitingReason.mret
+        MuxLookup(
+          branch.io.branchType.asUInt,
+          nextWait,
+          Seq(
+            BranchType.Branch.asUInt -> WaitingReason.Branch,
+            BranchType.JALR.asUInt -> WaitingReason.JALR,
+            BranchType.Fence.asUInt -> WaitingReason.Fence,
+            BranchType.FenceI.asUInt -> WaitingReason.FenceI,
+            BranchType.JAL.asUInt -> Mux(
+              branch.io.offset === 0.S,
+              WaitingReason.BusyLoop,
+              WaitingReason.None
+            ),
+            BranchType.mret.asUInt -> WaitingReason.mret
+          )
         )
       )
     )

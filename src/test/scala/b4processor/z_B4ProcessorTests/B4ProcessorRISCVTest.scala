@@ -33,6 +33,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
     )
   }
   val backendAnnotation = IcarusBackendAnnotation
+  val WriteWaveformAnnotation = WriteFstAnnotation
 
   behavior of s"RISC-V tests rv64i"
 
@@ -44,10 +45,12 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
         )
       )
         .withAnnotations(
-          Seq(WriteVcdAnnotation, CachingAnnotation, backendAnnotation)
+          Seq(WriteWaveformAnnotation, CachingAnnotation, backendAnnotation)
         ) { c =>
           c.clock.setTimeout(timeout)
-          c.initialize(s"programs/riscv-tests/share/riscv-tests/isa/rv64ui-p-${test_name}")
+          c.initialize(
+            s"programs/riscv-tests/share/riscv-tests/isa/rv64ui-p-${test_name}"
+          )
           c.riscv_test()
         }
     }

@@ -22,7 +22,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
     )
   })
 
-  val rsWidth = log2Up(params.threads * params.decoderPerThread * 2)
+  val rsWidth = log2Up(params.threads * params.decoderPerThread * 4)
 
   val reservation = RegInit(
     VecInit(

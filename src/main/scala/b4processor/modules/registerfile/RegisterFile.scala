@@ -36,14 +36,14 @@ class RegisterFile(threadId: Int)(implicit params: Parameters) extends Module {
     */
   val registers = RegInit(
     VecInit(
-      (1 until 32)
+      (0 until 32)
         .map(n => if (n == 4 /* tp */ ) threadId.U(64.W) else 0.U(64.W))
     )
   )
 
   for (rb <- io.reorderBuffer) {
     when(rb.valid) {
-      registers(rb.bits.destinationRegister - 1.U) := rb.bits.value
+      registers(rb.bits.destinationRegister) := rb.bits.value
     }
   }
 
@@ -53,20 +53,21 @@ class RegisterFile(threadId: Int)(implicit params: Parameters) extends Module {
     dec.value1 := Mux(
       dec.sourceRegister1 === 0.U,
       0.U,
-      registers(dec.sourceRegister1 - 1.U)
+      registers(dec.sourceRegister1)
     )
     dec.value2 := Mux(
       dec.sourceRegister2 === 0.U,
       0.U,
-      registers(dec.sourceRegister2 - 1.U)
+      registers(dec.sourceRegister2)
     )
   }
 
+  registers(0) := 0.U
+
   // デバッグ用信号
   if (params.debug) {
-    io.values.get(0) := 0.U
-    for (i <- 0 until 31)
-      io.values.get(i + 1) := registers(i)
+    for (i <- 0 until 32)
+      io.values.get(i) := registers(i)
   }
 }
 

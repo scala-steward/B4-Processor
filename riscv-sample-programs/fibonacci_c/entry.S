@@ -4,7 +4,9 @@
 .global _start
 _start:
     la sp, __BINARY_END_
-    mv a0,tp
+    la a0, _start
+    csrw mtvec, a0
+    csrr a0, mhartid
 .L_LOOP:
     addi sp,sp,1024
     beq a0,zero,.L_PROGRAM
