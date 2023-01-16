@@ -67,6 +67,7 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
   fetch.io.csr := DontCare
   fetch.io.csrReservationStationEmpty := true.B
   fetch.io.fetchBuffer.empty := true.B
+  fetch.io.isError := false.B
 
   cache.io.fetch <> fetch.io.cache
   cache.io.memory.request <> memoryInterface.io.instructionFetchRequest(0)

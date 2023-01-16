@@ -43,7 +43,7 @@ class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
                   c.initialize("programs/riscv-sample-programs/fibonacci_c")
                   for (t <- 0 until threads)
                     c.checkForRegister(3, 21, 1500, t)
-                  println(title)
+//                  println(title)
                   val fw = new FileWriter("stats.jsonl", true)
                   val ipcs = (0 until threads)
                     .map(t =>
