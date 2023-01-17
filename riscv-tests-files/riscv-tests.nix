@@ -5,6 +5,6 @@ pkgs.stdenv.mkDerivation {
   patches = [ ./riscv-test.patch ];
   configureFlags = [ "target_alias=riscv64-none-elf" ];
   enableParallelBuilding = true;
-  nativeBuildInputs = with pkgs; [ pkgs.pkgsCross.riscv64-embedded.buildPackages.gcc autoreconfHook ];
+  buildInputs = with pkgs; [ llvmPackages.bintools pkgs.pkgsCross.riscv64-embedded.buildPackages.gcc autoreconfHook ];
   fixupPhase = "true";
 }

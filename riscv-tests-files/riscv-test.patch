@@ -1,8 +1,8 @@
 diff --git a/benchmarks/Makefile b/benchmarks/Makefile
-index c9469e2..9772f0e 100644
+index c9469e2..5cec43d 100644
 --- a/benchmarks/Makefile
 +++ b/benchmarks/Makefile
-@@ -37,10 +37,11 @@ bmarks = \
+@@ -37,10 +37,12 @@ bmarks = \
  
  RISCV_PREFIX ?= riscv$(XLEN)-unknown-elf-
  RISCV_GCC ?= $(RISCV_PREFIX)gcc
@@ -11,11 +11,12 @@ index c9469e2..9772f0e 100644
  RISCV_LINK ?= $(RISCV_GCC) -T $(src_dir)/common/test.ld $(incs)
  RISCV_LINK_OPTS ?= -static -nostdlib -nostartfiles -lm -lgcc -T $(src_dir)/common/test.ld
  RISCV_OBJDUMP ?= $(RISCV_PREFIX)objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data
++OBJDUMP_LLVM ?= llvm-objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data
 +RISCV_OBJCOPY ?= $(RISCV_PREFIX)objcopy
  RISCV_SIM ?= spike --isa=rv$(XLEN)gc
  
  incs  += -I$(src_dir)/../env -I$(src_dir)/common $(addprefix -I$(src_dir)/, $(bmarks))
-@@ -57,6 +58,9 @@ $(foreach bmark,$(bmarks),$(eval $(call compile_template,$(bmark))))
+@@ -57,19 +59,35 @@ $(foreach bmark,$(bmarks),$(eval $(call compile_template,$(bmark))))
  # Build and run benchmarks on riscv simulator
  
  bmarks_riscv_bin  = $(addsuffix .riscv,  $(bmarks))
@@ -23,9 +24,15 @@ index c9469e2..9772f0e 100644
 +bmarks_riscv_hex64  = $(addsuffix .64.hex,  $(bmarks))
 +bmarks_riscv_binary  = $(addsuffix .binary,  $(bmarks))
  bmarks_riscv_dump = $(addsuffix .riscv.dump, $(bmarks))
++bmarks_riscv_dump_llvm = $(addsuffix .riscv.llvm.dump, $(bmarks))
  bmarks_riscv_out  = $(addsuffix .riscv.out,  $(bmarks))
  
-@@ -66,10 +70,19 @@ $(bmarks_riscv_dump): %.riscv.dump: %.riscv
+ $(bmarks_riscv_dump): %.riscv.dump: %.riscv
+ 	$(RISCV_OBJDUMP) $< > $@
+ 
++$(bmarks_riscv_dump_llvm): %.riscv.llvm.dump: %.riscv
++	$(OBJDUMP_LLVM) $< > $@
++
  $(bmarks_riscv_out): %.riscv.out: %.riscv
  	$(RISCV_SIM) $< > $@
  
@@ -39,7 +46,7 @@ index c9469e2..9772f0e 100644
 +%.64.hex: %.binary
 +	od -An -t x8 $< -w8 -v | tr -d " " > $@
 +
-+riscv: $(bmarks_riscv_dump) $(bmarks_riscv_hex) $(bmarks_riscv_hex64)
++riscv: $(bmarks_riscv_dump) $(bmarks_riscv_hex) $(bmarks_riscv_hex64) $(bmarks_riscv_dump_llvm)
  run: $(bmarks_riscv_out)
  
 -junk += $(bmarks_riscv_bin) $(bmarks_riscv_dump) $(bmarks_riscv_hex) $(bmarks_riscv_out)
@@ -47,7 +54,7 @@ index c9469e2..9772f0e 100644
  
  #------------------------------------------------------------
  # Default
-@@ -85,7 +98,7 @@ latest_install = $(shell ls -1 -d $(instbasedir)/$(instname)* | tail -n 1)
+@@ -85,7 +103,7 @@ latest_install = $(shell ls -1 -d $(instbasedir)/$(instname)* | tail -n 1)
  
  install:
  	mkdir $(install_dir)
@@ -57,18 +64,28 @@ index c9469e2..9772f0e 100644
  install-link:
  	rm -rf $(instbasedir)/$(instname)
 diff --git a/isa/Makefile b/isa/Makefile
-index 0203a82..ea43550 100644
+index 0203a82..e4273cc 100644
 --- a/isa/Makefile
 +++ b/isa/Makefile
-@@ -39,6 +39,7 @@ RISCV_PREFIX ?= riscv$(XLEN)-unknown-elf-
+@@ -39,6 +39,8 @@ RISCV_PREFIX ?= riscv$(XLEN)-unknown-elf-
  RISCV_GCC ?= $(RISCV_PREFIX)gcc
  RISCV_GCC_OPTS ?= -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles
  RISCV_OBJDUMP ?= $(RISCV_PREFIX)objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data
++OBJDUMP_LLVM ?= llvm-objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data -M no-aliases
 +RISCV_OBJCOPY ?= $(RISCV_PREFIX)objcopy
  RISCV_SIM ?= spike
  
  vpath %.S $(src_dir)
-@@ -55,6 +56,15 @@ vpath %.S $(src_dir)
+@@ -49,12 +51,24 @@ vpath %.S $(src_dir)
+ %.dump: %
+ 	$(RISCV_OBJDUMP) $< > $@
+ 
++%.llvm.dump: %
++	$(OBJDUMP_LLVM) $< > $@
++
+ %.out: %
+ 	$(RISCV_SIM) --isa=rv64gc_zfh_zicboz_svnapot $< 2> $@
+ 
  %.out32: %
  	$(RISCV_SIM) --isa=rv32gc_zfh_zicboz_svnapot $< 2> $@
  
@@ -84,9 +101,11 @@ index 0203a82..ea43550 100644
  define compile_template
  
  $$($(1)_p_tests): $(1)-p-%: $(1)/%.S
-@@ -104,17 +114,18 @@ endif
+@@ -103,18 +117,20 @@ $(eval $(call compile_template,rv64mi,-march=rv64g -mabi=lp64))
+ endif
  
  tests_dump = $(addsuffix .dump, $(tests))
++tests_llvm_dump = $(addsuffix .llvm.dump, $(tests))
  tests_hex = $(addsuffix .hex, $(tests))
 +tests_hex64 = $(addsuffix .64.hex, $(tests))
  tests_out = $(addsuffix .out, $(filter rv64%,$(tests)))
@@ -101,7 +120,7 @@ index 0203a82..ea43550 100644
  # Default
  
 -all: $(tests_dump)
-+all: $(tests_dump) $(tests_hex) $(tests_hex64)
++all: $(tests_dump) $(tests_llvm_dump) $(tests_hex) $(tests_hex64)
  
  #------------------------------------------------------------
  # Clean up
