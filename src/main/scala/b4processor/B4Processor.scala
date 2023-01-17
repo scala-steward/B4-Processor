@@ -3,7 +3,7 @@ package b4processor
 import b4processor.modules.branch_output_collector.BranchOutputCollector
 import b4processor.modules.cache.{DataMemoryBuffer, InstructionMemoryCache}
 import b4processor.modules.csr.{CSR, CSRReservationStation}
-import b4processor.modules.decoder.Decoder
+import b4processor.modules.decoder.{Decoder, Uncompresser}
 import b4processor.modules.executor.Executor
 import b4processor.modules.fetch.{Fetch, FetchBuffer}
 import b4processor.modules.lsq.LoadStoreQueue
@@ -46,6 +46,9 @@ class B4Processor(implicit params: Parameters) extends Module {
   val outputCollector = Module(new OutputCollector)
   val branchAddressCollector = Module(new BranchOutputCollector())
 
+  val uncompresser = Seq.fill(params.threads)(
+    Seq.fill(params.decoderPerThread)(Module(new Uncompresser))
+  )
   val decoders = (0 until params.threads).map(tid =>
     (0 until params.decoderPerThread).map(n => Module(new Decoder(n, tid)))
   )
@@ -89,6 +92,7 @@ class B4Processor(implicit params: Parameters) extends Module {
   branchAddressCollector.io.executor <> executor.io.fetch
 
   for (tid <- 0 until params.threads) {
+
     /** 命令キャッシュとフェッチを接続 */
     instructionCache(tid).io.fetch <> fetch(tid).io.cache
 
@@ -116,8 +120,10 @@ class B4Processor(implicit params: Parameters) extends Module {
     for (d <- 0 until params.decoderPerThread) {
       decoders(tid)(d).io.csr <> csrReservationStation(tid).io.decoderInput(d)
 
+      uncompresser(tid)(d).io.fetch <> fetchBuffer(tid).io.decoders(d)
+
       /** デコーダとフェッチバッファ */
-      decoders(tid)(d).io.instructionFetch <> fetchBuffer(tid).io.decoders(d)
+      decoders(tid)(d).io.instructionFetch <> uncompresser(tid)(d).io.decoder
 
       /** デコーダとリオーダバッファを接続 */
       decoders(tid)(d).io.reorderBuffer <> reorderBuffer(tid).io.decoders(d)

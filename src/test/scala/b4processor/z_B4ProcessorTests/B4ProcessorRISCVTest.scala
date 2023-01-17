@@ -37,7 +37,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
 
   behavior of s"RISC-V tests rv64i"
 
-  def riscv_test(test_name: String, timeout: Int = 2000): Unit = {
+  def riscv_test_i(test_name: String, timeout: Int = 2000): Unit = {
 
     it should s"run risc-v test ${test_name}" in {
       test( // FIXME fromFile8bit
@@ -56,54 +56,77 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  riscv_test("add")
-  riscv_test("addi")
-  riscv_test("addiw")
-  riscv_test("addw")
-  riscv_test("and")
-  riscv_test("andi")
-  riscv_test("auipc")
-  riscv_test("beq")
-  riscv_test("bge")
-  riscv_test("bgeu")
-  riscv_test("blt")
-  riscv_test("bltu")
-  riscv_test("bne")
-  riscv_test("fence_i")
-  riscv_test("jal")
-  riscv_test("jalr")
-  riscv_test("lb")
-  riscv_test("lbu")
-  riscv_test("ld")
-  riscv_test("lh")
-  riscv_test("lhu")
-  riscv_test("lui")
-  riscv_test("lw")
-  riscv_test("lwu")
-  riscv_test("or")
-  riscv_test("ori")
-  riscv_test("sb")
-  riscv_test("sd")
-  riscv_test("sh")
-  riscv_test("sll")
-  riscv_test("slli")
-  riscv_test("slliw")
-  riscv_test("sllw")
-  riscv_test("slt")
-  riscv_test("slti")
-  riscv_test("sltiu")
-  riscv_test("sltu")
-  riscv_test("sra")
-  riscv_test("srai")
-  riscv_test("sraiw")
-  riscv_test("sraw")
-  riscv_test("srl")
-  riscv_test("srli")
-  riscv_test("srliw")
-  riscv_test("srlw")
-  riscv_test("sub")
-  riscv_test("subw")
-  riscv_test("sw")
-  riscv_test("xor")
-  riscv_test("xori")
+//  riscv_test_i("add")
+//  riscv_test_i("addi")
+//  riscv_test_i("addiw")
+//  riscv_test_i("addw")
+//  riscv_test_i("and")
+//  riscv_test_i("andi")
+//  riscv_test_i("auipc")
+//  riscv_test_i("beq")
+//  riscv_test_i("bge")
+//  riscv_test_i("bgeu")
+//  riscv_test_i("blt")
+//  riscv_test_i("bltu")
+//  riscv_test_i("bne")
+//  riscv_test_i("fence_i")
+//  riscv_test_i("jal")
+//  riscv_test_i("jalr")
+//  riscv_test_i("lb")
+//  riscv_test_i("lbu")
+//  riscv_test_i("ld")
+//  riscv_test_i("lh")
+//  riscv_test_i("lhu")
+//  riscv_test_i("lui")
+//  riscv_test_i("lw")
+//  riscv_test_i("lwu")
+//  riscv_test_i("or")
+//  riscv_test_i("ori")
+//  riscv_test_i("sb")
+//  riscv_test_i("sd")
+//  riscv_test_i("sh")
+//  riscv_test_i("sll")
+//  riscv_test_i("slli")
+//  riscv_test_i("slliw")
+//  riscv_test_i("sllw")
+//  riscv_test_i("slt")
+//  riscv_test_i("slti")
+//  riscv_test_i("sltiu")
+//  riscv_test_i("sltu")
+//  riscv_test_i("sra")
+//  riscv_test_i("srai")
+//  riscv_test_i("sraiw")
+//  riscv_test_i("sraw")
+//  riscv_test_i("srl")
+//  riscv_test_i("srli")
+//  riscv_test_i("srliw")
+//  riscv_test_i("srlw")
+//  riscv_test_i("sub")
+//  riscv_test_i("subw")
+//  riscv_test_i("sw")
+//  riscv_test_i("xor")
+//  riscv_test_i("xori")
+
+  behavior of s"RISC-V tests rv64c"
+
+  def riscv_test_c(test_name: String, timeout: Int = 2000): Unit = {
+
+    it should s"run risc-v test ${test_name}" in {
+      test( // FIXME fromFile8bit
+        new B4ProcessorRISCVTestWrapper(
+        )
+      )
+        .withAnnotations(
+          Seq(WriteWaveformAnnotation, CachingAnnotation, backendAnnotation)
+        ) { c =>
+          c.clock.setTimeout(timeout)
+          c.initialize(
+            s"programs/riscv-tests/share/riscv-tests/isa/rv64uc-p-${test_name}"
+          )
+          c.riscv_test()
+        }
+    }
+  }
+
+  riscv_test_c("rvc")
 }

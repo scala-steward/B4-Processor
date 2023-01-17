@@ -91,10 +91,12 @@ class CheckBranch extends Module {
     BranchType.Next4,
     Seq(
       "b00".U -> BranchType.Next2,
-      "b01".U -> Mux(
-        io.instruction(15, 13) === BitPat("b?01"),
-        BranchType.JAL,
-        BranchType.Next2
+      "b01".U -> MuxCase(
+        BranchType.Next2,
+        Seq(
+          (io.instruction(15, 13) === BitPat("b?01")) -> BranchType.JAL,
+          (io.instruction(15, 13) === BitPat("b11?")) -> BranchType.Branch
+        )
       ),
       "b10".U -> MuxCase(
         BranchType.Next2,
