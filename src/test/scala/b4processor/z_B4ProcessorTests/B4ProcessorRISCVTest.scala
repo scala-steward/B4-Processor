@@ -47,7 +47,9 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
           Seq(WriteVcdAnnotation, CachingAnnotation, backendAnnotation)
         ) { c =>
           c.clock.setTimeout(timeout)
-          c.initialize(s"programs/riscv-tests/share/riscv-tests/isa/rv64ui-p-${test_name}")
+          c.initialize(
+            s"programs/riscv-tests/share/riscv-tests/isa/rv64ui-p-${test_name}"
+          )
           c.riscv_test()
         }
     }
