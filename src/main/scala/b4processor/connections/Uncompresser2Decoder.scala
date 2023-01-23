@@ -5,8 +5,9 @@ import chisel3.util.ReadyValidIO
 
 /** 命令とデコーダをつなぐ
   */
-class FetchBuffer2Decoder
+class Uncompresser2Decoder
     extends ReadyValidIO(new Bundle {
       val instruction = UInt(32.W)
       val programCounter = UInt(64.W)
+      val wasCompressed = Bool()
     })

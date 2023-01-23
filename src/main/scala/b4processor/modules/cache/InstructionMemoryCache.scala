@@ -81,7 +81,7 @@ class InstructionMemoryCache(threadId: Int)(implicit params: Parameters)
   private val waiting :: requesting :: Nil = Enum(2)
   private val state = RegInit(waiting)
   private val readIndex = Reg(UInt(1.W))
-  private val requested = Reg(Bool())
+  private val requested = RegInit(0.U(60.W))
   private val transaction = Reg(new MemoryReadTransaction)
   private val requestDone = Reg(Bool())
 
@@ -89,6 +89,7 @@ class InstructionMemoryCache(threadId: Int)(implicit params: Parameters)
     state := requesting
     requested := false.B
     readIndex := 0.U
+    requested := request
 
     val tmp_transaction =
       MemoryReadTransaction.ReadInstruction(Cat(request, 0.U(4.W)), 2, threadId)
@@ -120,7 +121,7 @@ class InstructionMemoryCache(threadId: Int)(implicit params: Parameters)
       when(readIndex === 1.U) {
         state := waiting
         buf(head).valid := true.B
-        buf(head).upper := request
+        buf(head).upper := requested
         head := head + 1.U
       }
     }

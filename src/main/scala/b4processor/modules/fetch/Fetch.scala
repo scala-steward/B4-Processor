@@ -51,6 +51,8 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
       else None
   })
 
+  val checkBranches = Seq.fill(params.decoderPerThread)(Module(new CheckBranch))
+
   /** プログラムカウンタ */
   val pc = RegInit(params.instructionStart.U(64.W))
 
@@ -60,19 +62,19 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
   var nextPC = pc
   var nextWait = waiting
   for (i <- 0 until params.decoderPerThread) {
-    val decoder = io.fetchBuffer.decoder(i)
+    val decoder = io.fetchBuffer.toBuffer(i)
     val cache = io.cache(i)
 
     cache.address.bits := nextPC
 
-    val branch = Module(new CheckBranch)
+    val branch = checkBranches(i)
     branch.io.instruction := cache.output.bits
     if (params.debug)
       io.branchTypes.get(i) := branch.io.branchType
 
     // キャッシュからの値があり、待つ必要はなく、JAL命令ではない（JALはアドレスを変えるだけとして処理できて、デコーダ以降を使う必要はない）
     val instructionValid = cache.output.valid && nextWait === WaitingReason.None
-    decoder.valid := instructionValid && branch.io.branchType =/= BranchType.mret
+    decoder.valid := instructionValid && branch.io.branchType =/= BranchType.mret && !io.isError
     decoder.bits.programCounter := nextPC
     decoder.bits.instruction := cache.output.bits
 
@@ -80,26 +82,22 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
 
     // 次に停止する必要があるか確認
     nextWait = Mux(
-      io.isError,
-      WaitingReason.Exception,
-      Mux(
-        nextWait =/= WaitingReason.None || !decoder.ready || !instructionValid,
+      nextWait =/= WaitingReason.None || !decoder.ready || !instructionValid,
+      nextWait,
+      MuxLookup(
+        branch.io.branchType.asUInt,
         nextWait,
-        MuxLookup(
-          branch.io.branchType.asUInt,
-          nextWait,
-          Seq(
-            BranchType.Branch.asUInt -> WaitingReason.Branch,
-            BranchType.JALR.asUInt -> WaitingReason.JALR,
-            BranchType.Fence.asUInt -> WaitingReason.Fence,
-            BranchType.FenceI.asUInt -> WaitingReason.FenceI,
-            BranchType.JAL.asUInt -> Mux(
-              branch.io.offset === 0.S,
-              WaitingReason.BusyLoop,
-              WaitingReason.None
-            ),
-            BranchType.mret.asUInt -> WaitingReason.mret
-          )
+        Seq(
+          BranchType.Branch.asUInt -> WaitingReason.Branch,
+          BranchType.JALR.asUInt -> WaitingReason.JALR,
+          BranchType.Fence.asUInt -> WaitingReason.Fence,
+          BranchType.FenceI.asUInt -> WaitingReason.FenceI,
+          BranchType.JAL.asUInt -> Mux(
+            branch.io.offset === 0.S,
+            WaitingReason.BusyLoop,
+            WaitingReason.None
+          ),
+          BranchType.mret.asUInt -> WaitingReason.mret
         )
       )
     )
@@ -156,6 +154,10 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
         }
       }
     }
+  }
+
+  when(io.isError) {
+    waiting := WaitingReason.Exception
   }
 
   if (params.debug) {

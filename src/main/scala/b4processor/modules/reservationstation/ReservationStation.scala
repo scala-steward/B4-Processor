@@ -14,8 +14,9 @@ import chisel3.util._
 
 class ReservationStation(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val collectedOutput = Flipped(new CollectedOutput)
-    val executor = Irrevocable(new ReservationStation2Executor)
+    val collectedOutput = Flipped(Vec(params.threads, new CollectedOutput))
+    val executor =
+      Vec(params.executors, Irrevocable(new ReservationStation2Executor))
     val decoder = Vec(
       params.threads * params.decoderPerThread,
       Flipped(new Decoder2ReservationStation)
@@ -29,23 +30,33 @@ class ReservationStation(implicit params: Parameters) extends Module {
       Seq.fill(math.pow(2, rsWidth).toInt)(ReservationStationEntry.default)
     )
   )
-  private val outputArbiter = Module(
-    new B4RRArbiter(new ReservationStation2Executor, math.pow(2, rsWidth).toInt)
+  private val outputArbiter = Seq.fill(params.executors)(
+    Module(
+      new B4RRArbiter(
+        new ReservationStation2Executor,
+        math.pow(2, rsWidth).toInt / params.executors
+      )
+    )
   )
 
-  for ((r, a) <- reservation.zip(outputArbiter.io.in)) {
-    a.bits.opcode := r.opcode
-    a.bits.destinationTag := r.destinationTag
-    a.bits.value1 := r.value1
-    a.bits.value2 := r.value2
-    a.bits.function3 := r.function3
-    a.bits.immediateOrFunction7 := r.immediateOrFunction7
-    a.valid := r.ready1 && r.ready2
-    when(a.valid && a.ready) {
-      r := ReservationStationEntry.default
+  for (eid <- 0 until params.executors) {
+    for (i <- 0 until reservation.length / params.executors) {
+      val a = outputArbiter(eid).io.in(i)
+      val r = reservation(i * params.executors + eid)
+      a.bits.opcode := r.opcode
+      a.bits.destinationTag := r.destinationTag
+      a.bits.value1 := r.value1
+      a.bits.value2 := r.value2
+      a.bits.function3 := r.function3
+      a.bits.immediateOrFunction7 := r.immediateOrFunction7
+      a.bits.wasCompressed := r.wasCompressed
+      a.valid := r.ready1 && r.ready2
+      when(a.valid && a.ready) {
+        r := ReservationStationEntry.default
+      }
     }
+    io.executor(eid) <> outputArbiter(eid).io.out
   }
-  io.executor <> outputArbiter.io.out
 
   // デコーダから
   private val head = RegInit(0.U(rsWidth.W))
@@ -66,22 +77,24 @@ class ReservationStation(implicit params: Parameters) extends Module {
   }
   head := nextHead
 
-  private val output = io.collectedOutput.outputs
-  when(output.valid && output.bits.resultType === ResultType.Result) {
-    for (entry <- reservation) {
-      when(entry.valid) {
-        when(!entry.ready1 && entry.sourceTag1 === output.bits.tag) {
-          entry.value1 := output.bits.value
-          entry.ready1 := true.B
-        }
-        when(!entry.ready2 && entry.sourceTag2 === output.bits.tag) {
-          entry.value2 := output.bits.value
-          entry.ready2 := true.B
+  for (output <- io.collectedOutput) {
+    when(
+      output.outputs.valid && output.outputs.bits.resultType === ResultType.Result
+    ) {
+      for (entry <- reservation) {
+        when(entry.valid) {
+          when(!entry.ready1 && entry.sourceTag1 === output.outputs.bits.tag) {
+            entry.value1 := output.outputs.bits.value
+            entry.ready1 := true.B
+          }
+          when(!entry.ready2 && entry.sourceTag2 === output.outputs.bits.tag) {
+            entry.value2 := output.outputs.bits.value
+            entry.ready2 := true.B
+          }
         }
       }
     }
   }
-
 }
 
 object ReservationStation extends App {

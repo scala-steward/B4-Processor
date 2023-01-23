@@ -71,13 +71,7 @@ class CheckBranch extends Module {
             0.U(1.W)
           ).asSInt,
           // branch
-          "b1100011".U -> Cat(
-            io.instruction(31),
-            io.instruction(7),
-            io.instruction(30, 25),
-            io.instruction(11, 8),
-            0.U(1.W)
-          ).asSInt,
+          "b1100011".U -> 4.S,
           // fence, fence.i
           "b0001111".U -> 4.S
         )
@@ -94,7 +88,7 @@ class CheckBranch extends Module {
       "b01".U -> MuxCase(
         BranchType.Next2,
         Seq(
-          (io.instruction(15, 13) === BitPat("b?01")) -> BranchType.JAL,
+          (io.instruction(15, 13) === BitPat("b101")) -> BranchType.JAL,
           (io.instruction(15, 13) === BitPat("b11?")) -> BranchType.Branch
         )
       ),

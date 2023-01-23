@@ -22,6 +22,7 @@ LABEL:
     csrr a0, time
     j END
 
+.align 2
 TRAP:
     li a7, 20
     la a0, EPC
@@ -29,6 +30,7 @@ TRAP:
     mret
     j END
 
+.align 2
 EPC:
     li a7, 30
 

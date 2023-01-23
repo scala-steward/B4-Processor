@@ -23,4 +23,5 @@ object CSRName {
   def mtval: UInt = "x343".U
   def mip: UInt = "x344".U
   def mcycle: UInt = "xB00".U
+  def minstret: UInt = "xB02".U
 }

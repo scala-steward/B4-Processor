@@ -13,8 +13,9 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
       if (params.debug) Some(Output(Vec(params.threads, Vec(32, UInt(64.W)))))
       else None
     val accessMemoryAddress = new Bundle {
-      val read = Valid(UInt(64.W))
-      val write = Valid(UInt(64.W))
+      val readAddress = Valid(UInt(64.W))
+      val readData = Valid(UInt(64.W))
+      val writeAddress = Valid(UInt(64.W))
       val writeData = Valid(UInt(64.W))
     }
   })
@@ -25,10 +26,12 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
 
   io.registerFileContents.get <> core.registerFileContents.get
 
-  io.accessMemoryAddress.read.valid := core.axi.readAddress.valid
-  io.accessMemoryAddress.read.bits := core.axi.readAddress.bits.ADDR
-  io.accessMemoryAddress.write.valid := core.axi.writeAddress.valid
-  io.accessMemoryAddress.write.bits := core.axi.writeAddress.bits.ADDR
+  io.accessMemoryAddress.readAddress.valid := core.axi.readAddress.valid
+  io.accessMemoryAddress.readAddress.bits := core.axi.readAddress.bits.ADDR
+  io.accessMemoryAddress.readData.valid := core.axi.read.valid
+  io.accessMemoryAddress.readData.bits := core.axi.read.bits.DATA
+  io.accessMemoryAddress.writeAddress.valid := core.axi.writeAddress.valid
+  io.accessMemoryAddress.writeAddress.bits := core.axi.writeAddress.bits.ADDR
   io.accessMemoryAddress.writeData.valid := core.axi.write.valid
   io.accessMemoryAddress.writeData.bits := core.axi.write.bits.DATA
 
@@ -44,6 +47,10 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
       this.clock.step()
       this.io.simulation.bits.poke(memoryInit(i))
     }
+    for (i <- Seq.fill(20)(0)) {
+      this.clock.step()
+      this.io.simulation.bits.poke(i)
+    }
     this.clock.step()
     this.io.simulation.valid.poke(false)
     this.clock.step()
@@ -52,19 +59,17 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
   def checkForWrite(address: UInt, value: UInt, timeout: Int = 500): Unit = {
     this.clock.setTimeout(timeout)
     while (
-      this.io.accessMemoryAddress.write.valid
-        .peekBoolean() && this.io.accessMemoryAddress.write.bits
-        .peek() == address
+      this.io.accessMemoryAddress.writeAddress.valid.peekBoolean() &&
+      this.io.accessMemoryAddress.writeAddress.bits.peek() == address
     )
       this.clock.step()
-    this.io.accessMemoryAddress.write.bits.expect(address)
+    this.io.accessMemoryAddress.writeAddress.bits.expect(address)
     while (
-      this.io.accessMemoryAddress.writeData.valid
-        .peekBoolean() && this.io.accessMemoryAddress.writeData.bits
-        .peek() == value
+      this.io.accessMemoryAddress.writeData.valid.peekBoolean() &&
+      this.io.accessMemoryAddress.writeData.bits.peek() == value
     )
       this.clock.step()
-    this.io.accessMemoryAddress.write.bits.expect(value)
+    this.io.accessMemoryAddress.writeData.bits.expect(value)
     this.clock.step(10)
   }
 

@@ -151,7 +151,7 @@ class SimpleAXIMemory(size: Int = 1024 * 10) extends Module {
         )
       )
       when(!readDone) {
-        axi.read.bits.DATA := (0 until 8).reverse
+        val _ = (0 until 8).reverse
           .map(i => rwport(i))
           .reduce(_ ## _)
         readDone := true.B

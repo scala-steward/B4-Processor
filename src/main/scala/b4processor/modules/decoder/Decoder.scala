@@ -27,7 +27,7 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   params: Parameters
 ) extends Module {
   val io = IO(new Bundle {
-    val instructionFetch = Flipped(new FetchBuffer2Decoder())
+    val instructionFetch = Flipped(new Uncompresser2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer
     val outputCollector = Flipped(new CollectedOutput())
     val registerFile = new Decoder2RegisterFile()
@@ -227,6 +227,7 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   rs.ready2 := valueSelector2.io.value.valid
   rs.value1 := valueSelector1.io.value.bits
   rs.value2 := valueSelector2.io.value.bits
+  rs.wasCompressed := io.instructionFetch.bits.wasCompressed
 
   // load or store命令の場合，LSQへ発送
   io.loadStoreQueue.valid := io.loadStoreQueue.ready && instOp === BitPat(

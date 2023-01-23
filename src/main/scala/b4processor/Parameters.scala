@@ -27,6 +27,7 @@ import scala.math.pow
   */
 case class Parameters(
   tagWidth: Int = 4,
+  executors: Int = 2,
   loadStoreQueueIndexWidth: Int = 3,
   loadStoreQueueCheckLength: Int = 3,
   decoderPerThread: Int = 2,

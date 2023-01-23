@@ -13,7 +13,7 @@ class B4ProcessorElaborateTest extends AnyFlatSpec with ChiselScalatestTester {
 
   behavior of "B4Processor connections"
   // コンパイルが通ることを確認（信号をつなぎきれていないとエラーになる）
-  for (threads <- 1 to 4)
+  for (threads <- Seq(1, 2, 3, 4, 8))
     for (decoderPerThread <- 1 to 3)
       for (maxCommitCount <- 1 to 3)
         for (tagWidth <- 2 to 3)

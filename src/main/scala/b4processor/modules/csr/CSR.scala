@@ -47,7 +47,7 @@ class CSR(hartid: Int)(implicit params: Parameters) extends Module {
 
     when(address === CSRName.cycle || address === CSRName.mcycle) {
       io.CSROutput.bits.value := cycleCounter.count
-    }.elsewhen(address === CSRName.instret) {
+    }.elsewhen(address === CSRName.instret || address === CSRName.minstret) {
       io.CSROutput.bits.value := retireCounter.io.count
     }.elsewhen(address === CSRName.mhartid) {
       io.CSROutput.bits.value := hartid.U

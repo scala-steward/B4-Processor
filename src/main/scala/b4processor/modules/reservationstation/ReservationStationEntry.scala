@@ -21,6 +21,7 @@ class ReservationStationEntry(implicit params: Parameters) extends Bundle {
   val ready2 = Bool()
   val value2 = UInt(64.W)
   val destinationTag = new Tag()
+  val wasCompressed = Bool()
   val valid = Bool()
 }
 
@@ -37,6 +38,7 @@ object ReservationStationEntry {
       _.ready2 -> false.B,
       _.value2 -> 0.U,
       _.destinationTag -> Tag(0, 0),
+      _.wasCompressed -> false.B,
       _.valid -> false.B
     )
 }

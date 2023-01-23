@@ -88,7 +88,7 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
   io.PC := fetch.io.PC.get
   io.nextPC := fetch.io.nextPC.get
 
-  fetch.io.fetchBuffer.decoder.foreach(v => v.ready := true.B)
+  fetch.io.fetchBuffer.toBuffer.foreach(v => v.ready := true.B)
 
   /** 初期化 */
   def initialize(memoryInit: => Seq[UInt]): Unit = {
@@ -364,31 +364,31 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       c.waitForCacheValid()
       c.io.branchTypes(0).expect(BranchType.Next4)
       c.io.branchTypes(1).expect(BranchType.Fence)
-      c.io.decoders.decoder(0).valid.expect(true)
-      c.io.decoders.decoder(1).valid.expect(true)
+      c.io.decoders.toBuffer(0).valid.expect(true)
+      c.io.decoders.toBuffer(1).valid.expect(true)
       c.io.nextPC.expect(0x10000004)
 
       c.clock.step()
       c.io.nextPC.expect(0x10000004)
-      c.io.decoders.decoder(0).valid.expect(false)
-      c.io.decoders.decoder(1).valid.expect(false)
+      c.io.decoders.toBuffer(0).valid.expect(false)
+      c.io.decoders.toBuffer(1).valid.expect(false)
 
       c.clock.step()
       c.io.reorderBufferEmpty.poke(true)
       c.io.nextPC.expect(0x10000004)
-      c.io.decoders.decoder(0).valid.expect(false)
-      c.io.decoders.decoder(1).valid.expect(false)
+      c.io.decoders.toBuffer(0).valid.expect(false)
+      c.io.decoders.toBuffer(1).valid.expect(false)
 
       c.clock.step()
       c.io.loadStoreQueueEmpty.poke(true)
       c.io.nextPC.expect(0x10000004)
-      c.io.decoders.decoder(0).valid.expect(false)
-      c.io.decoders.decoder(1).valid.expect(false)
+      c.io.decoders.toBuffer(0).valid.expect(false)
+      c.io.decoders.toBuffer(1).valid.expect(false)
 
       c.clock.step()
       c.io.nextPC.expect(0x10000010)
-      c.io.decoders.decoder(0).valid.expect(true)
-      c.io.decoders.decoder(1).valid.expect(true)
+      c.io.decoders.toBuffer(0).valid.expect(true)
+      c.io.decoders.toBuffer(1).valid.expect(true)
     }
   }
 }

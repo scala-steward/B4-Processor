@@ -53,7 +53,7 @@
           {
             all = B4ProcessorDerivation {
               pname = "B4Processor-tests";
-              buildInputs = with pkgs; [ verilog ];
+              buildInputs = with pkgs; [ verilog verilator stdenv.cc zlib ];
               buildPhase = ''
                 ln -s ${self.packages.${system}.default} programs
                 sbt test

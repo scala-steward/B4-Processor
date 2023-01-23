@@ -31,35 +31,36 @@ class B4Processor(implicit params: Parameters) extends Module {
     "レジスタファイルへのコミット数は1以上である必要があります。"
   )
 
-  val instructionCache =
+  private val instructionCache =
     (0 until params.threads).map(n => Module(new InstructionMemoryCache(n)))
-  val fetch = (0 until params.threads).map(n => Module(new Fetch(n)))
-  val fetchBuffer = (0 until params.threads).map(n => Module(new FetchBuffer))
-  val reorderBuffer =
+  private val fetch = (0 until params.threads).map(n => Module(new Fetch(n)))
+  private val fetchBuffer =
+    (0 until params.threads).map(n => Module(new FetchBuffer))
+  private val reorderBuffer =
     (0 until params.threads).map(n => Module(new ReorderBuffer(n)))
-  val registerFile =
+  private val registerFile =
     (0 until params.threads).map(n => Module(new RegisterFile(n)))
-  val loadStoreQueue =
+  private val loadStoreQueue =
     (0 until params.threads).map(n => Module(new LoadStoreQueue))
-  val dataMemoryBuffer = Module(new DataMemoryBuffer)
+  private val dataMemoryBuffer = Module(new DataMemoryBuffer)
 
   val outputCollector = Module(new OutputCollector)
-  val branchAddressCollector = Module(new BranchOutputCollector())
+  private val branchAddressCollector = Module(new BranchOutputCollector())
 
-  val uncompresser = Seq.fill(params.threads)(
+  private val uncompresser = Seq.fill(params.threads)(
     Seq.fill(params.decoderPerThread)(Module(new Uncompresser))
   )
-  val decoders = (0 until params.threads).map(tid =>
+  private val decoders = (0 until params.threads).map(tid =>
     (0 until params.decoderPerThread).map(n => Module(new Decoder(n, tid)))
   )
-  val reservationStation = Module(new ReservationStation)
-  val executor = Module(new Executor)
+  private val reservationStation = Module(new ReservationStation)
+  private val executors = Seq.fill(params.executors)(Module(new Executor))
 
-  val externalMemoryInterface = Module(new ExternalMemoryInterface)
+  private val externalMemoryInterface = Module(new ExternalMemoryInterface)
 
-  val csrReservationStation =
+  private val csrReservationStation =
     Seq.fill(params.threads)(Module(new CSRReservationStation))
-  val csr = (0 until params.threads).map(i => Module(new CSR(i)))
+  private val csr = (0 until params.threads).map(i => Module(new CSR(i)))
 
   axi <> externalMemoryInterface.io.coordinator
 
@@ -79,17 +80,20 @@ class B4Processor(implicit params: Parameters) extends Module {
       decoders(tid)(i - 1).io.decodersAfter <>
         decoders(tid)(i).io.decodersBefore
 
-  /** リザベーションステーションと実行ユニットを接続 */
-  reservationStation.io.executor <> executor.io.reservationStation
+  for (e <- 0 until params.executors) {
 
-  /** 出力コレクタと実行ユニットの接続 */
-  outputCollector.io.executor <> executor.io.out
+    /** リザベーションステーションと実行ユニットを接続 */
+    reservationStation.io.executor(e) <> executors(e).io.reservationStation
+
+    /** 出力コレクタと実行ユニットの接続 */
+    outputCollector.io.executor(e) <> executors(e).io.out
+
+    /** 分岐結果コレクタと実行ユニットの接続 */
+    branchAddressCollector.io.executor(e) <> executors(e).io.fetch
+  }
 
   /** リザベーションステーションと実行ユニットの接続 */
-  reservationStation.io.collectedOutput <> outputCollector.io.outputs
-
-  /** 分岐結果コレクタと実行ユニットの接続 */
-  branchAddressCollector.io.executor <> executor.io.fetch
+  reservationStation.io.collectedOutput := outputCollector.io.outputs
 
   for (tid <- 0 until params.threads) {
 
@@ -97,13 +101,13 @@ class B4Processor(implicit params: Parameters) extends Module {
     instructionCache(tid).io.fetch <> fetch(tid).io.cache
 
     /** フェッチとフェッチバッファの接続 */
-    fetch(tid).io.fetchBuffer <> fetchBuffer(tid).io.fetch
+    fetch(tid).io.fetchBuffer <> fetchBuffer(tid).io.input
 
     csrReservationStation(tid).io.toCSR <> csr(tid).io.decoderInput
 
     csr(tid).io.CSROutput <> outputCollector.io.csr(tid)
 
-    csrReservationStation(tid).io.output <> outputCollector.io.outputs
+    csrReservationStation(tid).io.output <> outputCollector.io.outputs(tid)
 
     reorderBuffer(tid).io.csr <> csr(tid).io.reorderBuffer
 
@@ -120,7 +124,7 @@ class B4Processor(implicit params: Parameters) extends Module {
     for (d <- 0 until params.decoderPerThread) {
       decoders(tid)(d).io.csr <> csrReservationStation(tid).io.decoderInput(d)
 
-      uncompresser(tid)(d).io.fetch <> fetchBuffer(tid).io.decoders(d)
+      uncompresser(tid)(d).io.fetch <> fetchBuffer(tid).io.output(d)
 
       /** デコーダとフェッチバッファ */
       decoders(tid)(d).io.instructionFetch <> uncompresser(tid)(d).io.decoder
@@ -139,7 +143,7 @@ class B4Processor(implicit params: Parameters) extends Module {
       decoders(tid)(d).io.loadStoreQueue <> loadStoreQueue(tid).io.decoders(d)
 
       /** デコーダと出力コレクタ */
-      decoders(tid)(d).io.outputCollector := outputCollector.io.outputs
+      decoders(tid)(d).io.outputCollector := outputCollector.io.outputs(tid)
 
       /** デコーダとLSQの接続 */
       loadStoreQueue(tid).io.decoders(d) <> decoders(tid)(d).io.loadStoreQueue
@@ -150,7 +154,7 @@ class B4Processor(implicit params: Parameters) extends Module {
       branchAddressCollector.io.fetch(tid)
 
     /** LSQと出力コレクタ */
-    loadStoreQueue(tid).io.outputCollector := outputCollector.io.outputs
+    loadStoreQueue(tid).io.outputCollector := outputCollector.io.outputs(tid)
 
     /** レジスタファイルとリオーダバッファ */
     registerFile(tid).io.reorderBuffer <> reorderBuffer(tid).io.registerFile
@@ -165,7 +169,7 @@ class B4Processor(implicit params: Parameters) extends Module {
     dataMemoryBuffer.io.dataIn(tid) <> loadStoreQueue(tid).io.memory
 
     /** リオーダバッファと出力コレクタ */
-    reorderBuffer(tid).io.collectedOutputs := outputCollector.io.outputs
+    reorderBuffer(tid).io.collectedOutputs := outputCollector.io.outputs(tid)
 
     /** リオーダバッファとLSQ */
     reorderBuffer(tid).io.loadStoreQueue <> loadStoreQueue(tid).io.reorderBuffer
@@ -189,8 +193,10 @@ class B4Processor(implicit params: Parameters) extends Module {
 
 object B4Processor extends App {
   implicit val params = Parameters(
-    threads = 2,
+    threads = 1,
+    executors = 4,
     decoderPerThread = 2,
+    tagWidth = 4,
     instructionStart = 0x2000_0000L
   )
   (new ChiselStage).emitSystemVerilog(new B4Processor())
