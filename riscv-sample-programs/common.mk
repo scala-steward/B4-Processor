@@ -15,7 +15,7 @@ $(PROGRAMNAME).o: $(SOURCES) $(LINKER_SCRIPT)
 	$(CC) $(CFLAGS) $(SOURCES) -o $@
 
 $(PROGRAMNAME).text.binary: $(PROGRAMNAME).o
-	$(OBJCOPY) -O binary  $< $@
+	$(OBJCOPY) -O binary $< $@
 
 $(PROGRAMNAME).hex: $(PROGRAMNAME).text.binary
 	od -An -t x1 $< -w1 -v | tr -d " " > $@

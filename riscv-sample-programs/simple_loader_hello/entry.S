@@ -3,8 +3,8 @@
 .section .text.init
 .global _start
 _start:
-    csrr tp,mhartid
-    bnez tp,END
+    csrr tp, mhartid
+    bnez tp, END
 _write:
     la a0, __GPIO_START
     li a1,0xFF

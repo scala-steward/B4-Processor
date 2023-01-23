@@ -9,14 +9,13 @@ SECTIONS{
 	{
 	    . = ALIGN(8);
 	    PROVIDE(__TEXT_START = .);
-		*(.text.init)
-		*(.text*)
+		*(.text .text*)
 	    PROVIDE(__TEXT_END = .);
 	} > ROM
 	.data : {
 		. = ALIGN(8);
 	    PROVIDE(__DATA_START = .);
-	    *(.data)
+	    *(.data .data*)
 	    PROVIDE(__DATA_END = .);
 	} > ROM
 
