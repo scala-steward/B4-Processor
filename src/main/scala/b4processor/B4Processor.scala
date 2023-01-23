@@ -193,8 +193,8 @@ class B4Processor(implicit params: Parameters) extends Module {
 
 object B4Processor extends App {
   implicit val params = Parameters(
-    threads = 1,
-    executors = 4,
+    threads = 2,
+    executors = 2,
     decoderPerThread = 2,
     tagWidth = 4,
     instructionStart = 0x2000_0000L

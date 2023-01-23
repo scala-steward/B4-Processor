@@ -1,7 +1,7 @@
 ENTRY(_start)
 
 MEMORY{
-	ROM (rx) : ORIGIN = 0x20000000, LENGTH = 1M
+	ROM (rx) : ORIGIN = 0x20000000, LENGTH = 16k
 }
 
 SECTIONS{

@@ -14,6 +14,12 @@ check-artifacts:
 processor:
 	nix -L build '.#processor' -o processor
 
+ip: processor
+	mkdir -p ip/B4Processor_1_0/src
+	mkdir -p ip/B4Processor_1_0/hdl
+	cp -f processor/B4Processor.sv ip/B4Processor_1_0/src
+	cp -f processor/B4Processor.sv ip/B4Processor_1_0/hdl
+
 #B4Processor.v:
 #	sbt "runMain b4processor.B4Processor"
 #

@@ -3,10 +3,11 @@
 .section .text.init
 .global _start
 _start:
-    beqz tp,_write
+    csrr tp,mhartid
+    bnez tp,END
 _write:
     la a0, __GPIO_START
-    li a1,0xF
+    li a1,0xFF
     sb a1,0(a0)
     la a0, __UART_START
     la a4, hello
