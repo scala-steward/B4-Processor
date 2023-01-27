@@ -1,9 +1,9 @@
-all: programs
+all: programs processor
 
-.PHONY: programs check check-artifacts processor clean
+.PHONY: check check-artifacts clean programs processor
 
 programs:
-	nix -L build -o programs
+	nix -L build -o $@
 
 check:
 	nix -L flake check
@@ -12,13 +12,11 @@ check-artifacts:
 	nix -L build '.#checks.x86_64-linux.all'
 
 processor:
-	nix -L build '.#processor' -o processor
+	nix -L build '.#processor' -o $@
 
 ip: processor
 	mkdir -p ip/B4Processor_1_0/src
-	mkdir -p ip/B4Processor_1_0/hdl
-	cp -f processor/B4Processor.sv ip/B4Processor_1_0/src
-	cp -f processor/B4Processor.sv ip/B4Processor_1_0/hdl
+	cp -f processor/B4Processor.v ip/B4Processor_1_0/src
 
 #B4Processor.v:
 #	sbt "runMain b4processor.B4Processor"

@@ -157,9 +157,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         for (j <- 0 until i) {
           when(EntryValid(j)) {
             when(
-              (AddressValid(j) && Address(j) === buffer(
-                checkIndex
-              ).address) || !AddressValid(j)
+              (AddressValid(j) && Address(j) === buffer(checkIndex).address)
+                || !AddressValid(j)
             ) {
               Overlap(i) := true.B
             }

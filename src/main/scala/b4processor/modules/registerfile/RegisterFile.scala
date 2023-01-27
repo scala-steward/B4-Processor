@@ -14,7 +14,7 @@ import chisel3.util._
   * @param params
   *   パラメータ
   */
-class RegisterFile(threadId: Int)(implicit params: Parameters) extends Module {
+class RegisterFile(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
 
     /** デコーダへ */
@@ -29,6 +29,8 @@ class RegisterFile(threadId: Int)(implicit params: Parameters) extends Module {
       )
     )
 
+    val threadId = Input(UInt(log2Up(params.threads).W))
+
     val values = if (params.debug) Some(Output(Vec(32, UInt(64.W)))) else None
   })
 
@@ -37,7 +39,7 @@ class RegisterFile(threadId: Int)(implicit params: Parameters) extends Module {
   val registers = RegInit(
     VecInit(
       (0 until 32)
-        .map(n => if (n == 4 /* tp */ ) threadId.U(64.W) else 0.U(64.W))
+        .map(n => if (n == 4 /* tp */ ) io.threadId else 0.U(64.W))
     )
   )
 
@@ -74,7 +76,7 @@ class RegisterFile(threadId: Int)(implicit params: Parameters) extends Module {
 object RegisterFile extends App {
   implicit val params = Parameters()
   (new ChiselStage).emitVerilog(
-    new RegisterFile(0),
+    new RegisterFile,
     args = Array(
       "--emission-options=disableMemRandomization,disableRegisterRandomization"
     )

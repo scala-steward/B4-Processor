@@ -1,15 +1,15 @@
-int fibonacci(int n){
-    int a = 1;
-    int b = 1;
-    for (int i = 0; i < n;i++){
-        int c = a + b;
+long fibonacci(long n){
+    long a = 1;
+    long b = 1;
+    for (long i = 0; i < n;i++){
+        long c = a + b;
         a = b;
         b = c;
     }
     return a;
 }
 
-int main(int loop_count){
-    int r = fibonacci(loop_count);
+long main(long loop_count){
+    long r = fibonacci(loop_count);
     return r;
 }

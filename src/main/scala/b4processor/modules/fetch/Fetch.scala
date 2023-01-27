@@ -13,7 +13,7 @@ import chisel3.util._
 import chisel3.stage.ChiselStage
 
 /** 命令フェッチ用モジュール */
-class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
+class Fetch(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
 
     /** 命令キャッシュ */
@@ -41,6 +41,8 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
     val csrReservationStationEmpty = Input(Bool())
 
     val isError = Input(Bool())
+
+    val threadId = Input(UInt(log2Up(params.threads).W))
 
     /** デバッグ用 */
     val PC = if (params.debug) Some(Output(UInt(64.W))) else None
@@ -120,7 +122,7 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
   when(waiting =/= WaitingReason.None) {
     when(waiting === WaitingReason.Branch || waiting === WaitingReason.JALR) {
       val e = io.collectedBranchAddresses.addresses
-      when(e.valid && e.bits.threadId === threadId.U) {
+      when(e.valid && e.bits.threadId === io.threadId) {
         waiting := WaitingReason.None
         pc := (pc.asSInt + e.bits.programCounterOffset).asUInt
       }
@@ -176,7 +178,7 @@ class Fetch(threadId: Int)(implicit params: Parameters) extends Module {
 object Fetch extends App {
   implicit val params = Parameters()
   (new ChiselStage).emitVerilog(
-    new Fetch(0),
+    new Fetch,
     args = Array(
       "--emission-options=disableMemRandomization,disableRegisterRandomization"
     )

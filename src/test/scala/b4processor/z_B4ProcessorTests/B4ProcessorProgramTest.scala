@@ -277,7 +277,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("programs/riscv-sample-programs/fibonacci_c")
-        c.checkForRegister(3, 21, 1500)
+        c.checkForRegisterChange(3, 1298777728820984005L, 10000)
       }
   }
 
@@ -297,7 +297,7 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("programs/riscv-sample-programs/fibonacci_c")
-        c.checkForRegister(3, 21, 1000)
+        c.checkForRegisterChange(3, 1298777728820984005L, 10000)
       }
   }
 
@@ -524,9 +524,9 @@ class B4ProcessorProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("programs/riscv-sample-programs/csrtest")
-        c.checkForRegister(17,10)
-        c.checkForRegister(17,20)
-        c.checkForRegister(17,30)
+        c.checkForRegister(17, 10)
+        c.checkForRegister(17, 20)
+        c.checkForRegister(17, 30)
         c.clock.step(300)
       }
   }

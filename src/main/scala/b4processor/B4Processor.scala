@@ -32,16 +32,14 @@ class B4Processor(implicit params: Parameters) extends Module {
   )
 
   private val instructionCache =
-    (0 until params.threads).map(n => Module(new InstructionMemoryCache(n)))
-  private val fetch = (0 until params.threads).map(n => Module(new Fetch(n)))
-  private val fetchBuffer =
-    (0 until params.threads).map(n => Module(new FetchBuffer))
+    Seq.fill(params.threads)(Module(new InstructionMemoryCache))
+  private val fetch = Seq.fill(params.threads)(Module(new Fetch))
+  private val fetchBuffer = Seq.fill(params.threads)(Module(new FetchBuffer))
   private val reorderBuffer =
-    (0 until params.threads).map(n => Module(new ReorderBuffer(n)))
-  private val registerFile =
-    (0 until params.threads).map(n => Module(new RegisterFile(n)))
+    Seq.fill(params.threads)(Module(new ReorderBuffer))
+  private val registerFile = Seq.fill(params.threads)(Module(new RegisterFile))
   private val loadStoreQueue =
-    (0 until params.threads).map(n => Module(new LoadStoreQueue))
+    Seq.fill(params.threads)(Module(new LoadStoreQueue))
   private val dataMemoryBuffer = Module(new DataMemoryBuffer)
 
   val outputCollector = Module(new OutputCollector)
@@ -50,8 +48,8 @@ class B4Processor(implicit params: Parameters) extends Module {
   private val uncompresser = Seq.fill(params.threads)(
     Seq.fill(params.decoderPerThread)(Module(new Uncompresser))
   )
-  private val decoders = (0 until params.threads).map(tid =>
-    (0 until params.decoderPerThread).map(n => Module(new Decoder(n, tid)))
+  private val decoders = Seq.fill(params.threads)(
+    (0 until params.decoderPerThread).map(n => Module(new Decoder))
   )
   private val reservationStation = Module(new ReservationStation)
   private val executors = Seq.fill(params.executors)(Module(new Executor))
@@ -60,7 +58,7 @@ class B4Processor(implicit params: Parameters) extends Module {
 
   private val csrReservationStation =
     Seq.fill(params.threads)(Module(new CSRReservationStation))
-  private val csr = (0 until params.threads).map(i => Module(new CSR(i)))
+  private val csr = Seq.fill(params.threads)(Module(new CSR))
 
   axi <> externalMemoryInterface.io.coordinator
 
@@ -73,12 +71,6 @@ class B4Processor(implicit params: Parameters) extends Module {
       for (i <- 0 until 32)
         registerFileContents.get(tid)(i) <> registerFile(tid).io.values.get(i)
   }
-
-  /** デコーダ同士を接続 */
-  for (tid <- 0 until params.threads)
-    for (i <- 1 until params.decoderPerThread)
-      decoders(tid)(i - 1).io.decodersAfter <>
-        decoders(tid)(i).io.decodersBefore
 
   for (e <- 0 until params.executors) {
 
@@ -96,12 +88,18 @@ class B4Processor(implicit params: Parameters) extends Module {
   reservationStation.io.collectedOutput := outputCollector.io.outputs
 
   for (tid <- 0 until params.threads) {
+    csr(tid).io.threadId := tid.U
+    instructionCache(tid).io.threadId := tid.U
+    reorderBuffer(tid).io.threadId := tid.U
+    registerFile(tid).io.threadId := tid.U
 
     /** 命令キャッシュとフェッチを接続 */
     instructionCache(tid).io.fetch <> fetch(tid).io.cache
 
     /** フェッチとフェッチバッファの接続 */
     fetch(tid).io.fetchBuffer <> fetchBuffer(tid).io.input
+
+    fetch(tid).io.threadId := tid.U
 
     csrReservationStation(tid).io.toCSR <> csr(tid).io.decoderInput
 
@@ -123,6 +121,8 @@ class B4Processor(implicit params: Parameters) extends Module {
     /** フェッチとデコーダの接続 */
     for (d <- 0 until params.decoderPerThread) {
       decoders(tid)(d).io.csr <> csrReservationStation(tid).io.decoderInput(d)
+
+      decoders(tid)(d).io.threadId := tid.U
 
       uncompresser(tid)(d).io.fetch <> fetchBuffer(tid).io.output(d)
 
@@ -199,5 +199,10 @@ object B4Processor extends App {
     tagWidth = 4,
     instructionStart = 0x2000_0000L
   )
-  (new ChiselStage).emitSystemVerilog(new B4Processor())
+  (new ChiselStage).emitVerilog(
+    new B4Processor(),
+    args = Array(
+      "--emission-options=disableMemRandomization,disableRegisterRandomization"
+    )
+  )
 }

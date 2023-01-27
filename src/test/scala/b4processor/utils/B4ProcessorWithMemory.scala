@@ -85,6 +85,19 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
     this.io.registerFileContents.get(thread)(regNum).expect(value)
     this.clock.step(3)
   }
+
+  def checkForRegisterChange(
+    regNum: Int,
+    value: BigInt,
+    timeout: Int = 500,
+    thread: Int = 0
+  ): Unit = {
+    this.clock.setTimeout(timeout)
+    while (this.io.registerFileContents.get(thread)(regNum).peekInt() == 0)
+      this.clock.step()
+    this.io.registerFileContents.get(thread)(regNum).expect(value)
+    this.clock.step(3)
+  }
 }
 
 object B4ProcessorWithMemory extends App {

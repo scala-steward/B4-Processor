@@ -12,12 +12,13 @@ import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
 
-class CSR(hartid: Int)(implicit params: Parameters) extends Module {
+class CSR(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val decoderInput = Flipped(Decoupled(new CSRReservationStation2CSR))
     val CSROutput = Irrevocable(new OutputValue)
     val fetch = Output(new CSR2Fetch)
     val reorderBuffer = Flipped(new ReorderBuffer2CSR)
+    val threadId = Input(UInt(log2Up(params.threads).W))
   })
 
   io.decoderInput.ready := io.CSROutput.ready
@@ -50,7 +51,7 @@ class CSR(hartid: Int)(implicit params: Parameters) extends Module {
     }.elsewhen(address === CSRName.instret || address === CSRName.minstret) {
       io.CSROutput.bits.value := retireCounter.io.count
     }.elsewhen(address === CSRName.mhartid) {
-      io.CSROutput.bits.value := hartid.U
+      io.CSROutput.bits.value := io.threadId
     }.elsewhen(address === CSRName.mtvec) {
       io.CSROutput.bits.value := mtvec
       when(io.CSROutput.ready && io.CSROutput.valid) {
@@ -111,5 +112,5 @@ class CSR(hartid: Int)(implicit params: Parameters) extends Module {
 
 object CSR extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitSystemVerilog(new CSR(0))
+  (new ChiselStage).emitSystemVerilog(new CSR)
 }

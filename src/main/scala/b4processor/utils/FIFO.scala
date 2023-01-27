@@ -15,6 +15,7 @@ class FIFO[T <: Data](width: Int)(t: T) extends Module {
 
   private val queue = Module(
     new Queue(t, pow(2, width).toInt, useSyncReadMem = true, hasFlush = true)
+//  new Queue(t, pow(2, width).toInt, hasFlush = true)
   )
   queue.io.enq <> input
   output <> queue.io.deq

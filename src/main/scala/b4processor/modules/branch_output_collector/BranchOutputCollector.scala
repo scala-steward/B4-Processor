@@ -21,16 +21,17 @@ class BranchOutputCollector(implicit params: Parameters) extends Module {
     for (e <- 0 until params.executors) {
       executorArbiters(tid).io.in(e) <> io.executor(e)
       executorArbiters(tid).io.in(e).valid :=
-        io.executor(e).valid && io.executor(e).bits.threadId === tid.U
+        io.executor(e).valid &&
+          io.executor(e).bits.threadId === tid.U
     }
 
   }
+
   for (e <- 0 until params.executors) {
     io.executor(e).ready := (0 until params.threads)
       .map(tid =>
-        executorArbiters(tid).io
-          .in(e)
-          .ready && io.executor(e).bits.threadId === tid.U
+        executorArbiters(tid).io.in(e).ready
+          && io.executor(e).bits.threadId === tid.U
       )
       .reduce(_ || _)
   }
@@ -41,6 +42,8 @@ class BranchOutputCollector(implicit params: Parameters) extends Module {
     io.fetch(tid).addresses.bits := threadFifos(tid).output.bits
     io.fetch(tid).addresses.valid := threadFifos(tid).output.valid
     threadFifos(tid).output.ready := true.B
+    threadFifos(tid).input.bits.threadId := tid.U
+    io.fetch(tid).addresses.bits.threadId := tid.U
   }
 
 }

@@ -21,7 +21,6 @@ class Executor(implicit params: Parameters) extends Module {
     val reservationStation =
       Flipped(Irrevocable(new ReservationStation2Executor))
     val out = Irrevocable(new OutputValue)
-    //    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
     val fetch = Irrevocable(new BranchOutput)
   })
 

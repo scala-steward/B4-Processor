@@ -6,7 +6,7 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
 
-class CSRWrapper(hartid: Int)(implicit params: Parameters) extends CSR(hartid) {
+class CSRWrapper(implicit params: Parameters) extends CSR {
   def setDecoderInput(
     address: UInt = 0.U,
     destinationTag: Tag = Tag(0, 0),
@@ -16,6 +16,10 @@ class CSRWrapper(hartid: Int)(implicit params: Parameters) extends CSR(hartid) {
     this.io.decoderInput.bits.address.poke(address)
     this.io.decoderInput.bits.value.poke(value)
     this.io.decoderInput.bits.destinationTag.poke(destinationTag)
+  }
+
+  def setThreadId(threadId:Int): Unit = {
+    this.io.threadId.poke(threadId)
   }
 
   def setReorderBuffer(retireCount: Int = 0): Unit = {
@@ -34,7 +38,7 @@ class CSRTest extends AnyFlatSpec with ChiselScalatestTester {
   implicit val params = Parameters()
 
   it should "return clock cycles" in {
-    test(new CSRWrapper(0)) { c =>
+    test(new CSRWrapper) { c =>
       c.clock.step(100)
       c.setDecoderInput(CSRName.cycle)
       c.expectOutput(100.U)
@@ -42,7 +46,7 @@ class CSRTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "return retire count" in {
-    test(new CSRWrapper(0)) { c =>
+    test(new CSRWrapper) { c =>
       c.clock.step()
       c.setReorderBuffer(1)
       c.clock.step()
@@ -57,14 +61,15 @@ class CSRTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "return mhartid" in {
-    test(new CSRWrapper(5)) { c =>
+    test(new CSRWrapper()(params.copy(threads = 10))) { c =>
       c.setDecoderInput(CSRName.mhartid)
+      c.setThreadId(5)
       c.expectOutput(5.U)
     }
   }
 
   it should "error on time" in {
-    test(new CSRWrapper(5)) { c =>
+    test(new CSRWrapper) { c =>
       c.setDecoderInput(CSRName.time)
       c.expectOutput(isError = true)
     }

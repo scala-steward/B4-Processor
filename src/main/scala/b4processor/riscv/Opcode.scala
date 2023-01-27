@@ -1,6 +1,6 @@
 package b4processor.riscv
 
-import Chisel.BitPat
+import chisel3.util.BitPat
 
 // ツールを使って生成
 // https://github.com/riscv/riscv-opcodes

@@ -23,7 +23,7 @@ import scala.math.pow
   * @param params
   *   パラメータ
   */
-class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
+class ReorderBuffer(implicit params: Parameters) extends Module {
   private val tagWidth = params.tagWidth
 
   val io = IO(new Bundle {
@@ -43,6 +43,7 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
     val csr = new ReorderBuffer2CSR
 
     val isError = Output(Bool())
+    val threadId = Input(UInt(log2Up(params.threads).W))
 
     val head = if (params.debug) Some(Output(UInt(tagWidth.W))) else None
     val tail = if (params.debug) Some(Output(UInt(tagWidth.W))) else None
@@ -64,11 +65,35 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
   private object RegisterTagMapContent {
     def default: RegisterTagMapContent =
       new RegisterTagMapContent().Lit(_.valid -> false.B, _.tagId -> 0.U)
+    def apply(tagId: UInt): RegisterTagMapContent = {
+      val w = Wire(new RegisterTagMapContent)
+      w.valid := true.B
+      w.tagId := tagId
+      w
+    }
   }
 
   private val registerTagMap = RegInit(
     VecInit(Seq.fill(32)(RegisterTagMapContent.default))
   )
+
+  class DecoderMap extends Bundle {
+    val valid = Bool()
+    val tagId = UInt(tagWidth.W)
+    val destinationRegister = UInt(5.W)
+  }
+
+  private object DecoderMap {
+    def default: DecoderMap =
+      new DecoderMap().Lit(
+        _.valid -> false.B,
+        _.tagId -> 0.U,
+        _.destinationRegister -> 0.U
+      )
+  }
+
+  private val previousDecoderMap =
+    Seq.fill(params.decoderPerThread - 1)(WireInit(DecoderMap.default))
 
   // レジスタファイルへの書き込み
   io.isError := false.B
@@ -105,11 +130,11 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
 
     when(canCommit) {
       // LSQへストア実行信号
-      lsq.bits.destinationTag := Tag.fromWires(threadId.U, index)
+      lsq.bits.destinationTag := Tag.fromWires(io.threadId, index)
       lsq.valid := buffer(index).storeSign
       buffer(index) := ReorderBufferEntry.default
     }.otherwise {
-      lsq.bits.destinationTag := Tag(threadId, 0)
+      lsq.bits.destinationTag := Tag.fromWires(io.threadId, 0.U)
       lsq.valid := false.B
     }
     lastValid = canCommit
@@ -141,44 +166,73 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
         entry
       }
     }
-    decoder.destination.destinationTag := Tag.fromWires(threadId.U, insertIndex)
+    if (i < params.decoderPerThread - 1) {
+      previousDecoderMap(i).valid :=
+        decoder.valid && decoder.destination.destinationRegister =/= 0.U
+      previousDecoderMap(i).tagId := insertIndex
+      previousDecoderMap(i).destinationRegister :=
+        decoder.destination.destinationRegister
+    }
+    decoder.destination.destinationTag := Tag.fromWires(
+      io.threadId,
+      insertIndex
+    )
     when(decoder.destination.destinationRegister =/= 0.U) {
       registerTagMap(decoder.destination.destinationRegister).valid := true.B
-      registerTagMap(
-        decoder.destination.destinationRegister
-      ).tagId := insertIndex
+      registerTagMap(decoder.destination.destinationRegister).tagId :=
+        insertIndex
     }
     when(decoder.source1.sourceRegister =/= 0.U) {
-      val matchingBits = registerTagMap(decoder.source1.sourceRegister)
+      val matchingBits = MuxCase(
+        registerTagMap(decoder.source1.sourceRegister),
+        (0 until i)
+          .map(n =>
+            (previousDecoderMap(n).valid &&
+              previousDecoderMap(n).destinationRegister
+              === decoder.source1.sourceRegister) ->
+              RegisterTagMapContent(previousDecoderMap(n).tagId)
+          )
+          .reverse
+      )
       val hasMatching = matchingBits.valid
 
       decoder.source1.matchingTag.valid := hasMatching
       decoder.source1.matchingTag.bits := Tag.fromWires(
-        threadId.U,
+        io.threadId,
         matchingBits.tagId
       )
       decoder.source1.value.valid := buffer(matchingBits.tagId).valueReady
       decoder.source1.value.bits := buffer(matchingBits.tagId).value
     }.otherwise {
       decoder.source1.matchingTag.valid := false.B
-      decoder.source1.matchingTag.bits := Tag(threadId, 0)
+      decoder.source1.matchingTag.bits := Tag.fromWires(io.threadId, 0.U)
       decoder.source1.value.valid := false.B
       decoder.source1.value.bits := 0.U
     }
 
     when(decoder.source2.sourceRegister =/= 0.U) {
-      val matchingBits = registerTagMap(decoder.source2.sourceRegister)
+      val matchingBits = MuxCase(
+        registerTagMap(decoder.source2.sourceRegister),
+        (0 until i)
+          .map(n =>
+            (previousDecoderMap(n).valid &&
+              previousDecoderMap(n).destinationRegister
+              === decoder.source2.sourceRegister) ->
+              RegisterTagMapContent(previousDecoderMap(n).tagId)
+          )
+          .reverse
+      )
       val hasMatching = matchingBits.valid
       decoder.source2.matchingTag.valid := hasMatching
       decoder.source2.matchingTag.bits := Tag.fromWires(
-        threadId.U,
+        io.threadId,
         matchingBits.tagId
       )
       decoder.source2.value.valid := buffer(matchingBits.tagId).valueReady
       decoder.source2.value.bits := buffer(matchingBits.tagId).value
     }.otherwise {
       decoder.source2.matchingTag.valid := false.B
-      decoder.source2.matchingTag.bits := Tag(threadId, 0)
+      decoder.source2.matchingTag.bits := Tag.fromWires(io.threadId, 0.U)
       decoder.source2.value.valid := false.B
       decoder.source2.value.bits := 0.U
     }
@@ -197,7 +251,7 @@ class ReorderBuffer(threadId: Int)(implicit params: Parameters) extends Module {
   // 出力の読み込み
   private val output = io.collectedOutputs.outputs
   when(
-    output.valid && (output.bits.resultType === ResultType.Result) && (output.bits.tag.threadId === threadId.U)
+    output.valid && (output.bits.resultType === ResultType.Result) && (output.bits.tag.threadId === io.threadId)
   ) {
     buffer(output.bits.tag.id).value := output.bits.value
     buffer(output.bits.tag.id).isError := output.bits.isError
@@ -220,7 +274,7 @@ object ReorderBuffer extends App {
   implicit val params =
     Parameters(decoderPerThread = 2, maxRegisterFileCommitCount = 8)
   (new ChiselStage).emitVerilog(
-    new ReorderBuffer(0),
+    new ReorderBuffer,
     args = Array(
       "--emission-options=disableMemRandomization,disableRegisterRandomization"
     )

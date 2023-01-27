@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    nix-filter.url = "github:numtide/nix-filter";
     riscv-test-src = {
       url = "https://github.com/riscv-software-src/riscv-tests";
       type = "git";
@@ -17,15 +18,23 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, riscv-test-src, nix-sbt }:
+  outputs = { self, nixpkgs, flake-utils, riscv-test-src, nix-sbt, nix-filter }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        nf = import nix-filter;
         B4ProcessorDerivation = attrs: nix-sbt.mkSbtDerivation.x86_64-linux ({
           pname = "B4Processor";
           version = "0.1.0";
-          src = ./.;
-          depsSha256 = "sha256-xOZ56Vmf4oHo7FDHOK7a+RK0LdQE9PVxfM4wLumzjxA=";
+          src = nf {
+            root = ./.;
+            include = [
+              "src"
+              "project"
+              "build.sbt"
+            ];
+          };
+          depsSha256 = "sha256-dzN0PazPY2QVoxatO4nBo7swJ2oWnoRrvwHL2/tM+/g=";
           buildPhase = ''
             sbt "runMain b4processor.B4Processor"
           '';

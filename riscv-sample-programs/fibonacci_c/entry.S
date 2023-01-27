@@ -30,4 +30,4 @@ _start:
 
 .section .data
 .align 8
-loop_count:  .byte 0x07
+loop_count:  .byte 100

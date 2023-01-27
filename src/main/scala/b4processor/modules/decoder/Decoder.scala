@@ -23,23 +23,19 @@ import chisel3.util._
   * @param params
   *   パラメータ
   */
-class Decoder(instructionOffset: Int, threadId: Int)(implicit
-  params: Parameters
-) extends Module {
+class Decoder(implicit params: Parameters)
+    extends Module {
   val io = IO(new Bundle {
     val instructionFetch = Flipped(new Uncompresser2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer
     val outputCollector = Flipped(new CollectedOutput())
     val registerFile = new Decoder2RegisterFile()
 
-    val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder))
-    val decodersAfter =
-      Output(Vec(instructionOffset + 1, new Decoder2NextDecoder))
-
     val reservationStation = new Decoder2ReservationStation
 
     val loadStoreQueue = Decoupled(new Decoder2LoadStoreQueue)
     val csr = Decoupled(new Decoder2CSRReservationStation())
+    val threadId = Input(UInt(log2Up(params.threads).W))
   })
 
   // 命令からそれぞれの昨日のブロックを取り出す
@@ -123,31 +119,12 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
 
   // リオーダバッファから一致するタグを取得する
   // セレクタ1
-  val sourceTagSelector1 = Module(new SourceTagSelector(instructionOffset))
+  val sourceTagSelector1 = Module(new SourceTagSelector)
   sourceTagSelector1.io.reorderBufferDestinationTag <> io.reorderBuffer.source1.matchingTag
-  for (i <- 0 until instructionOffset) {
-    // 前のデコーダから流れてきたdestination tag
-    sourceTagSelector1.io.beforeDestinationTag(i).bits := io
-      .decodersBefore(i)
-      .destinationTag
-    // 前のデコーダから流れてきたdestination registerがsource registerと等しいか
-    // (もともとvalidは情報が存在するかという意味で使われているが、ここで一致しているかという意味に変換)
-    sourceTagSelector1.io.beforeDestinationTag(i).valid :=
-      io.decodersBefore(i).destinationRegister === instRs1 &&
-        io.decodersBefore(i).valid
-  }
   val sourceTag1 = sourceTagSelector1.io.sourceTag
   // セレクタ2
-  val sourceTagSelector2 = Module(new SourceTagSelector(instructionOffset))
+  val sourceTagSelector2 = Module(new SourceTagSelector)
   sourceTagSelector2.io.reorderBufferDestinationTag <> io.reorderBuffer.source2.matchingTag
-  for (i <- 0 until instructionOffset) {
-    sourceTagSelector2.io.beforeDestinationTag(i).bits := io
-      .decodersBefore(i)
-      .destinationTag
-    sourceTagSelector2.io.beforeDestinationTag(i).valid :=
-      io.decodersBefore(i).destinationRegister === instRs2 &&
-        io.decodersBefore(i).valid
-  }
   val sourceTag2 = sourceTagSelector2.io.sourceTag
 
   // Valueの選択
@@ -171,22 +148,6 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   valueSelector2.io.programCounter := io.instructionFetch.bits.programCounter
   valueSelector2.io.opcodeFormat := opcodeFormatChecker.io.format
   valueSelector2.io.outputCollector <> io.outputCollector
-
-  // 前のデコーダから次のデコーダへ
-  for (i <- 0 until instructionOffset) {
-    io.decodersAfter(i) <> io.decodersBefore(i)
-  }
-  // 次のデコーダへ伝える情報
-  when(destinationIsValid && instRd =/= 0.U && io.instructionFetch.valid) {
-    io.decodersAfter(instructionOffset)
-      .destinationTag := io.reorderBuffer.destination.destinationTag
-    io.decodersAfter(instructionOffset).destinationRegister := instRd
-    io.decodersAfter(instructionOffset).valid := true.B
-  } otherwise {
-    io.decodersAfter(instructionOffset).destinationTag := Tag(threadId, 0)
-    io.decodersAfter(instructionOffset).destinationRegister := 0.U
-    io.decodersAfter(instructionOffset).valid := false.B
-  }
 
   // 命令をデコードするのはリオーダバッファにエントリの空きがあり、リザベーションステーションにも空きがあるとき
   io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready && io.csr.ready
@@ -215,12 +176,12 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   rs.destinationTag := io.reorderBuffer.destination.destinationTag
   rs.sourceTag1 := Mux(
     valueSelector1.io.value.valid,
-    Tag(threadId, 0),
+    Tag.fromWires(io.threadId, 0.U),
     sourceTag1.tag
   )
   rs.sourceTag2 := Mux(
     valueSelector2.io.value.valid,
-    Tag(threadId, 0),
+    Tag.fromWires(io.threadId, 0.U),
     sourceTag2.tag
   )
   rs.ready1 := valueSelector1.io.value.valid
@@ -250,7 +211,7 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
       io.loadStoreQueue.bits.storeData := valueSelector2.io.value.bits
       io.loadStoreQueue.bits.storeDataValid := valueSelector2.io.value.valid
     }.otherwise {
-      io.loadStoreQueue.bits.storeDataTag := Tag(threadId, 0)
+      io.loadStoreQueue.bits.storeDataTag := Tag.fromWires(io.threadId, 0.U)
       io.loadStoreQueue.bits.storeData := 0.U
       io.loadStoreQueue.bits.storeDataValid := true.B
     }
@@ -288,5 +249,5 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
 
 object Decoder extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitSystemVerilog(new Decoder(0, 0))
+  (new ChiselStage).emitSystemVerilog(new Decoder)
 }

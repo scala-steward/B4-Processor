@@ -8,7 +8,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import scala.util.Random
 
 class ReorderBufferWrapper(implicit params: Parameters)
-    extends ReorderBuffer(0) {
+    extends ReorderBuffer() {
   def initialize(): Unit = {
     setOutputs()
     setDecoder()

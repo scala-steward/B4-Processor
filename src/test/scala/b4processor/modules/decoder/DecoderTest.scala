@@ -13,8 +13,8 @@ import org.scalatest.flatspec.AnyFlatSpec
   * @param params
   *   パラメータ
   */
-class DecoderWrapper(instructionOffset: Int = 0)(implicit params: Parameters)
-    extends Decoder(instructionOffset, 0)(params) {
+class DecoderWrapper(implicit params: Parameters)
+    extends Decoder {
 
   def initialize(instruction: UInt, programCounter: Int = 1000): Unit = {
     this.setImem(instruction, programCounter)
@@ -138,7 +138,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // rs1 rs2 rdが正しくリオーダバッファに渡されているか
   it should "pass rs1 rs2 rd to reorder buffer" in {
-    test(new DecoderWrapper(0)) { c =>
+    test(new DecoderWrapper) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
       c.expectReorderBuffer(
@@ -151,7 +151,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // レジスタファイルから値を取得できているか
   it should "get values from register file" in {
-    test(new DecoderWrapper(0)) { c =>
+    test(new DecoderWrapper) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
       c.setRegisterFile(value1 = 10, value2 = 20)
@@ -167,7 +167,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // stagをリオーダバッファから取得できているか
   it should "get source tags from reorder buffer" in {
-    test(new DecoderWrapper(0)) { c =>
+    test(new DecoderWrapper) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
       c.setReorderBuffer(
@@ -191,7 +191,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // stagと値をリオーダバッファから取得できているか
   it should "get source tags and values from reorder buffer" in {
-    test(new DecoderWrapper(0)) { c =>
+    test(new DecoderWrapper) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
       c.setReorderBuffer(
@@ -213,7 +213,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // sd命令を認識できる
   it should "understand sd" in {
-    test(new DecoderWrapper(0)) { c =>
+    test(new DecoderWrapper) { c =>
       // sd x1,10(x2)
       c.initialize("x00113523".U)
       c.expectReorderBuffer(sourceRegister1 = 2, sourceRegister2 = 1)
@@ -223,7 +223,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // I形式を認識できる
   it should "understand I" in {
-    test(new DecoderWrapper(0)) { c =>
+    test(new DecoderWrapper) { c =>
       // addi x1,x2,20
       c.initialize("x01410093".U)
       c.setReorderBuffer(
@@ -246,7 +246,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   // ALUからの値を使える
   it should "do register bypass" in {
     test(
-      new DecoderWrapper(0)(testParams.copy(threads = 1, decoderPerThread = 2))
+      new DecoderWrapper()(testParams.copy(threads = 1, decoderPerThread = 2))
     ) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
@@ -272,7 +272,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // imemがvalidのときRSとRBでvalidと表示されている
   it should "say the data is valid when imem is valid" in {
-    test(new DecoderWrapper(0)).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
+    test(new DecoderWrapper).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
 
@@ -285,7 +285,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // imemがvalid=0のときRSとRBでvalid=0と表示されている
   it should "say the data is invalid when imem invalid" in {
-    test(new DecoderWrapper(0)) { c =>
+    test(new DecoderWrapper) { c =>
       c.initialize(0.U)
       c.io.instructionFetch.valid.poke(false.B)
 
@@ -296,7 +296,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // U形式を認識 (edge case: "x0007b1b7".U)
   it should "understand U format" in {
-    test(new DecoderWrapper(0)(testParams)) { c =>
+    test(new DecoderWrapper()(testParams)) { c =>
       // lui x3, 123
       c.initialize("x0007b1b7".U)
       c.setReorderBuffer(destinationTag = 5)
@@ -311,7 +311,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "understand J format" in {
-    test(new DecoderWrapper(0)(testParams)) { c =>
+    test(new DecoderWrapper()(testParams)) { c =>
       // jal x10,LABEL
       // LABEL:
       c.initialize("x0040056f".U)
@@ -323,7 +323,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "do csr" in {
-    test(new DecoderWrapper(0)(testParams)) { c =>
+    test(new DecoderWrapper()(testParams)) { c =>
       // jal x10,LABEL
       // LABEL:
       c.initialize("xc0002573".U)
@@ -335,7 +335,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "pass isPrediction" in {
-    test(new DecoderWrapper(0)(testParams)) { c =>
+    test(new DecoderWrapper()(testParams)) { c =>
       c.initialize("x0040056f".U)
       c.setImem("x0040056f".U, 0, isPrediction = true)
     }

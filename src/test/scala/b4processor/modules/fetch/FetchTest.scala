@@ -53,8 +53,8 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
     val memorySetup = Flipped(Valid(UInt(64.W)))
   })
 
-  val fetch = Module(new Fetch(0))
-  val cache = Module(new InstructionMemoryCache(0))
+  val fetch = Module(new Fetch)
+  val cache = Module(new InstructionMemoryCache)
   val memoryInterface = Module(new ExternalMemoryInterface)
   val axiMemory = Module(new SimpleAXIMemory)
 
@@ -68,10 +68,12 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
   fetch.io.csrReservationStationEmpty := true.B
   fetch.io.fetchBuffer.empty := true.B
   fetch.io.isError := false.B
+  fetch.io.threadId := 0.U
 
   cache.io.fetch <> fetch.io.cache
   cache.io.memory.request <> memoryInterface.io.instructionFetchRequest(0)
   cache.io.memory.response <> memoryInterface.io.instructionOut(0)
+  cache.io.threadId := 0.U
 
   memoryInterface.io.dataReadRequests.valid := false.B
   memoryInterface.io.dataReadRequests.bits := DontCare
