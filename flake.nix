@@ -34,6 +34,7 @@
               "build.sbt"
             ];
           };
+          buildInputs = with pkgs; [ circt ];
           depsSha256 = "sha256-dzN0PazPY2QVoxatO4nBo7swJ2oWnoRrvwHL2/tM+/g=";
           buildPhase = ''
             sbt "runMain b4processor.B4Processor"
@@ -62,7 +63,7 @@
           {
             all = B4ProcessorDerivation {
               pname = "B4Processor-tests";
-              buildInputs = with pkgs; [ verilog verilator stdenv.cc zlib ];
+              buildInputs = with pkgs; [ verilog verilator stdenv.cc zlib circt ];
               buildPhase = ''
                 ln -s ${self.packages.${system}.default} programs
                 sbt test
