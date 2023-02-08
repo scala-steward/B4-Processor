@@ -42,6 +42,21 @@ class CSR(implicit params: Parameters) extends Module {
   io.fetch.mcause := mcause
   val mstatus = RegInit(0.U(64.W))
 
+  def setCSROutput(reg: UInt): Unit = {
+    io.CSROutput.bits.value := reg
+    when(io.CSROutput.ready && io.CSROutput.valid) {
+      reg := MuxLookup(
+        io.decoderInput.bits.csrAccessType.asUInt,
+        0.U,
+        Seq(
+          CSRAccessType.ReadWrite.asUInt -> io.decoderInput.bits.value,
+          CSRAccessType.ReadSet.asUInt -> (reg | io.decoderInput.bits.value),
+          CSRAccessType.ReadClear.asUInt -> (reg & io.decoderInput.bits.value)
+        )
+      )
+    }
+  }
+
   when(io.decoderInput.valid) {
     val address = io.decoderInput.bits.address
     io.CSROutput.valid := true.B
@@ -53,57 +68,13 @@ class CSR(implicit params: Parameters) extends Module {
     }.elsewhen(address === CSRName.mhartid) {
       io.CSROutput.bits.value := io.threadId
     }.elsewhen(address === CSRName.mtvec) {
-      io.CSROutput.bits.value := mtvec
-      when(io.CSROutput.ready && io.CSROutput.valid) {
-        mtvec := MuxLookup(
-          io.decoderInput.bits.csrAccessType.asUInt,
-          0.U,
-          Seq(
-            CSRAccessType.ReadWrite.asUInt -> io.decoderInput.bits.value,
-            CSRAccessType.ReadSet.asUInt -> (mtvec | io.decoderInput.bits.value),
-            CSRAccessType.ReadClear.asUInt -> (mtvec & io.decoderInput.bits.value)
-          )
-        )
-      }
+      setCSROutput(mtvec)
     }.elsewhen(address === CSRName.mepc) {
-      io.CSROutput.bits.value := mepc
-      when(io.CSROutput.ready && io.CSROutput.valid) {
-        mepc := MuxLookup(
-          io.decoderInput.bits.csrAccessType.asUInt,
-          0.U,
-          Seq(
-            CSRAccessType.ReadWrite.asUInt -> io.decoderInput.bits.value,
-            CSRAccessType.ReadSet.asUInt -> (mepc | io.decoderInput.bits.value),
-            CSRAccessType.ReadClear.asUInt -> (mepc & io.decoderInput.bits.value)
-          )
-        )
-      }
+      setCSROutput(mepc)
     }.elsewhen(address === CSRName.mcause) {
-      io.CSROutput.bits.value := mcause
-      when(io.CSROutput.ready && io.CSROutput.valid) {
-        mcause := MuxLookup(
-          io.decoderInput.bits.csrAccessType.asUInt,
-          0.U,
-          Seq(
-            CSRAccessType.ReadWrite.asUInt -> io.decoderInput.bits.value,
-            CSRAccessType.ReadSet.asUInt -> (mcause | io.decoderInput.bits.value),
-            CSRAccessType.ReadClear.asUInt -> (mcause & io.decoderInput.bits.value)
-          )
-        )
-      }
+      setCSROutput(mcause)
     }.elsewhen(address === CSRName.mstatus) {
-      io.CSROutput.bits.value := mstatus
-      when(io.CSROutput.ready && io.CSROutput.valid) {
-        mstatus := MuxLookup(
-          io.decoderInput.bits.csrAccessType.asUInt,
-          0.U,
-          Seq(
-            CSRAccessType.ReadWrite.asUInt -> io.decoderInput.bits.value,
-            CSRAccessType.ReadSet.asUInt -> (mstatus | io.decoderInput.bits.value),
-            CSRAccessType.ReadClear.asUInt -> (mstatus & io.decoderInput.bits.value)
-          )
-        )
-      }
+      setCSROutput(mstatus)
     }.otherwise {
       io.CSROutput.bits.isError := true.B
     }
@@ -112,5 +83,5 @@ class CSR(implicit params: Parameters) extends Module {
 
 object CSR extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitSystemVerilog(new CSR)
+  (new ChiselStage).emitVerilog(new CSR())
 }

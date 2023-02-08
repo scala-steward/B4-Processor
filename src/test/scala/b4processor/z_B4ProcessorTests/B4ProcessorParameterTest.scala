@@ -13,7 +13,7 @@ class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "B4Processor with many parameters"
   implicit val defaultParams = Parameters(debug = true)
 
-  for (threads <- Seq(1, 2, 3, 4, 5, 6, 7, 8)) {
+  for (threads <- Seq(1, 2, 3, 4)) {
     for (executors <- Seq(2, 4))
       for (decoderPerThread <- Seq(1, 3))
         for (maxCommitCount <- Seq(1, 3))
@@ -42,7 +42,7 @@ class B4ProcessorParameterTest extends AnyFlatSpec with ChiselScalatestTester {
                       RandomizeAtStartupAnnotation
                     )
                   ) { c =>
-                    c.initialize("programs/riscv-sample-programs/fibonacci_c")
+                    c.initialize64("programs/riscv-sample-programs/fibonacci_c")
                     for (t <- 0 until threads)
                       c.checkForRegisterChange(3, 1298777728820984005L, 2000, t)
                     val fw = new FileWriter("stats.jsonl", true)

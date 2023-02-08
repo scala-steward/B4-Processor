@@ -272,7 +272,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 
 object ReorderBuffer extends App {
   implicit val params =
-    Parameters(decoderPerThread = 2, maxRegisterFileCommitCount = 8)
+    Parameters(decoderPerThread = 2, maxRegisterFileCommitCount = 1)
   (new ChiselStage).emitVerilog(
     new ReorderBuffer,
     args = Array(

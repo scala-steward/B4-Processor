@@ -42,6 +42,7 @@ class RegisterFile(implicit params: Parameters) extends Module {
         .map(n => if (n == 4 /* tp */ ) io.threadId else 0.U(64.W))
     )
   )
+//  val registers = Vec(32, UInt(64.W))
 
   for (rb <- io.reorderBuffer) {
     when(rb.valid) {
