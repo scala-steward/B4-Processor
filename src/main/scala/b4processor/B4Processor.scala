@@ -14,7 +14,7 @@ import b4processor.modules.reorderbuffer.ReorderBuffer
 import b4processor.modules.reservationstation.ReservationStation
 import b4processor.utils.AXI
 import chisel3._
-import circt.stage.ChiselStage
+import chisel3.stage.ChiselStage
 
 class B4Processor(implicit params: Parameters) extends Module {
   val axi = IO(new AXI(64, 64))
@@ -197,5 +197,6 @@ object B4Processor extends App {
     tagWidth = 4,
     instructionStart = 0x2000_0000L
   )
-  ChiselStage.emitSystemVerilogFile(new B4Processor())
+//  ChiselStage.emitSystemVerilogFile(new B4Processor())
+  (new ChiselStage).emitSystemVerilog(new B4Processor)
 }

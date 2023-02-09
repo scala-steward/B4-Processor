@@ -17,12 +17,10 @@ class OutputCollector(implicit params: Parameters) extends Module {
   })
 
   val executorQueue =
-    Seq.fill(params.executors)(
-      Module(new FIFO(2)(new OutputValue))
-    )
+    Seq.fill(params.executors)(Module(new FIFO(2)(new OutputValue)))
   val threadsArbiter =
     Seq.fill(params.threads)(
-      Module(new Arbiter(new OutputValue, params.executors + 2))
+      Module(new B4RRArbiter(new OutputValue, params.executors + 2))
     )
 
   for (i <- 0 until params.executors) {
@@ -33,6 +31,7 @@ class OutputCollector(implicit params: Parameters) extends Module {
     val outValid = io.executor(i).valid
     val outReady = io.executor(i).ready
     // No Same input
+    if (params.debug)
     when(outValid && RegNext(outValid)) {
       assert(outReady && RegNext(outReady) && !(out === RegNext(out)))
     }
@@ -59,9 +58,10 @@ class OutputCollector(implicit params: Parameters) extends Module {
     val outValid = threadsArbiter(tid).io.out.valid
     val outReady = threadsArbiter(tid).io.out.ready
     // No Same input
-    when(outValid && RegNext(outValid)) {
-      assert(outReady && RegNext(outReady) && !(out === RegNext(out)))
-    }
+    if (params.debug)
+      when(outValid && RegNext(outValid)) {
+        assert(outReady && RegNext(outReady) && !(out === RegNext(out)))
+      }
   }
 
   for (i <- 0 until params.executors) {

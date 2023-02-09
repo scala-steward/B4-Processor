@@ -7,7 +7,7 @@ import circt.stage.ChiselStage
 import scala.math.pow
 
 class FIFO[T <: Data](width: Int)(t: T, flow: Boolean = false) extends Module {
-  val input = IO(Flipped(Irrevocable(t)))
+  val input = IO(Flipped(Decoupled(t)))
   val output = IO(Irrevocable(t))
   val full = IO(Output(Bool()))
   val empty = IO(Output(Bool()))
@@ -33,12 +33,9 @@ class FIFO[T <: Data](width: Int)(t: T, flow: Boolean = false) extends Module {
   full := !queue.io.enq.ready
   empty := !queue.io.deq.valid
   queue.flush := flush
-
 }
 
 object FIFO extends App {
-  println(sys.env.get("PATH"))
-  println(sys.env.get("nix"))
   ChiselStage.emitSystemVerilogFile(new FIFO(8)(new Bundle {
     val a = UInt(32.W)
   }))

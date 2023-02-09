@@ -28,11 +28,10 @@ class BranchOutputCollector(implicit params: Parameters) extends Module {
         executorQueue(e).output.valid &&
           executorQueue(e).output.bits.threadId === tid.U
     }
-
   }
 
   for (e <- 0 until params.executors) {
-    io.executor(e).ready := (0 until params.threads)
+    executorQueue(e).output.ready := (0 until params.threads)
       .map(tid =>
         executorArbiters(tid).io.in(e).ready
           && executorQueue(e).output.bits.threadId === tid.U

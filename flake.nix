@@ -8,6 +8,7 @@
     riscv-test-src = {
       url = "https://github.com/riscv-software-src/riscv-tests";
       type = "git";
+      rev = "0d397a64d880a83a249e926f985e3cf57ce03620";
       submodules = true;
       flake = false;
     };
@@ -75,5 +76,17 @@
             };
           };
         formatter = pkgs.nixpkgs-fmt;
+        devShell = pkgs.mkShell {
+          name = "processor-shell";
+          buildInputs = with pkgs;[
+            circt
+            rustfilt
+            pkgsCross.riscv64-embedded.stdenv.cc
+            (pkgs.sbt.override {
+              jre = pkgs.jdk17;
+            })
+          ];
+          JAVA_17_HOME = "${pkgs.jdk17}/lib/openjdk";
+        };
       });
 }

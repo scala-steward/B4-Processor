@@ -71,16 +71,17 @@
     "riscv-test-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1675444205,
-        "narHash": "sha256-3Ko6iJnaDzEA+IteLc9DHh97TffU2NKzJJwl+ejlzWs=",
+        "lastModified": 1672350433,
+        "narHash": "sha256-DOwc2dFWSD3FDhUO7NtaV4hKhqYOkXH6KxUtJ1iDcHY=",
         "ref": "refs/heads/master",
-        "rev": "f163ddfc9b0bf78fb8180012ffcfc93427f780f0",
-        "revCount": 860,
+        "rev": "0d397a64d880a83a249e926f985e3cf57ce03620",
+        "revCount": 852,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/riscv-software-src/riscv-tests"
       },
       "original": {
+        "rev": "0d397a64d880a83a249e926f985e3cf57ce03620",
         "submodules": true,
         "type": "git",
         "url": "https://github.com/riscv-software-src/riscv-tests"

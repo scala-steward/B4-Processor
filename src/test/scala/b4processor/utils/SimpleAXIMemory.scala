@@ -5,7 +5,7 @@ import chisel3.experimental.FlatIO
 import chisel3.stage.ChiselStage
 import chisel3.util.Valid
 
-class SimpleAXIMemory(sizeBytes: Int = 1024 * 10) extends Module {
+class SimpleAXIMemory(sizeBytes: Int = 1024 * 1024) extends Module {
   val axi = FlatIO(Flipped(new AXI(64, 64)))
   val simulationSource = IO(new Bundle {
     val input = Flipped(Valid(UInt(64.W)))

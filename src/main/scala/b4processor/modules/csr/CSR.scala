@@ -41,6 +41,7 @@ class CSR(implicit params: Parameters) extends Module {
   val mcause = RegInit(0.U(64.W))
   io.fetch.mcause := mcause
   val mstatus = RegInit(0.U(64.W))
+  val mie = RegInit(0.U(64.W))
 
   def setCSROutput(reg: UInt): Unit = {
     io.CSROutput.bits.value := reg
@@ -75,6 +76,8 @@ class CSR(implicit params: Parameters) extends Module {
       setCSROutput(mcause)
     }.elsewhen(address === CSRName.mstatus) {
       setCSROutput(mstatus)
+    }.elsewhen(address === CSRName.mie) {
+      setCSROutput(mie)
     }.otherwise {
       io.CSROutput.bits.isError := true.B
     }
