@@ -3,6 +3,7 @@
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
+#    nixpkgs-stable.url = "nixpkgs/nixos-22.11";
     flake-utils.url = "github:numtide/flake-utils";
     nix-filter.url = "github:numtide/nix-filter";
     riscv-test-src = {
@@ -36,7 +37,7 @@
             ];
           };
           buildInputs = with pkgs; [ circt ];
-          depsSha256 = "sha256-dzN0PazPY2QVoxatO4nBo7swJ2oWnoRrvwHL2/tM+/g=";
+          depsSha256 = "sha256-W1Kgoc58kruhLW0CDzvuUgAjuRZbT4QqStJLAAnPuhc=";
           buildPhase = ''
             sbt "runMain b4processor.B4Processor"
           '';
@@ -83,10 +84,10 @@
             rustfilt
             pkgsCross.riscv64-embedded.stdenv.cc
             (pkgs.sbt.override {
-              jre = pkgs.jdk17;
+              jre = pkgs.jdk19;
             })
           ];
-          JAVA_17_HOME = "${pkgs.jdk17}/lib/openjdk";
+          JAVA_19_HOME = "${pkgs.jdk19}/lib/openjdk";
         };
       });
 }

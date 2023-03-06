@@ -54,7 +54,6 @@ class FetchBuffer(implicit params: Parameters) extends Module {
     }
     tail := nextTail
   }
-
 }
 
 sealed class BufferEntry extends Bundle {
