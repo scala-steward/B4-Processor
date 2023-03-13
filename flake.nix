@@ -3,7 +3,7 @@
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
-#    nixpkgs-stable.url = "nixpkgs/nixos-22.11";
+    #    nixpkgs-stable.url = "nixpkgs/nixos-22.11";
     flake-utils.url = "github:numtide/flake-utils";
     nix-filter.url = "github:numtide/nix-filter";
     riscv-test-src = {
@@ -50,6 +50,18 @@
 
           fixupPhase = "true";
         } // attrs);
+        sbtTest = testCommand: B4ProcessorDerivation {
+          pname = "B4Processor-tests";
+          buildInputs = with pkgs; [ verilog verilator stdenv.cc zlib circt ];
+          buildPhase = ''
+            ln -s ${self.packages.${system}.default} programs
+            ${testCommand}
+          '';
+          installPhase = ''
+            mkdir $out
+            [ -d test_run_dir ] && cp -r test_run_dir $out || true
+          '';
+        };
       in
       {
         packages = rec {
@@ -60,21 +72,11 @@
             { name = "riscv-tests"; path = riscv-tests; }
             { name = "riscv-sample-programs"; path = riscv-sample-programs; }
           ];
+          slowChecks = sbtTest ''sbt "testOnly * -- -n org.scalatest.tags.Slow"'';
         };
         checks =
           {
-            all = B4ProcessorDerivation {
-              pname = "B4Processor-tests";
-              buildInputs = with pkgs; [ verilog verilator stdenv.cc zlib circt ];
-              buildPhase = ''
-                ln -s ${self.packages.${system}.default} programs
-                sbt test
-              '';
-              installPhase = ''
-                mkdir $out
-                [ -d test_run_dir ] && cp -r test_run_dir $out || true
-              '';
-            };
+            quick = sbtTest ''sbt "testOnly * -- -l org.scalatest.tags.Slow"'';
           };
         formatter = pkgs.nixpkgs-fmt;
         devShells.default = pkgs.mkShell {
