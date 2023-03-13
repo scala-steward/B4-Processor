@@ -198,5 +198,5 @@ object B4Processor extends App {
     instructionStart = 0x2000_0000L
   )
 //  ChiselStage.emitSystemVerilogFile(new B4Processor())
-  ChiselStage.emitSystemVerilog(new B4Processor)
+  ChiselStage.emitSystemVerilogFile(new B4Processor)
 }

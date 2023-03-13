@@ -77,7 +77,7 @@
             };
           };
         formatter = pkgs.nixpkgs-fmt;
-        devShell = pkgs.mkShell {
+        devShells.default = pkgs.mkShell {
           name = "processor-shell";
           buildInputs = with pkgs;[
             circt
