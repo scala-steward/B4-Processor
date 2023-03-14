@@ -6,7 +6,9 @@ import b4processor.utils.B4ProcessorWithMemory
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class z20_B4ProcessorElaborateTest extends AnyFlatSpec with ChiselScalatestTester {
+class z20_B4ProcessorElaborateTest
+    extends AnyFlatSpec
+    with ChiselScalatestTester {
 
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
   implicit val defaultParams = Parameters(debug = true)

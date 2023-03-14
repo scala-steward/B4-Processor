@@ -12,8 +12,7 @@ import chisel3.util._
   * @param params
   *   パラメータ
   */
-class SourceTagSelector(implicit params: Parameters)
-    extends Module {
+class SourceTagSelector(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val reorderBufferDestinationTag =
       Flipped(Valid(new Tag))

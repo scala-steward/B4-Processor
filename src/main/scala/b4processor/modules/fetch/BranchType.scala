@@ -1,6 +1,7 @@
 package b4processor.modules.fetch
 
 import chisel3._
+
 /** フェッチ用分岐の種類 */
 object BranchType extends ChiselEnum {
 
