@@ -6,14 +6,15 @@ import b4processor.common.OpcodeFormatChecker
 import b4processor.connections._
 import b4processor.modules.csr.CSRAccessType
 import b4processor.modules.reservationstation.ReservationStationEntry
+import b4processor.riscv.Instructions.ADD
 import b4processor.structures.memoryAccess.{
   MemoryAccessInfo,
   MemoryAccessType,
   MemoryAccessWidth
 }
 import b4processor.utils.Tag
+import circt.stage.ChiselStage
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.util._
 
 /** デコーダ
@@ -36,6 +37,12 @@ class Decoder(implicit params: Parameters) extends Module {
     val csr = Decoupled(new Decoder2CSRReservationStation())
     val threadId = Input(UInt(log2Up(params.threads).W))
   })
+
+  ListLookup(
+    io.instructionFetch.bits.instruction,
+    List(ArithmeticOperations.None, 2.U),
+    Array(ADD -> List(ArithmeticOperations.Add, 4.U))
+  )
 
   // 命令からそれぞれの昨日のブロックを取り出す
   val instRd = io.instructionFetch.bits.instruction(11, 7)
@@ -248,5 +255,5 @@ class Decoder(implicit params: Parameters) extends Module {
 
 object Decoder extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitSystemVerilog(new Decoder)
+  ChiselStage.emitSystemVerilogFile(new Decoder)
 }
