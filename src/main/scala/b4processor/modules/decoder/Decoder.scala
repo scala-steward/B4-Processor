@@ -4,6 +4,7 @@ import b4processor.Parameters
 import b4processor.common.OpcodeFormat._
 import b4processor.common.OpcodeFormatChecker
 import b4processor.connections._
+import b4processor.modules.csr.CSRAccessType
 import b4processor.modules.reservationstation.ReservationStationEntry
 import b4processor.structures.memoryAccess.{
   MemoryAccessInfo,
@@ -22,22 +23,18 @@ import chisel3.util._
   * @param params
   *   パラメータ
   */
-class Decoder(instructionOffset: Int, threadId: Int)(implicit
-  params: Parameters
-) extends Module {
+class Decoder(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val instructionFetch = Flipped(new FetchBuffer2Decoder())
+    val instructionFetch = Flipped(new Uncompresser2Decoder())
     val reorderBuffer = new Decoder2ReorderBuffer
     val outputCollector = Flipped(new CollectedOutput())
     val registerFile = new Decoder2RegisterFile()
 
-    val decodersBefore = Input(Vec(instructionOffset, new Decoder2NextDecoder))
-    val decodersAfter =
-      Output(Vec(instructionOffset + 1, new Decoder2NextDecoder))
-
     val reservationStation = new Decoder2ReservationStation
 
     val loadStoreQueue = Decoupled(new Decoder2LoadStoreQueue)
+    val csr = Decoupled(new Decoder2CSRReservationStation())
+    val threadId = Input(UInt(log2Up(params.threads).W))
   })
 
   // 命令からそれぞれの昨日のブロックを取り出す
@@ -102,6 +99,7 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
     0.U
   )
   io.reorderBuffer.destination.storeSign := instOp === "b0100011".U
+  io.reorderBuffer.programCounter := io.instructionFetch.bits.programCounter
 
   // レジスタファイルへの入力
   io.registerFile.sourceRegister1 := instRs1
@@ -120,31 +118,12 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
 
   // リオーダバッファから一致するタグを取得する
   // セレクタ1
-  val sourceTagSelector1 = Module(new SourceTagSelector(instructionOffset))
+  val sourceTagSelector1 = Module(new SourceTagSelector)
   sourceTagSelector1.io.reorderBufferDestinationTag <> io.reorderBuffer.source1.matchingTag
-  for (i <- 0 until instructionOffset) {
-    // 前のデコーダから流れてきたdestination tag
-    sourceTagSelector1.io.beforeDestinationTag(i).bits := io
-      .decodersBefore(i)
-      .destinationTag
-    // 前のデコーダから流れてきたdestination registerがsource registerと等しいか
-    // (もともとvalidは情報が存在するかという意味で使われているが、ここで一致しているかという意味に変換)
-    sourceTagSelector1.io.beforeDestinationTag(i).valid :=
-      io.decodersBefore(i).destinationRegister === instRs1 &&
-        io.decodersBefore(i).valid
-  }
   val sourceTag1 = sourceTagSelector1.io.sourceTag
   // セレクタ2
-  val sourceTagSelector2 = Module(new SourceTagSelector(instructionOffset))
+  val sourceTagSelector2 = Module(new SourceTagSelector)
   sourceTagSelector2.io.reorderBufferDestinationTag <> io.reorderBuffer.source2.matchingTag
-  for (i <- 0 until instructionOffset) {
-    sourceTagSelector2.io.beforeDestinationTag(i).bits := io
-      .decodersBefore(i)
-      .destinationTag
-    sourceTagSelector2.io.beforeDestinationTag(i).valid :=
-      io.decodersBefore(i).destinationRegister === instRs2 &&
-        io.decodersBefore(i).valid
-  }
   val sourceTag2 = sourceTagSelector2.io.sourceTag
 
   // Valueの選択
@@ -169,29 +148,15 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   valueSelector2.io.opcodeFormat := opcodeFormatChecker.io.format
   valueSelector2.io.outputCollector <> io.outputCollector
 
-  // 前のデコーダから次のデコーダへ
-  for (i <- 0 until instructionOffset) {
-    io.decodersAfter(i) <> io.decodersBefore(i)
-  }
-  // 次のデコーダへ伝える情報
-  when(destinationIsValid && instRd =/= 0.U && io.instructionFetch.valid) {
-    io.decodersAfter(instructionOffset)
-      .destinationTag := io.reorderBuffer.destination.destinationTag
-    io.decodersAfter(instructionOffset).destinationRegister := instRd
-    io.decodersAfter(instructionOffset).valid := true.B
-  } otherwise {
-    io.decodersAfter(instructionOffset).destinationTag := Tag(threadId, 0)
-    io.decodersAfter(instructionOffset).destinationRegister := 0.U
-    io.decodersAfter(instructionOffset).valid := false.B
-  }
-
   // 命令をデコードするのはリオーダバッファにエントリの空きがあり、リザベーションステーションにも空きがあるとき
-  io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready
+  io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready && io.csr.ready
   // リオーダバッファやリザベーションステーションに新しいエントリを追加するのは命令がある時
   io.reorderBuffer.valid := io.instructionFetch.ready && io.instructionFetch.valid
   io.reservationStation.entry.valid := io.instructionFetch.ready &&
     io.instructionFetch.valid &&
-    !(instOp === BitPat("b0?00011") && valueSelector1.io.value.valid)
+    !(instOp === BitPat(
+      "b0?00011"
+    ) && valueSelector1.io.value.valid) && instOp =/= "b1110011".U
 
   // RSへの出力を埋める
   val rs = io.reservationStation.entry
@@ -210,18 +175,19 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
   rs.destinationTag := io.reorderBuffer.destination.destinationTag
   rs.sourceTag1 := Mux(
     valueSelector1.io.value.valid,
-    Tag(threadId, 0),
+    Tag(io.threadId, 0.U),
     sourceTag1.tag
   )
   rs.sourceTag2 := Mux(
     valueSelector2.io.value.valid,
-    Tag(threadId, 0),
+    Tag(io.threadId, 0.U),
     sourceTag2.tag
   )
   rs.ready1 := valueSelector1.io.value.valid
   rs.ready2 := valueSelector2.io.value.valid
   rs.value1 := valueSelector1.io.value.bits
   rs.value2 := valueSelector2.io.value.bits
+  rs.wasCompressed := io.instructionFetch.bits.wasCompressed
 
   // load or store命令の場合，LSQへ発送
   io.loadStoreQueue.valid := io.loadStoreQueue.ready && instOp === BitPat(
@@ -244,16 +210,43 @@ class Decoder(instructionOffset: Int, threadId: Int)(implicit
       io.loadStoreQueue.bits.storeData := valueSelector2.io.value.bits
       io.loadStoreQueue.bits.storeDataValid := valueSelector2.io.value.valid
     }.otherwise {
-      io.loadStoreQueue.bits.storeDataTag := Tag(threadId, 0)
+      io.loadStoreQueue.bits.storeDataTag := Tag(io.threadId, 0.U)
       io.loadStoreQueue.bits.storeData := 0.U
       io.loadStoreQueue.bits.storeDataValid := true.B
     }
   }.otherwise {
     io.loadStoreQueue.bits := DontCare
   }
+
+  io.csr.valid := io.csr.ready && io.instructionFetch.ready && io.instructionFetch.valid && "b1110011".U === instOp && instFunct3 =/= 0.U
+  io.csr.bits := DontCare
+  when(io.csr.valid) {
+    io.csr.bits.csrAccessType := MuxLookup(
+      instFunct3(1, 0),
+      CSRAccessType.ReadWrite,
+      Seq(
+        "b01".U -> CSRAccessType.ReadWrite,
+        "b10".U -> CSRAccessType.ReadSet,
+        "b11".U -> CSRAccessType.ReadClear
+      )
+    )
+    io.csr.bits.address := instImmI
+    io.csr.bits.sourceTag := valueSelector1.io.sourceTag.tag
+    io.csr.bits.value := Mux(
+      instFunct3(2),
+      instRs1,
+      valueSelector1.io.value.bits
+    )
+    io.csr.bits.ready := Mux(
+      instFunct3(2),
+      true.B,
+      valueSelector1.io.value.valid
+    )
+    io.csr.bits.destinationTag := io.reorderBuffer.destination.destinationTag
+  }
 }
 
 object Decoder extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitVerilog(new Decoder(0, 0))
+  (new ChiselStage).emitSystemVerilog(new Decoder)
 }

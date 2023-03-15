@@ -85,7 +85,7 @@ class B4LockingRRArbiter[T <: Data](
   count: Int,
   needsLock: Option[T => Bool] = None
 ) extends B4LockingArbiterLike[T](gen, n, count, needsLock) {
-  lazy val lastGrant = util.RegEnable(io.chosen, init = 0.U, io.out.fire)
+  lazy val lastGrant = util.RegEnable(io.chosen, 0.U, io.out.fire)
   lazy val grantMask = (0 until n).map(_.asUInt > lastGrant)
   lazy val validMask =
     io.in.zip(grantMask).map { case (in, g) => in.valid && g }

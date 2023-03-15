@@ -7,5 +7,6 @@ case class ReservationValue(
   value2: BigInt = 0,
   function3: Int = 0,
   immediateOrFunction7: Int = 0,
-  opcode: Int = 0
+  opcode: Int = 0,
+  wasCompressed: Boolean = false
 )

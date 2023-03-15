@@ -17,10 +17,10 @@ SECTIONS{
 	.data : {
 		. = ALIGN(8);
 		PROVIDE(__DATA_START_ = .);
-	    *(.data)
-	    PROVIDE(__DATA_END_ = .);
-	    . = ALIGN(8);
-        PROVIDE(__BINARY_END_ = .);
+    *(.data)
+    PROVIDE(__DATA_END_ = .);
+    . = ALIGN(8);
+    PROVIDE(__BINARY_END_ = .);
 	} > RAM
 
 }

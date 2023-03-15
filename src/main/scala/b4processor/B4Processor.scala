@@ -1,25 +1,20 @@
 package b4processor
 
-import b4processor.connections.{
-  InstructionMemory2Cache,
-  LoadStoreQueue2Memory,
-  OutputValue
-}
+import circt.stage.ChiselStage
 import b4processor.modules.branch_output_collector.BranchOutputCollector
 import b4processor.modules.cache.{DataMemoryBuffer, InstructionMemoryCache}
-import b4processor.modules.decoder.Decoder
+import b4processor.modules.csr.{CSR, CSRReservationStation}
+import b4processor.modules.decoder.{Decoder, Uncompresser}
 import b4processor.modules.executor.Executor
 import b4processor.modules.fetch.{Fetch, FetchBuffer}
 import b4processor.modules.lsq.LoadStoreQueue
 import b4processor.modules.memory.ExternalMemoryInterface
-import b4processor.modules.ourputcollector.OutputCollector
+import b4processor.modules.outputcollector.OutputCollector
 import b4processor.modules.registerfile.RegisterFile
 import b4processor.modules.reorderbuffer.ReorderBuffer
 import b4processor.modules.reservationstation.ReservationStation
 import b4processor.utils.AXI
 import chisel3._
-import chisel3.experimental.FlatIO
-import chisel3.stage.ChiselStage
 
 class B4Processor(implicit params: Parameters) extends Module {
   val axi = IO(new AXI(64, 64))
@@ -35,28 +30,34 @@ class B4Processor(implicit params: Parameters) extends Module {
     "レジスタファイルへのコミット数は1以上である必要があります。"
   )
 
-  val instructionCache =
-    (0 until params.threads).map(n => Module(new InstructionMemoryCache(n)))
-  val fetch = (0 until params.threads).map(n => Module(new Fetch(n)))
-  val fetchBuffer = (0 until params.threads).map(n => Module(new FetchBuffer))
-  val reorderBuffer =
-    (0 until params.threads).map(n => Module(new ReorderBuffer(n)))
-  val registerFile =
-    (0 until params.threads).map(n => Module(new RegisterFile(n)))
-  val loadStoreQueue =
-    (0 until params.threads).map(n => Module(new LoadStoreQueue))
-  val dataMemoryBuffer = Module(new DataMemoryBuffer)
+  private val instructionCache =
+    Seq.fill(params.threads)(Module(new InstructionMemoryCache))
+  private val fetch = Seq.fill(params.threads)(Module(new Fetch))
+  private val fetchBuffer = Seq.fill(params.threads)(Module(new FetchBuffer))
+  private val reorderBuffer =
+    Seq.fill(params.threads)(Module(new ReorderBuffer))
+  private val registerFile = Seq.fill(params.threads)(Module(new RegisterFile))
+  private val loadStoreQueue =
+    Seq.fill(params.threads)(Module(new LoadStoreQueue))
+  private val dataMemoryBuffer = Module(new DataMemoryBuffer)
 
-  val outputCollector = Module(new OutputCollector)
-  val branchAddressCollector = Module(new BranchOutputCollector)
+  private val outputCollector = Module(new OutputCollector)
+  private val branchAddressCollector = Module(new BranchOutputCollector())
 
-  val decoders = (0 until params.threads).map(tid =>
-    (0 until params.decoderPerThread).map(n => Module(new Decoder(n, tid)))
+  private val uncompresser = Seq.fill(params.threads)(
+    Seq.fill(params.decoderPerThread)(Module(new Uncompresser))
   )
-  val reservationStation = Module(new ReservationStation)
-  val executor = Module(new Executor)
+  private val decoders = Seq.fill(params.threads)(
+    (0 until params.decoderPerThread).map(n => Module(new Decoder))
+  )
+  private val reservationStation = Module(new ReservationStation)
+  private val executors = Seq.fill(params.executors)(Module(new Executor))
 
-  val externalMemoryInterface = Module(new ExternalMemoryInterface)
+  private val externalMemoryInterface = Module(new ExternalMemoryInterface)
+
+  private val csrReservationStation =
+    Seq.fill(params.threads)(Module(new CSRReservationStation))
+  private val csr = Seq.fill(params.threads)(Module(new CSR))
 
   axi <> externalMemoryInterface.io.coordinator
 
@@ -70,35 +71,62 @@ class B4Processor(implicit params: Parameters) extends Module {
         registerFileContents.get(tid)(i) <> registerFile(tid).io.values.get(i)
   }
 
-  /** デコーダ同士を接続 */
-  for (tid <- 0 until params.threads)
-    for (i <- 1 until params.decoderPerThread)
-      decoders(tid)(i - 1).io.decodersAfter <>
-        decoders(tid)(i).io.decodersBefore
+  for (e <- 0 until params.executors) {
 
-  /** リザベーションステーションと実行ユニットを接続 */
-  reservationStation.io.executor <> executor.io.reservationStation
+    /** リザベーションステーションと実行ユニットを接続 */
+    reservationStation.io.executor(e) <> executors(e).io.reservationStation
 
-  /** 出力コレクタと実行ユニットの接続 */
-  outputCollector.io.executor <> executor.io.out
+    /** 出力コレクタと実行ユニットの接続 */
+    outputCollector.io.executor(e) <> executors(e).io.out
+
+    /** 分岐結果コレクタと実行ユニットの接続 */
+    branchAddressCollector.io.executor(e) <> executors(e).io.fetch
+  }
 
   /** リザベーションステーションと実行ユニットの接続 */
-  reservationStation.io.collectedOutput <> outputCollector.io.outputs
-
-  /** 分岐結果コレクタと実行ユニットの接続 */
-  branchAddressCollector.io.executor <> executor.io.fetch
+  reservationStation.io.collectedOutput := outputCollector.io.outputs
 
   for (tid <- 0 until params.threads) {
+    csr(tid).io.threadId := tid.U
+    instructionCache(tid).io.threadId := tid.U
+    reorderBuffer(tid).io.threadId := tid.U
+    registerFile(tid).io.threadId := tid.U
 
     /** 命令キャッシュとフェッチを接続 */
     instructionCache(tid).io.fetch <> fetch(tid).io.cache
 
     /** フェッチとフェッチバッファの接続 */
-    fetch(tid).io.fetchBuffer <> fetchBuffer(tid).io.fetch
+    fetch(tid).io.fetchBuffer <> fetchBuffer(tid).io.input
+
+    fetch(tid).io.threadId := tid.U
+
+    csrReservationStation(tid).io.toCSR <> csr(tid).io.decoderInput
+
+    csr(tid).io.CSROutput <> outputCollector.io.csr(tid)
+
+    csrReservationStation(tid).io.output <> outputCollector.io.outputs(tid)
+
+    reorderBuffer(tid).io.csr <> csr(tid).io.reorderBuffer
+
+    fetch(tid).io.csr <> csr(tid).io.fetch
+
+    fetch(tid).io.csrReservationStationEmpty :=
+      csrReservationStation(tid).io.empty
+
+    outputCollector.io.isError(tid) := reorderBuffer(tid).io.isError
+    branchAddressCollector.io.isError(tid) := reorderBuffer(tid).io.isError
+    fetch(tid).io.isError := reorderBuffer(tid).io.isError
 
     /** フェッチとデコーダの接続 */
     for (d <- 0 until params.decoderPerThread) {
-      decoders(tid)(d).io.instructionFetch <> fetchBuffer(tid).io.decoders(d)
+      decoders(tid)(d).io.csr <> csrReservationStation(tid).io.decoderInput(d)
+
+      decoders(tid)(d).io.threadId := tid.U
+
+      uncompresser(tid)(d).io.fetch <> fetchBuffer(tid).io.output(d)
+
+      /** デコーダとフェッチバッファ */
+      decoders(tid)(d).io.instructionFetch <> uncompresser(tid)(d).io.decoder
 
       /** デコーダとリオーダバッファを接続 */
       decoders(tid)(d).io.reorderBuffer <> reorderBuffer(tid).io.decoders(d)
@@ -114,17 +142,18 @@ class B4Processor(implicit params: Parameters) extends Module {
       decoders(tid)(d).io.loadStoreQueue <> loadStoreQueue(tid).io.decoders(d)
 
       /** デコーダと出力コレクタ */
-      decoders(tid)(d).io.outputCollector := outputCollector.io.outputs
+      decoders(tid)(d).io.outputCollector := outputCollector.io.outputs(tid)
 
       /** デコーダとLSQの接続 */
       loadStoreQueue(tid).io.decoders(d) <> decoders(tid)(d).io.loadStoreQueue
     }
 
     /** フェッチと分岐結果の接続 */
-    fetch(tid).io.collectedBranchAddresses := branchAddressCollector.io.fetch
+    fetch(tid).io.collectedBranchAddresses :=
+      branchAddressCollector.io.fetch(tid)
 
     /** LSQと出力コレクタ */
-    loadStoreQueue(tid).io.outputCollector := outputCollector.io.outputs
+    loadStoreQueue(tid).io.outputCollector := outputCollector.io.outputs(tid)
 
     /** レジスタファイルとリオーダバッファ */
     registerFile(tid).io.reorderBuffer <> reorderBuffer(tid).io.registerFile
@@ -139,18 +168,16 @@ class B4Processor(implicit params: Parameters) extends Module {
     dataMemoryBuffer.io.dataIn(tid) <> loadStoreQueue(tid).io.memory
 
     /** リオーダバッファと出力コレクタ */
-    reorderBuffer(tid).io.collectedOutputs := outputCollector.io.outputs
+    reorderBuffer(tid).io.collectedOutputs := outputCollector.io.outputs(tid)
 
     /** リオーダバッファとLSQ */
     reorderBuffer(tid).io.loadStoreQueue <> loadStoreQueue(tid).io.reorderBuffer
 
     /** 命令メモリと命令キャッシュを接続 */
-    externalMemoryInterface.io.instructionFetchRequest(tid) <> instructionCache(
-      tid
-    ).io.memory.request
-    externalMemoryInterface.io.instructionOut(tid) <> instructionCache(
-      tid
-    ).io.memory.response
+    externalMemoryInterface.io.instructionFetchRequest(tid) <>
+      instructionCache(tid).io.memory.request
+    externalMemoryInterface.io.instructionOut(tid) <>
+      instructionCache(tid).io.memory.response
 
     /** フェッチと分岐予測 TODO */
     fetch(tid).io.prediction <> DontCare
@@ -164,13 +191,12 @@ class B4Processor(implicit params: Parameters) extends Module {
 object B4Processor extends App {
   implicit val params = Parameters(
     threads = 2,
-    decoderPerThread = 2,
+    executors = 2,
+    decoderPerThread = 1,
+    maxRegisterFileCommitCount = 1,
+    tagWidth = 4,
     instructionStart = 0x2000_0000L
   )
-  (new ChiselStage).emitVerilog(
-    new B4Processor(),
-    args = Array(
-      "--emission-options=disableMemRandomization,disableRegisterRandomization"
-    )
-  )
+//  ChiselStage.emitSystemVerilogFile(new B4Processor())
+  ChiselStage.emitSystemVerilogFile(new B4Processor)
 }

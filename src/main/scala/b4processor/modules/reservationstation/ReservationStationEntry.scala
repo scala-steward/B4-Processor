@@ -21,6 +21,7 @@ class ReservationStationEntry(implicit params: Parameters) extends Bundle {
   val ready2 = Bool()
   val value2 = UInt(64.W)
   val destinationTag = new Tag()
+  val wasCompressed = Bool()
   val valid = Bool()
 }
 
@@ -37,6 +38,23 @@ object ReservationStationEntry {
       _.ready2 -> false.B,
       _.value2 -> 0.U,
       _.destinationTag -> Tag(0, 0),
+      _.wasCompressed -> false.B,
+      _.valid -> false.B
+    )
+
+  def zero(implicit params: Parameters): ReservationStationEntry =
+    (new ReservationStationEntry).Lit(
+      _.opcode -> 0.U,
+      _.function3 -> 0.U,
+      _.immediateOrFunction7 -> 0.U,
+      _.sourceTag1 -> Tag(0, 0),
+      _.ready1 -> false.B,
+      _.value1 -> 0.U,
+      _.sourceTag2 -> Tag(0, 0),
+      _.ready2 -> false.B,
+      _.value2 -> 0.U,
+      _.destinationTag -> Tag(0, 0),
+      _.wasCompressed -> false.B,
       _.valid -> false.B
     )
 }

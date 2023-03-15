@@ -27,12 +27,13 @@ import scala.math.pow
   */
 case class Parameters(
   tagWidth: Int = 4,
+  executors: Int = 2,
   loadStoreQueueIndexWidth: Int = 3,
   loadStoreQueueCheckLength: Int = 3,
   decoderPerThread: Int = 2,
   threads: Int = 2,
-  maxRegisterFileCommitCount: Int = 4,
-  maxDataMemoryCommitCount: Int = 4,
+  maxRegisterFileCommitCount: Int = 1,
+  maxDataMemoryCommitCount: Int = 1,
   fetchWidth: Int = 2,
   branchPredictionWidth: Int = 4,
   instructionStart: Long = 0x8010_0000L,

@@ -1,7 +1,7 @@
 package b4processor.modules.fetch
 
 import b4processor.Parameters
-import b4processor.connections.{Fetch2FetchBuffer, FetchBuffer2Decoder}
+import b4processor.connections.{Fetch2FetchBuffer, FetchBuffer2Uncompresser}
 import chisel3._
 import chisel3.stage.ChiselStage
 
@@ -9,8 +9,8 @@ import scala.math.pow
 
 class FetchBuffer(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val decoders = Vec(params.decoderPerThread, new FetchBuffer2Decoder)
-    val fetch = Flipped(new Fetch2FetchBuffer)
+    val output = Vec(params.decoderPerThread, new FetchBuffer2Uncompresser)
+    val input = Flipped(new Fetch2FetchBuffer)
   })
 
   val buffer = Reg(
@@ -19,10 +19,11 @@ class FetchBuffer(implicit params: Parameters) extends Module {
 
   val head = RegInit(0.U((params.decoderPerThread + 1).W))
   val tail = RegInit(0.U((params.decoderPerThread + 1).W))
+  io.input.empty := head === tail
 
   {
     var nextHead = head
-    for (d <- io.fetch.decoder) {
+    for (d <- io.input.toBuffer) {
       val indexOk = nextHead + 1.U =/= tail
       d.ready := indexOk
       val valid = d.valid && indexOk
@@ -39,7 +40,7 @@ class FetchBuffer(implicit params: Parameters) extends Module {
 
   {
     var nextTail = tail
-    for (d <- io.decoders) {
+    for (d <- io.output) {
       val indexOk = nextTail =/= head
       d.valid := indexOk
       val valid = d.ready && indexOk
@@ -53,7 +54,6 @@ class FetchBuffer(implicit params: Parameters) extends Module {
     }
     tail := nextTail
   }
-
 }
 
 sealed class BufferEntry extends Bundle {

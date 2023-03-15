@@ -11,18 +11,27 @@ class ReorderBufferEntry extends Bundle {
   /** 命令の処理が完了した（コミットできる） */
   val valueReady = Bool()
 
-  /** 実行結果の値 */
+  /** 通常時：実行結果の値 例外時：エラーの種類 */
   val value = UInt(64.W)
+
+  /** プログラムカウンタ */
+  val programCounter = UInt(64.W)
 
   /** 該当のbufferがStore命令かどうか */
   val storeSign = Bool()
+
+  /** isError */
+  val isError = Bool()
 }
 
 object ReorderBufferEntry {
-  def default: ReorderBufferEntry = (new ReorderBufferEntry).Lit(
-    _.value -> 0.U,
-    _.valueReady -> false.B,
-    _.destinationRegister -> 0.U,
-    _.storeSign -> false.B
-  )
+  def default: ReorderBufferEntry =
+    (new ReorderBufferEntry).Lit(
+      _.valueReady -> false.B,
+      _.destinationRegister -> 0.U,
+      _.isError -> false.B,
+      _.value -> 0.U,
+      _.programCounter -> 0.U,
+      _.storeSign -> false.B
+    )
 }

@@ -21,7 +21,6 @@ class Executor(implicit params: Parameters) extends Module {
     val reservationStation =
       Flipped(Irrevocable(new ReservationStation2Executor))
     val out = Irrevocable(new OutputValue)
-    //    val loadStoreQueue = Output(new Executor2LoadStoreQueue)
     val fetch = Irrevocable(new BranchOutput)
   })
 
@@ -32,8 +31,8 @@ class Executor(implicit params: Parameters) extends Module {
 
   instructionChecker.input.opcode := io.reservationStation.bits.opcode
   instructionChecker.input.function3bits := io.reservationStation.bits.function3
-  instructionChecker.input.function7bits := io.reservationStation.bits
-    .immediateOrFunction7(11, 5)
+  instructionChecker.input.function7bits :=
+    io.reservationStation.bits.immediateOrFunction7(11, 5)
 
   val executionResult64bit = Wire(UInt(64.W))
   val immediateOrFunction7Extended =
@@ -41,7 +40,6 @@ class Executor(implicit params: Parameters) extends Module {
   val IJU_ProgramCounter = io.reservationStation.bits.value2
   val B_branchedOffset =
     (immediateOrFunction7Extended.asUInt ## 0.U(1.W)).asSInt
-  val nextOffset = 4.S
 
   io.fetch.bits.programCounterOffset := 0.S
   io.fetch.valid := false.B
@@ -50,7 +48,7 @@ class Executor(implicit params: Parameters) extends Module {
   executionResult64bit := 0.U
 
   when(io.reservationStation.valid) {
-    io.out.valid := true.B
+    io.out.valid := io.reservationStation.ready
     //    printf("pc=%x, immediate=%d\n", io.reservationStation.bits.programCounter, immediateOrFunction7Extended.asSInt)
     //    printf("a = %d b = %d\n", io.reservationStation.bits.value1, io.reservationStation.bits.value2)
     val a = io.reservationStation.bits.value1
@@ -99,7 +97,9 @@ class Executor(implicit params: Parameters) extends Module {
         // 比較(格納先：rd)(符号なし)
         (instructionChecker.output.arithmetic === ArithmeticOperations.SetLessThanUnsigned) -> (a < b),
         // 無条件ジャンプ
-        (instructionChecker.output.instruction === Instructions.jal || instructionChecker.output.instruction === Instructions.jalr) -> (IJU_ProgramCounter.asUInt + 4.U),
+        (instructionChecker.output.instruction === Instructions.jal || instructionChecker.output.instruction === Instructions.jalr) ->
+          (IJU_ProgramCounter.asUInt +
+            Mux(io.reservationStation.bits.wasCompressed, 2.U, 4.U)),
         // lui
         (instructionChecker.output.instruction === Instructions.lui) -> a,
         // auipc
@@ -120,32 +120,32 @@ class Executor(implicit params: Parameters) extends Module {
       )
     )
 
-    io.fetch.valid := (instructionChecker.output.instruction === Instructions.Branch) ||
-      (instructionChecker.output.instruction === Instructions.jalr)
+    io.fetch.valid := ((instructionChecker.output.instruction === Instructions.Branch) ||
+      (instructionChecker.output.instruction === Instructions.jalr)) && io.reservationStation.ready
     when(io.fetch.valid) {
       io.fetch.bits.threadId := io.reservationStation.bits.destinationTag.threadId
       io.fetch.bits.programCounterOffset := MuxCase(
-        0.S,
+        Mux(io.reservationStation.bits.wasCompressed, 2.S, 4.S),
         Seq(
           // 分岐
           // Equal
-          (instructionChecker.output.branch === BranchOperations.Equal)
-            -> Mux(a === b, B_branchedOffset, nextOffset),
+          (instructionChecker.output.branch === BranchOperations.Equal && a === b)
+            -> B_branchedOffset,
           // NotEqual
-          (instructionChecker.output.branch === BranchOperations.NotEqual)
-            -> Mux(a =/= b, B_branchedOffset, nextOffset),
+          (instructionChecker.output.branch === BranchOperations.NotEqual && a =/= b)
+            -> B_branchedOffset,
           // Less Than (signed)
-          (instructionChecker.output.branch === BranchOperations.LessThan)
-            -> Mux(a.asSInt < b.asSInt, B_branchedOffset, nextOffset),
+          (instructionChecker.output.branch === BranchOperations.LessThan && a.asSInt < b.asSInt)
+            -> B_branchedOffset,
           // Less Than (unsigned)
-          (instructionChecker.output.branch === BranchOperations.LessThanUnsigned)
-            -> Mux(a < b, B_branchedOffset, nextOffset),
+          (instructionChecker.output.branch === BranchOperations.LessThanUnsigned && a < b)
+            -> B_branchedOffset,
           // Greater Than (signed)
-          (instructionChecker.output.branch === BranchOperations.GreaterOrEqual)
-            -> Mux(a.asSInt >= b.asSInt, B_branchedOffset, nextOffset),
+          (instructionChecker.output.branch === BranchOperations.GreaterOrEqual && a.asSInt >= b.asSInt)
+            -> B_branchedOffset,
           // Greater Than (unsigned)
-          (instructionChecker.output.branch === BranchOperations.GreaterOrEqualUnsigned)
-            -> Mux(a >= b, B_branchedOffset, nextOffset),
+          (instructionChecker.output.branch === BranchOperations.GreaterOrEqualUnsigned && a >= b)
+            -> B_branchedOffset,
           // jalr
           (instructionChecker.output.instruction === Instructions.jalr)
             -> (Cat(

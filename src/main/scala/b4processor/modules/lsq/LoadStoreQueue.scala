@@ -9,7 +9,7 @@ import b4processor.connections.{
   LoadStoreQueue2ReorderBuffer,
   ResultType
 }
-import b4processor.modules.ourputcollector.OutputCollector
+import b4processor.modules.outputcollector.OutputCollector
 import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
 import chisel3._
@@ -157,9 +157,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         for (j <- 0 until i) {
           when(EntryValid(j)) {
             when(
-              (AddressValid(j) && Address(j) === buffer(
-                checkIndex
-              ).address) || !AddressValid(j)
+              (AddressValid(j) && Address(j) === buffer(checkIndex).address)
+                || !AddressValid(j)
             ) {
               Overlap(i) := true.B
             }

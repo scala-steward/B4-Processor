@@ -53,8 +53,8 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
     val memorySetup = Flipped(Valid(UInt(64.W)))
   })
 
-  val fetch = Module(new Fetch(0))
-  val cache = Module(new InstructionMemoryCache(0))
+  val fetch = Module(new Fetch)
+  val cache = Module(new InstructionMemoryCache)
   val memoryInterface = Module(new ExternalMemoryInterface)
   val axiMemory = Module(new SimpleAXIMemory)
 
@@ -64,10 +64,16 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
   fetch.io.reorderBufferEmpty <> io.reorderBufferEmpty
   fetch.io.loadStoreQueueEmpty <> io.loadStoreQueueEmpty
   fetch.io.branchTypes.get <> io.branchTypes
+  fetch.io.csr := DontCare
+  fetch.io.csrReservationStationEmpty := true.B
+  fetch.io.fetchBuffer.empty := true.B
+  fetch.io.isError := false.B
+  fetch.io.threadId := 0.U
 
   cache.io.fetch <> fetch.io.cache
   cache.io.memory.request <> memoryInterface.io.instructionFetchRequest(0)
   cache.io.memory.response <> memoryInterface.io.instructionOut(0)
+  cache.io.threadId := 0.U
 
   memoryInterface.io.dataReadRequests.valid := false.B
   memoryInterface.io.dataReadRequests.bits := DontCare
@@ -84,7 +90,7 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
   io.PC := fetch.io.PC.get
   io.nextPC := fetch.io.nextPC.get
 
-  fetch.io.fetchBuffer.decoder.foreach(v => v.ready := true.B)
+  fetch.io.fetchBuffer.toBuffer.foreach(v => v.ready := true.B)
 
   /** 初期化 */
   def initialize(memoryInit: => Seq[UInt]): Unit = {
@@ -351,40 +357,40 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
     test(
       new FetchWrapper(
       )
-    ) { c =>
+    ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize(
         InstructionUtil.fromStringSeq32bit(
           Seq("00000013", "0ff0000f", "00000013", "00000013")
         )
       )
       c.waitForCacheValid()
-      c.io.branchTypes(0).expect(BranchType.None)
+      c.io.branchTypes(0).expect(BranchType.Next4)
       c.io.branchTypes(1).expect(BranchType.Fence)
-      c.io.decoders.decoder(0).valid.expect(true)
-      c.io.decoders.decoder(1).valid.expect(true)
+      c.io.decoders.toBuffer(0).valid.expect(true)
+      c.io.decoders.toBuffer(1).valid.expect(true)
       c.io.nextPC.expect(0x10000004)
 
       c.clock.step()
       c.io.nextPC.expect(0x10000004)
-      c.io.decoders.decoder(0).valid.expect(false)
-      c.io.decoders.decoder(1).valid.expect(false)
+      c.io.decoders.toBuffer(0).valid.expect(false)
+      c.io.decoders.toBuffer(1).valid.expect(false)
 
       c.clock.step()
       c.io.reorderBufferEmpty.poke(true)
       c.io.nextPC.expect(0x10000004)
-      c.io.decoders.decoder(0).valid.expect(false)
-      c.io.decoders.decoder(1).valid.expect(false)
+      c.io.decoders.toBuffer(0).valid.expect(false)
+      c.io.decoders.toBuffer(1).valid.expect(false)
 
       c.clock.step()
       c.io.loadStoreQueueEmpty.poke(true)
       c.io.nextPC.expect(0x10000004)
-      c.io.decoders.decoder(0).valid.expect(false)
-      c.io.decoders.decoder(1).valid.expect(false)
+      c.io.decoders.toBuffer(0).valid.expect(false)
+      c.io.decoders.toBuffer(1).valid.expect(false)
 
       c.clock.step()
       c.io.nextPC.expect(0x10000010)
-      c.io.decoders.decoder(0).valid.expect(true)
-      c.io.decoders.decoder(1).valid.expect(true)
+      c.io.decoders.toBuffer(0).valid.expect(true)
+      c.io.decoders.toBuffer(1).valid.expect(true)
     }
   }
 }

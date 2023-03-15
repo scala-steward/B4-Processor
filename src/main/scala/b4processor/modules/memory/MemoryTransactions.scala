@@ -38,7 +38,7 @@ object MemoryReadTransaction {
     w
   }
 
-  def ReadInstruction(address: UInt, length: Int, threadId: Int)(implicit
+  def ReadInstruction(address: UInt, length: Int, threadId: UInt)(implicit
     params: Parameters
   ): MemoryReadTransaction = {
     val w = Wire(new MemoryReadTransaction)
@@ -47,7 +47,7 @@ object MemoryReadTransaction {
     w.burstLength := (length - 1).U
     w.size := MemoryAccessWidth.DoubleWord
     w.signed := false.B
-    w.outputTag := Tag(threadId, 0)
+    w.outputTag := Tag(threadId, 0.U)
     w
   }
 }

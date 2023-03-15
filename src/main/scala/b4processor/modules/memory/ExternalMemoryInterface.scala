@@ -14,7 +14,6 @@ import b4processor.utils.{
   Tag
 }
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import chisel3.stage.ChiselStage
 
@@ -93,6 +92,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
   readQueue.output.ready := false.B
   readQueue.input.valid := false.B
   readQueue.input.bits := DontCare
+  readQueue.flush := false.B
 
   private val instructionsArbiter = Module(
     new B4RRArbiter(new MemoryReadTransaction(), params.threads)
@@ -109,10 +109,12 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     new FIFO(2)(new MemoryReadTransaction())
   )
   instructionOrReadDataQueue.input <> instructionOrReadDataArbiter.io.out
+  instructionOrReadDataQueue.flush := false.B
   private val readTransaction = instructionOrReadDataQueue.output
   readTransaction.ready := false.B
 
   val readQueued = RegInit(false.B)
+  val burstLen = RegInit(0.U(8.W))
   when(!readQueue.full) {
     when(readTransaction.valid) {
       locally {
@@ -136,16 +138,19 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
         readQueued := false.B
       }
     }
-    val burstLen = RegInit(0.U(8.W))
     when(!readQueue.empty) {
-      io.coordinator.read.ready := io.dataReadOut.ready
+      when(readQueue.output.bits.isInstruction) {
+        io.coordinator.read.ready := true.B
+      }.otherwise {
+        io.coordinator.read.ready := io.dataReadOut.ready
+      }
       when(io.coordinator.read.valid) {
         when(io.coordinator.read.ready) {
           burstLen := burstLen + 1.U
-        }
-        when(burstLen === readQueue.output.bits.burstLength) {
-          readQueue.output.ready := true.B
-          burstLen := 0.U
+          when(burstLen === readQueue.output.bits.burstLength) {
+            readQueue.output.ready := true.B
+            burstLen := 0.U
+          }
         }
         when(readQueue.output.bits.isInstruction) {
           val tid = readQueue.output.bits.tag.threadId
@@ -212,12 +217,14 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     dataWriteQueue.output.ready := false.B
     dataWriteQueue.input.valid := false.B
     dataWriteQueue.input.bits := DontCare
+    dataWriteQueue.flush := false.B
     val writeResponseQueue = Module(new FIFO(3)(new Bundle {
       val tag = new Tag
     }))
     writeResponseQueue.output.ready := false.B
     writeResponseQueue.input.valid := false.B
     writeResponseQueue.input.bits := DontCare
+    writeResponseQueue.flush := false.B
 
     val writeQueued = RegInit(false.B)
     when(io.dataWriteRequests.valid) {

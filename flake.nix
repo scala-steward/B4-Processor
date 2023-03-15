@@ -3,10 +3,13 @@
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
+    #    nixpkgs-stable.url = "nixpkgs/nixos-22.11";
     flake-utils.url = "github:numtide/flake-utils";
+    nix-filter.url = "github:numtide/nix-filter";
     riscv-test-src = {
       url = "https://github.com/riscv-software-src/riscv-tests";
       type = "git";
+      rev = "0d397a64d880a83a249e926f985e3cf57ce03620";
       submodules = true;
       flake = false;
     };
@@ -17,15 +20,24 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, riscv-test-src, nix-sbt }:
+  outputs = { self, nixpkgs, flake-utils, riscv-test-src, nix-sbt, nix-filter }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        nf = import nix-filter;
         B4ProcessorDerivation = attrs: nix-sbt.mkSbtDerivation.x86_64-linux ({
           pname = "B4Processor";
           version = "0.1.0";
-          src = ./.;
-          depsSha256 = "sha256-xOZ56Vmf4oHo7FDHOK7a+RK0LdQE9PVxfM4wLumzjxA=";
+          src = nf {
+            root = ./.;
+            include = [
+              "src"
+              "project"
+              "build.sbt"
+            ];
+          };
+          buildInputs = with pkgs; [ circt ];
+          depsSha256 = "sha256-W1Kgoc58kruhLW0CDzvuUgAjuRZbT4QqStJLAAnPuhc=";
           buildPhase = ''
             sbt "runMain b4processor.B4Processor"
           '';
@@ -38,6 +50,18 @@
 
           fixupPhase = "true";
         } // attrs);
+        sbtTest = testCommand: B4ProcessorDerivation {
+          pname = "B4Processor-tests";
+          buildInputs = with pkgs; [ verilog verilator stdenv.cc zlib circt ];
+          buildPhase = ''
+            ln -s ${self.packages.${system}.default} programs
+            ${testCommand}
+          '';
+          installPhase = ''
+            mkdir $out
+            [ -d test_run_dir ] && cp -r test_run_dir $out || true
+          '';
+        };
       in
       {
         packages = rec {
@@ -48,22 +72,24 @@
             { name = "riscv-tests"; path = riscv-tests; }
             { name = "riscv-sample-programs"; path = riscv-sample-programs; }
           ];
+          slowChecks = sbtTest ''sbt "testOnly * -- -n org.scalatest.tags.Slow"'';
         };
         checks =
           {
-            all = B4ProcessorDerivation {
-              pname = "B4Processor-tests";
-              buildInputs = with pkgs; [ verilog ];
-              buildPhase = ''
-                ln -s ${self.packages.${system}.default} programs
-                sbt test
-              '';
-              installPhase = ''
-                mkdir $out
-                [ -d test_run_dir ] && cp -r test_run_dir $out || true
-              '';
-            };
+            quick = sbtTest ''sbt "testOnly * -- -l org.scalatest.tags.Slow"'';
           };
         formatter = pkgs.nixpkgs-fmt;
+        devShells.default = pkgs.mkShell {
+          name = "processor-shell";
+          buildInputs = with pkgs;[
+            circt
+            rustfilt
+            pkgsCross.riscv64-embedded.stdenv.cc
+            (pkgs.sbt.override {
+              jre = pkgs.jdk19;
+            })
+          ];
+          JAVA_19_HOME = "${pkgs.jdk19}/lib/openjdk";
+        };
       });
 }

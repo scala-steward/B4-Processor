@@ -1,6 +1,6 @@
 package b4processor.modules.fetch
 
-import chisel3.experimental.ChiselEnum
+import chisel3._
 
 object WaitingReason extends ChiselEnum {
 
@@ -21,4 +21,10 @@ object WaitingReason extends ChiselEnum {
 
   /** JAL命令で同じ場所を移動していると、ReservationStationが圧迫されてしまうので遅延させる */
   val BusyLoop = Value
+
+  /** mret */
+  val mret = Value
+
+  /** exception */
+  val Exception = Value
 }

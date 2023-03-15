@@ -29,8 +29,9 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
   executor.io.reservationStation.bits.function3 := io.reservationStation.bits.function3
   executor.io.reservationStation.bits.immediateOrFunction7 := io.reservationStation.bits.immediateOrFunction7
   executor.io.reservationStation.bits.opcode := io.reservationStation.bits.opcode
+  executor.io.reservationStation.bits.wasCompressed := io.reservationStation.bits.wasCompressed
   executor.io.reservationStation.valid := io.reservationStation.valid
-  executor.io.out.ready := true.B
+  executor.io.out.ready := io.out.ready
   io.reservationStation.ready := executor.io.reservationStation.ready
 
   io.out.value := executor.io.out.bits.value.asSInt
@@ -44,6 +45,7 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
     val reservationstation = this.io.reservationStation
     reservationstation.valid.poke(values.valid)
     reservationstation.bits.destinationTag.poke(Tag(0, values.destinationTag))
+    reservationstation.bits.wasCompressed.poke(values.wasCompressed)
 
     /** マイナスの表現ができていない */
 
@@ -93,6 +95,8 @@ class ExecutorTest
 
   it should "be compatible with I extension" in {
     test(new ExecutorWrapper) { c =>
+      c.io.fetch.ready.poke(true)
+      c.io.out.ready.poke(true)
       When("lui")
       // rs1 = 40, rs2 = fffff
       c.setALU(
@@ -948,5 +952,63 @@ class ExecutorTest
       c.expectLSQ(None)
       c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
     }
+  }
+
+  it should "be compatible with C extension" in {
+    test(new ExecutorWrapper()) { c =>
+      c.io.fetch.ready.poke(true)
+      c.io.out.ready.poke(true)
+
+      When("beq -- NG")
+      // rs1 = 40, rs = 30, offset = 200
+      c.setALU(values =
+        ReservationValue(
+          destinationTag = 10,
+          value1 = 40,
+          value2 = 30,
+          immediateOrFunction7 = 200,
+          opcode = 99,
+          wasCompressed = true
+        )
+      )
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 0)))
+      c.expectLSQ(None)
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 2))
+
+      When("beq -- OK")
+      // rs1 = 40, rs = 40, offset = 200
+      c.setALU(values =
+        ReservationValue(
+          destinationTag = 10,
+          value1 = 40,
+          value2 = 40,
+          immediateOrFunction7 = 200,
+          opcode = 99,
+          wasCompressed = true
+        )
+      )
+      c.expectout(values = Some(ExecutorValue(destinationTag = 10, value = 1)))
+      c.expectLSQ(None)
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 400))
+
+      When("jalr")
+      // rs1 = 40, rs2(extend_offset) = 16
+      c.setALU(values =
+        ReservationValue(
+          destinationTag = 10,
+          value1 = 104,
+          value2 = 100,
+          immediateOrFunction7 = 16,
+          opcode = 103,
+          wasCompressed = true
+        )
+      )
+      c.expectout(values =
+        Some(ExecutorValue(destinationTag = 10, value = 102))
+      )
+      c.expectLSQ(None)
+      c.expectFetch(values = FetchValue(valid = true, programCounter = 20))
+    }
+
   }
 }
