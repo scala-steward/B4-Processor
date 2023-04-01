@@ -5,12 +5,13 @@ lazy val root = (project in file("."))
 
 scalacOptions ++= Seq(
   "-deprecation",
-  "-encoding", "UTF-8",
+  "-encoding",
+  "UTF-8",
   "-feature",
   "-unchecked",
 //  "-Xfatal-warnings",
   "-language:reflectiveCalls",
-  "-Ymacro-annotations",
+  "-Ymacro-annotations"
 )
 
 //Test / logBuffered := false
