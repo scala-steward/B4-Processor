@@ -9,7 +9,6 @@
     riscv-test-src = {
       url = "https://github.com/riscv-software-src/riscv-tests";
       type = "git";
-      rev = "0d397a64d880a83a249e926f985e3cf57ce03620";
       submodules = true;
       flake = false;
     };
@@ -37,7 +36,7 @@
             ];
           };
           buildInputs = with pkgs; [ circt ];
-          depsSha256 = "sha256-W1Kgoc58kruhLW0CDzvuUgAjuRZbT4QqStJLAAnPuhc=";
+          depsSha256 = "sha256-x6AGi0sEyw74YqSPbHvZkO0cFkSjqmAi3K7Gikp9McQ=";
           buildPhase = ''
             sbt "runMain b4processor.B4Processor"
           '';

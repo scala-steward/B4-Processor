@@ -4,14 +4,11 @@ import b4processor.Parameters
 import b4processor.connections.{
   CollectedOutput,
   Decoder2LoadStoreQueue,
-  Executor2LoadStoreQueue,
   LoadStoreQueue2Memory,
   LoadStoreQueue2ReorderBuffer,
   ResultType
 }
-import b4processor.modules.outputcollector.OutputCollector
 import b4processor.structures.memoryAccess.MemoryAccessType._
-import b4processor.structures.memoryAccess.MemoryAccessWidth._
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
@@ -72,6 +69,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         accessInfo = decoder.bits.accessInfo,
         addressAndStoreResultTag = decoder.bits.addressAndLoadResultTag,
         address = decoder.bits.address,
+        addressOffset = decoder.bits.addressOffset,
         addressValid = decoder.bits.addressValid,
         storeDataTag = decoder.bits.storeDataTag,
         storeData = decoder.bits.storeData,
@@ -94,6 +92,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         ) {
           buf.address := output.bits.value
           buf.addressValid := true.B
+          buf.addressOffset := 0.S
         }
       }
       when(output.bits.resultType === ResultType.Result) {
@@ -180,7 +179,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       when(checkOk && !isSet) {
         io.memory.bits.tag := buffer(checkIndex).addressAndLoadResultTag
         io.memory.bits.data := buffer(checkIndex).storeData
-        io.memory.bits.address := buffer(checkIndex).address
+        io.memory.bits.address := (buffer(checkIndex).address.asSInt +
+          buffer(checkIndex).addressOffset).asUInt
         io.memory.bits.accessInfo := buffer(checkIndex).info
         when(io.memory.ready) {
           buffer(checkIndex) := LoadStoreQueueEntry.default

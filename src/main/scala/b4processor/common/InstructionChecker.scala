@@ -20,7 +20,7 @@ class InstructionChecker extends Module {
 
   output.instruction := MuxLookup(
     input.opcode,
-    Instructions.Unknown,
+    Instructions.Unknown)(
     Seq(
       // I
       "b0000011".U -> Instructions.Load,
@@ -56,7 +56,7 @@ class InstructionChecker extends Module {
     output.instruction === Instructions.Branch,
     MuxLookup(
       input.function3bits,
-      BranchOperations.Unknown,
+      BranchOperations.Unknown)(
       Seq(
         0.U -> BranchOperations.Equal,
         1.U -> BranchOperations.NotEqual,
@@ -73,7 +73,7 @@ class InstructionChecker extends Module {
     output.instruction === Instructions.Load || output.instruction === Instructions.Store,
     MuxLookup(
       input.function3bits,
-      OperationWidth.Unknown,
+      OperationWidth.Unknown)(
       Seq(
         0.U -> OperationWidth.Byte,
         1.U -> OperationWidth.HalfWord,
@@ -94,7 +94,7 @@ class InstructionChecker extends Module {
     output.instruction === Instructions.Arithmetic || output.instruction === Instructions.ArithmeticImmediate,
     MuxLookup(
       input.function3bits,
-      ArithmeticOperations.Unknown,
+      ArithmeticOperations.Unknown)(
       Seq(
         0.U -> Mux(
           output.instruction === Instructions.Arithmetic && input.function7bits(
@@ -123,7 +123,7 @@ class InstructionChecker extends Module {
     output.instruction === Instructions.Csr || output.instruction === Instructions.CsrI,
     MuxLookup(
       input.function3bits(1, 0),
-      CSROperations.Unknown,
+      CSROperations.Unknown)(
       Seq(
         1.U -> CSROperations.ReadAndWrite,
         2.U -> CSROperations.ReadAndSet,

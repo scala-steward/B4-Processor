@@ -11,6 +11,12 @@ class Tag(implicit params: Parameters) extends Bundle {
 
   def ===(that: Tag): Bool =
     this.id === that.id && this.threadId === that.threadId
+
+  override def toPrintable = if (params.threads == 1) {
+    cf"Tag(${this.id})"
+  }else{
+    cf"Tag(thread=${this.threadId}, id=${this.id})"
+  }
 }
 
 object Tag {

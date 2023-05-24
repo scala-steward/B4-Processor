@@ -1,13 +1,10 @@
 package b4processor.modules.registerfile
 
 import b4processor.Parameters
-import b4processor.connections.{
-  Decoder2RegisterFile,
-  ReorderBuffer2RegisterFile
-}
+import b4processor.connections.{Decoder2RegisterFile, ReorderBuffer2RegisterFile}
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.util._
+import _root_.circt.stage.ChiselStage
 
 /** レジスタファイル
   *
@@ -62,10 +59,7 @@ class RegisterFile(implicit params: Parameters) extends Module {
 
 object RegisterFile extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitVerilog(
-    new RegisterFile,
-    args = Array(
-      "--emission-options=disableMemRandomization,disableRegisterRandomization"
-    )
+  ChiselStage.emitSystemVerilogFile(
+    new RegisterFile
   )
 }

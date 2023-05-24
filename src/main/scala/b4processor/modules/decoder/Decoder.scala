@@ -5,24 +5,13 @@ import b4processor.common.OpcodeFormat._
 import b4processor.common.OpcodeFormatChecker
 import b4processor.connections._
 import b4processor.modules.csr.CSRAccessType
-import b4processor.modules.reservationstation.ReservationStationEntry
-import b4processor.riscv.Instructions.ADD
-import b4processor.structures.memoryAccess.{
-  MemoryAccessInfo,
-  MemoryAccessType,
-  MemoryAccessWidth
-}
+import b4processor.structures.memoryAccess.MemoryAccessInfo
 import b4processor.utils.Tag
 import circt.stage.ChiselStage
 import chisel3._
 import chisel3.util._
 
 /** デコーダ
-  *
-  * @param instructionOffset
-  *   同時に扱う命令のうちいくつ目の命令を担当するか
-  * @param params
-  *   パラメータ
   */
 class Decoder(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
@@ -38,11 +27,19 @@ class Decoder(implicit params: Parameters) extends Module {
     val threadId = Input(UInt(log2Up(params.threads).W))
   })
 
-  ListLookup(
-    io.instructionFetch.bits.instruction,
-    List(ArithmeticOperations.None, 2.U),
-    Array(ADD -> List(ArithmeticOperations.Add, 4.U))
-  )
+//  val combinations = {
+//    import b4processor.riscv.Instructions._
+//    import DecodedValue._
+//    Seq(
+//      ADD -> RType()
+//    )
+//  }
+//
+//  ListLookup(
+//    io.instructionFetch.bits.instruction,
+//    List(ArithmeticOperations.None, 2.U),
+//    Array(ADD -> List(ArithmeticOperations.Add, 4.U))
+//  )
 
   // 命令からそれぞれの昨日のブロックを取り出す
   val instRd = io.instructionFetch.bits.instruction(11, 7)
@@ -143,9 +140,8 @@ class Decoder(implicit params: Parameters) extends Module {
   valueSelector1.io.opcodeFormat := opcodeFormatChecker.io.format
   valueSelector1.io.immediateValue := MuxLookup(
     opcodeFormatChecker.io.format.asUInt,
-    0.S,
-    Seq(U.asUInt -> immUExtended, J.asUInt -> immJExtended)
-  )
+    0.S
+  )(Seq(U.asUInt -> immUExtended, J.asUInt -> immJExtended))
   // value2
   val valueSelector2 = Module(new ValueSelector2)
   valueSelector2.io.sourceTag <> sourceTag2
@@ -171,7 +167,8 @@ class Decoder(implicit params: Parameters) extends Module {
   rs.function3 := instFunct3
   rs.immediateOrFunction7 := MuxLookup(
     opcodeFormatChecker.io.format.asUInt,
-    0.U,
+    0.U
+  )(
     Seq(
       R.asUInt -> Cat(instFunct7, "b00000".U(5.W)),
       S.asUInt -> instImmS,
@@ -207,11 +204,12 @@ class Decoder(implicit params: Parameters) extends Module {
     io.loadStoreQueue.bits.accessInfo := MemoryAccessInfo(instOp, instFunct3)
     io.loadStoreQueue.bits.addressAndLoadResultTag := rs.destinationTag
     io.loadStoreQueue.bits.addressValid := valueSelector1.io.value.valid
-    io.loadStoreQueue.bits.address := (valueSelector1.io.value.bits.asSInt + Mux(
+    io.loadStoreQueue.bits.address := valueSelector1.io.value.bits
+    io.loadStoreQueue.bits.addressOffset := Mux(
       instOp === STORE,
       instImmS.asSInt,
       instImmI.asSInt
-    )).asUInt
+    )
     when(instOp === STORE) {
       io.loadStoreQueue.bits.storeDataTag := valueSelector2.io.sourceTag.tag
       io.loadStoreQueue.bits.storeData := valueSelector2.io.value.bits
@@ -230,7 +228,8 @@ class Decoder(implicit params: Parameters) extends Module {
   when(io.csr.valid) {
     io.csr.bits.csrAccessType := MuxLookup(
       instFunct3(1, 0),
-      CSRAccessType.ReadWrite,
+      CSRAccessType.ReadWrite
+    )(
       Seq(
         "b01".U -> CSRAccessType.ReadWrite,
         "b10".U -> CSRAccessType.ReadSet,

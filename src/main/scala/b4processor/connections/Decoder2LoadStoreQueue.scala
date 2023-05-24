@@ -22,6 +22,9 @@ class Decoder2LoadStoreQueue(implicit params: Parameters) extends Bundle {
   val address = UInt(64.W)
 
   /** アドレス値が有効である */
+  val addressOffset = SInt(64.W)
+
+  /** アドレス値が有効である */
   val addressValid = Bool()
 
   /** ストアに使用するデータが格納されるタグ(SourceRegister2 Tag) */

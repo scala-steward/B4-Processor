@@ -27,6 +27,8 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
   /** アドレス値 */
   val address = UInt(64.W)
 
+  val addressOffset = SInt(64.W)
+
   /** アドレス値が有効である */
   val addressValid = Bool()
 
@@ -45,6 +47,7 @@ object LoadStoreQueueEntry {
     accessInfo: MemoryAccessInfo,
     addressAndStoreResultTag: Tag,
     address: UInt,
+    addressOffset: SInt,
     addressValid: Bool,
     storeDataTag: Tag,
     storeData: UInt,
@@ -57,6 +60,7 @@ object LoadStoreQueueEntry {
 
     entry.addressAndLoadResultTag := addressAndStoreResultTag
     entry.address := address
+    entry.addressOffset := addressOffset
     entry.addressValid := addressValid
 
     entry.storeDataTag := storeDataTag
@@ -75,6 +79,7 @@ object LoadStoreQueueEntry {
 
     entry.addressAndLoadResultTag := Tag(0, 0)
     entry.address := 0.U
+    entry.addressOffset := 0.S
     entry.addressValid := false.B
 
     entry.storeDataTag := Tag(0, 0)

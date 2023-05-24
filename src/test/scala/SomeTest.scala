@@ -1,6 +1,8 @@
 import chisel3._
 import chiseltest._
-import org.scalatest.flatspec.AnyFlatSpec
+import chiseltest.formal.{BoundedCheck, Formal, changed, past}
+import chiseltest.simulator.SimulatorDebugAnnotation
+import org.scalatest.flatspec._
 
 class Adder extends Module {
   val a = IO(Input(SInt(8.W)))
@@ -19,3 +21,4 @@ class SomeTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 }
+

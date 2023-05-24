@@ -4,7 +4,7 @@ import b4processor.Parameters
 import b4processor.connections.{OutputValue, ResultType}
 import b4processor.structures.memoryAccess.MemoryAccessWidth
 import b4processor.utils.{
-  AXI,
+  ChiselAXI,
   B4RRArbiter,
   BurstSize,
   BurstType,
@@ -26,7 +26,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     val dataReadOut = Irrevocable(new OutputValue)
     val dataWriteOut = Valid(new WriteResponse)
     val instructionOut = Vec(params.threads, Valid(new InstructionResponse))
-    val coordinator = new AXI(64, 64)
+    val coordinator = new ChiselAXI(64, 64)
   })
 
   // setDefaultOutputs
@@ -36,9 +36,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     writeResponse.ready := false.B
     write.valid := false.B
     readAddress.bits.USER := 0.U
-    readAddress.bits.REGION := 0.U
     writeAddress.bits.USER := 0.U
-    writeAddress.bits.REGION := 0.U
     writeAddress.bits.PROT := 0.U
     readAddress.bits.CACHE := 0.U
     writeAddress.bits.ADDR := 0.U
@@ -61,7 +59,6 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     writeAddress.bits.QOS := 0.U
     writeAddress.bits.LEN := 0.U
     writeAddress.valid := false.B
-    write.bits.ID := 0.U
     write.bits.DATA := 0.U
     readAddress.bits.BURST := BurstType.Incr
   }
