@@ -8,8 +8,8 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class ValueSelector2Wrapper(implicit params: Parameters)
-    extends ValueSelector2 {
+class ValueSelectorWrapper(implicit params: Parameters)
+    extends ValueSelector {
 
   /** 初期化
     *
@@ -27,24 +27,21 @@ class ValueSelector2Wrapper(implicit params: Parameters)
     registerFileValue: Int = 0,
     reorderBufferValue: Option[Int] = None,
     aluBypassValue: Option[(Int, Int)] = None,
-    programCounter: Int = 0,
     opcodeFormat: OpcodeFormat.Type = R,
     immediate: Int = 0
   ): Unit = {
     this.io.outputCollector.outputs.valid
-      .poke(aluBypassValue.isDefined)
+      .poke(aluBypassValue.isDefined.B)
     this.io.outputCollector.outputs.bits.tag
       .poke(Tag(0, aluBypassValue.getOrElse((0, 0))._1))
     this.io.outputCollector.outputs.bits.value
-      .poke(aluBypassValue.getOrElse((0, 0))._2)
+      .poke(aluBypassValue.getOrElse((0, 0))._2.U)
 
     this.io.reorderBufferValue.valid.poke(reorderBufferValue.isDefined)
     this.io.reorderBufferValue.bits.poke(reorderBufferValue.getOrElse(0))
     this.io.registerFileValue.poke(registerFileValue)
     this.io.sourceTag.valid.poke(sourceTag.isDefined)
     this.io.sourceTag.tag.poke(Tag(0, sourceTag.getOrElse(0)))
-    this.io.opcodeFormat.poke(opcodeFormat)
-    this.io.programCounter.poke(programCounter)
   }
 
   def expectValue(value: Option[Int]): Unit = {
@@ -55,19 +52,20 @@ class ValueSelector2Wrapper(implicit params: Parameters)
   }
 }
 
-class ValueSelector2Test extends AnyFlatSpec with ChiselScalatestTester {
+class ValueSelectorTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "ValueSelector1"
+
   implicit val defaultParams = Parameters(threads = 1, decoderPerThread = 1)
 
   it should "use the register file" in {
-    test(new ValueSelector2Wrapper) { c =>
+    test(new ValueSelectorWrapper) { c =>
       c.initialize(registerFileValue = 5)
       c.expectValue(Some(5))
     }
   }
 
   it should "use the reorder buffer" in {
-    test(new ValueSelector2Wrapper) { c =>
+    test(new ValueSelectorWrapper) { c =>
       c.initialize(
         sourceTag = Some(3),
         registerFileValue = 5,
@@ -79,7 +77,7 @@ class ValueSelector2Test extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "use the alu bypass" in {
     test(
-      new ValueSelector2Wrapper()(defaultParams.copy(decoderPerThread = 1))
+      new ValueSelectorWrapper()(defaultParams.copy(decoderPerThread = 1))
     ) { c =>
       c.initialize(
         sourceTag = Some(3),
@@ -92,7 +90,7 @@ class ValueSelector2Test extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "use multiple alu bypasses" in {
     test(
-      new ValueSelector2Wrapper()(defaultParams.copy(decoderPerThread = 4))
+      new ValueSelectorWrapper()(defaultParams.copy(decoderPerThread = 4))
     ) { c =>
       c.initialize(
         sourceTag = Some(3),
@@ -104,23 +102,9 @@ class ValueSelector2Test extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "not have any value" in {
-    test(new ValueSelector2Wrapper) { c =>
+    test(new ValueSelectorWrapper) { c =>
       c.initialize(sourceTag = Some(3), registerFileValue = 5)
       c.expectValue(None)
-    }
-  }
-
-  it should "use programCounter" in {
-    test(new ValueSelector2Wrapper) { c =>
-      c.initialize(immediate = 9, opcodeFormat = I, programCounter = 8000)
-      c.expectValue(Some(8000))
-    }
-  }
-
-  it should "not use immediate" in {
-    test(new ValueSelector2Wrapper) { c =>
-      c.initialize(registerFileValue = 5, immediate = 9, opcodeFormat = R)
-      c.expectValue(Some(5))
     }
   }
 }

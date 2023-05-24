@@ -6,5 +6,5 @@ case class LSQ2Memory(
   address: Int,
   tag: Int,
   data: Int,
-  accessInfo: MemoryAccessInfo
+  operation: LoadStoreOperation.Type
 )

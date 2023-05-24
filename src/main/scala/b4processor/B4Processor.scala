@@ -13,14 +13,11 @@ import b4processor.modules.outputcollector.OutputCollector
 import b4processor.modules.registerfile.RegisterFile
 import b4processor.modules.reorderbuffer.ReorderBuffer
 import b4processor.modules.reservationstation.ReservationStation
-import b4processor.utils.{ChiselAXI, VerilogAXIBundle}
+import b4processor.utils.AXI
 import chisel3._
-import chisel3.experimental.dataview.DataViewable
 
 class B4Processor(implicit params: Parameters) extends Module {
-  override val desiredName = "B4ProcessorInternal"
-  val axi = IO(new ChiselAXI(64, 64))
-
+  val axi = IO(new AXI(64, 64))
   val registerFileContents =
     if (params.debug) Some(IO(Output(Vec(params.threads, Vec(32, UInt(64.W))))))
     else None
@@ -191,37 +188,15 @@ class B4Processor(implicit params: Parameters) extends Module {
   externalMemoryInterface.io.dataWriteRequests <> dataMemoryBuffer.io.dataWriteRequest
 }
 
-class B4ProcessorFixedPorts(implicit params: Parameters) extends RawModule {
-  override val desiredName = "B4Processor"
-  val AXI_MM = IO(new VerilogAXIBundle(64, 64))
-  val axi = AXI_MM.viewAs[ChiselAXI]
-
-  val aclk = IO(Input(Bool()))
-  val aresetn = IO(Input(Bool()))
-
-  withClockAndReset(aclk.asClock, (!aresetn).asAsyncReset) {
-    val processor = Module(new B4Processor())
-    processor.axi <> axi
-  }
-}
-
 object B4Processor extends App {
   implicit val params = Parameters(
     threads = 4,
     executors = 4,
-    decoderPerThread = 1,
+    decoderPerThread = 2,
     maxRegisterFileCommitCount = 1,
     tagWidth = 4,
     instructionStart = 0x2000_0000L
   )
-
-  ChiselStage.emitSystemVerilogFile(
-    new B4ProcessorFixedPorts(),
-    Array.empty,
-    Array(
-      "--disable-mem-randomization",
-      "--disable-reg-randomization",
-      "--disable-all-randomization",
-    )
-  )
+//  ChiselStage.emitSystemVerilogFile(new B4Processor())
+  ChiselStage.emitSystemVerilogFile(new B4Processor)
 }

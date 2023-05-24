@@ -1,8 +1,8 @@
 package b4processor.modules.fetch
 
 import chisel3._
-import chisel3.stage.ChiselStage
-import chisel3.util.{BitPat, _}
+import chisel3.util._
+import _root_.circt.stage.ChiselStage
 
 /** フェッチモジュール用命令の種類のチェック */
 class CheckBranch extends Module {
@@ -27,7 +27,7 @@ class CheckBranch extends Module {
   // オフセットの抽出
   io.offset := MuxLookup(
     opcode(1, 0),
-    4.S,
+    4.S)(
     Seq(
       "b00".U -> 2.S,
       "b01".U -> Mux(
@@ -58,7 +58,7 @@ class CheckBranch extends Module {
       ),
       "b11".U -> MuxLookup(
         opcode,
-        4.S,
+        4.S)(
         Seq(
           // jalr
           "b1100111".U -> Cat(io.instruction(31, 20), 0.U(1.W)).asSInt,
@@ -82,7 +82,7 @@ class CheckBranch extends Module {
   // 瓶木の種類の抽出
   io.branchType := MuxLookup(
     opcode(1, 0),
-    BranchType.Next4,
+    BranchType.Next4)(
     Seq(
       "b00".U -> BranchType.Next2,
       "b01".U -> MuxCase(
@@ -105,7 +105,7 @@ class CheckBranch extends Module {
       ),
       "b11".U -> MuxLookup(
         opcode,
-        BranchType.Next4,
+        BranchType.Next4)(
         Seq(
           // jalr
           "b1100111".U -> BranchType.JALR,
@@ -127,5 +127,5 @@ class CheckBranch extends Module {
 }
 
 object CheckBranch extends App {
-  (new ChiselStage).emitVerilog(new CheckBranch)
+ ChiselStage.emitSystemVerilogFile(new CheckBranch)
 }

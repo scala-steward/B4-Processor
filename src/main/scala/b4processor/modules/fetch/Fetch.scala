@@ -1,16 +1,11 @@
 package b4processor.modules.fetch
 
 import b4processor.Parameters
-import b4processor.connections.{
-  CSR2Fetch,
-  Fetch2BranchPrediction,
-  Fetch2FetchBuffer,
-  InstructionCache2Fetch
-}
+import b4processor.connections.{CSR2Fetch, Fetch2BranchPrediction, Fetch2FetchBuffer, InstructionCache2Fetch}
 import b4processor.modules.branch_output_collector.CollectedBranchAddresses
 import chisel3._
 import chisel3.util._
-import chisel3.stage.ChiselStage
+import _root_.circt.stage.ChiselStage
 
 /** 命令フェッチ用モジュール */
 class Fetch(implicit params: Parameters) extends Module {
@@ -88,7 +83,7 @@ class Fetch(implicit params: Parameters) extends Module {
       nextWait,
       MuxLookup(
         branch.io.branchType.asUInt,
-        nextWait,
+        nextWait)(
         Seq(
           BranchType.Branch.asUInt -> WaitingReason.Branch,
           BranchType.JALR.asUInt -> WaitingReason.JALR,
@@ -177,10 +172,7 @@ class Fetch(implicit params: Parameters) extends Module {
 
 object Fetch extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitVerilog(
-    new Fetch,
-    args = Array(
-      "--emission-options=disableMemRandomization,disableRegisterRandomization"
-    )
+  ChiselStage.emitSystemVerilogFile(
+    new Fetch
   )
 }

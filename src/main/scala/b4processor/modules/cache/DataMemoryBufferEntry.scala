@@ -1,8 +1,7 @@
 package b4processor.modules.cache
 
 import b4processor.Parameters
-import b4processor.structures.memoryAccess.MemoryAccessInfo
-import b4processor.utils.Tag
+import b4processor.utils.{LoadStoreOperation, Tag}
 import chisel3._
 
 class DataMemoryBufferEntry(implicit params: Parameters) extends Bundle {
@@ -17,7 +16,7 @@ class DataMemoryBufferEntry(implicit params: Parameters) extends Bundle {
   val data = UInt(64.W)
 
   /** メモリアクセスの情報 */
-  val accessInfo = new MemoryAccessInfo()
+  val operation = LoadStoreOperation()
 }
 
 object DataMemoryBufferEntry {
@@ -25,13 +24,13 @@ object DataMemoryBufferEntry {
     address: UInt,
     tag: Tag,
     data: UInt,
-    accessInfo: MemoryAccessInfo
+    operation: LoadStoreOperation.Type
   )(implicit params: Parameters): DataMemoryBufferEntry = {
     val entry = DataMemoryBufferEntry.default
     entry.address := address
     entry.tag := tag
     entry.data := data
-    entry.accessInfo := accessInfo
+    entry.operation := operation
 
     entry
   }

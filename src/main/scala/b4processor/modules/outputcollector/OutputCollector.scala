@@ -4,8 +4,8 @@ import b4processor.Parameters
 import b4processor.connections.{CollectedOutput, OutputValue}
 import b4processor.utils.{B4RRArbiter, FIFO}
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.util._
+import _root_.circt.stage.ChiselStage
 
 class OutputCollector(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
@@ -84,5 +84,5 @@ class OutputCollector(implicit params: Parameters) extends Module {
 
 object OutputCollector extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitSystemVerilog(new OutputCollector)
+  ChiselStage.emitSystemVerilogFile(new OutputCollector)
 }

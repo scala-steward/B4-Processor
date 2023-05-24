@@ -15,19 +15,22 @@ class FIFO[T <: Data](width: Int)(t: T, flow: Boolean = false) extends Module {
 
   private val queue = Module(
     new Queue(
-      UInt(t.getWidth.W),
+//      UInt(t.getWidth.W),
+      t,
       pow(2, width).toInt,
       useSyncReadMem = true,
       hasFlush = true,
       flow = flow
     )
   )
-  queue.io.enq.bits := input.bits.asUInt
+  //  queue.io.enq.bits := input.bits.asUInt
+  queue.io.enq.bits := input.bits
   queue.io.enq.valid := input.valid
   input.ready := queue.io.enq.ready
 
   output.valid := queue.io.deq.valid
-  output.bits := queue.io.deq.bits.asTypeOf(t)
+  //  output.bits := queue.io.deq.bits.asTypeOf(t)
+  output.bits := queue.io.deq.bits
   queue.io.deq.ready := output.ready
 
   full := !queue.io.enq.ready

@@ -8,9 +8,10 @@ import b4processor.connections.{
   ReorderBuffer2CSR,
   ResultType
 }
+import b4processor.utils.CSROperation
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.util._
+import _root_.circt.stage.ChiselStage
 
 class CSR(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
@@ -46,13 +47,11 @@ class CSR(implicit params: Parameters) extends Module {
   def setCSROutput(reg: UInt): Unit = {
     io.CSROutput.bits.value := reg
     when(io.CSROutput.ready && io.CSROutput.valid) {
-      reg := MuxLookup(
-        io.decoderInput.bits.csrAccessType.asUInt,
-        0.U,
+      reg := MuxLookup(io.decoderInput.bits.operation, 0.U)(
         Seq(
-          CSRAccessType.ReadWrite.asUInt -> io.decoderInput.bits.value,
-          CSRAccessType.ReadSet.asUInt -> (reg | io.decoderInput.bits.value),
-          CSRAccessType.ReadClear.asUInt -> (reg & io.decoderInput.bits.value)
+          CSROperation.ReadWrite -> io.decoderInput.bits.value,
+          CSROperation.ReadSet -> (reg | io.decoderInput.bits.value),
+          CSROperation.ReadClear -> (reg & io.decoderInput.bits.value)
         )
       )
     }
@@ -86,5 +85,5 @@ class CSR(implicit params: Parameters) extends Module {
 
 object CSR extends App {
   implicit val params = Parameters()
-  (new ChiselStage).emitVerilog(new CSR())
+  ChiselStage.emitSystemVerilogFile(new CSR())
 }

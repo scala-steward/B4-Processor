@@ -1,8 +1,7 @@
 package b4processor.connections
 
 import b4processor.Parameters
-import b4processor.modules.csr.CSRAccessType
-import b4processor.utils.Tag
+import b4processor.utils.{CSROperation, Tag}
 import chisel3._
 
 class Decoder2CSRReservationStation(implicit params: Parameters)
@@ -12,5 +11,5 @@ class Decoder2CSRReservationStation(implicit params: Parameters)
   val value = UInt(64.W)
   val ready = Bool()
   val address = UInt(12.W)
-  val csrAccessType = new CSRAccessType.Type()
+  val operation = CSROperation()
 }

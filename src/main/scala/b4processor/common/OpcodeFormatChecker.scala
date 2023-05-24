@@ -16,7 +16,7 @@ class OpcodeFormatChecker extends Module {
   // RV32I対応
   io.format := MuxLookup(
     io.opcode,
-    OpcodeFormat.Unknown,
+    OpcodeFormat.Unknown)(
     Seq(
       // I
       "b0000011".U -> OpcodeFormat.I, // load

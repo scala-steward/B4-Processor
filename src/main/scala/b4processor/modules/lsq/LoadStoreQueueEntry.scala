@@ -2,7 +2,7 @@ package b4processor.modules.lsq
 
 import b4processor.Parameters
 import b4processor.structures.memoryAccess.MemoryAccessInfo
-import b4processor.utils.Tag
+import b4processor.utils.{LoadStoreOperation, Tag}
 import chisel3._
 
 /** LSQのエントリ
@@ -19,15 +19,13 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
   val readyReorderSign = Bool()
 
   /** メモリアクセスの情報 */
-  val info = new MemoryAccessInfo
+  val operation = LoadStoreOperation()
 
   /** 命令自体を識別するためのタグ(Destination Tag) */
   val addressAndLoadResultTag = new Tag
 
   /** アドレス値 */
   val address = UInt(64.W)
-
-  val addressOffset = SInt(64.W)
 
   /** アドレス値が有効である */
   val addressValid = Bool()
@@ -44,10 +42,9 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
 
 object LoadStoreQueueEntry {
   def validEntry(
-    accessInfo: MemoryAccessInfo,
+    operation: LoadStoreOperation.Type,
     addressAndStoreResultTag: Tag,
     address: UInt,
-    addressOffset: SInt,
     addressValid: Bool,
     storeDataTag: Tag,
     storeData: UInt,
@@ -56,11 +53,10 @@ object LoadStoreQueueEntry {
     val entry = LoadStoreQueueEntry.default
     entry.valid := true.B
 
-    entry.info := accessInfo
+    entry.operation := operation
 
     entry.addressAndLoadResultTag := addressAndStoreResultTag
     entry.address := address
-    entry.addressOffset := addressOffset
     entry.addressValid := addressValid
 
     entry.storeDataTag := storeDataTag
@@ -75,11 +71,10 @@ object LoadStoreQueueEntry {
     entry.valid := false.B
     entry.readyReorderSign := false.B
 
-    entry.info := DontCare
+    entry.operation := DontCare
 
     entry.addressAndLoadResultTag := Tag(0, 0)
     entry.address := 0.U
-    entry.addressOffset := 0.S
     entry.addressValid := false.B
 
     entry.storeDataTag := Tag(0, 0)

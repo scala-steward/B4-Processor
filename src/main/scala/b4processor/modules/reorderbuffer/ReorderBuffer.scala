@@ -1,5 +1,6 @@
 package b4processor.modules.reorderbuffer
 
+import circt.stage.ChiselStage
 import b4processor.Parameters
 import b4processor.connections.{
   BranchPrediction2ReorderBuffer,
@@ -10,10 +11,11 @@ import b4processor.connections.{
   ReorderBuffer2RegisterFile,
   ResultType
 }
-import b4processor.utils.Tag
+import b4processor.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
+import b4processor.utils.{RVRegister, Tag}
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
-import chisel3.stage.ChiselStage
+import chisel3.experimental.prefix
 import chisel3.util._
 
 import scala.math.pow
@@ -64,7 +66,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 
   private object RegisterTagMapContent {
     def default: RegisterTagMapContent =
-      new RegisterTagMapContent().Lit(_.valid -> false.B, _.tagId -> 0.U)
+      new RegisterTagMapContent().Lit(_.valid -> false.B)
     def apply(tagId: UInt): RegisterTagMapContent = {
       val w = Wire(new RegisterTagMapContent)
       w.valid := true.B
@@ -80,7 +82,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   class DecoderMap extends Bundle {
     val valid = Bool()
     val tagId = UInt(tagWidth.W)
-    val destinationRegister = UInt(5.W)
+    val destinationRegister = new RVRegister()
   }
 
   private object DecoderMap {
@@ -88,7 +90,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       new DecoderMap().Lit(
         _.valid -> false.B,
         _.tagId -> 0.U,
-        _.destinationRegister -> 0.U
+        _.destinationRegister -> 0.reg
       )
   }
 
@@ -99,43 +101,47 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   io.isError := false.B
   private var lastValid = true.B
   for (((rf, lsq), i) <- io.registerFile.zip(io.loadStoreQueue).zipWithIndex) {
-    val index = tail + i.U
+    prefix(s"to_rf${i}") {
+      val index = tail + i.U
 
-    val biVal = buffer(index)
-    val instructionOk = biVal.valueReady || biVal.storeSign
-    val canCommit = lastValid && index =/= head && instructionOk
-    val isError = biVal.isError
+      val biVal = buffer(index)
+      val instructionOk = biVal.valueReady || biVal.storeSign
+      val canCommit = lastValid && index =/= head && instructionOk
+      val isError = biVal.isError
 
-    rf.valid := canCommit && !isError
-    rf.bits.value := 0.U
-    rf.bits.destinationRegister := 0.U
-    io.csr.mcause.valid := false.B
-    io.csr.mcause.bits := DontCare
-    when(canCommit) {
-      when(!isError) {
-        rf.bits.value := biVal.value
-        rf.bits.destinationRegister := biVal.destinationRegister
-        when(index === registerTagMap(biVal.destinationRegister).tagId) {
-          registerTagMap(biVal.destinationRegister) :=
-            RegisterTagMapContent.default
+      rf.valid := canCommit && !isError
+      rf.bits.value := 0.U
+      rf.bits.destinationRegister := 0.reg
+      io.csr.mcause.valid := false.B
+      io.csr.mcause.bits := DontCare
+      when(canCommit) {
+        when(!isError) {
+          rf.bits.value := biVal.value
+          rf.bits.destinationRegister := biVal.destinationRegister
+          when(
+            index === registerTagMap(biVal.destinationRegister.inner).tagId
+          ) {
+            registerTagMap(biVal.destinationRegister.inner) :=
+              RegisterTagMapContent.default
+          }
+        }.otherwise {
+          io.csr.mcause.valid := true.B
+          io.csr.mcause.bits := biVal.value
+          io.isError := true.B
         }
-      }.otherwise {
-        io.csr.mcause.valid := true.B
-        io.csr.mcause.bits := biVal.value
-        io.isError := true.B
       }
-    }
 
-    when(canCommit) {
-      // LSQへストア実行信号
-      lsq.bits.destinationTag := Tag(io.threadId, index)
-      lsq.valid := biVal.storeSign
-      biVal := ReorderBufferEntry.default
-    }.otherwise {
-      lsq.bits.destinationTag := Tag(io.threadId, 0.U)
-      lsq.valid := false.B
+      when(canCommit) {
+        // LSQへストア実行信号
+        lsq.bits.destinationTag := Tag(io.threadId, index)
+        lsq.valid := biVal.storeSign
+        biVal := ReorderBufferEntry.default
+      }.otherwise {
+        lsq.bits.destinationTag := Tag(io.threadId, 0.U)
+        lsq.valid := false.B
+      }
+      lastValid = canCommit
     }
-    lastValid = canCommit
   }
   private val tailDelta = MuxCase(
     params.maxRegisterFileCommitCount.U,
@@ -148,78 +154,80 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   private var insertIndex = head
   private var lastReady = true.B
   for (i <- 0 until params.decoderPerThread) {
-    val decoder = io.decoders(i)
-    decoder.ready := lastReady && (insertIndex + 1.U) =/= tail
-    when(decoder.valid && decoder.ready) {
-      buffer(insertIndex) := {
-        val entry = Wire(new ReorderBufferEntry)
-        entry.value := 0.U
-        entry.valueReady := false.B
-        entry.destinationRegister := decoder.destination.destinationRegister
-        entry.storeSign := decoder.destination.storeSign
-        entry.programCounter := decoder.programCounter
-        entry.isError := false.B
-        entry
+    prefix(s"from_dec${i}") {
+      val decoder = io.decoders(i)
+      decoder.ready := lastReady && (insertIndex + 1.U) =/= tail
+      when(decoder.valid && decoder.ready) {
+        buffer(insertIndex) := {
+          val entry = Wire(new ReorderBufferEntry)
+          entry.value := 0.U
+          entry.valueReady := false.B
+          entry.destinationRegister := decoder.destination.destinationRegister
+          entry.storeSign := decoder.destination.storeSign
+          entry.programCounter := decoder.programCounter
+          entry.isError := false.B
+          entry
+        }
       }
+      if (i < params.decoderPerThread - 1) {
+        previousDecoderMap(i).valid :=
+          decoder.valid && decoder.destination.destinationRegister =/= 0.reg
+        previousDecoderMap(i).tagId := insertIndex
+        previousDecoderMap(i).destinationRegister :=
+          decoder.destination.destinationRegister
+      }
+      decoder.destination.destinationTag := Tag(io.threadId, insertIndex)
+      registerTagMap(decoder.destination.destinationRegister.inner) :=
+        RegisterTagMapContent(insertIndex)
+
+      locally {
+        val matchingBits = MuxCase(
+          registerTagMap(decoder.source1.sourceRegister.inner),
+          (0 until i)
+            .map(n =>
+              (previousDecoderMap(n).valid &&
+                previousDecoderMap(n).destinationRegister
+                === decoder.source1.sourceRegister) ->
+                RegisterTagMapContent(previousDecoderMap(n).tagId)
+            )
+            .reverse
+        )
+        val hasMatching = matchingBits.valid
+        val matchingBuf = buffer(matchingBits.tagId)
+
+        decoder.source1.matchingTag.valid := hasMatching
+        decoder.source1.matchingTag.bits := Tag(io.threadId, matchingBits.tagId)
+        decoder.source1.value.valid := matchingBuf.valueReady
+        decoder.source1.value.bits := matchingBuf.value
+      }
+
+      locally {
+        val matchingBits = MuxCase(
+          registerTagMap(decoder.source2.sourceRegister.inner),
+          (0 until i)
+            .map(n =>
+              (previousDecoderMap(n).valid &&
+                previousDecoderMap(n).destinationRegister
+                === decoder.source2.sourceRegister) ->
+                RegisterTagMapContent(previousDecoderMap(n).tagId)
+            )
+            .reverse
+        )
+        val hasMatching = matchingBits.valid
+        val matchingBuf = buffer(matchingBits.tagId)
+
+        decoder.source2.matchingTag.valid := hasMatching
+        decoder.source2.matchingTag.bits := Tag(io.threadId, matchingBits.tagId)
+        decoder.source2.value.valid := matchingBuf.valueReady
+        decoder.source2.value.bits := matchingBuf.value
+      }
+
+      // 次のループで使用するinserIndexとlastReadyを変える
+      // わざと:=ではなく=を利用している
+      insertIndex =
+        Mux(decoder.valid && decoder.ready, insertIndex + 1.U, insertIndex)
+      lastReady = decoder.ready
     }
-    if (i < params.decoderPerThread - 1) {
-      previousDecoderMap(i).valid :=
-        decoder.valid && decoder.destination.destinationRegister =/= 0.U
-      previousDecoderMap(i).tagId := insertIndex
-      previousDecoderMap(i).destinationRegister :=
-        decoder.destination.destinationRegister
-    }
-    decoder.destination.destinationTag := Tag(io.threadId, insertIndex)
-    registerTagMap(decoder.destination.destinationRegister) :=
-      RegisterTagMapContent(insertIndex)
-
-    locally {
-      val matchingBits = MuxCase(
-        registerTagMap(decoder.source1.sourceRegister),
-        (0 until i)
-          .map(n =>
-            (previousDecoderMap(n).valid &&
-              previousDecoderMap(n).destinationRegister
-              === decoder.source1.sourceRegister) ->
-              RegisterTagMapContent(previousDecoderMap(n).tagId)
-          )
-          .reverse
-      )
-      val hasMatching = matchingBits.valid
-      val matchingBuf = buffer(matchingBits.tagId)
-
-      decoder.source1.matchingTag.valid := hasMatching
-      decoder.source1.matchingTag.bits := Tag(io.threadId, matchingBits.tagId)
-      decoder.source1.value.valid := matchingBuf.valueReady
-      decoder.source1.value.bits := matchingBuf.value
-    }
-
-    locally {
-      val matchingBits = MuxCase(
-        registerTagMap(decoder.source2.sourceRegister),
-        (0 until i)
-          .map(n =>
-            (previousDecoderMap(n).valid &&
-              previousDecoderMap(n).destinationRegister
-              === decoder.source2.sourceRegister) ->
-              RegisterTagMapContent(previousDecoderMap(n).tagId)
-          )
-          .reverse
-      )
-      val hasMatching = matchingBits.valid
-      val matchingBuf = buffer(matchingBits.tagId)
-
-      decoder.source2.matchingTag.valid := hasMatching
-      decoder.source2.matchingTag.bits := Tag(io.threadId, matchingBits.tagId)
-      decoder.source2.value.valid := matchingBuf.valueReady
-      decoder.source2.value.bits := matchingBuf.value
-    }
-
-    // 次のループで使用するinserIndexとlastReadyを変える
-    // わざと:=ではなく=を利用している
-    insertIndex =
-      Mux(decoder.valid && decoder.ready, insertIndex + 1.U, insertIndex)
-    lastReady = decoder.ready
   }
   head := insertIndex
   tail := Mux(io.isError, insertIndex, tail + tailDelta)
@@ -256,10 +264,5 @@ object ReorderBuffer extends App {
       decoderPerThread = 2,
       maxRegisterFileCommitCount = 2
     )
-  (new ChiselStage).emitVerilog(
-    new ReorderBuffer,
-    args = Array(
-      "--emission-options=disableMemRandomization,disableRegisterRandomization"
-    )
-  )
+  ChiselStage.emitSystemVerilogFile(new ReorderBuffer)
 }

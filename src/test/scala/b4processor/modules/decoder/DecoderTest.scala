@@ -1,17 +1,13 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
-import b4processor.utils.{ExecutorValue, Tag}
+import b4processor.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
+import b4processor.utils.{ExecutorValue, RVRegister, Tag}
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 /** デコーダをテストしやすくするためにラップしたもの
-  *
-  * @param instructionOffset
-  *   同時に扱う命令のうちいくつ目の命令を担当するか
-  * @param params
-  *   パラメータ
   */
 class DecoderWrapper(implicit params: Parameters) extends Decoder {
 
@@ -87,9 +83,9 @@ class DecoderWrapper(implicit params: Parameters) extends Decoder {
   }
 
   def expectReorderBuffer(
-    destinationRegister: Int = 0,
-    sourceRegister1: Int = 0,
-    sourceRegister2: Int = 0
+    destinationRegister: RVRegister = RVRegister(0),
+    sourceRegister1: RVRegister = RVRegister(0),
+    sourceRegister2: RVRegister = RVRegister(0)
   ): Unit = {
     // check rd
     this.io.reorderBuffer.destination.destinationRegister
@@ -116,8 +112,6 @@ class DecoderWrapper(implicit params: Parameters) extends Decoder {
     this.io.reservationStation.entry.sourceTag2.expect(Tag(0, sourceTag2))
     this.io.reservationStation.entry.value1.expect(value1)
     this.io.reservationStation.entry.value2.expect(value2)
-    this.io.reservationStation.entry.immediateOrFunction7
-      .expect(immediateOrFunction7)
   }
 
   def expectCSR(destinationTag: Int, value: Int, valueReady: Boolean): Unit = {
@@ -141,9 +135,9 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       // add x1,x2,x3
       c.initialize("x003100b3".U)
       c.expectReorderBuffer(
-        destinationRegister = 1,
-        sourceRegister1 = 2,
-        sourceRegister2 = 3
+        destinationRegister = 1.reg,
+        sourceRegister1 = 2.reg,
+        sourceRegister2 = 3.reg
       )
     }
   }
@@ -156,9 +150,9 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setRegisterFile(value1 = 10, value2 = 20)
 
       c.expectReorderBuffer(
-        destinationRegister = 1,
-        sourceRegister1 = 2,
-        sourceRegister2 = 3
+        destinationRegister = 1.reg,
+        sourceRegister1 = 2.reg,
+        sourceRegister2 = 3.reg
       )
       c.expectReservationStation(value1 = 10, value2 = 20)
     }
@@ -176,9 +170,9 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       )
 
       c.expectReorderBuffer(
-        destinationRegister = 1,
-        sourceRegister1 = 2,
-        sourceRegister2 = 3
+        destinationRegister = 1.reg,
+        sourceRegister1 = 2.reg,
+        sourceRegister2 = 3.reg
       )
       c.expectReservationStation(
         destinationTag = 5,
@@ -202,9 +196,9 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       )
 
       c.expectReorderBuffer(
-        destinationRegister = 1,
-        sourceRegister1 = 2,
-        sourceRegister2 = 3
+        destinationRegister = 1.reg,
+        sourceRegister1 = 2.reg,
+        sourceRegister2 = 3.reg
       )
       c.expectReservationStation(destinationTag = 5, value1 = 20, value2 = 21)
     }
@@ -215,14 +209,14 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
     test(new DecoderWrapper) { c =>
       // sd x1,10(x2)
       c.initialize("x00113523".U)
-      c.expectReorderBuffer(sourceRegister1 = 2, sourceRegister2 = 1)
-      c.expectReservationStation(immediateOrFunction7 = 10)
+      c.expectReorderBuffer(sourceRegister1 = 2.reg, sourceRegister2 = 1.reg)
+      c.expectReservationStation(value2 = 10)
     }
   }
 
   // I形式を認識できる
   it should "understand I" in {
-    test(new DecoderWrapper) { c =>
+    test(new DecoderWrapper).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       // addi x1,x2,20
       c.initialize("x01410093".U)
       c.setReorderBuffer(
@@ -231,12 +225,16 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
         sourceTag2 = Some(7)
       )
 
-      c.expectReorderBuffer(1, sourceRegister1 = 2)
+      c.expectReorderBuffer(1.reg, sourceRegister1 = 2.reg)
+      println(
+        c.io.reservationStation.entry.value2.peekInt(),
+        c.io.reservationStation.entry.ready2.peekInt(),
+        c.io.reservationStation.entry.sourceTag2.peek()
+      )
       c.expectReservationStation(
         destinationTag = 5,
         sourceTag1 = 6,
-        value2 = 1000,
-        immediateOrFunction7 = 20
+        value2 = 20
       )
       c.clock.step(1)
     }
@@ -257,9 +255,9 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setOutputs(Some(ExecutorValue(6, 20)))
 
       c.expectReorderBuffer(
-        destinationRegister = 1,
-        sourceRegister1 = 2,
-        sourceRegister2 = 3
+        destinationRegister = 1.reg,
+        sourceRegister1 = 2.reg,
+        sourceRegister2 = 3.reg
       )
       c.expectReservationStation(
         destinationTag = 5,
@@ -300,11 +298,11 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize("x0007b1b7".U)
       c.setReorderBuffer(destinationTag = 5)
 
-      c.expectReorderBuffer(destinationRegister = 3)
+      c.expectReorderBuffer(destinationRegister = 3.reg)
       c.expectReservationStation(
         destinationTag = 5,
-        value1 = 123 << 12,
-        value2 = 1000
+        value1 = 503808,
+        value2 = 0
       )
     }
   }
@@ -316,7 +314,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize("x0040056f".U)
       c.setReorderBuffer(destinationTag = 5)
 
-      c.expectReorderBuffer(destinationRegister = 10)
+      c.expectReorderBuffer(destinationRegister = 10.reg)
       c.expectReservationStation(destinationTag = 5, value1 = 4, value2 = 1000)
     }
   }
@@ -328,7 +326,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       c.initialize("xc0002573".U)
       c.setReorderBuffer(destinationTag = 5)
 
-      c.expectReorderBuffer(destinationRegister = 10)
+      c.expectReorderBuffer(destinationRegister = 10.reg)
       c.expectCSR(destinationTag = 5, value = 0, valueReady = true)
     }
   }
