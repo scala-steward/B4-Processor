@@ -22,6 +22,8 @@ class CSR(implicit params: Parameters) extends Module {
     val threadId = Input(UInt(log2Up(params.threads).W))
   })
 
+  private val operation = io.decoderInput.bits.operation
+
   io.decoderInput.ready := io.CSROutput.ready
   io.CSROutput.valid := false.B
   io.CSROutput.bits.tag := io.decoderInput.bits.destinationTag
@@ -47,7 +49,7 @@ class CSR(implicit params: Parameters) extends Module {
   def setCSROutput(reg: UInt): Unit = {
     io.CSROutput.bits.value := reg
     when(io.CSROutput.ready && io.CSROutput.valid) {
-      reg := MuxLookup(io.decoderInput.bits.operation, 0.U)(
+      reg := MuxLookup(operation, 0.U)(
         Seq(
           CSROperation.ReadWrite -> io.decoderInput.bits.value,
           CSROperation.ReadSet -> (reg | io.decoderInput.bits.value),

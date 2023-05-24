@@ -114,7 +114,7 @@ object Operations {
       (u, _) => u.aluOp -> op,
       _.rs1 -> _(19, 15).reg,
       (u, _) => u.rs2 -> 0.reg,
-      _.rs2Value -> _(31, 20),
+      (a, b) => a.rs2Value -> signExtendTo64(b(31, 20).asSInt).asUInt,
       (u, _) => u.rs2ValueValid -> true.B,
       _.rd -> _(11, 7).reg
     )

@@ -14,11 +14,6 @@ import chisel3.util._
 import _root_.circt.stage.ChiselStage
 
 /** デコーダ
-  *
-  * @param instructionOffset
-  *   同時に扱う命令のうちいくつ目の命令を担当するか
-  * @param params
-  *   パラメータ
   */
 class Decoder(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
@@ -56,17 +51,6 @@ class Decoder(implicit params: Parameters) extends Module {
   // レジスタファイルへの入力
   io.registerFile.sourceRegister1 := operations.rs1
   io.registerFile.sourceRegister2 := operations.rs2
-
-  // 各値の配置
-  // ---------------------------------------
-  // type || rs-val1 | rs-val2 | rs-imm
-  // -----||---------|---------|------------
-  // R    || rs1     | rs2     | funct7
-  // I    || rs1     | pc      | imm
-  // S    || rs1     | rs2     | imm
-  // B    || rs1     | rs2     | imm
-  // U    || imm     | pc      | 0
-  // J    || imm     | pc      | 0
 
   // リオーダバッファから一致するタグを取得する
   // セレクタ1
@@ -113,7 +97,7 @@ class Decoder(implicit params: Parameters) extends Module {
     Tag(io.threadId, 0.U),
     sourceTag2.tag
   )
-  rs.ready1 := valueSelector1.io.value.valid || operations.rs2ValueValid
+  rs.ready1 := valueSelector1.io.value.valid || operations.rs1ValueValid
   rs.ready2 := valueSelector2.io.value.valid || operations.rs2ValueValid
   rs.value1 := MuxCase(
     0.U,
@@ -156,9 +140,9 @@ class Decoder(implicit params: Parameters) extends Module {
 
   io.csr.valid := io.csr.ready && io.instructionFetch.ready && io.instructionFetch.valid & operations.csrOp =/= CSROperation.None
   io.csr.bits := DontCare
+  io.csr.bits.operation := operations.csrOp
+  io.csr.bits.address := operations.csrAddress
   when(io.csr.valid) {
-    io.csr.bits.operation := operations.csrOp
-    io.csr.bits.address := operations.csrAddress
     io.csr.bits.sourceTag := valueSelector1.io.sourceTag.tag
     io.csr.bits.value := MuxCase(
       0.U,

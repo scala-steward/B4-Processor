@@ -15,6 +15,8 @@ class Executor(implicit params: Parameters) extends Module {
     val fetch = Irrevocable(new BranchOutput)
   })
 
+  private val operation = io.reservationStation.bits.operation
+
   /** リザベーションステーションから実行ユニットへデータを送信 op,fuctionによって命令を判断し，計算を実行
     */
   io.reservationStation.ready := io.out.ready && io.fetch.ready
@@ -32,7 +34,7 @@ class Executor(implicit params: Parameters) extends Module {
 
   val executeOutput = Wire(UInt(64.W))
   executeOutput :=
-    MuxLookup(io.reservationStation.bits.operation, 0.U)(
+    MuxLookup(operation, 0.U)(
       Seq(
         Add -> (a + b),
         Sub -> (a - b),
@@ -50,7 +52,8 @@ class Executor(implicit params: Parameters) extends Module {
         SrlW -> (a(31, 0) >> b(4, 0)).asUInt,
         SraW -> signExtendTo64((a(31, 0).asSInt >> b(4, 0)).asSInt).asUInt,
         SubW -> signExtendTo64(a(31, 0).asSInt - b(31, 0).asSInt).asUInt,
-        AddAsJumpAddress -> (b + 4.U)
+        AddAsJumpAddress -> (b + 4.U),
+        AddAsLoadStoreAddress -> (a + b)
       )
     )
 
@@ -63,16 +66,16 @@ class Executor(implicit params: Parameters) extends Module {
     BranchLessThanUnsigned,
     BranchGreaterThanOrEqual,
     BranchGraterThanOrEqualUnsigned
-  ).map(_ === io.reservationStation.bits.operation).reduce(_ || _)
+  ).map(_ === operation).reduce(_ || _)
   val branchedOffset = MuxCase(
     0.S,
     Seq(
       isBranch -> (io.reservationStation.bits.branchOffset ## 0.S(1.W)).asSInt,
-      (io.reservationStation.bits.operation === AddAsJumpAddress) -> (a.asSInt + io.reservationStation.bits.branchOffset)
+      (operation === AddAsJumpAddress) -> (a.asSInt + io.reservationStation.bits.branchOffset)
     )
   )
 
-  val branchOffset = MuxLookup(io.reservationStation.bits.operation, 0.S)(
+  val branchOffset = MuxLookup(operation, 0.S)(
     Seq(
       BranchEqual -> Mux(a === b, branchedOffset, nextOffset),
       BranchNotEqual -> Mux(a =/= b, branchedOffset, nextOffset)
@@ -81,11 +84,17 @@ class Executor(implicit params: Parameters) extends Module {
 
   io.fetch.valid := io.reservationStation.valid && (isBranch || io.reservationStation.bits.operation === AddAsJumpAddress)
   io.fetch.bits.programCounterOffset := branchOffset
+  io.fetch.bits.threadId := io.reservationStation.bits.destinationTag.threadId
 
   when(io.reservationStation.valid) {
     io.out.valid := io.reservationStation.ready
     io.out.bits.value := executeOutput
     io.out.bits.tag := io.reservationStation.bits.destinationTag
+    io.out.bits.resultType := Mux(
+      operation =/= AddAsLoadStoreAddress,
+      ResultType.Result,
+      ResultType.LoadStoreAddress
+    )
     //    printf("pc=%x, immediate=%d\n", io.reservationStation.bits.programCounter, immediateOrFunction7Extended.asSInt)
     //    printf("a = %d b = %d\n", io.reservationStation.bits.value1, io.reservationStation.bits.value2)
 //    val a = io.reservationStation.bits.value1
