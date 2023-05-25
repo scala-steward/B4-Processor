@@ -31,8 +31,6 @@ class CSR(implicit params: Parameters) extends Module {
   io.CSROutput.bits.isError := false.B
   io.CSROutput.bits.resultType := ResultType.Result
 
-  io.fetch := DontCare
-
   val retireCounter = Module(new RetireCounter)
   retireCounter.io.retireInCycle := io.reorderBuffer.retireCount
   val cycleCounter = Module(new CycleCounter)
@@ -60,7 +58,10 @@ class CSR(implicit params: Parameters) extends Module {
   }
 
   when(io.decoderInput.valid) {
+//    printf(p"csr in ${operation}\n")
     val address = io.decoderInput.bits.address
+//    printf(p"csr address ${address}\n")
+
     io.CSROutput.valid := true.B
 
     when(address === CSRName.cycle || address === CSRName.mcycle) {

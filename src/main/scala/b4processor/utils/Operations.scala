@@ -2,8 +2,6 @@ package b4processor.utils
 
 import b4processor.riscv.Instructions
 import b4processor.riscv.Instructions.{
-  C64Type,
-  CType,
   I64Type,
   ZICSRType,
   ZIFENCEIType
@@ -16,8 +14,6 @@ import circt.stage.ChiselStage
 import chisel3.util._
 
 import scala.language.implicitConversions
-
-case class PatternAndOperation(pattern: BitPat, operations: UInt => Operations)
 
 class Operations extends Bundle {
   val rs1 = new RVRegister
@@ -198,7 +194,7 @@ object Operations {
       IType("BLT") -> btypeOp(ALUOperation.BranchLessThan),
       IType("BGE") -> btypeOp(ALUOperation.BranchGreaterThanOrEqual),
       IType("BLTU") -> btypeOp(ALUOperation.BranchLessThanUnsigned),
-      IType("BGEU") -> btypeOp(ALUOperation.BranchGraterThanOrEqualUnsigned),
+      IType("BGEU") -> btypeOp(ALUOperation.BranchGreaterThanOrEqualUnsigned),
       IType("ADD") -> rtypeOp(ALUOperation.Add),
       IType("SLT") -> rtypeOp(ALUOperation.Slt),
       IType("SLTU") -> rtypeOp(ALUOperation.Sltu),
@@ -220,7 +216,10 @@ object Operations {
       IType("LUI") -> createOperation(
         _.rd -> _(11, 7).reg,
         (u, _) => u.rs1 -> 0.reg,
-        _.rs1Value -> _(31, 12) ## 0.U(12.W),
+        (u, inst) =>
+          u.rs1Value -> signExtendTo64(
+            (inst(31, 12) ## 0.U(12.W)).asSInt
+          ).asUInt,
         (u, _) => u.rs1ValueValid -> true.B,
         (u, _) => u.rs2ValueValid -> true.B,
         (u, _) => u.rs2Value -> 0.U,
@@ -228,7 +227,10 @@ object Operations {
       ),
       IType("AUIPC") -> createOperationWithPC(
         (u, inst, _) => u.rd -> inst(11, 7).reg,
-        (u, inst, _) => u.rs1Value -> inst(31, 12) ## 0.U(12.W),
+        (u, inst, _) =>
+          u.rs1Value -> signExtendTo64(
+            (inst(31, 12) ## 0.U(12.W)).asSInt
+          ).asUInt,
         (u, _, _) => u.rs1ValueValid -> true.B,
         (u, _, _) => u.rs2ValueValid -> true.B,
         (u, _, pc) => u.rs2Value -> pc,
@@ -243,7 +245,7 @@ object Operations {
           ).asUInt,
         (u, _, _) => u.rs1ValueValid -> true.B,
         (u, _, _) => u.rs2ValueValid -> true.B,
-        (u, _, _) => u.aluOp -> ALUOperation.AddAsJumpAddress
+        (u, _, _) => u.aluOp -> ALUOperation.AddJAL
       ),
       IType("JALR") -> createOperationWithPC(
         (u, inst, _) => u.rd -> inst(11, 7).reg,
@@ -251,7 +253,7 @@ object Operations {
         (u, inst, _) => u.rs1 -> inst(19, 15).reg,
         (u, _, _) => u.rs2ValueValid -> true.B,
         (u, inst, _) => u.branchOffset -> inst(31, 20).asSInt,
-        (u, _, _) => u.aluOp -> ALUOperation.AddAsJumpAddress
+        (u, _, _) => u.aluOp -> ALUOperation.AddJALR
       ),
       IType("LB") -> loadOp(LoadStoreOperation.Load8),
       IType("LBU") -> loadOp(LoadStoreOperation.Load8Unsigned),
@@ -321,10 +323,9 @@ object OperationDecoderApp extends App {
 object ALUOperation extends ChiselEnum {
   val None, BranchEqual, BranchNotEqual, BranchLessThan,
     BranchGreaterThanOrEqual, BranchLessThanUnsigned,
-    BranchGraterThanOrEqualUnsigned, Add, Sub, And, Or, Slt, Sltu, Xor, Sll,
-    Srl, Sra, AddAsJumpAddress, AddAsLoadStoreAddress, AddW, SllW, SrlW, SraW,
-    SubW =
-    Value
+    BranchGreaterThanOrEqualUnsigned, Add, Sub, And, Or, Slt, Sltu, Xor, Sll,
+    Srl, Sra, AddJALR, AddJAL, AddAsLoadStoreAddress, AddW, SllW, SrlW, SraW,
+    SubW = Value
 }
 
 object LoadStoreOperation extends ChiselEnum {

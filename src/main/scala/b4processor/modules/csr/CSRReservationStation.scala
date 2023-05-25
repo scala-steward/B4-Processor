@@ -37,6 +37,7 @@ class CSRReservationStation(implicit params: Parameters) extends Module {
   for (d <- io.decoderInput) {
     d.ready := tail =/= insertIndex + 1.U
     when(d.ready && d.valid) {
+//      printf(p"csr rs in ${d.bits.operation}\n")
       buf(insertIndex) := {
         val w = Wire(new CSRReservationStationEntry)
         w.valid := true.B
@@ -60,6 +61,7 @@ class CSRReservationStation(implicit params: Parameters) extends Module {
     io.toCSR.bits.address := bufTail.address
     io.toCSR.bits.destinationTag := bufTail.destinationTag
     io.toCSR.bits.operation := bufTail.operation
+//    printf(p"csr rs out ${bufTail.operation}\n")
     when(io.toCSR.ready) {
       tail := tail + 1.U
       bufTail.valid := false.B

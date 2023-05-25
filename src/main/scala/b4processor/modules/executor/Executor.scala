@@ -46,13 +46,14 @@ class Executor(implicit params: Parameters) extends Module {
         Sll -> (a << b(5, 0)).asUInt,
         Srl -> (a >> b(5, 0)).asUInt,
         Sra -> (a.asSInt >> b(5, 0)).asUInt,
-        AddAsJumpAddress -> (a + b),
-        AddW -> signExtendTo64(((a + b)(31, 0)).asSInt).asUInt,
+        AddJALR -> (a + b),
+        AddW -> signExtendTo64((a(31, 0).asSInt + b(31, 0).asSInt)).asUInt,
         SllW -> (a(31, 0) << b(4, 0)).asUInt,
         SrlW -> (a(31, 0) >> b(4, 0)).asUInt,
         SraW -> signExtendTo64((a(31, 0).asSInt >> b(4, 0)).asSInt).asUInt,
         SubW -> signExtendTo64(a(31, 0).asSInt - b(31, 0).asSInt).asUInt,
-        AddAsJumpAddress -> (b + 4.U),
+        AddJAL -> (b + 4.U),
+        AddJALR -> (b + 4.U),
         AddAsLoadStoreAddress -> (a + b)
       )
     )
@@ -65,28 +66,37 @@ class Executor(implicit params: Parameters) extends Module {
     BranchLessThan,
     BranchLessThanUnsigned,
     BranchGreaterThanOrEqual,
-    BranchGraterThanOrEqualUnsigned
+    BranchGreaterThanOrEqualUnsigned
   ).map(_ === operation).reduce(_ || _)
   val branchedOffset = MuxCase(
     0.S,
     Seq(
       isBranch -> (io.reservationStation.bits.branchOffset ## 0.S(1.W)).asSInt,
-      (operation === AddAsJumpAddress) -> (a.asSInt + io.reservationStation.bits.branchOffset)
+      (operation === AddJALR) -> (a.asSInt - b.asSInt + io.reservationStation.bits.branchOffset)
     )
   )
 
-  val branchOffset = MuxLookup(operation, 0.S)(
+  val fetchOffset = MuxLookup(operation, 0.S)(
     Seq(
       BranchEqual -> Mux(a === b, branchedOffset, nextOffset),
-      BranchNotEqual -> Mux(a =/= b, branchedOffset, nextOffset)
+      BranchNotEqual -> Mux(a =/= b, branchedOffset, nextOffset),
+      BranchLessThan ->
+        Mux(a.asSInt < b.asSInt, branchedOffset, nextOffset),
+      BranchGreaterThanOrEqual ->
+        Mux(a.asSInt >= b.asSInt, branchedOffset, nextOffset),
+      BranchLessThanUnsigned ->
+        Mux(a < b, branchedOffset, nextOffset),
+      BranchGreaterThanOrEqualUnsigned ->
+        Mux(a >= b, branchedOffset, nextOffset),
+      AddJALR -> branchedOffset
     )
   )
 
-  io.fetch.valid := io.reservationStation.valid && (isBranch || io.reservationStation.bits.operation === AddAsJumpAddress)
-  io.fetch.bits.programCounterOffset := branchOffset
+  io.fetch.valid := io.reservationStation.valid && io.reservationStation.ready && (isBranch || io.reservationStation.bits.operation === AddJALR)
+  io.fetch.bits.programCounterOffset := fetchOffset
   io.fetch.bits.threadId := io.reservationStation.bits.destinationTag.threadId
 
-  when(io.reservationStation.valid) {
+  when(io.reservationStation.valid && io.reservationStation.ready) {
     io.out.valid := io.reservationStation.ready
     io.out.bits.value := executeOutput
     io.out.bits.tag := io.reservationStation.bits.destinationTag

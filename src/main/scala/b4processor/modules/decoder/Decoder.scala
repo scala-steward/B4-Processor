@@ -79,7 +79,11 @@ class Decoder(implicit params: Parameters) extends Module {
   // 命令をデコードするのはリオーダバッファにエントリの空きがあり、リザベーションステーションにも空きがあるとき
   io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready && io.csr.ready
   // リオーダバッファやリザベーションステーションに新しいエントリを追加するのは命令がある時
-  io.reorderBuffer.valid := io.instructionFetch.ready && io.instructionFetch.valid
+  io.reorderBuffer.valid := io.instructionFetch.ready &&
+    io.instructionFetch.valid &&
+    (operations.aluOp =/= ALUOperation.None ||
+    operations.loadStoreOp =/= LoadStoreOperation.None ||
+    operations.csrOp =/= CSROperation.None)
   io.reservationStation.entry.valid := io.instructionFetch.ready &&
     io.instructionFetch.valid && operations.aluOp =/= ALUOperation.None
 
@@ -141,8 +145,9 @@ class Decoder(implicit params: Parameters) extends Module {
   io.csr.valid := io.csr.ready && io.instructionFetch.ready && io.instructionFetch.valid & operations.csrOp =/= CSROperation.None
   io.csr.bits := DontCare
   io.csr.bits.operation := operations.csrOp
-  io.csr.bits.address := operations.csrAddress
+  io.csr.bits.address := operations.rs2Value
   when(io.csr.valid) {
+//    printf(p"decoder out ${operations.csrOp}\n")
     io.csr.bits.sourceTag := valueSelector1.io.sourceTag.tag
     io.csr.bits.value := MuxCase(
       0.U,
