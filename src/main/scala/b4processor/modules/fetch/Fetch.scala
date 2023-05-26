@@ -1,7 +1,12 @@
 package b4processor.modules.fetch
 
 import b4processor.Parameters
-import b4processor.connections.{CSR2Fetch, Fetch2BranchPrediction, Fetch2FetchBuffer, InstructionCache2Fetch}
+import b4processor.connections.{
+  CSR2Fetch,
+  Fetch2BranchPrediction,
+  Fetch2FetchBuffer,
+  InstructionCache2Fetch
+}
 import b4processor.modules.branch_output_collector.CollectedBranchAddresses
 import chisel3._
 import chisel3.util._
@@ -81,9 +86,7 @@ class Fetch(implicit params: Parameters) extends Module {
     nextWait = Mux(
       nextWait =/= WaitingReason.None || !decoder.ready || !instructionValid,
       nextWait,
-      MuxLookup(
-        branch.io.branchType.asUInt,
-        nextWait)(
+      MuxLookup(branch.io.branchType.asUInt, nextWait)(
         Seq(
           BranchType.Branch.asUInt -> WaitingReason.Branch,
           BranchType.JALR.asUInt -> WaitingReason.JALR,
@@ -172,7 +175,5 @@ class Fetch(implicit params: Parameters) extends Module {
 
 object Fetch extends App {
   implicit val params = Parameters()
-  ChiselStage.emitSystemVerilogFile(
-    new Fetch
-  )
+  ChiselStage.emitSystemVerilogFile(new Fetch)
 }

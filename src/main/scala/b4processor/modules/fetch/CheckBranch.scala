@@ -25,9 +25,7 @@ class CheckBranch extends Module {
   val funct3 = io.instruction(14, 12)
 
   // オフセットの抽出
-  io.offset := MuxLookup(
-    opcode(1, 0),
-    4.S)(
+  io.offset := MuxLookup(opcode(1, 0), 4.S)(
     Seq(
       "b00".U -> 2.S,
       "b01".U -> Mux(
@@ -56,9 +54,7 @@ class CheckBranch extends Module {
             io.instruction(6, 2) === 0.U) -> 0.S
         )
       ),
-      "b11".U -> MuxLookup(
-        opcode,
-        4.S)(
+      "b11".U -> MuxLookup(opcode, 4.S)(
         Seq(
           // jalr
           "b1100111".U -> Cat(io.instruction(31, 20), 0.U(1.W)).asSInt,
@@ -80,9 +76,7 @@ class CheckBranch extends Module {
   )
 
   // 瓶木の種類の抽出
-  io.branchType := MuxLookup(
-    opcode(1, 0),
-    BranchType.Next4)(
+  io.branchType := MuxLookup(opcode(1, 0), BranchType.Next4)(
     Seq(
       "b00".U -> BranchType.Next2,
       "b01".U -> MuxCase(
@@ -103,9 +97,7 @@ class CheckBranch extends Module {
             io.instruction(6, 2) === 0.U) -> BranchType.Ebreak
         )
       ),
-      "b11".U -> MuxLookup(
-        opcode,
-        BranchType.Next4)(
+      "b11".U -> MuxLookup(opcode, BranchType.Next4)(
         Seq(
           // jalr
           "b1100111".U -> BranchType.JALR,
@@ -127,5 +119,5 @@ class CheckBranch extends Module {
 }
 
 object CheckBranch extends App {
- ChiselStage.emitSystemVerilogFile(new CheckBranch)
+  ChiselStage.emitSystemVerilogFile(new CheckBranch)
 }

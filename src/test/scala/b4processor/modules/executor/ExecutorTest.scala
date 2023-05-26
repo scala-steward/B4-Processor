@@ -245,27 +245,27 @@ class ExecutorTest
       }
 
 //      When("SRLW")
-      //      for (_ <- 0 until 100) {
-      //        val reg = (math.random() * pow(2, defaultParams.tagWidth)).toInt
-      //        val a = ((math.random() - 0.5) * pow(2, 64)).toLong
-      //        val b = (math.random() * pow(2, 5)).toLong
-      //        c.setALU(
-      //          ReservationValue(
-      //            destinationTag = reg,
-      //            value1 = a,
-      //            value2 = b,
-      //            operation = ALUOperation.SrlW
-      //          )
-      //        )
-      //        println(a, b,(a.toInt >>> b).toLong)
-      //        c.expectout(values =
-      //          Some(
-      //            ExecutorValue(destinationTag = reg, value = (a.toInt >>> b).toLong)
-      //          )
-      //        )
-      //        c.expectLSQ(None)
-      //        c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
-      //      }
+    //      for (_ <- 0 until 100) {
+    //        val reg = (math.random() * pow(2, defaultParams.tagWidth)).toInt
+    //        val a = ((math.random() - 0.5) * pow(2, 64)).toLong
+    //        val b = (math.random() * pow(2, 5)).toLong
+    //        c.setALU(
+    //          ReservationValue(
+    //            destinationTag = reg,
+    //            value1 = a,
+    //            value2 = b,
+    //            operation = ALUOperation.SrlW
+    //          )
+    //        )
+    //        println(a, b,(a.toInt >>> b).toLong)
+    //        c.expectout(values =
+    //          Some(
+    //            ExecutorValue(destinationTag = reg, value = (a.toInt >>> b).toLong)
+    //          )
+    //        )
+    //        c.expectLSQ(None)
+    //        c.expectFetch(values = FetchValue(valid = false, programCounter = 0))
+    //      }
 
     //      When("jal")
     //      // rs1 = 40, rs2 = 16

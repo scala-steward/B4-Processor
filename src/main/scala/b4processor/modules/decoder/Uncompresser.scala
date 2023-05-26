@@ -176,13 +176,9 @@ class Uncompresser extends Module {
   val instruction = io.fetch.bits.instruction
 
   io.decoder.bits.wasCompressed := instruction(1, 0) =/= "b11".U
-  io.decoder.bits.instruction := MuxLookup(
-    instruction(1, 0),
-    0.U)(
+  io.decoder.bits.instruction := MuxLookup(instruction(1, 0), 0.U)(
     Seq(
-      "b00".U -> MuxLookup(
-        instruction(15, 13),
-        0.U)(
+      "b00".U -> MuxLookup(instruction(15, 13), 0.U)(
         Seq(
           "b000".U -> Mux(
             instruction(12, 2) =/= 0.U,
@@ -251,9 +247,7 @@ class Uncompresser extends Module {
           )
         )
       ),
-      "b01".U -> MuxLookup(
-        instruction(15, 13),
-        0.U)(
+      "b01".U -> MuxLookup(instruction(15, 13), 0.U)(
         Seq(
           "b000".U -> Mux(
             instruction(11, 7) === 0.U,
@@ -311,9 +305,7 @@ class Uncompresser extends Module {
               )
             )
           ),
-          "b100".U -> MuxLookup(
-            instruction(11, 10),
-            0.U)(
+          "b100".U -> MuxLookup(instruction(11, 10), 0.U)(
             Seq(
               "b00".U -> FormatI(
                 FormatI.srli,
@@ -335,9 +327,7 @@ class Uncompresser extends Module {
               ),
               "b11".U -> Mux(
                 instruction(12),
-                MuxLookup(
-                  instruction(6, 5),
-                  0.U)(
+                MuxLookup(instruction(6, 5), 0.U)(
                   Seq(
                     "b00".U -> FormatR(
                       FormatR.subw,
@@ -353,9 +343,7 @@ class Uncompresser extends Module {
                     )
                   )
                 ),
-                MuxLookup(
-                  instruction(6, 5),
-                  0.U)(
+                MuxLookup(instruction(6, 5), 0.U)(
                   Seq(
                     "b00".U -> FormatR(
                       FormatR.sub,
@@ -438,9 +426,7 @@ class Uncompresser extends Module {
           )
         )
       ),
-      "b10".U -> MuxLookup(
-        instruction(15, 13),
-        0.U)(
+      "b10".U -> MuxLookup(instruction(15, 13), 0.U)(
         Seq(
           "b000".U -> FormatI(
             FormatI.slli,

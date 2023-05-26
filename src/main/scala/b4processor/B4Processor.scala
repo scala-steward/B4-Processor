@@ -221,7 +221,7 @@ object B4Processor extends App {
     Array(
       "--disable-mem-randomization",
       "--disable-reg-randomization",
-      "--disable-all-randomization",
+      "--disable-all-randomization"
     )
   )
 }

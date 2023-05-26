@@ -14,7 +14,7 @@ class Tag(implicit params: Parameters) extends Bundle {
 
   override def toPrintable = if (params.threads == 1) {
     cf"Tag(${this.id})"
-  }else{
+  } else {
     cf"Tag(thread=${this.threadId}, id=${this.id})"
   }
 }

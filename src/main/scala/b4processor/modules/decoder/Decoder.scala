@@ -82,8 +82,8 @@ class Decoder(implicit params: Parameters) extends Module {
   io.reorderBuffer.valid := io.instructionFetch.ready &&
     io.instructionFetch.valid &&
     (operations.aluOp =/= ALUOperation.None ||
-    operations.loadStoreOp =/= LoadStoreOperation.None ||
-    operations.csrOp =/= CSROperation.None)
+      operations.loadStoreOp =/= LoadStoreOperation.None ||
+      operations.csrOp =/= CSROperation.None)
   io.reservationStation.entry.valid := io.instructionFetch.ready &&
     io.instructionFetch.valid && operations.aluOp =/= ALUOperation.None
 

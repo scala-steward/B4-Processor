@@ -1,7 +1,14 @@
 package b4processor.modules.lsq
 
 import b4processor.Parameters
-import b4processor.connections.{CollectedOutput, Decoder2LoadStoreQueue, Executor2LoadStoreQueue, LoadStoreQueue2Memory, LoadStoreQueue2ReorderBuffer, ResultType}
+import b4processor.connections.{
+  CollectedOutput,
+  Decoder2LoadStoreQueue,
+  Executor2LoadStoreQueue,
+  LoadStoreQueue2Memory,
+  LoadStoreQueue2ReorderBuffer,
+  ResultType
+}
 import b4processor.modules.outputcollector.OutputCollector
 import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
@@ -204,7 +211,5 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
 object LoadStoreQueue extends App {
   implicit val params = Parameters(maxRegisterFileCommitCount = 2, tagWidth = 4)
-  ChiselStage.emitSystemVerilogFile(
-    new LoadStoreQueue
-  )
+  ChiselStage.emitSystemVerilogFile(new LoadStoreQueue)
 }

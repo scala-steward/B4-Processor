@@ -21,4 +21,3 @@ class SomeTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 }
-

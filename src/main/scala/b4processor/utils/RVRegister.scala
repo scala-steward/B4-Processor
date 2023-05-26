@@ -22,9 +22,7 @@ object RVRegister {
   def apply(num: Int): RVRegister = new RVRegister().Lit(_.inner -> num.U)
 
   implicit class AddUIntRegConstructor(x: UInt) {
-    def reg(implicit
-      sourceInfo: SourceInfo
-    ): RVRegister = {
+    def reg(implicit sourceInfo: SourceInfo): RVRegister = {
       require(1 <= x.getWidth)
       require(x.getWidth <= 5)
       val w = Wire(new RVRegister())
@@ -34,9 +32,7 @@ object RVRegister {
   }
 
   implicit class AddRegConstructor(x: Int) {
-    def reg(implicit
-      sourceInfo: SourceInfo
-    ): RVRegister = {
+    def reg(implicit sourceInfo: SourceInfo): RVRegister = {
       require(0 <= x)
       require(x <= 31)
       RVRegister(x)

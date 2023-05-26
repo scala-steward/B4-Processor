@@ -8,8 +8,7 @@ import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class ValueSelectorWrapper(implicit params: Parameters)
-    extends ValueSelector {
+class ValueSelectorWrapper(implicit params: Parameters) extends ValueSelector {
 
   /** 初期化
     *
@@ -76,28 +75,26 @@ class ValueSelectorTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   it should "use the alu bypass" in {
-    test(
-      new ValueSelectorWrapper()(defaultParams.copy(decoderPerThread = 1))
-    ) { c =>
-      c.initialize(
-        sourceTag = Some(3),
-        registerFileValue = 5,
-        aluBypassValue = Some((3, 12))
-      )
-      c.expectValue(Some(12))
+    test(new ValueSelectorWrapper()(defaultParams.copy(decoderPerThread = 1))) {
+      c =>
+        c.initialize(
+          sourceTag = Some(3),
+          registerFileValue = 5,
+          aluBypassValue = Some((3, 12))
+        )
+        c.expectValue(Some(12))
     }
   }
 
   it should "use multiple alu bypasses" in {
-    test(
-      new ValueSelectorWrapper()(defaultParams.copy(decoderPerThread = 4))
-    ) { c =>
-      c.initialize(
-        sourceTag = Some(3),
-        registerFileValue = 5,
-        aluBypassValue = Some(3, 12)
-      )
-      c.expectValue(Some(12))
+    test(new ValueSelectorWrapper()(defaultParams.copy(decoderPerThread = 4))) {
+      c =>
+        c.initialize(
+          sourceTag = Some(3),
+          registerFileValue = 5,
+          aluBypassValue = Some(3, 12)
+        )
+        c.expectValue(Some(12))
     }
   }
 
