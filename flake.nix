@@ -37,7 +37,7 @@
             ];
           };
           buildInputs = with pkgs; [ circt ];
-          depsSha256 = "sha256-W1Kgoc58kruhLW0CDzvuUgAjuRZbT4QqStJLAAnPuhc=";
+          depsSha256 = "sha256-SvJ+E9Nh1s762KF2MCeScLJYbniXvs6f3+A8x/+91/s=";
           buildPhase = ''
             sbt "runMain b4processor.B4Processor"
           '';
