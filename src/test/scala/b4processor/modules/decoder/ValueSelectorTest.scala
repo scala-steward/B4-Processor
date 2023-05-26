@@ -40,7 +40,7 @@ class ValueSelectorWrapper(implicit params: Parameters) extends ValueSelector {
     this.io.reorderBufferValue.bits.poke(reorderBufferValue.getOrElse(0))
     this.io.registerFileValue.poke(registerFileValue)
     this.io.sourceTag.valid.poke(sourceTag.isDefined)
-    this.io.sourceTag.tag.poke(Tag(0, sourceTag.getOrElse(0)))
+    this.io.sourceTag.bits.poke(Tag(0, sourceTag.getOrElse(0)))
   }
 
   def expectValue(value: Option[Int]): Unit = {

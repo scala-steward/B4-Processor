@@ -53,28 +53,22 @@ class Decoder(implicit params: Parameters) extends Module {
   io.registerFile.sourceRegister2 := operations.rs2
 
   // リオーダバッファから一致するタグを取得する
-  // セレクタ1
-  val sourceTagSelector1 = Module(new SourceTagSelector)
-  sourceTagSelector1.io.reorderBufferDestinationTag <> io.reorderBuffer.source1.matchingTag
-  val sourceTag1 = sourceTagSelector1.io.sourceTag
-  // セレクタ2
-  val sourceTagSelector2 = Module(new SourceTagSelector)
-  sourceTagSelector2.io.reorderBufferDestinationTag <> io.reorderBuffer.source2.matchingTag
-  val sourceTag2 = sourceTagSelector2.io.sourceTag
+  val sourceTag1 = io.reorderBuffer.source1.matchingTag
+  val sourceTag2 = io.reorderBuffer.source2.matchingTag
 
   // Valueの選択
-  // value1
-  val valueSelector1 = Module(new ValueSelector)
-  valueSelector1.io.sourceTag <> sourceTag1
-  valueSelector1.io.reorderBufferValue <> io.reorderBuffer.source1.value
-  valueSelector1.io.registerFileValue := io.registerFile.value1
-  valueSelector1.io.outputCollector <> io.outputCollector
-  // value2
-  val valueSelector2 = Module(new ValueSelector)
-  valueSelector2.io.sourceTag <> sourceTag2
-  valueSelector2.io.reorderBufferValue <> io.reorderBuffer.source2.value
-  valueSelector2.io.registerFileValue := io.registerFile.value2
-  valueSelector2.io.outputCollector <> io.outputCollector
+  val value1 = ValueSelector.getValue(
+    io.reorderBuffer.source1.value,
+    io.registerFile.value1,
+    io.outputCollector,
+    sourceTag1
+  )
+  val value2 = ValueSelector.getValue(
+    io.reorderBuffer.source2.value,
+    io.registerFile.value2,
+    io.outputCollector,
+    sourceTag2
+  )
 
   // 命令をデコードするのはリオーダバッファにエントリの空きがあり、リザベーションステーションにも空きがあるとき
   io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready && io.csr.ready
@@ -92,29 +86,29 @@ class Decoder(implicit params: Parameters) extends Module {
   rs.operation := operations.aluOp
   rs.destinationTag := io.reorderBuffer.destination.destinationTag
   rs.sourceTag1 := Mux(
-    valueSelector1.io.value.valid || operations.rs1ValueValid,
+    value1.valid || operations.rs1ValueValid,
     Tag(io.threadId, 0.U),
-    sourceTag1.tag
+    sourceTag1.bits
   )
   rs.sourceTag2 := Mux(
-    valueSelector2.io.value.valid || operations.rs2ValueValid,
+    value2.valid || operations.rs2ValueValid,
     Tag(io.threadId, 0.U),
-    sourceTag2.tag
+    sourceTag2.bits
   )
-  rs.ready1 := valueSelector1.io.value.valid || operations.rs1ValueValid
-  rs.ready2 := valueSelector2.io.value.valid || operations.rs2ValueValid
+  rs.ready1 := value1.valid || operations.rs1ValueValid
+  rs.ready2 := value2.valid || operations.rs2ValueValid
   rs.value1 := MuxCase(
     0.U,
     Seq(
       operations.rs1ValueValid -> operations.rs1Value,
-      valueSelector1.io.value.valid -> valueSelector1.io.value.bits
+      value1.valid -> value1.bits
     )
   )
   rs.value2 := MuxCase(
     0.U,
     Seq(
       operations.rs2ValueValid -> operations.rs2Value,
-      valueSelector2.io.value.valid -> valueSelector2.io.value.bits
+      value2.valid -> value2.bits
     )
   )
   rs.branchOffset := operations.branchOffset
@@ -130,9 +124,9 @@ class Decoder(implicit params: Parameters) extends Module {
     io.loadStoreQueue.bits.address := 0.U
     io.loadStoreQueue.bits.addressOffset := operations.rs2Value.asSInt
     when(operationIsStore) {
-      io.loadStoreQueue.bits.storeDataTag := sourceTagSelector2.io.sourceTag.tag
-      io.loadStoreQueue.bits.storeData := valueSelector2.io.value.bits
-      io.loadStoreQueue.bits.storeDataValid := valueSelector2.io.value.valid
+      io.loadStoreQueue.bits.storeDataTag := sourceTag2.bits
+      io.loadStoreQueue.bits.storeData := value2.bits
+      io.loadStoreQueue.bits.storeDataValid := value2.valid
     }.otherwise {
       io.loadStoreQueue.bits.storeDataTag := Tag(io.threadId, 0.U)
       io.loadStoreQueue.bits.storeData := 0.U
@@ -148,15 +142,15 @@ class Decoder(implicit params: Parameters) extends Module {
   io.csr.bits.address := operations.rs2Value
   when(io.csr.valid) {
 //    printf(p"decoder out ${operations.csrOp}\n")
-    io.csr.bits.sourceTag := valueSelector1.io.sourceTag.tag
+    io.csr.bits.sourceTag := sourceTag1.bits
     io.csr.bits.value := MuxCase(
       0.U,
       Seq(
         operations.rs1ValueValid -> operations.rs1Value,
-        valueSelector1.io.value.valid -> valueSelector1.io.value.bits
+        value1.valid -> value1.bits
       )
     )
-    io.csr.bits.ready := operations.rs1ValueValid || valueSelector1.io.value.valid
+    io.csr.bits.ready := operations.rs1ValueValid || value1.valid
     io.csr.bits.destinationTag := io.reorderBuffer.destination.destinationTag
   }
 }
