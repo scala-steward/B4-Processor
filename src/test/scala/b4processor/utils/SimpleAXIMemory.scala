@@ -1,8 +1,8 @@
 package b4processor.utils
 
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.util.Valid
+import circt.stage.ChiselStage
 
 class SimpleAXIMemory(sizeBytes: Int = 1024 * 1024) extends Module {
   val axi = IO(Flipped(new ChiselAXI(64, 64)))
@@ -157,5 +157,5 @@ class SimpleAXIMemory(sizeBytes: Int = 1024 * 1024) extends Module {
 }
 
 object SimpleAXIMemory extends App {
-  (new ChiselStage).emitVerilog(new SimpleAXIMemory())
+  ChiselStage.emitSystemVerilogFile(new SimpleAXIMemory())
 }
