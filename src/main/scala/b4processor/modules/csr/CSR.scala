@@ -12,6 +12,7 @@ import b4processor.utils.CSROperation
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
+import b4processor.riscv.CSRs
 
 class CSR(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
@@ -64,21 +65,21 @@ class CSR(implicit params: Parameters) extends Module {
 
     io.CSROutput.valid := true.B
 
-    when(address === CSRName.cycle || address === CSRName.mcycle) {
+    when(address === CSRs.cycle.U || address === CSRs.mcycle.U) {
       io.CSROutput.bits.value := cycleCounter.count
-    }.elsewhen(address === CSRName.instret || address === CSRName.minstret) {
+    }.elsewhen(address === CSRs.instret.U || address === CSRs.minstret.U) {
       io.CSROutput.bits.value := retireCounter.io.count
-    }.elsewhen(address === CSRName.mhartid) {
+    }.elsewhen(address === CSRs.mhartid.U) {
       io.CSROutput.bits.value := io.threadId
-    }.elsewhen(address === CSRName.mtvec) {
+    }.elsewhen(address === CSRs.mtvec.U) {
       setCSROutput(mtvec)
-    }.elsewhen(address === CSRName.mepc) {
+    }.elsewhen(address === CSRs.mepc.U) {
       setCSROutput(mepc)
-    }.elsewhen(address === CSRName.mcause) {
+    }.elsewhen(address === CSRs.mcause.U) {
       setCSROutput(mcause)
-    }.elsewhen(address === CSRName.mstatus) {
+    }.elsewhen(address === CSRs.mstatus.U) {
       setCSROutput(mstatus)
-    }.elsewhen(address === CSRName.mie) {
+    }.elsewhen(address === CSRs.mie.U) {
       setCSROutput(mie)
     }.otherwise {
       io.CSROutput.bits.isError := true.B

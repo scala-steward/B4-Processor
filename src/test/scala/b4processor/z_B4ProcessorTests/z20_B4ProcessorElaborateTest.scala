@@ -20,7 +20,7 @@ class z20_B4ProcessorElaborateTest
       for (maxCommitCount <- 1 to 3)
         for (tagWidth <- 2 to 3)
           it should s"elaborate threads=${threads} decoder=${decoderPerThread} maxCommitCount=${maxCommitCount} tagWidth=${tagWidth}" in {
-            ChiselStage.elaborate(
+            ChiselStage.emitCHIRRTL(
               new B4ProcessorWithMemory()(
                 defaultParams.copy(
                   threads = threads,

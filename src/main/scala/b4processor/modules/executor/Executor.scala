@@ -3,7 +3,6 @@ package b4processor.modules.executor
 import circt.stage.ChiselStage
 import b4processor.Parameters
 import b4processor.connections._
-import b4processor.utils.SignExtendTo64.signExtendTo64
 import chisel3.util._
 import chisel3._
 
@@ -47,14 +46,16 @@ class Executor(implicit params: Parameters) extends Module {
         Srl -> (a >> b(5, 0)).asUInt,
         Sra -> (a.asSInt >> b(5, 0)).asUInt,
         AddJALR -> (a + b),
-        AddW -> signExtendTo64((a(31, 0).asSInt + b(31, 0).asSInt)).asUInt,
-        SllW -> (a(31, 0) << b(4, 0)).asUInt,
-        SrlW -> (a(31, 0) >> b(4, 0)).asUInt,
-        SraW -> signExtendTo64((a(31, 0).asSInt >> b(4, 0)).asSInt).asUInt,
-        SubW -> signExtendTo64(a(31, 0).asSInt - b(31, 0).asSInt).asUInt,
-        AddJAL -> (b + 4.U),
-        AddJALR -> (b + 4.U),
-        AddAsLoadStoreAddress -> (a + b)
+        AddW -> (a(31, 0).asSInt + b(31, 0).asSInt).pad(64).asUInt,
+        SllW -> (a(31, 0) << b(4, 0))(31, 0).asSInt.pad(64).asUInt,
+        SrlW -> (a(31, 0) >> b(4, 0))(31, 0).asSInt.pad(64).asUInt,
+        SraW -> (a(31, 0).asSInt >> b(4, 0)).asSInt.pad(64).asUInt,
+        SubW -> (a(31, 0).asSInt - b(31, 0).asSInt).pad(64).asUInt,
+        AddJAL ->
+          (b + Mux(io.reservationStation.bits.wasCompressed, 2.U, 4.U)),
+        AddJALR ->
+          (b + Mux(io.reservationStation.bits.wasCompressed, 2.U, 4.U)),
+        AddAsLoadStoreAddress -> (a.asSInt + b.asSInt).asUInt
       )
     )
 

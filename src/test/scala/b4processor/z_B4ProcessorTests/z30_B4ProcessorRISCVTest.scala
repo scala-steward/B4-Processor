@@ -21,7 +21,7 @@ class B4ProcessorRISCVTestWrapper()(implicit params: Parameters)
         .get(0)
         .map(_.peekInt())
         .zipWithIndex
-        .map { case (n, i) => f"x$i = $n ($n%016X)" }
+        .map { case (n, i) => f"x$i%-2d = ($n%016X) $n" }
         .reduce(_ + "\n" + _)
     this.io.registerFileContents
       .get(0)(3)

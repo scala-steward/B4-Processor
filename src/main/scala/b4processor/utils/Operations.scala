@@ -1,14 +1,9 @@
 package b4processor.utils
 
 import b4processor.riscv.Instructions
-import b4processor.riscv.Instructions.{
-  I64Type,
-  ZICSRType,
-  ZIFENCEIType
-}
+import b4processor.riscv.Instructions.{I64Type, ZICSRType, ZIFENCEIType}
 import b4processor.utils.BundleInitialize.AddBundleInitializeConstructor
 import b4processor.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
-import b4processor.utils.SignExtendTo64.signExtendTo64
 import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util._
@@ -110,7 +105,7 @@ object Operations {
       (u, _) => u.aluOp -> op,
       _.rs1 -> _(19, 15).reg,
       (u, _) => u.rs2 -> 0.reg,
-      (a, b) => a.rs2Value -> signExtendTo64(b(31, 20).asSInt).asUInt,
+      (a, b) => a.rs2Value -> b(31, 20).asSInt.pad(64).asUInt,
       (u, _) => u.rs2ValueValid -> true.B,
       _.rd -> _(11, 7).reg
     )
@@ -150,7 +145,7 @@ object Operations {
       (u, _) => u.aluOp -> ALUOperation.AddAsLoadStoreAddress,
       (u, _) => u.loadStoreOp -> op,
       _.rs1 -> _(19, 15).reg,
-      _.rs2Value -> _(31, 20),
+      _.rs2Value -> _(31, 20).asSInt.pad(64).asUInt,
       (u, _) => u.rs2ValueValid -> true.B,
       _.rd -> _(11, 7).reg
     )
@@ -160,7 +155,7 @@ object Operations {
       (u, _) => u.aluOp -> ALUOperation.AddAsLoadStoreAddress,
       (u, _) => u.loadStoreOp -> op,
       _.rs1 -> _(19, 15).reg,
-      _.rs2Value -> _.catAccess((31, 25), (11, 7)),
+      _.rs2Value -> _.catAccess((31, 25), (11, 7)).asSInt.pad(64).asUInt,
       (u, _) => u.rs2ValueValid -> true.B,
       (u, _) => u.rd -> 0.reg,
       _.rs2 -> _(24, 20).reg,
@@ -207,6 +202,7 @@ object Operations {
       IType("SRA") -> rtypeOp(ALUOperation.Sra),
       IType("ADDI") -> itypeOp(ALUOperation.Add),
       IType("SLTI") -> itypeOp(ALUOperation.Slt),
+      IType("SLTIU") -> itypeOp(ALUOperation.Sltu),
       IType("ANDI") -> itypeOp(ALUOperation.And),
       IType("ORI") -> itypeOp(ALUOperation.Or),
       IType("XORI") -> itypeOp(ALUOperation.Xor),
@@ -217,9 +213,10 @@ object Operations {
         _.rd -> _(11, 7).reg,
         (u, _) => u.rs1 -> 0.reg,
         (u, inst) =>
-          u.rs1Value -> signExtendTo64(
+          u.rs1Value ->
             (inst(31, 12) ## 0.U(12.W)).asSInt
-          ).asUInt,
+              .pad(64)
+              .asUInt,
         (u, _) => u.rs1ValueValid -> true.B,
         (u, _) => u.rs2ValueValid -> true.B,
         (u, _) => u.rs2Value -> 0.U,
@@ -228,9 +225,10 @@ object Operations {
       IType("AUIPC") -> createOperationWithPC(
         (u, inst, _) => u.rd -> inst(11, 7).reg,
         (u, inst, _) =>
-          u.rs1Value -> signExtendTo64(
+          u.rs1Value ->
             (inst(31, 12) ## 0.U(12.W)).asSInt
-          ).asUInt,
+              .pad(64)
+              .asUInt,
         (u, _, _) => u.rs1ValueValid -> true.B,
         (u, _, _) => u.rs2ValueValid -> true.B,
         (u, _, pc) => u.rs2Value -> pc,
@@ -240,9 +238,10 @@ object Operations {
         (u, inst, _) => u.rd -> inst(11, 7).reg,
         (u, _, pc) => u.rs2Value -> pc,
         (u, inst, _) =>
-          u.rs1Value -> signExtendTo64(
+          u.rs1Value ->
             (inst.catAccess(31, (19, 12), 20, (30, 21)) ## 0.U(1.W)).asSInt
-          ).asUInt,
+              .pad(64)
+              .asUInt,
         (u, _, _) => u.rs1ValueValid -> true.B,
         (u, _, _) => u.rs2ValueValid -> true.B,
         (u, _, _) => u.aluOp -> ALUOperation.AddJAL
