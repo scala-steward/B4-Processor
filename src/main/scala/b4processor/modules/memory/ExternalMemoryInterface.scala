@@ -5,17 +5,13 @@ import b4processor.connections.{OutputValue, ResultType}
 import b4processor.structures.memoryAccess.MemoryAccessWidth
 import b4processor.utils.{
   B4RRArbiter,
-  BurstSize,
-  BurstType,
-  ChiselAXI,
   FIFO,
-  Lock,
-  Response,
   Tag
 }
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
+import b4processor.utils.axi.{BurstSize, BurstType, ChiselAXI, Lock, Response}
 
 class ExternalMemoryInterface(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
@@ -47,12 +43,12 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     writeAddress.bits.CACHE := 0.U
     readAddress.bits.LEN := 0.U
     readAddress.bits.QOS := 0.U
-    writeAddress.bits.SIZE := BurstSize.Size64
+    writeAddress.bits.SIZE := BurstSize.Size1
     write.bits.STRB := 0.U
     readAddress.bits.PROT := 0.U
     readAddress.bits.ADDR := 0.U
     readAddress.bits.LOCK := Lock.Normal
-    readAddress.bits.SIZE := BurstSize.Size64
+    readAddress.bits.SIZE := BurstSize.Size1
     read.ready := false.B
     write.bits.LAST := false.B
     readAddress.bits.ID := 0.U
@@ -119,7 +115,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
         valid := true.B
         bits.ADDR := readTransaction.bits.address(63, 3) ## 0.U(3.W)
         bits.LEN := readTransaction.bits.burstLength
-        bits.SIZE := BurstSize.Size64
+        bits.SIZE := BurstSize.Size8
         bits.CACHE := "b0010".U
       }
       readQueue.input.valid := !readQueued
@@ -230,7 +226,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
         valid := true.B
         bits.ADDR := io.dataWriteRequests.bits.address
         bits.LEN := 0.U
-        bits.SIZE := BurstSize.Size64
+        bits.SIZE := BurstSize.Size8
         bits.BURST := BurstType.Incr
         bits.CACHE := "b0010".U
 

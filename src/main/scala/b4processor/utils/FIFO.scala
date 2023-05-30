@@ -43,3 +43,94 @@ object FIFO extends App {
     val a = UInt(32.W)
   }))
 }
+
+class MyFIFO[T <: Data](t: T) extends Module {
+  val io = IO(new Bundle {
+    val input = Flipped(Decoupled(t))
+    val output = Decoupled(t)
+    val empty = Output(Bool())
+    val full = Output(Bool())
+  })
+
+  private val bufSizePow2 = 5
+
+  val data = Mem(pow(2, 5).toInt, t)
+  val head = RegInit(0.U(bufSizePow2.W))
+  val tail = RegInit(0.U(bufSizePow2.W))
+
+  val empty = head === tail
+  val full = head + 1.U === tail
+
+  io.output.valid := !empty
+  io.output.bits := data(tail)
+  when(io.output.ready && !empty) {
+    tail := tail + 1.U
+  }
+
+  io.input.ready := !full
+  when(io.input.valid && !full) {
+    head := head + 1.U
+    data(head) := io.input.bits
+  }
+
+  io.empty := empty
+  io.full := full
+}
+
+object MyFIFO extends App {
+  ChiselStage.emitSystemVerilogFile(
+    new MyFIFO(UInt(8.W)),
+    Array.empty,
+    Array(
+      "--disable-mem-randomization",
+      "--disable-reg-randomization",
+      "--disable-all-randomization"
+    )
+  )
+}
+
+class MyFIFO2[T <: Data](t: T) extends Module {
+  val io = IO(new Bundle {
+    val input = Flipped(Decoupled(t))
+    val output = Decoupled(t)
+    val empty = Output(Bool())
+    val full = Output(Bool())
+  })
+
+  private val bufSizePow2 = 5
+
+  val data = Mem(pow(2, bufSizePow2).toInt, t)
+  val head = RegInit(0.U((bufSizePow2 + 1).W))
+  val tail = RegInit(0.U((bufSizePow2 + 1).W))
+
+  val empty = head === tail
+  val full = head(bufSizePow2) =/= tail(bufSizePow2) &&
+    head(bufSizePow2 - 1, 0) === tail(bufSizePow2 - 1, 0)
+
+  io.output.valid := !empty
+  io.output.bits := data(tail(bufSizePow2 - 1, 0))
+  when(io.output.ready && !empty) {
+    tail := tail + 1.U
+  }
+
+  io.input.ready := !full
+  when(io.input.valid && !full) {
+    head := head + 1.U
+    data(head(bufSizePow2 - 1, 0)) := io.input.bits
+  }
+
+  io.empty := empty
+  io.full := full
+}
+
+object MyFIFO2 extends App {
+  ChiselStage.emitSystemVerilogFile(
+    new MyFIFO2(UInt(64.W)),
+    Array.empty,
+    Array(
+      "--disable-mem-randomization",
+      "--disable-reg-randomization",
+      "--disable-all-randomization"
+    )
+  )
+}

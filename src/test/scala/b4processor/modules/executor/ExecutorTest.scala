@@ -2,8 +2,8 @@ package b4processor.modules.executor
 
 import b4processor.Parameters
 import b4processor.connections.{BranchOutput, ResultType}
+import b4processor.utils.operations.ALUOperation
 import b4processor.utils.{
-  ALUOperation,
   ExecutorValue,
   FetchValue,
   LSQValue,

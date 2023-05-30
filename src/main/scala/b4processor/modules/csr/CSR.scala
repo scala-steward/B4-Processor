@@ -8,11 +8,11 @@ import b4processor.connections.{
   ReorderBuffer2CSR,
   ResultType
 }
-import b4processor.utils.CSROperation
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
 import b4processor.riscv.CSRs
+import b4processor.utils.operations.CSROperation
 
 class CSR(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {

@@ -29,7 +29,7 @@ class Executor(implicit params: Parameters) extends Module {
   val a = io.reservationStation.bits.value1
   val b = io.reservationStation.bits.value2
 
-  import b4processor.utils.ALUOperation._
+  import b4processor.utils.operations.ALUOperation._
 
   val executeOutput = Wire(UInt(64.W))
   executeOutput :=

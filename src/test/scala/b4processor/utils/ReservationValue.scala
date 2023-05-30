@@ -1,5 +1,7 @@
 package b4processor.utils
 
+import b4processor.utils.operations.ALUOperation
+
 case class ReservationValue(
   valid: Boolean = true,
   destinationTag: Int = 0,

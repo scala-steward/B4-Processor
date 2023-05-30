@@ -1,5 +1,6 @@
 package b4processor.utils
 
+import b4processor.utils.axi.{ChiselAXI, Response}
 import chisel3._
 import chisel3.util.Valid
 import circt.stage.ChiselStage

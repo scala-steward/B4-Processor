@@ -12,10 +12,10 @@ import b4processor.connections.{
 import b4processor.modules.outputcollector.OutputCollector
 import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
-import b4processor.utils.LoadStoreOperation
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
+import b4processor.utils.operations.LoadStoreOperation
 
 class LoadStoreQueue(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
@@ -71,6 +71,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       buffer(insertIndex) := LoadStoreQueueEntry.validEntry(
         // opcode = 1(load), 0(store) (bit数削減)
         operation = decoder.bits.operation,
+        operationWidth = decoder.bits.operationWidth,
         addressAndStoreResultTag = decoder.bits.addressAndLoadResultTag,
         address = decoder.bits.address,
         addressValid = decoder.bits.addressValid,
@@ -167,12 +168,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         }
       }
 
-      val operationIsStore = Seq(
-        LoadStoreOperation.Store8,
-        LoadStoreOperation.Store16,
-        LoadStoreOperation.Store32,
-        LoadStoreOperation.Store64
-      ).map(_ === buffer(checkIndex).operation).reduce(_ || _)
+      val operationIsStore =
+        LoadStoreOperation.Store === buffer(checkIndex).operation
 
       // io.memory(i).valid :=  io.memory(i).ready && (head =/= tail) && ("loadの送出条件" || "storeの送出条件")
       checkOk := (head =/= tail) && buffer(checkIndex).valid && buffer(
@@ -190,6 +187,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
         io.memory.bits.data := buffer(checkIndex).storeData
         io.memory.bits.address := buffer(checkIndex).address
         io.memory.bits.operation := buffer(checkIndex).operation
+        io.memory.bits.operationWidth := buffer(checkIndex).operationWidth
         when(io.memory.ready) {
           buffer(checkIndex) := LoadStoreQueueEntry.default
         }

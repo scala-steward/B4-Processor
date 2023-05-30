@@ -1,4 +1,4 @@
-package b4processor.utils
+package b4processor.utils.axi
 
 import chisel3._
 

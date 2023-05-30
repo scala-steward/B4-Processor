@@ -13,7 +13,7 @@ import b4processor.modules.outputcollector.OutputCollector
 import b4processor.modules.registerfile.RegisterFile
 import b4processor.modules.reorderbuffer.ReorderBuffer
 import b4processor.modules.reservationstation.ReservationStation
-import b4processor.utils.{ChiselAXI, VerilogAXI}
+import b4processor.utils.axi.{ChiselAXI, VerilogAXI}
 import chisel3._
 import chisel3.experimental.dataview.DataViewable
 
@@ -207,8 +207,8 @@ class B4ProcessorFixedPorts(implicit params: Parameters) extends RawModule {
 
 object B4Processor extends App {
   implicit val params = Parameters(
-    threads = 1,
-    executors = 1,
+    threads = 2,
+    executors = 2,
     decoderPerThread = 2,
     maxRegisterFileCommitCount = 1,
     tagWidth = 4,

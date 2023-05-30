@@ -1,7 +1,8 @@
 package b4processor.modules.csr
 
 import b4processor.Parameters
-import b4processor.utils.{CSROperation, Tag}
+import b4processor.utils.Tag
+import b4processor.utils.operations.CSROperation
 import chisel3._
 
 class CSRReservationStationEntry(implicit params: Parameters) extends Bundle {

@@ -5,11 +5,11 @@ import b4processor.connections.ResultType
 import b4processor.structures.memoryAccess.MemoryAccessInfo
 import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
+import b4processor.utils.operations.{LoadStoreOperation, LoadStoreWidth}
 import b4processor.utils.{
   DecodeEnqueue,
   LSQ2Memory,
   LSQfromALU,
-  LoadStoreOperation,
   Tag
 }
 import chisel3._
@@ -109,7 +109,8 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
               addressTag = 10,
               storeDataTag = 5,
               storeData = None,
-              operation = LoadStoreOperation.Load8
+              operation = LoadStoreOperation.Load,
+              operationWidth = LoadStoreWidth.Byte
             )
           ),
           Some(
@@ -117,7 +118,8 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
               addressTag = 11,
               storeDataTag = 6,
               storeData = None,
-              operation = LoadStoreOperation.Load8
+              operation = LoadStoreOperation.Load,
+              operationWidth = LoadStoreWidth.Byte
             )
           )
         )
@@ -153,7 +155,8 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
                 addressTag = 10,
                 storeDataTag = 5,
                 storeData = Some(0),
-                operation = LoadStoreOperation.Load8
+                operation = LoadStoreOperation.Load,
+                operationWidth = LoadStoreWidth.Byte
               )
             ),
             None
@@ -184,7 +187,8 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
               address = 150,
               tag = 10,
               data = 0,
-              operation = LoadStoreOperation.Load8
+              operation = LoadStoreOperation.Load,
+              operationWidth = LoadStoreWidth.Byte
             )
           )
         )
@@ -232,7 +236,8 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
                 addressTag = 10,
                 storeDataTag = 5,
                 storeData = None,
-                operation = LoadStoreOperation.Load8
+                operation = LoadStoreOperation.Load,
+                operationWidth = LoadStoreWidth.Byte
               )
             ),
             None
@@ -274,7 +279,8 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
               address = 150,
               tag = 10,
               data = 123,
-              operation = LoadStoreOperation.Load8
+              operation = LoadStoreOperation.Load,
+              operationWidth = LoadStoreWidth.Byte
             )
           )
         )
@@ -309,7 +315,8 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
                 addressTag = 10,
                 storeDataTag = 5,
                 storeData = None,
-                operation = LoadStoreOperation.Load8
+                operation = LoadStoreOperation.Load,
+                operationWidth = LoadStoreWidth.Byte
               )
             ),
             Some(
@@ -317,7 +324,8 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
                 addressTag = 11,
                 storeDataTag = 6,
                 storeData = None,
-                operation = LoadStoreOperation.Load8
+                operation = LoadStoreOperation.Load,
+                operationWidth = LoadStoreWidth.Byte
               )
             )
           )
@@ -345,7 +353,8 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
               address = 150,
               tag = 10,
               data = 0,
-              operation = LoadStoreOperation.Load8
+              operation = LoadStoreOperation.Load,
+              operationWidth = LoadStoreWidth.Byte
             )
           )
         )
@@ -370,7 +379,8 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
               address = 100,
               tag = 11,
               data = 0,
-              operation = LoadStoreOperation.Load8
+              operation = LoadStoreOperation.Load,
+              operationWidth = LoadStoreWidth.Byte
             )
           )
         )

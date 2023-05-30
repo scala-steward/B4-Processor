@@ -23,6 +23,5 @@ addCompilerPlugin(
 )
 libraryDependencies ++= Seq(
   "edu.berkeley.cs" %% "chisel3" % "3.6.0",
-  // We also recommend using chiseltest for writing unit tests
   "edu.berkeley.cs" %% "chiseltest" % "0.6.0" % "test"
 )

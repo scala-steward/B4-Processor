@@ -2,16 +2,11 @@ package b4processor.modules.decoder
 
 import b4processor.Parameters
 import b4processor.connections._
-import b4processor.utils.{
-  ALUOperation,
-  CSROperation,
-  DecodingMod,
-  LoadStoreOperation,
-  Tag
-}
+import b4processor.utils.Tag
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
+import b4processor.utils.operations.{ALUOperation, CSROperation, DecodingMod, LoadStoreOperation}
 
 /** デコーダ
   */
@@ -34,12 +29,7 @@ class Decoder(implicit params: Parameters) extends Module {
     io.instructionFetch.bits.programCounter
   )
 
-  val operationIsStore = Seq(
-    LoadStoreOperation.Store8,
-    LoadStoreOperation.Store16,
-    LoadStoreOperation.Store32,
-    LoadStoreOperation.Store64
-  ).map(_ === operations.loadStoreOp).reduce(_ || _)
+  val operationIsStore = LoadStoreOperation.Store === operations.loadStoreOp
 
   // リオーダバッファへの入力
   io.reorderBuffer.source1.sourceRegister := operations.rs1
@@ -119,6 +109,7 @@ class Decoder(implicit params: Parameters) extends Module {
 
   when(io.loadStoreQueue.valid) {
     io.loadStoreQueue.bits.operation := operations.loadStoreOp
+    io.loadStoreQueue.bits.operationWidth := operations.loadStoreWidth
     io.loadStoreQueue.bits.addressAndLoadResultTag := rs.destinationTag
     io.loadStoreQueue.bits.addressValid := false.B
     io.loadStoreQueue.bits.address := 0.U

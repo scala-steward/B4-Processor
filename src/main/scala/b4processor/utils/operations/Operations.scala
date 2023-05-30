@@ -1,16 +1,17 @@
-package b4processor.utils
+package b4processor.utils.operations
 
 import b4processor.riscv.Instructions
 import b4processor.riscv.Instructions.{I64Type, ZICSRType, ZIFENCEIType}
 import b4processor.utils.BundleInitialize.AddBundleInitializeConstructor
+import b4processor.utils.RVRegister
 import b4processor.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
 import chisel3._
 import circt.stage.ChiselStage
-import chisel3.util._
 
 import scala.language.implicitConversions
 
 class Operations extends Bundle {
+  val valid = Bool()
   val rs1 = new RVRegister
   val rs1Value = UInt(64.W)
   val rs1ValueValid = Bool()
@@ -22,6 +23,7 @@ class Operations extends Bundle {
   val branchOffset = SInt(12.W)
   val aluOp = ALUOperation()
   val loadStoreOp = LoadStoreOperation()
+  val loadStoreWidth = LoadStoreWidth()
   val fence = Bool()
   val ecall = Bool()
   val ebreak = Bool()
@@ -50,6 +52,7 @@ object Operations {
   ): (UInt, UInt) => Operations = (instruction, pc) => {
     val w = Wire(new Operations())
     w := DontCare
+    w.valid := true.B
     for (e <- elems) {
       val a = e(w, instruction, pc)
       a._1 := a._2
@@ -58,6 +61,7 @@ object Operations {
   }
 
   def default: Operations = new Operations().initialize(
+    _.valid -> false.B,
     _.rs1 -> 0.reg,
     _.rs2 -> 0.reg,
     _.rd -> 0.reg,
@@ -68,6 +72,7 @@ object Operations {
     _.rs2ValueValid -> false.B,
     _.aluOp -> ALUOperation.None,
     _.loadStoreOp -> LoadStoreOperation.None,
+    _.loadStoreWidth -> LoadStoreWidth.Byte,
     _.branchOffset -> 0.S,
     _.fence -> false.B,
     _.fence_i -> false.B,
@@ -140,20 +145,28 @@ object Operations {
       _.rd -> _(11, 7).reg
     )
 
-  def loadOp(op: LoadStoreOperation.Type): (UInt, UInt) => Operations =
+  def loadOp(
+    op: LoadStoreOperation.Type,
+    width: LoadStoreWidth.Type
+  ): (UInt, UInt) => Operations =
     createOperation(
       (u, _) => u.aluOp -> ALUOperation.AddAsLoadStoreAddress,
       (u, _) => u.loadStoreOp -> op,
+      (u, _) => u.loadStoreWidth -> width,
       _.rs1 -> _(19, 15).reg,
       _.rs2Value -> _(31, 20).asSInt.pad(64).asUInt,
       (u, _) => u.rs2ValueValid -> true.B,
       _.rd -> _(11, 7).reg
     )
 
-  def storeOp(op: LoadStoreOperation.Type): (UInt, UInt) => Operations =
+  def storeOp(
+    op: LoadStoreOperation.Type,
+    width: LoadStoreWidth.Type
+  ): (UInt, UInt) => Operations =
     createOperation(
       (u, _) => u.aluOp -> ALUOperation.AddAsLoadStoreAddress,
       (u, _) => u.loadStoreOp -> op,
+      (u, _) => u.loadStoreWidth -> width,
       _.rs1 -> _(19, 15).reg,
       _.rs2Value -> _.catAccess((31, 25), (11, 7)).asSInt.pad(64).asUInt,
       (u, _) => u.rs2ValueValid -> true.B,
@@ -254,17 +267,32 @@ object Operations {
         (u, inst, _) => u.branchOffset -> inst(31, 20).asSInt,
         (u, _, _) => u.aluOp -> ALUOperation.AddJALR
       ),
-      IType("LB") -> loadOp(LoadStoreOperation.Load8),
-      IType("LBU") -> loadOp(LoadStoreOperation.Load8Unsigned),
-      IType("LH") -> loadOp(LoadStoreOperation.Load16),
-      IType("LHU") -> loadOp(LoadStoreOperation.Load16Unsigned),
-      IType("LW") -> loadOp(LoadStoreOperation.Load32),
-      I64Type("LWU") -> loadOp(LoadStoreOperation.Load32Unsigned),
-      I64Type("LD") -> loadOp(LoadStoreOperation.Load64),
-      IType("SB") -> storeOp(LoadStoreOperation.Store8),
-      IType("SH") -> storeOp(LoadStoreOperation.Store16),
-      IType("SW") -> storeOp(LoadStoreOperation.Store32),
-      I64Type("SD") -> storeOp(LoadStoreOperation.Store64),
+      IType("LB") -> loadOp(LoadStoreOperation.Load, LoadStoreWidth.Byte),
+      IType("LBU") -> loadOp(
+        LoadStoreOperation.LoadUnsigned,
+        LoadStoreWidth.Byte
+      ),
+      IType("LH") -> loadOp(LoadStoreOperation.Load, LoadStoreWidth.HalfWord),
+      IType("LHU") -> loadOp(
+        LoadStoreOperation.LoadUnsigned,
+        LoadStoreWidth.HalfWord
+      ),
+      IType("LW") -> loadOp(LoadStoreOperation.Load, LoadStoreWidth.Word),
+      I64Type("LWU") -> loadOp(
+        LoadStoreOperation.LoadUnsigned,
+        LoadStoreWidth.Word
+      ),
+      I64Type("LD") -> loadOp(
+        LoadStoreOperation.Load,
+        LoadStoreWidth.DoubleWord
+      ),
+      IType("SB") -> storeOp(LoadStoreOperation.Store, LoadStoreWidth.Byte),
+      IType("SH") -> storeOp(LoadStoreOperation.Store, LoadStoreWidth.HalfWord),
+      IType("SW") -> storeOp(LoadStoreOperation.Store, LoadStoreWidth.Word),
+      I64Type("SD") -> storeOp(
+        LoadStoreOperation.Store,
+        LoadStoreWidth.DoubleWord
+      ),
       IType("FENCE") -> createOperation((u, _) => u.fence -> true.B),
       IType("ECALL") -> createOperation((u, _) => u.ecall -> true.B),
       IType("EBREAK") -> createOperation((u, _) => u.ebreak -> true.B),
@@ -328,8 +356,11 @@ object ALUOperation extends ChiselEnum {
 }
 
 object LoadStoreOperation extends ChiselEnum {
-  val None, Load8, Load16, Load32, Load64, Store8, Store16, Store32, Store64,
-    Load8Unsigned, Load16Unsigned, Load32Unsigned = Value
+  val None, Load, LoadUnsigned, Store = Value
+}
+
+object LoadStoreWidth extends ChiselEnum {
+  val Byte, HalfWord, Word, DoubleWord = Value
 }
 
 object CSROperation extends ChiselEnum {

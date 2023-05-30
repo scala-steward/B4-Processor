@@ -1,7 +1,8 @@
 package b4processor.modules.executor
 
 import b4processor.Parameters
-import b4processor.utils.{ALUOperation, Tag}
+import b4processor.utils.Tag
+import b4processor.utils.operations.ALUOperation
 import chisel3.util.ReadyValidIO
 import chisel3._
 

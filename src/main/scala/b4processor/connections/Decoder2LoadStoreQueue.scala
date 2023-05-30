@@ -1,7 +1,8 @@
 package b4processor.connections
 
 import b4processor.Parameters
-import b4processor.utils.{LoadStoreOperation, Tag}
+import b4processor.utils.operations.{LoadStoreOperation, LoadStoreWidth}
+import b4processor.utils.Tag
 import chisel3._
 
 /** デコーダとLSQをつなぐ
@@ -13,6 +14,7 @@ class Decoder2LoadStoreQueue(implicit params: Parameters) extends Bundle {
 
   /** メモリアクセスの情報 */
   val operation = LoadStoreOperation()
+  val operationWidth = LoadStoreWidth()
 
   /** 命令自体を識別するためのタグ(Destination Tag) */
   val addressAndLoadResultTag = new Tag

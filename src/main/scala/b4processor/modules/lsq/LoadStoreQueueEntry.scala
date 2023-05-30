@@ -2,7 +2,8 @@ package b4processor.modules.lsq
 
 import b4processor.Parameters
 import b4processor.structures.memoryAccess.MemoryAccessInfo
-import b4processor.utils.{LoadStoreOperation, Tag}
+import b4processor.utils.operations.{LoadStoreOperation, LoadStoreWidth}
+import b4processor.utils.Tag
 import chisel3._
 
 /** LSQのエントリ
@@ -20,6 +21,7 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
 
   /** メモリアクセスの情報 */
   val operation = LoadStoreOperation()
+  val operationWidth = LoadStoreWidth()
 
   /** 命令自体を識別するためのタグ(Destination Tag) */
   val addressAndLoadResultTag = new Tag
@@ -43,6 +45,7 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
 object LoadStoreQueueEntry {
   def validEntry(
     operation: LoadStoreOperation.Type,
+    operationWidth: LoadStoreWidth.Type,
     addressAndStoreResultTag: Tag,
     address: UInt,
     addressValid: Bool,
@@ -54,6 +57,7 @@ object LoadStoreQueueEntry {
     entry.valid := true.B
 
     entry.operation := operation
+    entry.operationWidth := operationWidth
 
     entry.addressAndLoadResultTag := addressAndStoreResultTag
     entry.address := address
@@ -72,6 +76,7 @@ object LoadStoreQueueEntry {
     entry.readyReorderSign := false.B
 
     entry.operation := DontCare
+    entry.operationWidth := DontCare
 
     entry.addressAndLoadResultTag := Tag(0, 0)
     entry.address := 0.U
