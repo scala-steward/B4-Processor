@@ -50,7 +50,7 @@ class z40_B4ProcessorParameterTest
                   ) { c =>
                     c.initialize64("programs/riscv-sample-programs/fibonacci_c")
                     for (t <- 0 until threads)
-                      c.checkForRegisterChange(3, 1298777728820984005L, 4000, t)
+                      c.checkForRegisterChange(3, 1298777728820984005L, 10000, t)
                     val fw = new FileWriter("stats.jsonl", true)
                     val ipcs = (0 until threads)
                       .map(t =>

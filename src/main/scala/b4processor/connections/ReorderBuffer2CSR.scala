@@ -7,4 +7,5 @@ import chisel3.util._
 class ReorderBuffer2CSR(implicit params: Parameters) extends Bundle {
   val retireCount = UInt(log2Up(params.maxRegisterFileCommitCount).W)
   val mcause = Valid(UInt(64.W))
+  val mepc = Valid(UInt(64.W))
 }

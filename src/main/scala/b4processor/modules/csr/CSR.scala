@@ -85,6 +85,13 @@ class CSR(implicit params: Parameters) extends Module {
       io.CSROutput.bits.isError := true.B
     }
   }
+
+  when(io.reorderBuffer.mcause.valid) {
+    mcause := io.reorderBuffer.mcause.bits
+  }
+  when(io.reorderBuffer.mepc.valid) {
+    mepc := io.reorderBuffer.mepc.bits
+  }
 }
 
 object CSR extends App {

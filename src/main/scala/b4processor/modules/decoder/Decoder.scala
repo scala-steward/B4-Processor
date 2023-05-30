@@ -6,7 +6,12 @@ import b4processor.utils.Tag
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
-import b4processor.utils.operations.{ALUOperation, CSROperation, DecodingMod, LoadStoreOperation}
+import b4processor.utils.operations.{
+  ALUOperation,
+  CSROperation,
+  DecodingMod,
+  LoadStoreOperation
+}
 
 /** デコーダ
   */
@@ -28,6 +33,8 @@ class Decoder(implicit params: Parameters) extends Module {
     io.instructionFetch.bits.instruction,
     io.instructionFetch.bits.programCounter
   )
+
+  io.reorderBuffer.isDecodeError := io.instructionFetch.valid && !operations.valid
 
   val operationIsStore = LoadStoreOperation.Store === operations.loadStoreOp
 
@@ -64,10 +71,7 @@ class Decoder(implicit params: Parameters) extends Module {
   io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready && io.csr.ready
   // リオーダバッファやリザベーションステーションに新しいエントリを追加するのは命令がある時
   io.reorderBuffer.valid := io.instructionFetch.ready &&
-    io.instructionFetch.valid &&
-    (operations.aluOp =/= ALUOperation.None ||
-      operations.loadStoreOp =/= LoadStoreOperation.None ||
-      operations.csrOp =/= CSROperation.None)
+    io.instructionFetch.valid
   io.reservationStation.entry.valid := io.instructionFetch.ready &&
     io.instructionFetch.valid && operations.aluOp =/= ALUOperation.None
 

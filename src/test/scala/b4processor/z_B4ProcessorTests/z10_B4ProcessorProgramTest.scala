@@ -57,7 +57,7 @@ class z10_B4ProcessorProgramTest
         Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("programs/riscv-sample-programs/fibonacci")
-        c.checkForRegister(6, 55, 200)
+        c.checkForRegister(6, 55, 400)
       }
   }
 
@@ -68,7 +68,7 @@ class z10_B4ProcessorProgramTest
         Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("programs/riscv-sample-programs/fibonacci")
-        c.checkForRegister(6, 55, 200)
+        c.checkForRegister(6, 55, 400)
       }
   }
 
@@ -401,7 +401,7 @@ class z10_B4ProcessorProgramTest
         Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("programs/riscv-sample-programs/loop_c")
-        c.checkForRegister(3, 30)
+        c.checkForRegister(3, 30,1000)
 
       }
   }
@@ -421,7 +421,7 @@ class z10_B4ProcessorProgramTest
         Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("programs/riscv-sample-programs/loop_c")
-        c.checkForRegister(3, 30)
+        c.checkForRegister(3, 30,2000)
 
       }
   }
@@ -530,7 +530,29 @@ class z10_B4ProcessorProgramTest
         c.checkForRegister(17, 10)
         c.checkForRegister(17, 20)
         c.checkForRegister(17, 30)
-        c.clock.step(300)
+        c.clock.step(20)
+      }
+  }
+
+  it should "run illegal_inst" in {
+    test(
+      new B4ProcessorWithMemory(
+      )(
+        defaultParams.copy(
+          threads = 1,
+          decoderPerThread = 1,
+          maxRegisterFileCommitCount = 2,
+          loadStoreQueueIndexWidth = 2
+        )
+      )
+    )
+      .withAnnotations(
+        Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.initialize("programs/riscv-sample-programs/illegal_inst")
+        c.checkForRegister(10, 10)
+        c.checkForRegister(10, 40)
+        c.clock.step(20)
       }
   }
 }

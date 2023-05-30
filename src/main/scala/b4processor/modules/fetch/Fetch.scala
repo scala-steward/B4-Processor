@@ -147,9 +147,9 @@ class Fetch(implicit params: Parameters) extends Module {
     when(waiting === WaitingReason.Exception) {
       when(io.csrReservationStationEmpty) {
         waiting := WaitingReason.None
-        when(io.csr.mcause(1, 0) === 0.U) {
+        when(io.csr.mtvec(1, 0) === 0.U) {
           pc := io.csr.mtvec(63, 2) ## 0.U(2.W)
-        }.elsewhen(io.csr.mcause(1, 0) === 1.U) {
+        }.elsewhen(io.csr.mtvec(1, 0) === 1.U) {
           pc := (io.csr.mtvec(63, 2) + io.csr.mcause(62, 0)) ## 0.U(2.W)
         }
       }

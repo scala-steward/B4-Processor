@@ -11,6 +11,7 @@ import b4processor.connections.{
   ReorderBuffer2RegisterFile,
   ResultType
 }
+import b4processor.riscv.{CSRs, Causes}
 import b4processor.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
 import b4processor.utils.{RVRegister, Tag}
 import chisel3._
@@ -105,7 +106,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       val index = tail + i.U
 
       val biVal = buffer(index)
-      val instructionOk = biVal.valueReady || biVal.storeSign
+      val instructionOk = biVal.valueReady || biVal.storeSign || biVal.isError
       val canCommit = lastValid && index =/= head && instructionOk
       val isError = biVal.isError
 
@@ -114,6 +115,8 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       rf.bits.destinationRegister := 0.reg
       io.csr.mcause.valid := false.B
       io.csr.mcause.bits := DontCare
+      io.csr.mepc.valid := false.B
+      io.csr.mepc.bits := DontCare
       when(canCommit) {
         when(!isError) {
           rf.bits.value := biVal.value
@@ -127,6 +130,8 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         }.otherwise {
           io.csr.mcause.valid := true.B
           io.csr.mcause.bits := biVal.value
+          io.csr.mepc.valid := true.B
+          io.csr.mepc.bits := biVal.programCounter
           io.isError := true.B
         }
       }
@@ -160,12 +165,20 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       when(decoder.valid && decoder.ready) {
         buffer(insertIndex) := {
           val entry = Wire(new ReorderBufferEntry)
-          entry.value := 0.U
-          entry.valueReady := false.B
           entry.destinationRegister := decoder.destination.destinationRegister
           entry.storeSign := decoder.destination.storeSign
           entry.programCounter := decoder.programCounter
-          entry.isError := false.B
+          entry.isError := decoder.isDecodeError
+          entry.value := Mux(
+            decoder.isDecodeError,
+            Causes.illegal_instruction.U,
+            0.U
+          )
+          entry.valueReady := Mux(
+            decoder.destination.destinationRegister === 0.reg,
+            true.B,
+            false.B
+          )
           entry
         }
       }
