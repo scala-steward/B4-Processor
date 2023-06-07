@@ -51,7 +51,13 @@
         } // attrs);
         sbtTest = testCommand: B4ProcessorDerivation {
           pname = "B4Processor-tests";
-          buildInputs = with pkgs; [ verilog verilator stdenv.cc zlib circt ];
+          buildInputs = with pkgs; [
+            verilog
+            verilator
+            stdenv.cc
+            zlib
+            circt
+          ];
           buildPhase = ''
             ln -s ${self.packages.${system}.default} programs
             ${testCommand}
@@ -83,12 +89,13 @@
           buildInputs = with pkgs;[
             circt
             rustfilt
-            pkgsCross.riscv64-embedded.stdenv.cc
-            (pkgs.sbt.override {
-              jre = pkgs.jdk19;
-            })
+            pkgsCross.riscv64-embedded.buildPackages.gcc
+            sbt
+            jdk
+            verilog
+            verilator
+            zlib
           ];
-          JAVA_19_HOME = "${pkgs.jdk19}/lib/openjdk";
         };
       });
 }

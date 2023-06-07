@@ -31,7 +31,7 @@ class z10_B4ProcessorProgramTest
       }
   }
   // branchプログラムが実行できる
-  it should "execute branch with no parallel 2 thread" in {
+  it should "execute branch with 2 parallel thread" in {
     test(
       new B4ProcessorWithMemory()(
         defaultParams.copy(threads = 2, decoderPerThread = 1)

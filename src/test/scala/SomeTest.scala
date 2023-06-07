@@ -14,10 +14,13 @@ class Adder extends Module {
 
 class SomeTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "10-3=7" in {
-    test(new Adder) { c =>
+    test(new Adder).withAnnotations(
+      Seq(WriteFstAnnotation, VerilatorBackendAnnotation)
+    ) { c =>
       c.a.poke(10)
       c.b.poke(-3)
       c.out.expect(7)
+      c.clock.step()
     }
   }
 }
