@@ -35,10 +35,12 @@
               "build.sbt"
             ];
           };
-          buildInputs = with pkgs; [ circt ];
+          buildInputs = with pkgs; [ circt ripgrep ];
           depsSha256 = "sha256-sUwvilrDzak29wo+a/t94Etw/8Y9GVcXt5/jeYn02gg=";
           buildPhase = ''
             sbt "runMain b4processor.B4Processor"
+            cat B4Processor.sv | rg -U '(?s)module B4Processor\(.*endmodule' > B4Processor.wrapper.v
+            sed -i 's/module B4Processor(/module B4ProcessorUnused(/g' B4Processor.sv
           '';
 
           # install your software in $out, depending on your needs
