@@ -6,6 +6,7 @@ import b4processor.utils.Tag
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
+import b4processor.modules.reservationstation.ReservationStationEntry
 import b4processor.utils.operations.{
   ALUOperation,
   CSROperation,
@@ -52,6 +53,7 @@ class Decoder(implicit params: Parameters) extends Module {
   // リオーダバッファから一致するタグを取得する
   val sourceTag1 = io.reorderBuffer.source1.matchingTag
   val sourceTag2 = io.reorderBuffer.source2.matchingTag
+  val destinationTag = io.reorderBuffer.destination.destinationTag
 
   // Valueの選択
   val value1 = ValueSelector.getValue(
@@ -72,52 +74,56 @@ class Decoder(implicit params: Parameters) extends Module {
   // リオーダバッファやリザベーションステーションに新しいエントリを追加するのは命令がある時
   io.reorderBuffer.valid := io.instructionFetch.ready &&
     io.instructionFetch.valid
-  io.reservationStation.entry.valid := io.instructionFetch.ready &&
-    io.instructionFetch.valid && operations.aluOp =/= ALUOperation.None
 
   // RSへの出力を埋める
   val rs = io.reservationStation.entry
-  rs.operation := operations.aluOp
-  rs.destinationTag := io.reorderBuffer.destination.destinationTag
-  rs.sourceTag1 := Mux(
-    value1.valid || operations.rs1ValueValid,
-    Tag(io.threadId, 0.U),
-    sourceTag1.bits
-  )
-  rs.sourceTag2 := Mux(
-    value2.valid || operations.rs2ValueValid,
-    Tag(io.threadId, 0.U),
-    sourceTag2.bits
-  )
-  rs.ready1 := value1.valid || operations.rs1ValueValid
-  rs.ready2 := value2.valid || operations.rs2ValueValid
-  rs.value1 := MuxCase(
-    0.U,
-    Seq(
-      operations.rs1ValueValid -> operations.rs1Value,
-      value1.valid -> value1.bits
+  rs := 0.U.asTypeOf(new ReservationStationEntry)
+  rs.valid := io.instructionFetch.ready &&
+    io.instructionFetch.valid && operations.aluOp =/= ALUOperation.None
+  when(rs.valid) {
+    rs.operation := operations.aluOp
+    rs.destinationTag := destinationTag
+    rs.sourceTag1 := Mux(
+      value1.valid || operations.rs1ValueValid,
+      Tag(io.threadId, 0.U),
+      sourceTag1.bits
     )
-  )
-  rs.value2 := MuxCase(
-    0.U,
-    Seq(
-      operations.rs2ValueValid -> operations.rs2Value,
-      value2.valid -> value2.bits
+    rs.sourceTag2 := Mux(
+      value2.valid || operations.rs2ValueValid,
+      Tag(io.threadId, 0.U),
+      sourceTag2.bits
     )
-  )
-  rs.branchOffset := operations.branchOffset
-  rs.wasCompressed := io.instructionFetch.bits.wasCompressed
+    rs.ready1 := value1.valid || operations.rs1ValueValid
+    rs.ready2 := value2.valid || operations.rs2ValueValid
+    rs.value1 := MuxCase(
+      0.U,
+      Seq(
+        operations.rs1ValueValid -> operations.rs1Value,
+        value1.valid -> value1.bits
+      )
+    )
+    rs.value2 := MuxCase(
+      0.U,
+      Seq(
+        operations.rs2ValueValid -> operations.rs2Value,
+        value2.valid -> value2.bits
+      )
+    )
+    rs.branchOffset := operations.branchOffset
+    rs.wasCompressed := io.instructionFetch.bits.wasCompressed
+  }
 
   // load or store命令の場合，LSQへ発送
+  io.loadStoreQueue.bits := 0.U.asTypeOf(new Decoder2LoadStoreQueue)
   io.loadStoreQueue.valid := io.loadStoreQueue.ready && io.instructionFetch.ready && io.instructionFetch.valid && operations.loadStoreOp =/= LoadStoreOperation.None
-
   when(io.loadStoreQueue.valid) {
     io.loadStoreQueue.bits.operation := operations.loadStoreOp
     io.loadStoreQueue.bits.operationWidth := operations.loadStoreWidth
-    io.loadStoreQueue.bits.addressAndLoadResultTag := rs.destinationTag
-    io.loadStoreQueue.bits.addressValid := false.B
-    io.loadStoreQueue.bits.address := 0.U
-    io.loadStoreQueue.bits.addressOffset := operations.rs2Value.asSInt
+    io.loadStoreQueue.bits.destinationTag := destinationTag
+    io.loadStoreQueue.bits.addressValid := value1.valid
+    io.loadStoreQueue.bits.address := value1.bits
+    io.loadStoreQueue.bits.addressTag := sourceTag1.bits
+    io.loadStoreQueue.bits.addressOffset := operations.rs2Value(11, 0).asSInt
     when(operationIsStore) {
       io.loadStoreQueue.bits.storeDataTag := sourceTag2.bits
       io.loadStoreQueue.bits.storeData := value2.bits
@@ -127,15 +133,13 @@ class Decoder(implicit params: Parameters) extends Module {
       io.loadStoreQueue.bits.storeData := 0.U
       io.loadStoreQueue.bits.storeDataValid := true.B
     }
-  }.otherwise {
-    io.loadStoreQueue.bits := DontCare
   }
 
   io.csr.valid := io.csr.ready && io.instructionFetch.ready && io.instructionFetch.valid & operations.csrOp =/= CSROperation.None
-  io.csr.bits := DontCare
-  io.csr.bits.operation := operations.csrOp
-  io.csr.bits.address := operations.rs2Value
+  io.csr.bits := 0.U.asTypeOf(new Decoder2CSRReservationStation)
   when(io.csr.valid) {
+    io.csr.bits.operation := operations.csrOp
+    io.csr.bits.address := operations.rs2Value
 //    printf(p"decoder out ${operations.csrOp}\n")
     io.csr.bits.sourceTag := sourceTag1.bits
     io.csr.bits.value := MuxCase(

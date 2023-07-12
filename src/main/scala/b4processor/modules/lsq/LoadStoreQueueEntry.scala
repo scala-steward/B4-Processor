@@ -24,13 +24,17 @@ class LoadStoreQueueEntry(implicit params: Parameters) extends Bundle {
   val operationWidth = LoadStoreWidth()
 
   /** 命令自体を識別するためのタグ(Destination Tag) */
-  val addressAndLoadResultTag = new Tag
+  val destinationTag = new Tag
 
   /** アドレス値 */
   val address = UInt(64.W)
 
+  val addressOffset = SInt(12.W)
+
   /** アドレス値が有効である */
   val addressValid = Bool()
+
+  val addressTag = new Tag
 
   /** ストアに使用するデータが格納されるタグ(SourceRegister2 Tag) */
   val storeDataTag = new Tag
@@ -46,9 +50,11 @@ object LoadStoreQueueEntry {
   def validEntry(
     operation: LoadStoreOperation.Type,
     operationWidth: LoadStoreWidth.Type,
-    addressAndStoreResultTag: Tag,
+    destinationTag: Tag,
     address: UInt,
     addressValid: Bool,
+    addressOffset: SInt,
+    addressTag: Tag,
     storeDataTag: Tag,
     storeData: UInt,
     storeDataValid: Bool
@@ -59,9 +65,11 @@ object LoadStoreQueueEntry {
     entry.operation := operation
     entry.operationWidth := operationWidth
 
-    entry.addressAndLoadResultTag := addressAndStoreResultTag
+    entry.destinationTag := destinationTag
     entry.address := address
     entry.addressValid := addressValid
+    entry.addressOffset := addressOffset
+    entry.addressTag := addressTag
 
     entry.storeDataTag := storeDataTag
     entry.storeData := storeData
@@ -78,9 +86,11 @@ object LoadStoreQueueEntry {
     entry.operation := DontCare
     entry.operationWidth := DontCare
 
-    entry.addressAndLoadResultTag := Tag(0, 0)
+    entry.destinationTag := Tag(0, 0)
+    entry.addressTag := Tag(0, 0)
     entry.address := 0.U
     entry.addressValid := false.B
+    entry.addressOffset := 0.S
 
     entry.storeDataTag := Tag(0, 0)
     entry.storeData := 0.U

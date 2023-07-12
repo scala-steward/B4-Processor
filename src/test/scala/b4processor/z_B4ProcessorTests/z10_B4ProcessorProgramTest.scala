@@ -257,7 +257,7 @@ class z10_B4ProcessorProgramTest
         c.checkForRegister(3, 10, 200)
         c.io.registerFileContents
           .get(0)(1)
-          .expect(defaultParams.instructionStart + 0x58)
+          .expect(defaultParams.instructionStart + 0x58 + 16)
         c.io.registerFileContents.get(0)(2).expect(10)
         c.io.registerFileContents.get(0)(3).expect(10)
       }
@@ -401,7 +401,7 @@ class z10_B4ProcessorProgramTest
         Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("programs/riscv-sample-programs/loop_c")
-        c.checkForRegister(3, 30,1000)
+        c.checkForRegister(3, 30, 1000)
 
       }
   }
@@ -421,7 +421,7 @@ class z10_B4ProcessorProgramTest
         Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("programs/riscv-sample-programs/loop_c")
-        c.checkForRegister(3, 30,2000)
+        c.checkForRegister(3, 30, 2000)
 
       }
   }

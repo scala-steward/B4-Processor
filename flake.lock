@@ -5,11 +5,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1687709756,
-        "narHash": "sha256-Y5wKlQSkgEK2weWdOu4J3riRd+kV/VCgHsqLNTTWQ/0=",
+        "lastModified": 1689068808,
+        "narHash": "sha256-6ixXo3wt24N/melDWjq70UuHQLxGV8jZvooRanIHXw0=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "dbabf0ca0c0c4bce6ea5eaf65af5cb694d2082c7",
+        "rev": "919d646de7be200f3bf08cb76ae1f09402b6f9b4",
         "type": "github"
       },
       "original": {
@@ -58,11 +58,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1688590700,
-        "narHash": "sha256-ZF055rIUP89cVwiLpG5xkJzx00gEuuGFF60Bs/LM3wc=",
+        "lastModified": 1689008574,
+        "narHash": "sha256-VFMgyHDiqsGDkRg73alv6OdHJAqhybryWHv77bSCGIw=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "f292b4964cb71f9dfbbd30dc9f511d6165cd109b",
+        "rev": "4a729ce4b1fe5ec4fffc71c67c96aa5184ebb462",
         "type": "github"
       },
       "original": {
@@ -74,11 +74,11 @@
     "riscv-test-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1688570312,
-        "narHash": "sha256-7LHJhNICp3M5oCMjQeeBAPRfQxqQpq1iLK54NzlfNvA=",
+        "lastModified": 1689010602,
+        "narHash": "sha256-dZ5dGlfGFdM152qG4nI0r8zePKyvNEEvGy5q47P46Jo=",
         "ref": "refs/heads/master",
-        "rev": "1f7a4b409a495f479b57a625922b6dbfa55b9122",
-        "revCount": 909,
+        "rev": "ed0a63ea4ffea691e753ba1410d78961b80dc739",
+        "revCount": 913,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/riscv-software-src/riscv-tests"

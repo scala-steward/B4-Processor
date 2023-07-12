@@ -5,8 +5,7 @@ import b4processor.Parameters
 import b4processor.connections.{
   CollectedOutput,
   Decoder2ReservationStation,
-  ReservationStation2Executor,
-  ResultType
+  ReservationStation2Executor
 }
 import b4processor.utils.B4RRArbiter
 import chisel3._
@@ -82,7 +81,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
   for ((output, i) <- io.collectedOutput.zipWithIndex) {
     prefix(s"out${i}") {
       when(
-        output.outputs.valid && output.outputs.bits.resultType === ResultType.Result
+        output.outputs.valid
       ) {
         for (entry <- reservation) {
           when(entry.valid) {

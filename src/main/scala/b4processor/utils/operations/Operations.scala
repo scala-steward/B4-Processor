@@ -150,7 +150,7 @@ object Operations {
     width: LoadStoreWidth.Type
   ): (UInt, UInt) => Operations =
     createOperation(
-      (u, _) => u.aluOp -> ALUOperation.AddAsLoadStoreAddress,
+      (u, _) => u.aluOp -> ALUOperation.None,
       (u, _) => u.loadStoreOp -> op,
       (u, _) => u.loadStoreWidth -> width,
       _.rs1 -> _(19, 15).reg,
@@ -164,7 +164,7 @@ object Operations {
     width: LoadStoreWidth.Type
   ): (UInt, UInt) => Operations =
     createOperation(
-      (u, _) => u.aluOp -> ALUOperation.AddAsLoadStoreAddress,
+      (u, _) => u.aluOp -> ALUOperation.None,
       (u, _) => u.loadStoreOp -> op,
       (u, _) => u.loadStoreWidth -> width,
       _.rs1 -> _(19, 15).reg,
@@ -351,7 +351,7 @@ object ALUOperation extends ChiselEnum {
   val None, BranchEqual, BranchNotEqual, BranchLessThan,
     BranchGreaterThanOrEqual, BranchLessThanUnsigned,
     BranchGreaterThanOrEqualUnsigned, Add, Sub, And, Or, Slt, Sltu, Xor, Sll,
-    Srl, Sra, AddJALR, AddJAL, AddAsLoadStoreAddress, AddW, SllW, SrlW, SraW,
+    Srl, Sra, AddJALR, AddJAL, AddW, SllW, SrlW, SraW,
     SubW = Value
 }
 

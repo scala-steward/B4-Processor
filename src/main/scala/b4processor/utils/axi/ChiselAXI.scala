@@ -5,15 +5,15 @@ import chisel3.experimental.dataview._
 import chisel3.util._
 
 class ChiselAXI(
-                 val dataWidth: Int,
-                 val addressWidth: Int,
-                 val idWidth: Int = 0,
-                 val userWriteWidth: Int = 0,
-                 val userWriteAddressWidth: Int = 0,
-                 val userWriteResponceWidth: Int = 0,
-                 val userReadAddressWidth: Int = 0,
-                 val userReadWidth: Int = 0
-               ) extends Bundle {
+  val dataWidth: Int,
+  val addressWidth: Int,
+  val idWidth: Int = 0,
+  val userWriteWidth: Int = 0,
+  val userWriteAddressWidth: Int = 0,
+  val userWriteResponceWidth: Int = 0,
+  val userReadAddressWidth: Int = 0,
+  val userReadWidth: Int = 0
+) extends Bundle {
   class WriteAddressChannel extends Bundle {
     val ID = UInt(idWidth.W) // Optional Default 0
     val ADDR = UInt(addressWidth.W)
@@ -67,7 +67,6 @@ class ChiselAXI(
   val readAddress = Irrevocable(new ReadAddressChannel)
   val read = Flipped(Irrevocable(new ReadDataChannel))
 }
-
 
 object ChiselAXI {
   implicit val axiView: DataView[VerilogAXI, ChiselAXI] = DataView(

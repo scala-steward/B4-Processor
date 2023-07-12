@@ -9,8 +9,8 @@ import b4processor.modules.executor.Executor
 import b4processor.modules.fetch.{Fetch, FetchBuffer}
 import b4processor.modules.lsq.LoadStoreQueue
 import b4processor.modules.memory.ExternalMemoryInterface
-import b4processor.modules.outputcollector.OutputCollector
-import b4processor.modules.registerfile.RegisterFile
+import b4processor.modules.outputcollector.{OutputCollector, OutputCollector2}
+import b4processor.modules.registerfile.{RegisterFile, RegisterFileMem}
 import b4processor.modules.reorderbuffer.ReorderBuffer
 import b4processor.modules.reservationstation.ReservationStation
 import b4processor.utils.axi.{ChiselAXI, VerilogAXI}
@@ -39,12 +39,13 @@ class B4Processor(implicit params: Parameters) extends Module {
   private val fetchBuffer = Seq.fill(params.threads)(Module(new FetchBuffer))
   private val reorderBuffer =
     Seq.fill(params.threads)(Module(new ReorderBuffer))
-  private val registerFile = Seq.fill(params.threads)(Module(new RegisterFile))
+  private val registerFile =
+    Seq.fill(params.threads)(Module(new RegisterFileMem))
   private val loadStoreQueue =
     Seq.fill(params.threads)(Module(new LoadStoreQueue))
   private val dataMemoryBuffer = Module(new DataMemoryBuffer)
 
-  private val outputCollector = Module(new OutputCollector)
+  private val outputCollector = Module(new OutputCollector2)
   private val branchAddressCollector = Module(new BranchOutputCollector())
 
   private val uncompresser = Seq.fill(params.threads)(
@@ -208,8 +209,8 @@ class B4ProcessorFixedPorts(implicit params: Parameters) extends RawModule {
 object B4Processor extends App {
   implicit val params = Parameters(
     threads = 2,
-    executors = 2,
-    decoderPerThread = 2,
+    executors = 1,
+    decoderPerThread = 1,
     maxRegisterFileCommitCount = 1,
     tagWidth = 4,
     instructionStart = 0x2000_0000L
@@ -219,9 +220,9 @@ object B4Processor extends App {
     new B4ProcessorFixedPorts(),
     Array.empty,
     Array(
-      "--disable-mem-randomization",
-      "--disable-reg-randomization",
-      "--disable-all-randomization"
+//      "--disable-mem-randomization",
+//      "--disable-reg-randomization",
+//      "--disable-all-randomization"
     )
   )
 }

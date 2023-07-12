@@ -16,14 +16,15 @@ class Decoder2LoadStoreQueue(implicit params: Parameters) extends Bundle {
   val operation = LoadStoreOperation()
   val operationWidth = LoadStoreWidth()
 
-  /** 命令自体を識別するためのタグ(Destination Tag) */
-  val addressAndLoadResultTag = new Tag
+  val destinationTag = new Tag
+
+  val addressTag = new Tag
 
   /** アドレス値が有効である */
   val address = UInt(64.W)
 
   /** アドレス値が有効である */
-  val addressOffset = SInt(64.W)
+  val addressOffset = SInt(12.W)
 
   /** アドレス値が有効である */
   val addressValid = Bool()

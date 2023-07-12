@@ -1,17 +1,11 @@
 package b4processor.modules.lsq
 
 import b4processor.Parameters
-import b4processor.connections.ResultType
 import b4processor.structures.memoryAccess.MemoryAccessInfo
 import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
 import b4processor.utils.operations.{LoadStoreOperation, LoadStoreWidth}
-import b4processor.utils.{
-  DecodeEnqueue,
-  LSQ2Memory,
-  LSQfromALU,
-  Tag
-}
+import b4processor.utils.{DecodeEnqueue, LSQ2Memory, LSQfromALU, Tag}
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.util.{BitPat, DecoupledIO}
@@ -31,9 +25,6 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
     val output = this.io.outputCollector.outputs
     val value = values
     output.valid.poke(value.exists(_.valid))
-    output.bits.resultType.poke(
-      value.map(_.resultType).getOrElse(ResultType.Result)
-    )
     output.bits.value.poke(value.map(_.value).getOrElse(0))
     output.bits.tag.poke(Tag(0, value.map(_.destinationtag).getOrElse(0)))
     //      output.programCounter.poke(value.map(_.ProgramCounter).getOrElse(0))
@@ -49,7 +40,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
       decoder.valid.poke(value.isDefined)
       if (value.isDefined) {
         val v = value.get
-        decoder.bits.addressAndLoadResultTag.poke(Tag(0, v.addressTag))
+        decoder.bits.destinationTag.poke(Tag(0, v.addressTag))
         decoder.bits.storeDataTag.poke(Tag(0, v.storeDataTag))
         decoder.bits.storeData.poke(v.storeData.getOrElse(0L))
         decoder.bits.storeDataValid.poke(v.storeData.isDefined)
@@ -171,7 +162,6 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
               valid = true,
               destinationtag = 10,
               value = 150,
-              resultType = ResultType.LoadStoreAddress
             )
           )
         )
@@ -259,7 +249,6 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
               valid = true,
               destinationtag = 10,
               value = 150,
-              resultType = ResultType.LoadStoreAddress
             )
           )
         )
@@ -341,7 +330,6 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
               valid = true,
               destinationtag = 10,
               value = 150,
-              resultType = ResultType.LoadStoreAddress
             )
           )
         )
@@ -365,7 +353,6 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
               valid = true,
               destinationtag = 11,
               value = 100,
-              resultType = ResultType.LoadStoreAddress
             )
           )
         )

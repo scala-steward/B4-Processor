@@ -3,7 +3,7 @@ package b4processor.modules.decoder
 import b4processor.Parameters
 import b4processor.common.OpcodeFormat
 import b4processor.common.OpcodeFormat._
-import b4processor.connections.{CollectedOutput, ResultType}
+import b4processor.connections.{CollectedOutput}
 import b4processor.utils.Tag
 import chisel3._
 import chisel3.util._
@@ -25,7 +25,7 @@ class ValueSelector(implicit params: Parameters) extends Module {
   // ALUからバイパスされた値のうち、destination tagと一致するsource tagを持っている
   private val o = io.outputCollector.outputs
   private val outputMatchingTagExists =
-    o.valid && o.bits.resultType === ResultType.Result && o.bits.tag === io.sourceTag.bits
+    o.valid  && o.bits.tag === io.sourceTag.bits
 
   // 値があるか
   io.value.valid := MuxCase(

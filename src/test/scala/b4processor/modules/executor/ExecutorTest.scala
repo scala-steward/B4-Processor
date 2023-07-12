@@ -1,7 +1,7 @@
 package b4processor.modules.executor
 
 import b4processor.Parameters
-import b4processor.connections.{BranchOutput, ResultType}
+import b4processor.connections.{BranchOutput}
 import b4processor.utils.operations.ALUOperation
 import b4processor.utils.{
   ExecutorValue,
@@ -38,7 +38,6 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
 
   io.out.value := executor.io.out.bits.value.asSInt
   io.out.valid := executor.io.out.valid
-  io.out.resultType := executor.io.out.bits.resultType
   io.out.destinationTag := executor.io.out.bits.tag
 
   executor.io.fetch <> io.fetch
@@ -64,7 +63,6 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
     val out = this.io.out
     out.valid.expect(valid, message)
     if (values.isDefined) {
-      out.resultType.expect(ResultType.Result, message)
       out.destinationTag.expect(Tag(0, values.get.destinationTag), message)
       out.value.expect(values.get.value, message)
     }
@@ -74,7 +72,6 @@ class ExecutorWrapper(implicit params: Parameters) extends Module {
     val out = this.io.out
     out.valid.expect(valid)
     if (values.isDefined) {
-      out.resultType.expect(ResultType.LoadStoreAddress)
       out.destinationTag.expect(Tag(0, values.get.destinationTag))
       out.value.expect(values.get.value)
     }

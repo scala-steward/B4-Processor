@@ -2,15 +2,7 @@ package b4processor.modules.reorderbuffer
 
 import circt.stage.ChiselStage
 import b4processor.Parameters
-import b4processor.connections.{
-  BranchPrediction2ReorderBuffer,
-  CollectedOutput,
-  Decoder2ReorderBuffer,
-  LoadStoreQueue2ReorderBuffer,
-  ReorderBuffer2CSR,
-  ReorderBuffer2RegisterFile,
-  ResultType
-}
+import b4processor.connections.{BranchPrediction2ReorderBuffer, CollectedOutput, Decoder2ReorderBuffer, LoadStoreQueue2ReorderBuffer, ReorderBuffer2CSR, ReorderBuffer2RegisterFile}
 import b4processor.riscv.{CSRs, Causes}
 import b4processor.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
 import b4processor.utils.{RVRegister, Tag}
@@ -19,7 +11,17 @@ import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.experimental.prefix
 import chisel3.util._
 
-import scala.math.pow
+object Debug{
+def dbg[T<:Data](t:T):T = {
+  printf(p"${t}\n")
+  t
+}
+
+  def dbghex[T <: Bits](t: T): T = {
+    printf("%x\n",t)
+    t
+  }
+}
 
 /** リオーダバッファ
   *
@@ -96,8 +98,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   }
 
   private val previousDecoderMap =
-    Seq.fill(params.decoderPerThread - 1)(WireInit(DecoderMap.default))
-
+    Seq.fill(params.decoderPerThread - 1)(WireDefault(DecoderMap.default))
   // レジスタファイルへの書き込み
   io.isError := false.B
   private var lastValid = true.B
@@ -194,27 +195,43 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         RegisterTagMapContent(insertIndex)
 
       locally {
-        val matchingBits = MuxCase(
-          registerTagMap(decoder.source1.sourceRegister.inner),
-          (0 until i)
+        prefix(s"prev_dec_check_${i}_src1") {
+          val matches_prev_decoder = (0 until i)
             .map(n =>
               (previousDecoderMap(n).valid &&
                 previousDecoderMap(n).destinationRegister
-                === decoder.source1.sourceRegister) ->
-                RegisterTagMapContent(previousDecoderMap(n).tagId)
+                  === decoder.source1.sourceRegister)
             )
-            .reverse
-        )
-        val hasMatching = matchingBits.valid
-        val matchingBuf = buffer(matchingBits.tagId)
+            .fold(false.B)(_||_)
+          val matchingBits = MuxCase(
+            registerTagMap(decoder.source1.sourceRegister.inner),
+            (0 until i)
+              .map(n =>
+                (previousDecoderMap(n).valid &&
+                  previousDecoderMap(n).destinationRegister
+                    === decoder.source1.sourceRegister) ->
+                  RegisterTagMapContent(previousDecoderMap(n).tagId)
+              )
+              .reverse
+          )
+          val hasMatching = matchingBits.valid
+          val matchingBuf = buffer(matchingBits.tagId)
 
-        decoder.source1.matchingTag.valid := hasMatching
-        decoder.source1.matchingTag.bits := Tag(io.threadId, matchingBits.tagId)
-        decoder.source1.value.valid := matchingBuf.valueReady
-        decoder.source1.value.bits := matchingBuf.value
+          decoder.source1.matchingTag.valid := hasMatching
+          decoder.source1.matchingTag.bits := Tag(io.threadId, matchingBits.tagId)
+          decoder.source1.value.valid := matchingBuf.valueReady && !matches_prev_decoder
+          decoder.source1.value.bits := matchingBuf.value
+        }
       }
 
       locally {
+        val matches_prev_decoder = (0 until i)
+          .map(n =>
+            (previousDecoderMap(n).valid &&
+              previousDecoderMap(n).destinationRegister
+                === decoder.source2.sourceRegister)
+          )
+          .fold(false.B)(_ || _)
         val matchingBits = MuxCase(
           registerTagMap(decoder.source2.sourceRegister.inner),
           (0 until i)
@@ -231,7 +248,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 
         decoder.source2.matchingTag.valid := hasMatching
         decoder.source2.matchingTag.bits := Tag(io.threadId, matchingBits.tagId)
-        decoder.source2.value.valid := matchingBuf.valueReady
+        decoder.source2.value.valid := matchingBuf.valueReady && !matches_prev_decoder
         decoder.source2.value.bits := matchingBuf.value
       }
 
@@ -250,7 +267,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   // 出力の読み込み
   private val output = io.collectedOutputs.outputs
   when(
-    output.valid && (output.bits.resultType === ResultType.Result) && (output.bits.tag.threadId === io.threadId)
+    output.valid && (output.bits.tag.threadId === io.threadId)
   ) {
     val writePort = buffer(output.bits.tag.id)
     writePort.value := output.bits.value

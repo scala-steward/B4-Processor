@@ -139,13 +139,13 @@ class Fetch(implicit params: Parameters) extends Module {
 //      waiting := WaitingReason.None
     }
     when(waiting === WaitingReason.mret) {
-      when(io.csrReservationStationEmpty) {
+      when(io.csrReservationStationEmpty && io.fetchBuffer.empty) {
         waiting := WaitingReason.None
         pc := io.csr.mepc
       }
     }
     when(waiting === WaitingReason.Exception) {
-      when(io.csrReservationStationEmpty) {
+      when(io.csrReservationStationEmpty && io.fetchBuffer.empty) {
         waiting := WaitingReason.None
         when(io.csr.mtvec(1, 0) === 0.U) {
           pc := io.csr.mtvec(63, 2) ## 0.U(2.W)

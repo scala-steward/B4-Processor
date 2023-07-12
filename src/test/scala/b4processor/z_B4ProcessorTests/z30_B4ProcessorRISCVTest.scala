@@ -31,11 +31,11 @@ class B4ProcessorRISCVTestWrapper()(implicit params: Parameters)
 
 class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
-  implicit val defaultParams = {
+  implicit var defaultParams = {
     Parameters(
       debug = true,
       threads = 1,
-      decoderPerThread = 1,
+      decoderPerThread = 4,
       tagWidth = 4,
       loadStoreQueueIndexWidth = 2,
       maxRegisterFileCommitCount = 2,

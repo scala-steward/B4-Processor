@@ -5,8 +5,7 @@ import b4processor.connections.{
   CSR2Fetch,
   CSRReservationStation2CSR,
   OutputValue,
-  ReorderBuffer2CSR,
-  ResultType
+  ReorderBuffer2CSR
 }
 import chisel3._
 import chisel3.util._
@@ -30,7 +29,6 @@ class CSR(implicit params: Parameters) extends Module {
   io.CSROutput.bits.tag := io.decoderInput.bits.destinationTag
   io.CSROutput.bits.value := 0.U
   io.CSROutput.bits.isError := false.B
-  io.CSROutput.bits.resultType := ResultType.Result
 
   val retireCounter = Module(new RetireCounter)
   retireCounter.io.retireInCycle := io.reorderBuffer.retireCount

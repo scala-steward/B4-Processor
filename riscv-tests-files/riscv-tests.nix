@@ -6,7 +6,7 @@ pkgs.stdenv.mkDerivation {
   configureFlags = [ "target_alias=riscv64-none-elf" ];
   enableParallelBuilding = true;
   buildInputs = with pkgs; [
-    llvmPackages.bintools
+    llvmPackages_16.bintools
     pkgsCross.riscv64-embedded.buildPackages.gcc
     autoreconfHook
     circt

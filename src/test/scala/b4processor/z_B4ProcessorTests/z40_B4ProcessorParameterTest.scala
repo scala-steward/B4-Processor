@@ -7,7 +7,6 @@ import chiseltest.internal.CachingAnnotation
 import org.scalatest.Tag
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.tagobjects.Slow
-import treadle.RandomizeAtStartupAnnotation
 
 import java.io.FileWriter
 
@@ -19,7 +18,7 @@ class z40_B4ProcessorParameterTest
   behavior of "B4Processor with many parameters"
   implicit val defaultParams = Parameters(debug = true)
 
-  for (threads <- Seq(1, 2)) {
+  for (threads <- Seq(1, 2, 3, 4)) {
     for (executors <- Seq(1, 2))
       for (decoderPerThread <- Seq(1, 2))
         for (maxCommitCount <- Seq(1, 2))
@@ -44,13 +43,17 @@ class z40_B4ProcessorParameterTest
                     Seq(
                       WriteFstAnnotation,
                       VerilatorBackendAnnotation,
-                      CachingAnnotation,
-                      RandomizeAtStartupAnnotation
+                      CachingAnnotation
                     )
                   ) { c =>
                     c.initialize64("programs/riscv-sample-programs/fibonacci_c")
                     for (t <- 0 until threads)
-                      c.checkForRegisterChange(3, 1298777728820984005L, 10000, t)
+                      c.checkForRegisterChange(
+                        3,
+                        1298777728820984005L,
+                        20000,
+                        t
+                      )
                     val fw = new FileWriter("stats.jsonl", true)
                     val ipcs = (0 until threads)
                       .map(t =>
