@@ -15,7 +15,7 @@ class z20_B4ProcessorElaborateTest
 
   behavior of "B4Processor elaborate"
   // コンパイルが通ることを確認（信号をつなぎきれていないとエラーになる）
-  for (threads <- Seq(1, 2, 3, 4))
+  for (threads <- Seq(1, 2, 3, 4, 5, 6, 7, 8))
     for (decoderPerThread <- 1 to 3)
       for (maxCommitCount <- 1 to 3)
         for (tagWidth <- 2 to 3)

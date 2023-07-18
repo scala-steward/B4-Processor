@@ -50,9 +50,14 @@ class OutputCollector(implicit params: Parameters) extends Module {
       .valid := io.dataMemory.valid && io.dataMemory.bits.tag.threadId === tid.U
     threadsArbiter(tid).io.in(params.executors + 1) <> io.csr(tid)
 
-    io.outputs(tid).outputs.bits := threadsArbiter(tid).io.out.bits
-    io.outputs(tid).outputs.valid := threadsArbiter(tid).io.out.valid
+    io.outputs(tid).outputs(0).bits := threadsArbiter(tid).io.out.bits
+    io.outputs(tid).outputs(0).valid := threadsArbiter(tid).io.out.valid
     threadsArbiter(tid).io.out.ready := true.B
+
+    for (i <- 1 until params.parallelOutput) {
+      io.outputs(tid).outputs(i).valid := false.B
+      io.outputs(tid).outputs(i).bits := 0.U
+    }
 
     val out = threadsArbiter(tid).io.out.bits
     val outValid = threadsArbiter(tid).io.out.valid

@@ -29,11 +29,11 @@ class ValueSelectorWrapper(implicit params: Parameters) extends ValueSelector {
     opcodeFormat: OpcodeFormat.Type = R,
     immediate: Int = 0
   ): Unit = {
-    this.io.outputCollector.outputs.valid
+    this.io.outputCollector.outputs(0).valid
       .poke(aluBypassValue.isDefined.B)
-    this.io.outputCollector.outputs.bits.tag
+    this.io.outputCollector.outputs(0).bits.tag
       .poke(Tag(0, aluBypassValue.getOrElse((0, 0))._1))
-    this.io.outputCollector.outputs.bits.value
+    this.io.outputCollector.outputs(0).bits.value
       .poke(aluBypassValue.getOrElse((0, 0))._2.U)
 
     this.io.reorderBufferValue.valid.poke(reorderBufferValue.isDefined)

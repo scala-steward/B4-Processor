@@ -24,9 +24,9 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
   def setOutputs(values: Option[LSQfromALU] = None): Unit = {
     val output = this.io.outputCollector.outputs
     val value = values
-    output.valid.poke(value.exists(_.valid))
-    output.bits.value.poke(value.map(_.value).getOrElse(0))
-    output.bits.tag.poke(Tag(0, value.map(_.destinationtag).getOrElse(0)))
+    output(0).valid.poke(value.exists(_.valid))
+    output(0).bits.value.poke(value.map(_.value).getOrElse(0))
+    output(0).bits.tag.poke(Tag(0, value.map(_.destinationtag).getOrElse(0)))
     //      output.programCounter.poke(value.map(_.ProgramCounter).getOrElse(0))
 
   }

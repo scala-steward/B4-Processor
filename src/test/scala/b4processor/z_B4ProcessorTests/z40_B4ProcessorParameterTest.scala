@@ -19,7 +19,7 @@ class z40_B4ProcessorParameterTest
   implicit val defaultParams = Parameters(debug = true)
 
   for (threads <- Seq(1, 2, 3, 4)) {
-    for (executors <- Seq(1, 2))
+    for (executors <- Seq(1, 2, 4))
       for (decoderPerThread <- Seq(1, 2))
         for (maxCommitCount <- Seq(1, 2))
           for (tagWidth <- Seq(3, 4))

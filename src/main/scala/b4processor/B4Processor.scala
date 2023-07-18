@@ -209,8 +209,8 @@ class B4ProcessorFixedPorts(implicit params: Parameters) extends RawModule {
 object B4Processor extends App {
   implicit val params = Parameters(
     threads = 2,
-    executors = 1,
-    decoderPerThread = 1,
+    executors = 2,
+    decoderPerThread = 2,
     maxRegisterFileCommitCount = 1,
     tagWidth = 4,
     instructionStart = 0x2000_0000L

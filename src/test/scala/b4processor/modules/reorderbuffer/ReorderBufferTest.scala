@@ -19,10 +19,10 @@ class ReorderBufferWrapper(implicit params: Parameters)
   def setOutputs(values: Option[ExecutorValue] = None): Unit = {
     val output = this.io.collectedOutputs.outputs
     val v = values
-    output.valid.poke(v.isDefined)
+    output(0).valid.poke(v.isDefined)
     if (v.isDefined) {
-      output.bits.tag.poke(Tag(0, v.get.destinationTag))
-      output.bits.value.poke(v.get.value)
+      output(0).bits.tag.poke(Tag(0, v.get.destinationTag))
+      output(0).bits.value.poke(v.get.value)
     }
   }
 

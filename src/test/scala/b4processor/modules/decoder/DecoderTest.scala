@@ -59,9 +59,9 @@ class DecoderWrapper(implicit params: Parameters) extends Decoder {
   }
 
   def setOutputs(bypassedValues: Option[ExecutorValue] = None): Unit = {
-    this.io.outputCollector.outputs.valid
+    this.io.outputCollector.outputs(0).valid
       .poke(bypassedValues.isDefined)
-    this.io.outputCollector.outputs.bits.tag
+    this.io.outputCollector.outputs(0).bits.tag
       .poke(
         Tag(
           0,
@@ -70,7 +70,7 @@ class DecoderWrapper(implicit params: Parameters) extends Decoder {
             .destinationTag
         )
       )
-    this.io.outputCollector.outputs.bits.value
+    this.io.outputCollector.outputs(0).bits.value
       .poke(
         bypassedValues
           .getOrElse(ExecutorValue(destinationTag = 0, value = 0))

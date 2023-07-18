@@ -66,11 +66,13 @@ class CSRReservationStation(implicit params: Parameters) extends Module {
     }
   }
 
-  when(io.output.outputs.valid) {
-    for (b <- buf) {
-      when(b.valid && !b.ready && b.sourceTag === io.output.outputs.bits.tag) {
-        b.value := io.output.outputs.bits.value
-        b.ready := true.B
+  for (o <- io.output.outputs) {
+    when(o.valid) {
+      for (b <- buf) {
+        when(b.valid && !b.ready && b.sourceTag === o.bits.tag) {
+          b.value := o.bits.value
+          b.ready := true.B
+        }
       }
     }
   }

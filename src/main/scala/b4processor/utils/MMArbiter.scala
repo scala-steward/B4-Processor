@@ -26,5 +26,5 @@ class MMArbiter[T <: Data](t: T, inputs: Int, outputs: Int) extends Module {
 }
 
 object MMArbiter extends App {
-  ChiselStage.emitSystemVerilogFile(new MMArbiter(UInt(4.W), 10, 3))
+  ChiselStage.emitSystemVerilogFile(new MMArbiter(UInt(4.W), 2, 1))
 }

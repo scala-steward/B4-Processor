@@ -33,7 +33,6 @@ class PassthroughBuffer[T <: Data](t: T) extends Module {
     when(!io.input.valid && io.output.ready) {
       buf := 0.U.asTypeOf(t)
       bufSet := false.B
-      io.output.bits := buf
     }
   }
 }

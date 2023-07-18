@@ -5,6 +5,7 @@ import b4processor.Parameters
 import b4processor.connections.{CollectedOutput, OutputValue}
 import b4processor.utils.{B4RRArbiter, FIFO, MMArbiter, PassthroughBuffer}
 import chisel3._
+import chisel3.experimental.prefix
 import chisel3.util._
 
 class OutputCollector2(implicit params: Parameters) extends Module {
@@ -26,7 +27,13 @@ class OutputCollector2(implicit params: Parameters) extends Module {
   }
 
   val mmarb = Seq.fill(params.threads)(
-    Module(new MMArbiter(new OutputValue, io.executor.length + 1 + 1, 1))
+    Module(
+      new MMArbiter(
+        new OutputValue,
+        io.executor.length + 1 + 1,
+        params.parallelOutput
+      )
+    )
   )
 
   for (idx <- 0 until io.executor.length + 1 + 1) {
@@ -37,9 +44,11 @@ class OutputCollector2(implicit params: Parameters) extends Module {
   }
 
   for (t <- 0 until params.threads) {
-    val buf = Module(new PassthroughBuffer(new OutputValue))
-    buf.io.input <> io.csr(t)
-    mmarb(t).io.input(0) <> buf.io.output
+    prefix(s"csr${t}") {
+      val csr_buf = Module(new PassthroughBuffer(new OutputValue))
+      csr_buf.io.input <> io.csr(t)
+      mmarb(t).io.input(0) <> csr_buf.io.output
+    }
   }
 
   for ((in, idx) <- inputBuffers.zipWithIndex) {
@@ -52,13 +61,15 @@ class OutputCollector2(implicit params: Parameters) extends Module {
   }
 
   for (t <- 0 until params.threads) {
-    io.outputs(t).outputs.valid := mmarb(t).io.output(0).valid
-    io.outputs(t).outputs.bits := mmarb(t).io.output(0).bits
-    mmarb(t).io.output(0).ready := true.B
+    for (i <- 0 until params.parallelOutput) {
+      io.outputs(t).outputs(i).valid := mmarb(t).io.output(i).valid
+      io.outputs(t).outputs(i).bits := mmarb(t).io.output(i).bits
+      mmarb(t).io.output(i).ready := true.B
+    }
   }
 }
 
 object OutputCollector2 extends App {
-  implicit val params = Parameters(threads = 4, executors = 4)
+  implicit val params = Parameters(threads = 2, executors = 4)
   ChiselStage.emitSystemVerilogFile(new OutputCollector2)
 }

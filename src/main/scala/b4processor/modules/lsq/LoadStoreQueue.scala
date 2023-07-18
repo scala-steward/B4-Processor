@@ -87,16 +87,18 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   private val output = io.outputCollector.outputs
   for (buf <- buffer) {
-    when(output.valid && buf.valid) {
-      when(buf.storeDataTag === output.bits.tag && !buf.storeDataValid) {
-        buf.storeDataTag := Tag(0, 0)
-        buf.storeData := output.bits.value
-        buf.storeDataValid := true.B
-      }
-      when(buf.addressTag === output.bits.tag && !buf.addressValid) {
-        buf.addressTag := Tag(0, 0)
-        buf.address := output.bits.value
-        buf.addressValid := true.B
+    for (o <- output) {
+      when(o.valid && buf.valid) {
+        when(buf.storeDataTag === o.bits.tag && !buf.storeDataValid) {
+          buf.storeDataTag := Tag(0, 0)
+          buf.storeData := o.bits.value
+          buf.storeDataValid := true.B
+        }
+        when(buf.addressTag === o.bits.tag && !buf.addressValid) {
+          buf.addressTag := Tag(0, 0)
+          buf.address := o.bits.value
+          buf.addressValid := true.B
+        }
       }
     }
   }

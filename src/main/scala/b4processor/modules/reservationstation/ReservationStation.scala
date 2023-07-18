@@ -78,24 +78,26 @@ class ReservationStation(implicit params: Parameters) extends Module {
   }
   head := nextHead
 
-  for ((output, i) <- io.collectedOutput.zipWithIndex) {
-    prefix(s"out${i}") {
-      when(
-        output.outputs.valid
-      ) {
-        for (entry <- reservation) {
-          when(entry.valid) {
-            when(
-              !entry.ready1 && entry.sourceTag1 === output.outputs.bits.tag
-            ) {
-              entry.value1 := output.outputs.bits.value
-              entry.ready1 := true.B
-            }
-            when(
-              !entry.ready2 && entry.sourceTag2 === output.outputs.bits.tag
-            ) {
-              entry.value2 := output.outputs.bits.value
-              entry.ready2 := true.B
+  for ((thread_output, i) <- io.collectedOutput.zipWithIndex) {
+    prefix(s"thread${i}") {
+      for (o <- thread_output.outputs) {
+        prefix(s"out${i}") {
+          when(o.valid) {
+            for (entry <- reservation) {
+              when(entry.valid) {
+                when(
+                  !entry.ready1 && entry.sourceTag1 === o.bits.tag
+                ) {
+                  entry.value1 := o.bits.value
+                  entry.ready1 := true.B
+                }
+                when(
+                  !entry.ready2 && entry.sourceTag2 === o.bits.tag
+                ) {
+                  entry.value2 := o.bits.value
+                  entry.ready2 := true.B
+                }
+              }
             }
           }
         }

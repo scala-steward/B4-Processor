@@ -23,9 +23,9 @@ class ValueSelector(implicit params: Parameters) extends Module {
   })
 
   // ALUからバイパスされた値のうち、destination tagと一致するsource tagを持っている
-  private val o = io.outputCollector.outputs
-  private val outputMatchingTagExists =
-    o.valid  && o.bits.tag === io.sourceTag.bits
+  private val outputMatchingTagExists = io.outputCollector.outputs
+    .map(o => o.valid && o.bits.tag === io.sourceTag.bits)
+    .fold(false.B)(_ || _)
 
   // 値があるか
   io.value.valid := MuxCase(
@@ -41,7 +41,11 @@ class ValueSelector(implicit params: Parameters) extends Module {
     0.U,
     Seq(
       (io.sourceTag.valid && io.reorderBufferValue.valid) -> io.reorderBufferValue.bits,
-      (io.sourceTag.valid && outputMatchingTagExists) -> o.bits.value,
+      (io.sourceTag.valid && outputMatchingTagExists) -> Mux1H(
+        io.outputCollector.outputs.map(o =>
+          (o.valid && o.bits.tag === io.sourceTag.bits) -> o.bits.value
+        )
+      ),
       (!io.sourceTag.valid) -> io.registerFileValue
     )
   )
