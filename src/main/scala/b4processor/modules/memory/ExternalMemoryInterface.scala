@@ -1,7 +1,7 @@
 package b4processor.modules.memory
 
 import b4processor.Parameters
-import b4processor.connections.{OutputValue}
+import b4processor.connections.OutputValue
 import b4processor.structures.memoryAccess.MemoryAccessWidth
 import b4processor.utils.{B4RRArbiter, FIFO, Tag}
 import chisel3._

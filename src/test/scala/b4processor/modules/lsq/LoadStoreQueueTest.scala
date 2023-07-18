@@ -157,13 +157,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
 
         c.setDecoder()
         c.setOutputs(values =
-          Some(
-            LSQfromALU(
-              valid = true,
-              destinationtag = 10,
-              value = 150,
-            )
-          )
+          Some(LSQfromALU(valid = true, destinationtag = 10, value = 150))
         )
         c.io.head.get.expect(1)
         c.io.tail.get.expect(0)
@@ -244,13 +238,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         c.clock.step(1)
 
         c.setOutputs(values =
-          Some(
-            LSQfromALU(
-              valid = true,
-              destinationtag = 10,
-              value = 150,
-            )
-          )
+          Some(LSQfromALU(valid = true, destinationtag = 10, value = 150))
         )
         c.setReorderBuffer(
           valids = Seq(true, false),
@@ -325,13 +313,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.head.get.expect(2)
         c.io.tail.get.expect(0)
         c.setOutputs(values =
-          Some(
-            LSQfromALU(
-              valid = true,
-              destinationtag = 10,
-              value = 150,
-            )
-          )
+          Some(LSQfromALU(valid = true, destinationtag = 10, value = 150))
         )
         c.clock.step()
 
@@ -348,13 +330,7 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
         )
 
         c.setOutputs(
-          Some(
-            LSQfromALU(
-              valid = true,
-              destinationtag = 11,
-              value = 100,
-            )
-          )
+          Some(LSQfromALU(valid = true, destinationtag = 11, value = 100))
         )
         c.clock.step()
 

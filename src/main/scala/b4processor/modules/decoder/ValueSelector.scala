@@ -1,9 +1,7 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
-import b4processor.common.OpcodeFormat
-import b4processor.common.OpcodeFormat._
-import b4processor.connections.{CollectedOutput}
+import b4processor.connections.CollectedOutput
 import b4processor.utils.Tag
 import chisel3._
 import chisel3.util._

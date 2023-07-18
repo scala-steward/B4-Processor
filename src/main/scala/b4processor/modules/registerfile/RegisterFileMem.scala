@@ -39,20 +39,24 @@ class RegisterFileMem(implicit params: Parameters) extends Module {
   val registers = Mem(31, UInt(64.W))
 
   for ((rb, i) <- io.reorderBuffer.zipWithIndex) {
-    prefix(s"in${i}") {
+    prefix(s"in$i") {
       val valid = rb.valid && rb.bits.destinationRegister =/= 0.reg
-      //この先のレジスらにかぶりがある
-      val overlapping = if (io.reorderBuffer.drop(i+1).nonEmpty)
-        io.reorderBuffer.drop(i+1).map(_.bits.destinationRegister === rb.bits.destinationRegister).reduce(_||_)
-      else false.B
+      // この先のレジスらにかぶりがある
+      val overlapping =
+        if (io.reorderBuffer.drop(i + 1).nonEmpty)
+          io.reorderBuffer
+            .drop(i + 1)
+            .map(_.bits.destinationRegister === rb.bits.destinationRegister)
+            .reduce(_ || _)
+        else false.B
       when(valid && !overlapping) {
-        registers.write(rb.bits.destinationRegister.inner-1.U,rb.bits.value)
+        registers.write(rb.bits.destinationRegister.inner - 1.U, rb.bits.value)
       }
     }
   }
 
   // それぞれのデコーダへの信号
-  for ((dec,i) <- io.decoders.zipWithIndex) {
+  for ((dec, i) <- io.decoders.zipWithIndex) {
     prefix(s"for_decoder_$i") {
       // ソースレジスタが0ならば0それ以外ならばレジスタから
       dec.value1 := 0.U
@@ -70,7 +74,7 @@ class RegisterFileMem(implicit params: Parameters) extends Module {
   if (params.debug) {
     io.values.get(0) := 0.U
     for (i <- 1 until 32)
-      io.values.get(i) := registers.read((i-1).U)
+      io.values.get(i) := registers.read((i - 1).U)
   }
 }
 

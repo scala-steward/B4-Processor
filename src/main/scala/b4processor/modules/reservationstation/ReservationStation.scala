@@ -63,7 +63,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
   private val head = RegInit(0.U(rsWidth.W))
   private var nextHead = head
   for (i <- 0 until (params.decoderPerThread * params.threads)) {
-    prefix(s"decoder${i}") {
+    prefix(s"decoder$i") {
       val decoder = io.decoder(i)
       val resNext = reservation(nextHead)
       decoder.ready := false.B
@@ -79,21 +79,17 @@ class ReservationStation(implicit params: Parameters) extends Module {
   head := nextHead
 
   for ((thread_output, i) <- io.collectedOutput.zipWithIndex) {
-    prefix(s"thread${i}") {
+    prefix(s"thread$i") {
       for (o <- thread_output.outputs) {
-        prefix(s"out${i}") {
+        prefix(s"out$i") {
           when(o.valid) {
             for (entry <- reservation) {
               when(entry.valid) {
-                when(
-                  !entry.ready1 && entry.sourceTag1 === o.bits.tag
-                ) {
+                when(!entry.ready1 && entry.sourceTag1 === o.bits.tag) {
                   entry.value1 := o.bits.value
                   entry.ready1 := true.B
                 }
-                when(
-                  !entry.ready2 && entry.sourceTag2 === o.bits.tag
-                ) {
+                when(!entry.ready2 && entry.sourceTag2 === o.bits.tag) {
                   entry.value2 := o.bits.value
                   entry.ready2 := true.B
                 }

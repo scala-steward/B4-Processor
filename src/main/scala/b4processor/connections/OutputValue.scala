@@ -5,6 +5,7 @@ import b4processor.utils.Tag
 import chisel3._
 
 class OutputValue(implicit params: Parameters) extends Bundle {
+
   /** 値 */
   val value = Output(UInt(64.W))
 

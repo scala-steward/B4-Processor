@@ -4,12 +4,11 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
 
-
-class PassthroughBufferTest extends AnyFlatSpec with ChiselScalatestTester{
+class PassthroughBufferTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "pass values" in {
-    test(new PassthroughBuffer(UInt(4.W))){c =>
+    test(new PassthroughBuffer(UInt(4.W))) { c =>
       c.io.output.ready.poke(true)
-      for(i <- 0 until 16){
+      for (i <- 0 until 16) {
         c.clock.step()
         c.io.input.valid.poke(true)
         c.io.input.bits.poke(i)

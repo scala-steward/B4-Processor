@@ -36,7 +36,7 @@ class Operations extends Bundle {
 object Operations {
   implicit def Int2UInt(n: Int): UInt = n.U
   implicit def functionReduceSecondArgument(
-    f: (Operations) => (Data, Data)
+    f: Operations => (Data, Data)
   ): (Operations, UInt) => (Data, Data) = (op, _) => f(op)
 
   private def createOperation(
@@ -351,8 +351,7 @@ object ALUOperation extends ChiselEnum {
   val None, BranchEqual, BranchNotEqual, BranchLessThan,
     BranchGreaterThanOrEqual, BranchLessThanUnsigned,
     BranchGreaterThanOrEqualUnsigned, Add, Sub, And, Or, Slt, Sltu, Xor, Sll,
-    Srl, Sra, AddJALR, AddJAL, AddW, SllW, SrlW, SraW,
-    SubW = Value
+    Srl, Sra, AddJALR, AddJAL, AddW, SllW, SrlW, SraW, SubW = Value
 }
 
 object LoadStoreOperation extends ChiselEnum {

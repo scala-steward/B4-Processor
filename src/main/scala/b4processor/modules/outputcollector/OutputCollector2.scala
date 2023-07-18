@@ -44,7 +44,7 @@ class OutputCollector2(implicit params: Parameters) extends Module {
   }
 
   for (t <- 0 until params.threads) {
-    prefix(s"csr${t}") {
+    prefix(s"csr$t") {
       val csr_buf = Module(new PassthroughBuffer(new OutputValue))
       csr_buf.io.input <> io.csr(t)
       mmarb(t).io.input(0) <> csr_buf.io.output

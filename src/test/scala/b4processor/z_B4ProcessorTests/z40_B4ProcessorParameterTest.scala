@@ -25,7 +25,7 @@ class z40_B4ProcessorParameterTest
           for (tagWidth <- Seq(3, 4))
             for (lsqWidth <- Seq(3, 4)) {
               val title =
-                s"run fibonacci_c threads=${threads} executor=$executors decoders=${decoderPerThread} maxCommitCount=${maxCommitCount} tagWidth=${tagWidth} lsqWidth=${lsqWidth}"
+                s"run fibonacci_c threads=$threads executor=$executors decoders=$decoderPerThread maxCommitCount=$maxCommitCount tagWidth=$tagWidth lsqWidth=$lsqWidth"
               it should title taggedAs (ParameterTest, Slow) in {
                 test(
                   new B4ProcessorWithMemory()(
@@ -57,19 +57,19 @@ class z40_B4ProcessorParameterTest
                     val fw = new FileWriter("stats.jsonl", true)
                     val ipcs = (0 until threads)
                       .map(t =>
-                        (c.io.registerFileContents
+                        c.io.registerFileContents
                           .get(t)(6)
                           .peekInt()
                           .toDouble / c.io.registerFileContents
                           .get(t)(5)
                           .peekInt()
-                          .toDouble)
+                          .toDouble
                       )
                       .map(_.toString)
                       .reduce((a, b) => a + "," + b)
                     try {
                       fw.write(
-                        s"{\"threads\":$threads, \"executor\":${executors}, \"decoders\":${decoderPerThread}, \"maxCommitCount\":${maxCommitCount}, \"tagWidth\":${tagWidth}, \"lsqWidth\":${lsqWidth}, \"ipc\":[$ipcs]}\n"
+                        s"{\"threads\":$threads, \"executor\":$executors, \"decoders\":$decoderPerThread, \"maxCommitCount\":$maxCommitCount, \"tagWidth\":$tagWidth, \"lsqWidth\":${lsqWidth}, \"ipc\":[$ipcs]}\n"
                       )
                     } finally fw.close()
 

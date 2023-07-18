@@ -20,7 +20,7 @@ import chisel3.util._
 
 object Debug {
   def dbg[T <: Data](t: T): T = {
-    printf(p"${t}\n")
+    printf(p"$t\n")
     t
   }
 
@@ -110,7 +110,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   io.isError := false.B
   private var lastValid = true.B
   for (((rf, lsq), i) <- io.registerFile.zip(io.loadStoreQueue).zipWithIndex) {
-    prefix(s"to_rf${i}") {
+    prefix(s"to_rf$i") {
       val index = tail + i.U
 
       val biVal = buffer(index)
@@ -167,7 +167,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   private var insertIndex = head
   private var lastReady = true.B
   for (i <- 0 until params.decoderPerThread) {
-    prefix(s"from_dec${i}") {
+    prefix(s"from_dec$i") {
       val decoder = io.decoders(i)
       decoder.ready := lastReady && (insertIndex + 1.U) =/= tail
       when(decoder.valid && decoder.ready) {

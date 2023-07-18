@@ -17,7 +17,7 @@ class B4ProcessorRISCVTestWrapper()(implicit params: Parameters)
     val reg3_value = this.io.registerFileContents.get(0)(3).peekInt()
     val fail_num = reg3_value >> 1
     val error_message =
-      s"failed on test ${fail_num}\n" + this.io.registerFileContents
+      s"failed on test $fail_num\n" + this.io.registerFileContents
         .get(0)
         .map(_.peekInt())
         .zipWithIndex
@@ -49,7 +49,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
 
   def riscv_test_i(test_name: String, timeout: Int = 2000): Unit = {
 
-    it should s"run risc-v test ${test_name}" taggedAs (RISCVTest, Slow) in {
+    it should s"run risc-v test $test_name" taggedAs (RISCVTest, Slow) in {
       test( // FIXME fromFile8bit
         new B4ProcessorRISCVTestWrapper(
         )
@@ -59,7 +59,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
         ) { c =>
           c.clock.setTimeout(timeout)
           c.initialize(
-            s"programs/riscv-tests/share/riscv-tests/isa/rv64ui-p-${test_name}"
+            s"programs/riscv-tests/share/riscv-tests/isa/rv64ui-p-$test_name"
           )
           c.riscv_test()
         }
@@ -123,7 +123,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
 
   def riscv_test_c(test_name: String, timeout: Int = 2000): Unit = {
 
-    it should s"run risc-v test ${test_name}" taggedAs (RISCVTest, Slow) in {
+    it should s"run risc-v test $test_name" taggedAs (RISCVTest, Slow) in {
       test( // FIXME fromFile8bit
         new B4ProcessorRISCVTestWrapper(
         )
@@ -133,7 +133,7 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
         ) { c =>
           c.clock.setTimeout(timeout)
           c.initialize(
-            s"programs/riscv-tests/share/riscv-tests/isa/rv64uc-p-${test_name}"
+            s"programs/riscv-tests/share/riscv-tests/isa/rv64uc-p-$test_name"
           )
           c.riscv_test()
         }
