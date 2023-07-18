@@ -7,56 +7,56 @@ import b4processor.connections.{
   Decoder2ReservationStation,
   ReservationStation2Executor
 }
-import b4processor.utils.B4RRArbiter
+import b4processor.utils.{B4RRArbiter, MMArbiter}
 import chisel3._
 import chisel3.experimental.prefix
 import chisel3.util._
 
 class ReservationStation(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val collectedOutput = Flipped(Vec(params.threads, new CollectedOutput))
-    val executor =
-      Vec(params.executors, Irrevocable(new ReservationStation2Executor))
+    val collectedOutput = Flipped(new CollectedOutput)
+    val issue =
+      Vec(params.decoderPerThread, Irrevocable(new ReservationStation2Executor))
     val decoder = Vec(
       params.threads * params.decoderPerThread,
       Flipped(new Decoder2ReservationStation)
     )
   })
 
-  val rsWidth = log2Up(params.threads * params.decoderPerThread * 4)
+  val rsWidth = log2Up(params.decoderPerThread * 4)
 
   val reservation = RegInit(
     VecInit(
       Seq.fill(math.pow(2, rsWidth).toInt)(ReservationStationEntry.default)
     )
   )
-  private val outputArbiter = Seq.fill(params.executors)(
-    Module(
-      new B4RRArbiter(
-        new ReservationStation2Executor,
-        math.pow(2, rsWidth).toInt / params.executors
-      )
+
+  private val outputArbiter = Module(
+    new MMArbiter(
+      new ReservationStation2Executor,
+      reservation.length,
+      params.decoderPerThread
     )
   )
 
-  for (eid <- 0 until params.executors) {
-    for (i <- 0 until reservation.length / params.executors) {
-      prefix(s"exe${eid}_resv${i * params.executors + eid}") {
-        val a = outputArbiter(eid).io.in(i)
-        val r = reservation(i * params.executors + eid)
-        a.bits.operation := r.operation
-        a.bits.destinationTag := r.destinationTag
-        a.bits.value1 := r.value1
-        a.bits.value2 := r.value2
-        a.bits.wasCompressed := r.wasCompressed
-        a.bits.branchOffset := r.branchOffset
-        a.valid := r.valid && r.ready1 && r.ready2
-        when(a.valid && a.ready) {
-          r := ReservationStationEntry.default
-        }
+  for (i <- 0 until reservation.length) {
+    prefix(s"issue${i % params.decoderPerThread}_resv$i") {
+      val a = outputArbiter.io.input(i)
+      val r = reservation(i)
+      a.bits.operation := r.operation
+      a.bits.destinationTag := r.destinationTag
+      a.bits.value1 := r.value1
+      a.bits.value2 := r.value2
+      a.bits.wasCompressed := r.wasCompressed
+      a.bits.branchOffset := r.branchOffset
+      a.valid := r.valid && r.ready1 && r.ready2
+      when(a.valid && a.ready) {
+        r := ReservationStationEntry.default
       }
     }
-    io.executor(eid) <> outputArbiter(eid).io.out
+    io.issue(i % params.decoderPerThread) <> outputArbiter.io.output(
+      i % params.decoderPerThread
+    )
   }
 
   // デコーダから
@@ -78,26 +78,23 @@ class ReservationStation(implicit params: Parameters) extends Module {
   }
   head := nextHead
 
-  for ((thread_output, i) <- io.collectedOutput.zipWithIndex) {
-    prefix(s"thread$i") {
-      for (o <- thread_output.outputs) {
-        prefix(s"out$i") {
-          when(o.valid) {
-            for (entry <- reservation) {
-              when(entry.valid) {
-                when(!entry.ready1 && entry.sourceTag1 === o.bits.tag) {
-                  entry.value1 := o.bits.value
-                  entry.ready1 := true.B
-                }
-                when(!entry.ready2 && entry.sourceTag2 === o.bits.tag) {
-                  entry.value2 := o.bits.value
-                  entry.ready2 := true.B
-                }
-              }
+  for ((o, i) <- io.collectedOutput.outputs.zipWithIndex) {
+    prefix(s"out$i") {
+      when(o.valid) {
+        for (entry <- reservation) {
+          when(entry.valid) {
+            when(!entry.ready1 && entry.sourceTag1 === o.bits.tag) {
+              entry.value1 := o.bits.value
+              entry.ready1 := true.B
+            }
+            when(!entry.ready2 && entry.sourceTag2 === o.bits.tag) {
+              entry.value2 := o.bits.value
+              entry.ready2 := true.B
             }
           }
         }
       }
+
     }
   }
 }
