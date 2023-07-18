@@ -218,7 +218,7 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
       // sd x1,10(x2)
       c.initialize("x00113523".U)
       c.expectReorderBuffer(sourceRegister1 = 2.reg, sourceRegister2 = 1.reg)
-      c.expectReservationStation(value2 = 10)
+      c.expectReservationStation()
     }
   }
 

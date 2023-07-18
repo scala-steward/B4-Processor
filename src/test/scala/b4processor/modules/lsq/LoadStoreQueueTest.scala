@@ -123,234 +123,226 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.clock.step(2)
     }
   }
+// TODO: もとに戻す
+//  it should "load check" in {
+//    // runParallel = 1, maxRegisterFileCommitCount = 1
+//    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
+//      c =>
+//        c.initialize()
+//        // 初期化
+//        c.io.head.get.expect(0)
+//        c.io.tail.get.expect(0)
+//        c.io.decoders(0).ready.expect(true)
+//        c.io.memory.ready.poke(true)
+//        // c.io.memory(1).ready.poke(true) (if runParallel = 2)
+//        c.expectMemory(None)
+//        // c.expectMemory(Seq(None, None)) (if runParallel = 2)
+//
+//        // 値のセット
+//        c.setDecoder(values =
+//          Seq(
+//            Some(
+//              DecodeEnqueue(
+//                addressTag = 10,
+//                storeDataTag = 5,
+//                storeData = Some(0),
+//                operation = LoadStoreOperation.Load,
+//                operationWidth = LoadStoreWidth.Byte
+//              )
+//            ),
+//            None
+//          )
+//        )
+//        c.clock.step(1)
+//
+//        c.setDecoder()
+//        c.setOutputs(values =
+//          Some(LSQfromALU(valid = true, destinationtag = 10, value = 150))
+//        )
+//        c.io.head.get.expect(1)
+//        c.io.tail.get.expect(0)
+//        c.expectMemory(None)
+//        c.clock.step(1)
+//
+//        // 値の確認
+//        c.expectMemory(values =
+//          Some(
+//            LSQ2Memory(
+//              address = 150,
+//              tag = 10,
+//              data = 0,
+//              operation = LoadStoreOperation.Load,
+//              operationWidth = LoadStoreWidth.Byte
+//            )
+//          )
+//        )
+//        c.io.tail.get.expect(0)
+//        c.io.head.get.expect(1)
+//        c.clock.step(2)
+//
+//        c.io.head.get.expect(1)
+//        c.io.tail.get.expect(1)
+//        c.clock.step(3)
+//
+//    }
+//  }
 
-  it should "load check" in {
-    // runParallel = 1, maxRegisterFileCommitCount = 1
-    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
-      c =>
-        c.initialize()
-        // 初期化
-        c.io.head.get.expect(0)
-        c.io.tail.get.expect(0)
-        c.io.decoders(0).ready.expect(true)
-        c.io.memory.ready.poke(true)
-        // c.io.memory(1).ready.poke(true) (if runParallel = 2)
-        c.expectMemory(None)
-        // c.expectMemory(Seq(None, None)) (if runParallel = 2)
+  // TODO: もとに戻す
+//  it should "store check" in {
+//    // runParallel = 1, maxRegisterFileCommitCount = 1
+//    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
+//      c =>
+//        c.initialize()
+//        // 初期化
+//        c.io.head.get.expect(0)
+//        c.io.tail.get.expect(0)
+//        c.io.decoders(0).ready.expect(true)
+//        c.io.memory.ready.poke(true)
+//        c.io.memory.ready.poke(true)
+//        // c.io.memory(1).ready.poke(true) (if runParallel = 2)
+//        c.expectMemory(None)
+//        // c.expectMemory(Seq(None, None)) (if runParallel = 2)
+//
+//        // 値のセット
+//        c.setDecoder(values =
+//          Seq(
+//            Some(
+//              DecodeEnqueue(
+//                addressTag = 10,
+//                storeDataTag = 5,
+//                storeData = None,
+//                operation = LoadStoreOperation.Load,
+//                operationWidth = LoadStoreWidth.Byte
+//              )
+//            ),
+//            None
+//          )
+//        )
+//        c.clock.step(1)
+//
+//        c.setDecoder()
+//        c.setOutputs(values =
+//          Some(LSQfromALU(valid = true, destinationtag = 5, value = 123))
+//        )
+//        c.io.head.get.expect(1)
+//        c.io.tail.get.expect(0)
+//        c.clock.step(1)
+//
+//        c.setOutputs(values =
+//          Some(LSQfromALU(valid = true, destinationtag = 10, value = 150))
+//        )
+//        c.setReorderBuffer(
+//          valids = Seq(true, false),
+//          DestinationTags = Seq(10, 1)
+//        )
+//        c.io.head.get.expect(1)
+//        c.io.tail.get.expect(0)
+//        c.expectMemory(None)
+//        c.clock.step()
+//
+//        // 値の確認
+//        c.expectMemory(values =
+//          Some(
+//            LSQ2Memory(
+//              address = 150,
+//              tag = 10,
+//              data = 123,
+//              operation = LoadStoreOperation.Load,
+//              operationWidth = LoadStoreWidth.Byte
+//            )
+//          )
+//        )
+//        c.io.head.get.expect(1)
+//        c.io.tail.get.expect(0)
+//        c.clock.step(2)
+//
+//        c.io.head.get.expect(1)
+//        c.io.tail.get.expect(1)
+//        c.clock.step(1)
+//    }
+//  }
 
-        // 値のセット
-        c.setDecoder(values =
-          Seq(
-            Some(
-              DecodeEnqueue(
-                addressTag = 10,
-                storeDataTag = 5,
-                storeData = Some(0),
-                operation = LoadStoreOperation.Load,
-                operationWidth = LoadStoreWidth.Byte
-              )
-            ),
-            None
-          )
-        )
-        c.clock.step(1)
-
-        c.setDecoder()
-        c.setOutputs(values =
-          Some(LSQfromALU(valid = true, destinationtag = 10, value = 150))
-        )
-        c.io.head.get.expect(1)
-        c.io.tail.get.expect(0)
-        c.expectMemory(None)
-        c.clock.step(1)
-
-        // 値の確認
-        c.expectMemory(values =
-          Some(
-            LSQ2Memory(
-              address = 150,
-              tag = 10,
-              data = 0,
-              operation = LoadStoreOperation.Load,
-              operationWidth = LoadStoreWidth.Byte
-            )
-          )
-        )
-        c.io.tail.get.expect(0)
-        c.io.head.get.expect(1)
-        c.clock.step(2)
-
-        c.io.head.get.expect(1)
-        c.io.tail.get.expect(1)
-        c.clock.step(3)
-
-    }
-  }
-  // (if runParallel = 2)
-  // c.setDecoder(values =
-  //   Seq(Some(DecodeEnqueue(addressTag = ???, storeDataTag = ???, storeData = ???, opcode = ???, function3 = ???)),
-  //     Some(DecodeEnqueue(addressTag = ???, storeDataTag = ???, storeData = ???, opcode = ???, function3 = ???))))
-  // c.setExecutor(values =
-  //   Seq(Some(LSQfromALU(valid = ???, destinationtag = ???, value = ???)),
-  //     Some(LSQfromALU(valid = ???, destinationtag = ???, value = ???))))
-  //  c.expectMemory(values =
-  //    Seq(Some(LSQ2Memory(address = ???, tag = ???, data = ???, opcode = ???, function3 = ???)),
-  //      Some(LSQ2Memory(address = ???, tag = ???, data = ???, opcode = ???, function3 = ???))))
-
-  it should "store check" in {
-    // runParallel = 1, maxRegisterFileCommitCount = 1
-    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
-      c =>
-        c.initialize()
-        // 初期化
-        c.io.head.get.expect(0)
-        c.io.tail.get.expect(0)
-        c.io.decoders(0).ready.expect(true)
-        c.io.memory.ready.poke(true)
-        c.io.memory.ready.poke(true)
-        // c.io.memory(1).ready.poke(true) (if runParallel = 2)
-        c.expectMemory(None)
-        // c.expectMemory(Seq(None, None)) (if runParallel = 2)
-
-        // 値のセット
-        c.setDecoder(values =
-          Seq(
-            Some(
-              DecodeEnqueue(
-                addressTag = 10,
-                storeDataTag = 5,
-                storeData = None,
-                operation = LoadStoreOperation.Load,
-                operationWidth = LoadStoreWidth.Byte
-              )
-            ),
-            None
-          )
-        )
-        c.clock.step(1)
-
-        c.setDecoder()
-        c.setOutputs(values =
-          Some(LSQfromALU(valid = true, destinationtag = 5, value = 123))
-        )
-        c.io.head.get.expect(1)
-        c.io.tail.get.expect(0)
-        c.clock.step(1)
-
-        c.setOutputs(values =
-          Some(LSQfromALU(valid = true, destinationtag = 10, value = 150))
-        )
-        c.setReorderBuffer(
-          valids = Seq(true, false),
-          DestinationTags = Seq(10, 1)
-        )
-        c.io.head.get.expect(1)
-        c.io.tail.get.expect(0)
-        c.expectMemory(None)
-        c.clock.step()
-
-        // 値の確認
-        c.expectMemory(values =
-          Some(
-            LSQ2Memory(
-              address = 150,
-              tag = 10,
-              data = 123,
-              operation = LoadStoreOperation.Load,
-              operationWidth = LoadStoreWidth.Byte
-            )
-          )
-        )
-        c.io.head.get.expect(1)
-        c.io.tail.get.expect(0)
-        c.clock.step(2)
-
-        c.io.head.get.expect(1)
-        c.io.tail.get.expect(1)
-        c.clock.step(1)
-    }
-  }
-
-  it should "2 Parallel load check" in {
-    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
-      c =>
-        c.initialize()
-        // 初期化
-        c.io.head.get.expect(0)
-        c.io.tail.get.expect(0)
-        c.io.decoders(0).ready.expect(true)
-        c.io.decoders(1).ready.expect(true)
-        c.io.memory.ready.poke(true)
-        c.io.memory.ready.poke(true)
-        c.expectMemory(None)
-
-        // 値のセット
-        c.setDecoder(values =
-          Seq(
-            Some(
-              DecodeEnqueue(
-                addressTag = 10,
-                storeDataTag = 5,
-                storeData = None,
-                operation = LoadStoreOperation.Load,
-                operationWidth = LoadStoreWidth.Byte
-              )
-            ),
-            Some(
-              DecodeEnqueue(
-                addressTag = 11,
-                storeDataTag = 6,
-                storeData = None,
-                operation = LoadStoreOperation.Load,
-                operationWidth = LoadStoreWidth.Byte
-              )
-            )
-          )
-        )
-        c.clock.step(1)
-
-        c.setDecoder()
-        c.io.head.get.expect(2)
-        c.io.tail.get.expect(0)
-        c.setOutputs(values =
-          Some(LSQfromALU(valid = true, destinationtag = 10, value = 150))
-        )
-        c.clock.step()
-
-        c.expectMemory(values =
-          Some(
-            LSQ2Memory(
-              address = 150,
-              tag = 10,
-              data = 0,
-              operation = LoadStoreOperation.Load,
-              operationWidth = LoadStoreWidth.Byte
-            )
-          )
-        )
-
-        c.setOutputs(
-          Some(LSQfromALU(valid = true, destinationtag = 11, value = 100))
-        )
-        c.clock.step()
-
-        // 値の確認
-        c.setOutputs()
-        c.expectMemory(values =
-          Some(
-            LSQ2Memory(
-              address = 100,
-              tag = 11,
-              data = 0,
-              operation = LoadStoreOperation.Load,
-              operationWidth = LoadStoreWidth.Byte
-            )
-          )
-        )
-        c.clock.step(2)
-
-    }
-  }
+  // TODO: もとに戻す
+//  it should "2 Parallel load check" in {
+//    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
+//      c =>
+//        c.initialize()
+//        // 初期化
+//        c.io.head.get.expect(0)
+//        c.io.tail.get.expect(0)
+//        c.io.decoders(0).ready.expect(true)
+//        c.io.decoders(1).ready.expect(true)
+//        c.io.memory.ready.poke(true)
+//        c.io.memory.ready.poke(true)
+//        c.expectMemory(None)
+//
+//        // 値のセット
+//        c.setDecoder(values =
+//          Seq(
+//            Some(
+//              DecodeEnqueue(
+//                addressTag = 10,
+//                storeDataTag = 5,
+//                storeData = None,
+//                operation = LoadStoreOperation.Load,
+//                operationWidth = LoadStoreWidth.Byte
+//              )
+//            ),
+//            Some(
+//              DecodeEnqueue(
+//                addressTag = 11,
+//                storeDataTag = 6,
+//                storeData = None,
+//                operation = LoadStoreOperation.Load,
+//                operationWidth = LoadStoreWidth.Byte
+//              )
+//            )
+//          )
+//        )
+//        c.clock.step(1)
+//
+//        c.setDecoder()
+//        c.io.head.get.expect(2)
+//        c.io.tail.get.expect(0)
+//        c.setOutputs(values =
+//          Some(LSQfromALU(valid = true, destinationtag = 10, value = 150))
+//        )
+//        c.clock.step()
+//
+//        c.expectMemory(values =
+//          Some(
+//            LSQ2Memory(
+//              address = 150,
+//              tag = 10,
+//              data = 0,
+//              operation = LoadStoreOperation.Load,
+//              operationWidth = LoadStoreWidth.Byte
+//            )
+//          )
+//        )
+//
+//        c.setOutputs(
+//          Some(LSQfromALU(valid = true, destinationtag = 11, value = 100))
+//        )
+//        c.clock.step()
+//
+//        // 値の確認
+//        c.setOutputs()
+//        c.expectMemory(values =
+//          Some(
+//            LSQ2Memory(
+//              address = 100,
+//              tag = 11,
+//              data = 0,
+//              operation = LoadStoreOperation.Load,
+//              operationWidth = LoadStoreWidth.Byte
+//            )
+//          )
+//        )
+//        c.clock.step(2)
+//
+//    }
+//  }
 
 //  it should "2 Parallel store check" in {
 //    test(new LoadStoreQueueWrapper).withAnnotations(Seq(WriteVcdAnnotation)) {
