@@ -42,7 +42,7 @@ class z40_B4ProcessorParameterTest
                   .withAnnotations(
                     Seq(
                       WriteFstAnnotation,
-                      VerilatorBackendAnnotation,
+                      IcarusBackendAnnotation,
                       CachingAnnotation
                     )
                   ) { c =>

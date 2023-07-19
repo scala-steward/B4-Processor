@@ -12,7 +12,7 @@ import b4processor.modules.memory.ExternalMemoryInterface
 import b4processor.modules.outputcollector.{OutputCollector, OutputCollector2}
 import b4processor.modules.registerfile.{RegisterFile, RegisterFileMem}
 import b4processor.modules.reorderbuffer.ReorderBuffer
-import b4processor.modules.reservationstation.ReservationStation
+import b4processor.modules.reservationstation.{IssueBuffer, ReservationStation}
 import b4processor.utils.axi.{ChiselAXI, VerilogAXI}
 import chisel3._
 import chisel3.experimental.dataview.DataViewable
@@ -54,7 +54,9 @@ class B4Processor(implicit params: Parameters) extends Module {
   private val decoders = Seq.fill(params.threads)(
     (0 until params.decoderPerThread).map(n => Module(new Decoder))
   )
-  private val reservationStation = Module(new ReservationStation)
+  private val reservationStation =
+    Seq.fill(params.threads)(Module(new ReservationStation))
+  private val issueBuffer = Module(new IssueBuffer)
   private val executors = Seq.fill(params.executors)(Module(new Executor))
 
   private val externalMemoryInterface = Module(new ExternalMemoryInterface)
@@ -78,7 +80,7 @@ class B4Processor(implicit params: Parameters) extends Module {
   for (e <- 0 until params.executors) {
 
     /** リザベーションステーションと実行ユニットを接続 */
-    reservationStation.io.executor(e) <> executors(e).io.reservationStation
+    issueBuffer.io.executors(e) <> executors(e).io.reservationStation
 
     /** 出力コレクタと実行ユニットの接続 */
     outputCollector.io.executor(e) <> executors(e).io.out
@@ -87,10 +89,13 @@ class B4Processor(implicit params: Parameters) extends Module {
     branchAddressCollector.io.executor(e) <> executors(e).io.fetch
   }
 
-  /** リザベーションステーションと実行ユニットの接続 */
-  reservationStation.io.collectedOutput := outputCollector.io.outputs
-
   for (tid <- 0 until params.threads) {
+    reservationStation(tid).io.issue <> issueBuffer.io.reservationStations(tid)
+
+    /** リザベーションステーションと実行ユニットの接続 */
+    reservationStation(tid).io.collectedOutput :=
+      outputCollector.io.outputs(tid)
+
     csr(tid).io.threadId := tid.U
     instructionCache(tid).io.threadId := tid.U
     reorderBuffer(tid).io.threadId := tid.U
@@ -136,8 +141,8 @@ class B4Processor(implicit params: Parameters) extends Module {
       decoders(tid)(d).io.reorderBuffer <> reorderBuffer(tid).io.decoders(d)
 
       /** デコーダとリザベーションステーションを接続 */
-      decoders(tid)(d).io.reservationStation <>
-        reservationStation.io.decoder(tid + d * params.threads)
+      reservationStation(tid).io.decoder(d) <>
+        decoders(tid)(d).io.reservationStation
 
       /** デコーダとレジスタファイルの接続 */
       decoders(tid)(d).io.registerFile <> registerFile(tid).io.decoders(d)

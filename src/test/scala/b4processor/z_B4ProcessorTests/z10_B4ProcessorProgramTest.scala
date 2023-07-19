@@ -111,7 +111,7 @@ class z10_B4ProcessorProgramTest
         Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("programs/riscv-sample-programs/many_add")
-        c.checkForRegister(1, 8, 70)
+        c.checkForRegister(1, 8, 100)
       }
   }
 
@@ -138,7 +138,7 @@ class z10_B4ProcessorProgramTest
         Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation)
       ) { c =>
         c.initialize("programs/riscv-sample-programs/many_add")
-        c.checkForRegister(1, 8, 70)
+        c.checkForRegister(1, 8, 100)
       }
   }
 
@@ -181,6 +181,7 @@ class z10_B4ProcessorProgramTest
           threads = 1,
           decoderPerThread = 8,
           fetchWidth = 8,
+          executors = 4,
           maxRegisterFileCommitCount = 10
         )
       )

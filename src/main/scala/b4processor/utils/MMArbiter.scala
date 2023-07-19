@@ -10,11 +10,16 @@ class MMArbiter[T <: Data](t: T, inputs: Int, outputs: Int) extends Module {
     val output = Vec(outputs, Decoupled(t))
   })
 
-  val arbiters = (0 until outputs).map(i =>
-    Module(
-      new Arbiter(t, inputs / outputs + (if (inputs % outputs > i) 1 else 0))
-    )
-  )
+  // initialize
+  for (o <- io.output) {
+    o.valid := false.B
+    o.bits := 0.U.asTypeOf(t)
+  }
+
+  val arbiters = (0 until outputs)
+    .map(i => inputs / outputs + (if (inputs % outputs > i) 1 else 0))
+    .filter(_ > 0)
+    .map(i => Module(new Arbiter(t, i)))
 
   for ((in, idx) <- io.input.zipWithIndex) {
     arbiters(idx % outputs).io.in(idx / outputs) <> in

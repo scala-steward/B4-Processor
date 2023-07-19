@@ -15,7 +15,7 @@ class ReservationStationWrapper(implicit params: Parameters)
   }
 
   def setExecutorReady(value: Boolean): Unit = {
-    this.io.executor(0).ready.poke(value)
+    this.io.issue(0).ready.poke(value)
   }
 
   def setDecoderInput(
@@ -36,7 +36,7 @@ class ReservationStationWrapper(implicit params: Parameters)
   }
 
   def setExecutors(values: Option[ExecutorValue]): Unit = {
-    val bypassValue = io.collectedOutput(0).outputs
+    val bypassValue = io.collectedOutput.outputs
     bypassValue(0).valid.poke(values.isDefined)
     bypassValue(0).bits.value.poke(
       values.getOrElse(ExecutorValue(destinationTag = 0, value = 0)).value
@@ -53,7 +53,7 @@ class ReservationStationWrapper(implicit params: Parameters)
   }
 
   def expectExecutor(programCounter: Option[Int]): Unit = {
-    this.io.executor(0).valid.expect(programCounter.isDefined)
+    this.io.issue(0).valid.expect(programCounter.isDefined)
     //    if (programCounter.isDefined)
     //      this.io.executor.bits.programCounter.expect(programCounter.get)
   }
@@ -127,11 +127,11 @@ class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
         c.setExecutorReady(true)
         c.setDecoderInput(None)
         loop = 0
-        while (loop < 100 && c.io.executor(0).valid.peekBoolean()) {
+        while (loop < 100 && c.io.issue(0).valid.peekBoolean()) {
           loop += 1
           c.clock.step()
         }
-        c.io.executor(0).valid.expect(false)
+        c.io.issue(0).valid.expect(false)
       }
   }
 }

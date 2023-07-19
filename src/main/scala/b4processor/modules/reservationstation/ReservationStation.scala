@@ -17,13 +17,11 @@ class ReservationStation(implicit params: Parameters) extends Module {
     val collectedOutput = Flipped(new CollectedOutput)
     val issue =
       Vec(params.decoderPerThread, Irrevocable(new ReservationStation2Executor))
-    val decoder = Vec(
-      params.threads * params.decoderPerThread,
-      Flipped(new Decoder2ReservationStation)
-    )
+    val decoder =
+      Vec(params.decoderPerThread, Flipped(new Decoder2ReservationStation))
   })
 
-  val rsWidth = log2Up(params.decoderPerThread * 4)
+  val rsWidth = log2Up(params.decoderPerThread * 2)
 
   val reservation = RegInit(
     VecInit(
@@ -62,7 +60,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
   // デコーダから
   private val head = RegInit(0.U(rsWidth.W))
   private var nextHead = head
-  for (i <- 0 until (params.decoderPerThread * params.threads)) {
+  for (i <- 0 until params.decoderPerThread) {
     prefix(s"decoder$i") {
       val decoder = io.decoder(i)
       val resNext = reservation(nextHead)
