@@ -28,6 +28,19 @@ write_char:
     addi a4,a4,1
     j NEXT_CHAR
 
+move_to_ram:
+    la a0, to_ram
+    la a1, ram
+0:
+    lb a2, 0(a0)
+    sb a2, 0(a1)
+    beqz a2, 1f
+    addi a0,a0,1
+    addi a1,a1,1
+    j 0b
+1:
+    a4
+
 loop:
 get_char:
     la a0, __UART_START
@@ -63,3 +76,6 @@ _WEND:
 
 .section .data
 hello: .string "Hello World\r\nFrom B4Processor!\r\n"
+
+.section .data
+to_ram: .string "Some Text that goes to ram!\r\n"

@@ -4,6 +4,7 @@ import circt.stage.ChiselStage
 import b4processor.Parameters
 import b4processor.connections.LoadStoreQueue2Memory
 import b4processor.modules.memory.{
+  MemoryReadIntent,
   MemoryReadTransaction,
   MemoryWriteTransaction
 }
@@ -37,11 +38,11 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
   )
   buffer.input <> inputArbiter.io.out
   buffer.output.ready := false.B
-  buffer.flush := false.B
+//  buffer.flush := false.B
 
-  io.dataReadRequest.bits := DontCare
+  io.dataReadRequest.bits := 0.U.asTypeOf(new MemoryReadTransaction)
   io.dataReadRequest.valid := false.B
-  io.dataWriteRequest.bits := DontCare
+  io.dataWriteRequest.bits := 0.U.asTypeOf(new MemoryWriteTransaction)
   io.dataWriteRequest.valid := false.B
 
   when(!buffer.empty) {
@@ -51,11 +52,7 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
 
     when(!operationIsStore) {
       io.dataReadRequest.valid := true.B
-      io.dataReadRequest.bits.address := entry.address
-      io.dataReadRequest.bits.size := MuxLookup(
-        entry.operationWidth,
-        MemoryAccessWidth.DoubleWord
-      )(
+      val size = MuxLookup(entry.operationWidth, MemoryAccessWidth.DoubleWord)(
         Seq(
           LoadStoreWidth.Byte -> MemoryAccessWidth.Byte,
           LoadStoreWidth.HalfWord -> MemoryAccessWidth.HalfWord,
@@ -63,8 +60,13 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
           LoadStoreWidth.DoubleWord -> MemoryAccessWidth.DoubleWord
         )
       )
-      io.dataReadRequest.bits.outputTag := entry.tag
-      io.dataReadRequest.bits.signed := LoadStoreOperation.Load === entry.operation
+      val signed = LoadStoreOperation.Load === entry.operation
+      io.dataReadRequest.bits := MemoryReadTransaction.ReadToTag(
+        entry.address,
+        size,
+        signed,
+        entry.tag
+      )
       when(io.dataReadRequest.ready) {
         buffer.output.ready := true.B
       }

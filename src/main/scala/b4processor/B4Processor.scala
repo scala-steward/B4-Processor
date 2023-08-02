@@ -1,5 +1,6 @@
 package b4processor
 
+import b4processor.modules.AtomicLSU
 import circt.stage.ChiselStage
 import b4processor.modules.branch_output_collector.BranchOutputCollector
 import b4processor.modules.cache.{DataMemoryBuffer, InstructionMemoryCache}
@@ -64,6 +65,7 @@ class B4Processor(implicit params: Parameters) extends Module {
   private val csrReservationStation =
     Seq.fill(params.threads)(Module(new CSRReservationStation))
   private val csr = Seq.fill(params.threads)(Module(new CSR))
+  private val amo = Module(new AtomicLSU)
 
   axi <> externalMemoryInterface.io.coordinator
 
@@ -91,6 +93,12 @@ class B4Processor(implicit params: Parameters) extends Module {
 
   for (tid <- 0 until params.threads) {
     reservationStation(tid).io.issue <> issueBuffer.io.reservationStations(tid)
+
+    amo.io.collectedOutput := outputCollector.io.outputs
+    amo.io.readRequest <> externalMemoryInterface.io.amoReadRequests
+    amo.io.writeRequest <> externalMemoryInterface.io.amoWriteRequests
+    amo.io.readResponse <> externalMemoryInterface.io.dataAmoOut
+    amo.io.output <> outputCollector.io.amo
 
     /** リザベーションステーションと実行ユニットの接続 */
     reservationStation(tid).io.collectedOutput :=
@@ -122,12 +130,13 @@ class B4Processor(implicit params: Parameters) extends Module {
     fetch(tid).io.csrReservationStationEmpty :=
       csrReservationStation(tid).io.empty
 
-    outputCollector.io.isError(tid) := reorderBuffer(tid).io.isError
     branchAddressCollector.io.isError(tid) := reorderBuffer(tid).io.isError
     fetch(tid).io.isError := reorderBuffer(tid).io.isError
 
     /** フェッチとデコーダの接続 */
     for (d <- 0 until params.decoderPerThread) {
+      amo.io.decoders(tid)(d) <> decoders(tid)(d).io.amo
+
       decoders(tid)(d).io.csr <> csrReservationStation(tid).io.decoderInput(d)
 
       decoders(tid)(d).io.threadId := tid.U
@@ -218,6 +227,7 @@ object B4Processor extends App {
     decoderPerThread = 2,
     maxRegisterFileCommitCount = 1,
     tagWidth = 4,
+    parallelOutput = 1,
     instructionStart = 0x2000_0000L
   )
 
@@ -227,7 +237,9 @@ object B4Processor extends App {
     Array(
 //      "--disable-mem-randomization",
 //      "--disable-reg-randomization",
-//      "--disable-all-randomization"
+      "--disable-all-randomization",
+      "--lowering-options=mitigateVivadoArrayIndexConstPropBug",
+      "--add-vivado-ram-address-conflict-synthesis-bug-workaround"
     )
   )
 }

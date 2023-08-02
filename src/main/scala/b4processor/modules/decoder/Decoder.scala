@@ -6,9 +6,11 @@ import b4processor.utils.Tag
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
+import b4processor.modules.Decoder2AtomicLSU
 import b4processor.modules.reservationstation.ReservationStationEntry
 import b4processor.utils.operations.{
   ALUOperation,
+  AMOOperation,
   CSROperation,
   DecodingMod,
   LoadStoreOperation
@@ -28,6 +30,7 @@ class Decoder(implicit params: Parameters) extends Module {
     val loadStoreQueue = Decoupled(new Decoder2LoadStoreQueue)
     val csr = Decoupled(new Decoder2CSRReservationStation())
     val threadId = Input(UInt(log2Up(params.threads).W))
+    val amo = Decoupled(new Decoder2AtomicLSU)
   })
 
   val operations = DecodingMod(
@@ -70,7 +73,7 @@ class Decoder(implicit params: Parameters) extends Module {
   )
 
   // 命令をデコードするのはリオーダバッファにエントリの空きがあり、リザベーションステーションにも空きがあるとき
-  io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready && io.csr.ready
+  io.instructionFetch.ready := io.reservationStation.ready && io.reorderBuffer.ready && io.loadStoreQueue.ready && io.csr.ready && io.amo.ready
   // リオーダバッファやリザベーションステーションに新しいエントリを追加するのは命令がある時
   io.reorderBuffer.valid := io.instructionFetch.ready &&
     io.instructionFetch.valid
@@ -151,6 +154,24 @@ class Decoder(implicit params: Parameters) extends Module {
     )
     io.csr.bits.ready := operations.rs1ValueValid || value1.valid
     io.csr.bits.destinationTag := io.reorderBuffer.destination.destinationTag
+  }
+
+  io.amo.valid := io.amo.ready && io.instructionFetch.ready && io.instructionFetch.valid && operations.amoOp =/= AMOOperation.None
+  io.amo.bits := 0.U.asTypeOf(new Decoder2AtomicLSU)
+  when(io.amo.valid) {
+    io.amo.bits.operation := operations.amoOp
+    io.amo.bits.operationWidth := operations.amoWidth
+    io.amo.bits.ordering := operations.amoOrdering
+
+    io.amo.bits.addressReg := sourceTag1.bits
+    io.amo.bits.addressValue := value1.bits
+    io.amo.bits.addressValid := value1.valid
+
+    io.amo.bits.srcReg := sourceTag2.bits
+    io.amo.bits.srcValue := value2.bits
+    io.amo.bits.srcValid := value2.valid
+
+    io.amo.bits.destinationTag := destinationTag
   }
 }
 

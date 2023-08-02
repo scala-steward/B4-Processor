@@ -1,7 +1,6 @@
 package b4processor.utils.operations
 
 import b4processor.riscv.Instructions
-import b4processor.riscv.Instructions.{I64Type, ZICSRType, ZIFENCEIType}
 import b4processor.utils.BundleInitialize.AddBundleInitializeConstructor
 import b4processor.utils.RVRegister
 import b4processor.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
@@ -31,6 +30,9 @@ class Operations extends Bundle {
   val compressed = Bool()
   val csrOp = CSROperation()
   val csrAddress = UInt(12.W)
+  val amoOp = AMOOperation.Type()
+  val amoWidth = AMOOperationWidth.Type()
+  val amoOrdering = new AMOOrdering
 }
 
 object Operations {
@@ -80,7 +82,10 @@ object Operations {
     _.ebreak -> false.B,
     _.compressed -> false.B,
     _.csrOp -> CSROperation.None,
-    _.csrAddress -> 0.U
+    _.csrAddress -> 0.U,
+    _.amoOp -> AMOOperation.None,
+    _.amoWidth -> AMOOperationWidth.Word,
+    _.amoOrdering -> AMOOrdering(false.B, false.B)
   )
 
   implicit class UIntAccess(u: UInt) {
@@ -194,8 +199,8 @@ object Operations {
       (u, _) => u.csrOp -> op
     )
 
-  def decodingList = {
-    import Instructions.IType
+  def BaseDecodingList = {
+    import Instructions.{IType, I64Type, ZICSRType, ZIFENCEIType}
     Seq(
       IType("BEQ") -> btypeOp(ALUOperation.BranchEqual),
       IType("BNE") -> btypeOp(ALUOperation.BranchNotEqual),
@@ -318,6 +323,56 @@ object Operations {
     )
   }
 
+  def amoOp(
+    op: AMOOperation.Type,
+    width: AMOOperationWidth.Type = AMOOperationWidth.Word
+  ): (UInt, UInt) => Operations =
+    createOperation(
+      _.rd -> _(11, 7).reg,
+      _.rs1 -> _(19, 15).reg,
+      _.rs2 -> _(24, 20).reg,
+      (u, i) => u.amoOrdering -> AMOOrdering(i(26), i(25)),
+      (u, _) => u.amoOp -> op,
+      (u, _) => u.amoWidth -> width
+    )
+
+  def AextDecodingList = {
+    import Instructions.{AType, A64Type}
+    import AMOOperation._
+    import AMOOperationWidth._
+
+    Seq(
+      // 32
+      AType("AMOADD_W") -> amoOp(Add),
+      AType("AMOAND_W") -> amoOp(And),
+      AType("AMOMAX_W") -> amoOp(Max),
+      AType("AMOMAXU_W") -> amoOp(MaxU),
+      AType("AMOMIN_W") -> amoOp(Min),
+      AType("AMOMINU_W") -> amoOp(MinU),
+      AType("AMOOR_W") -> amoOp(Or),
+      AType("AMOSWAP_W") -> amoOp(Swap),
+      AType("AMOXOR_W") -> amoOp(Xor),
+      AType("LR_W") -> amoOp(Lr),
+      AType("SC_W") -> amoOp(Sc),
+      // 64
+      A64Type("AMOADD_D") -> amoOp(Add, DoubleWord),
+      A64Type("AMOAND_D") -> amoOp(And, DoubleWord),
+      A64Type("AMOMAX_D") -> amoOp(Max, DoubleWord),
+      A64Type("AMOMAXU_D") -> amoOp(MaxU, DoubleWord),
+      A64Type("AMOMIN_D") -> amoOp(Min, DoubleWord),
+      A64Type("AMOMINU_D") -> amoOp(MinU, DoubleWord),
+      A64Type("AMOOR_D") -> amoOp(Or, DoubleWord),
+      A64Type("AMOSWAP_D") -> amoOp(Swap, DoubleWord),
+      A64Type("AMOXOR_D") -> amoOp(Xor, DoubleWord),
+      A64Type("LR_D") -> amoOp(Lr, DoubleWord),
+      A64Type("SC_D") -> amoOp(Sc, DoubleWord)
+    )
+  }
+
+  def decodingList = {
+    BaseDecodingList ++ AextDecodingList
+  }
+
   def genDecoder(inst: UInt, pc: UInt): Operations = {
     var output = Operations.default
     for (d <- decodingList) {
@@ -356,6 +411,28 @@ object ALUOperation extends ChiselEnum {
 
 object LoadStoreOperation extends ChiselEnum {
   val None, Load, LoadUnsigned, Store = Value
+}
+
+object AMOOperation extends ChiselEnum {
+  val None, Add, And, Max, MaxU, Min, MinU, Or, Swap, Xor, Lr, Sc = Value
+}
+
+object AMOOperationWidth extends ChiselEnum {
+  val Word, DoubleWord = Value
+}
+
+class AMOOrdering extends Bundle {
+  val aquire = Bool()
+  val release = Bool()
+}
+
+object AMOOrdering {
+  def apply(aq: Bool, rl: Bool) = {
+    val w = Wire(new AMOOrdering)
+    w.aquire := aq
+    w.release := rl
+    w
+  }
 }
 
 object LoadStoreWidth extends ChiselEnum {

@@ -18,12 +18,12 @@ class z40_B4ProcessorParameterTest
   behavior of "B4Processor with many parameters"
   implicit val defaultParams = Parameters(debug = true)
 
-  for (threads <- Seq(1, 2, 3, 4)) {
-    for (executors <- Seq(1, 2, 4))
-      for (decoderPerThread <- Seq(1, 2))
-        for (maxCommitCount <- Seq(1, 2))
-          for (tagWidth <- Seq(3, 4))
-            for (lsqWidth <- Seq(3, 4)) {
+  for (threads <- Seq(1, 2, 3, 4)){// , 5, 6, 7, 8)) {
+    for (executors <- Seq(1, 8))
+      for (decoderPerThread <- Seq(1, 8))
+        for (maxCommitCount <- Seq(1, 4))
+          for (tagWidth <- Seq(3, 6))
+            for (lsqWidth <- Seq(3, 6)) {
               val title =
                 s"run fibonacci_c threads=$threads executor=$executors decoders=$decoderPerThread maxCommitCount=$maxCommitCount tagWidth=$tagWidth lsqWidth=$lsqWidth"
               it should title taggedAs (ParameterTest, Slow) in {
@@ -42,7 +42,7 @@ class z40_B4ProcessorParameterTest
                   .withAnnotations(
                     Seq(
                       WriteFstAnnotation,
-                      IcarusBackendAnnotation,
+                      VerilatorBackendAnnotation,
                       CachingAnnotation
                     )
                   ) { c =>

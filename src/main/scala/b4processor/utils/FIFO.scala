@@ -11,16 +11,16 @@ class FIFO[T <: Data](width: Int)(t: T, flow: Boolean = false) extends Module {
   val output = IO(Irrevocable(t))
   val full = IO(Output(Bool()))
   val empty = IO(Output(Bool()))
-  val flush = IO(Input(Bool()))
+//  val flush = IO(Input(Bool()))
 
   private val queue = Module(
     new Queue(
 //      UInt(t.getWidth.W),
       t,
       pow(2, width).toInt,
-      useSyncReadMem = true,
-      hasFlush = true,
-      flow = flow
+      useSyncReadMem = true
+//      hasFlush = true,
+//      flow = flow
     )
   )
   //  queue.io.enq.bits := input.bits.asUInt
@@ -35,7 +35,7 @@ class FIFO[T <: Data](width: Int)(t: T, flow: Boolean = false) extends Module {
 
   full := !queue.io.enq.ready
   empty := !queue.io.deq.valid
-  queue.flush := flush
+//  queue.flush := flush
 }
 
 object FIFO extends App {

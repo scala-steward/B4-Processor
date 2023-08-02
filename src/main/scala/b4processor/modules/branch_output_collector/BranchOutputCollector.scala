@@ -19,7 +19,7 @@ class BranchOutputCollector(implicit params: Parameters) extends Module {
   )
   for (i <- 0 until params.executors) {
     executorQueue(i).input <> io.executor(i)
-    executorQueue(i).flush := false.B
+//    executorQueue(i).flush := false.B
   }
   for (tid <- 0 until params.threads) {
     for (e <- 0 until params.executors) {

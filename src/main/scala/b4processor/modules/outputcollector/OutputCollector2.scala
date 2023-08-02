@@ -13,30 +13,31 @@ class OutputCollector2(implicit params: Parameters) extends Module {
     val outputs = Vec(params.threads, new CollectedOutput)
     val executor = Flipped(Vec(params.executors, Irrevocable(new OutputValue)))
     val dataMemory = Flipped(Irrevocable(new OutputValue))
+    val amo = Flipped(Irrevocable(new OutputValue))
     val csr = Flipped(Vec(params.threads, Irrevocable(new OutputValue)))
-    val isError = Input(Vec(params.threads, Bool()))
   })
 
-  val inputBuffers = Seq.fill(io.executor.length + 1)(
+  val inputBuffers = Seq.fill(io.executor.length + 2)(
     Module(new PassthroughBuffer(new OutputValue))
   )
 
   inputBuffers.head.io.input <> io.dataMemory
+  inputBuffers(1).io.input <> io.amo
   for (idx <- 0 until io.executor.length) {
-    inputBuffers(idx + 1).io.input <> io.executor(idx)
+    inputBuffers(idx + 2).io.input <> io.executor(idx)
   }
 
   val mmarb = Seq.fill(params.threads)(
     Module(
       new MMArbiter(
         new OutputValue,
-        io.executor.length + 1 + 1,
+        io.executor.length + 1 + 1 + 1,
         params.parallelOutput
       )
     )
   )
 
-  for (idx <- 0 until io.executor.length + 1 + 1) {
+  for (idx <- 0 until io.executor.length + 1 + 1 + 1) {
     for (t <- 0 until params.threads) {
       mmarb(t).io.input(idx).valid := false.B
       mmarb(t).io.input(idx).bits := 0.U.asTypeOf(new OutputValue)

@@ -20,7 +20,7 @@
   };
 
   outputs = { self, nixpkgs, flake-utils, riscv-test-src, nix-sbt, nix-filter }:
-    flake-utils.lib.eachDefaultSystem (system:
+    flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
         pkgs = import nixpkgs { inherit system; };
         nf = import nix-filter;

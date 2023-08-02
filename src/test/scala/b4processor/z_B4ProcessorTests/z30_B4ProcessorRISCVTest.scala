@@ -141,4 +141,27 @@ class B4ProcessorRISCVTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 
   riscv_test_c("rvc")
+
+  behavior of s"RISC-V tests rv64a"
+
+  def riscv_test_a(test_name: String, timeout: Int = 2000): Unit = {
+
+    it should s"run risc-v test $test_name" taggedAs(RISCVTest, Slow) in {
+      test( // FIXME fromFile8bit
+        new B4ProcessorRISCVTestWrapper(
+        )
+      )
+        .withAnnotations(
+          Seq(WriteWaveformAnnotation, CachingAnnotation, backendAnnotation)
+        ) { c =>
+          c.clock.setTimeout(timeout)
+          c.initialize(
+            s"programs/riscv-tests/share/riscv-tests/isa/rv64ua-p-$test_name"
+          )
+          c.riscv_test()
+        }
+    }
+  }
+
+  riscv_test_a("amoadd_w")
 }

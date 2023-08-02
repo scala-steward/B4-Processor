@@ -25,7 +25,7 @@ class OutputCollector(implicit params: Parameters) extends Module {
 
   for (i <- 0 until params.executors) {
     executorQueue(i).input <> io.executor(i)
-    executorQueue(i).flush := false.B
+//    executorQueue(i).flush := false.B
 
     val out = io.executor(i).bits
     val outValid = io.executor(i).valid

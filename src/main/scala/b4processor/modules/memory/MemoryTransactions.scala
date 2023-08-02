@@ -12,8 +12,11 @@ class MemoryWriteTransaction(implicit params: Parameters) extends Bundle {
   val mask = UInt(8.W)
 }
 
+object MemoryReadIntent extends ChiselEnum {
+  val Instruction, Data, Amo = Value
+}
 class MemoryReadTransaction(implicit params: Parameters) extends Bundle {
-  val isInstruction = Bool()
+  val accessType = MemoryReadIntent.Type()
   val address = UInt(64.W)
   val burstLength = UInt(8.W)
   val size = new MemoryAccessWidth.Type()
@@ -29,7 +32,7 @@ object MemoryReadTransaction {
     outputTag: Tag
   )(implicit params: Parameters): MemoryReadTransaction = {
     val w = Wire(new MemoryReadTransaction)
-    w.isInstruction := false.B
+    w.accessType := MemoryReadIntent.Data
     w.address := address
     w.burstLength := 0.U
     w.size := size
@@ -38,11 +41,24 @@ object MemoryReadTransaction {
     w
   }
 
+  def ReadToAmo(address: UInt, size: MemoryAccessWidth.Type, outputTag: Tag)(
+    implicit params: Parameters
+  ): MemoryReadTransaction = {
+    val w = Wire(new MemoryReadTransaction)
+    w.accessType := MemoryReadIntent.Amo
+    w.address := address
+    w.burstLength := 0.U
+    w.size := size
+    w.signed := true.B
+    w.outputTag := outputTag
+    w
+  }
+
   def ReadInstruction(address: UInt, length: Int, threadId: UInt)(implicit
     params: Parameters
   ): MemoryReadTransaction = {
     val w = Wire(new MemoryReadTransaction)
-    w.isInstruction := true.B
+    w.accessType := MemoryReadIntent.Instruction
     w.address := address
     w.burstLength := (length - 1).U
     w.size := MemoryAccessWidth.DoubleWord
