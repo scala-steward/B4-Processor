@@ -19,6 +19,7 @@ class DecoderWrapper(implicit params: Parameters) extends Decoder {
     this.setOutputs()
     this.io.reservationStation.ready.poke(true)
     this.io.csr.ready.poke(true)
+    this.io.amo.ready.poke(true)
   }
 
   def setImem(
@@ -152,10 +153,12 @@ class DecoderTest extends AnyFlatSpec with ChiselScalatestTester {
 
   // レジスタファイルから値を取得できているか
   it should "get values from register file" in {
-    test(new DecoderWrapper) { c =>
+    test(new DecoderWrapper).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
       c.setRegisterFile(value1 = 10, value2 = 20)
+
+      c.clock.step()
 
       c.expectReorderBuffer(
         destinationRegister = 1.reg,

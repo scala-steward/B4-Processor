@@ -109,12 +109,24 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   // レジスタファイルへの書き込み
   io.isError := false.B
   private var lastValid = true.B
+  for (lsq <- io.loadStoreQueue) {
+    lsq.valid := false.B
+    lsq.bits := 0.U.asTypeOf(new LoadStoreQueue2ReorderBuffer)
+  }
   for (((rf, lsq), i) <- io.registerFile.zip(io.loadStoreQueue).zipWithIndex) {
     prefix(s"to_rf$i") {
       val index = tail + i.U
-
       val biVal = buffer(index)
-      val instructionOk = biVal.valueReady || biVal.storeSign || biVal.isError
+
+      if (i == 0) when(biVal.storeSign) {
+        lsq.valid := true.B
+        lsq.bits.destinationTag.id := index
+        lsq.bits.destinationTag.threadId := io.threadId
+        biVal.storeSign := false.B
+      }
+
+      val instructionOk =
+        (biVal.valueReady || biVal.isError) && !biVal.storeSign
       val canCommit = lastValid && index =/= head && instructionOk
       val isError = biVal.isError
 
@@ -142,16 +154,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
           io.csr.mepc.bits := biVal.programCounter
           io.isError := true.B
         }
-      }
-
-      when(canCommit) {
-        // LSQへストア実行信号
-        lsq.bits.destinationTag := Tag(io.threadId, index)
-        lsq.valid := biVal.storeSign
         biVal := ReorderBufferEntry.default
-      }.otherwise {
-        lsq.bits.destinationTag := Tag(io.threadId, 0.U)
-        lsq.valid := false.B
       }
       lastValid = canCommit
     }

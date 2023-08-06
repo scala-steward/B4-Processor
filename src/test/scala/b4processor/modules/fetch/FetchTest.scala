@@ -80,6 +80,13 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
   memoryInterface.io.dataWriteRequests.valid := false.B
   memoryInterface.io.dataWriteRequests.bits := DontCare
   memoryInterface.io.dataReadOut.ready := true.B
+  memoryInterface.io.amoReadRequests.valid := false.B
+  memoryInterface.io.amoReadRequests.bits := DontCare
+  memoryInterface.io.amoWriteRequests.valid := DontCare
+  memoryInterface.io.amoWriteRequests.bits := DontCare
+  memoryInterface.io.dataWriteOut.ready := true.B
+  memoryInterface.io.amoReadOut.ready := true.B
+  memoryInterface.io.amoWriteOut.ready := true.B
 
   axiMemory.axi <> memoryInterface.io.coordinator
   axiMemory.simulationSource.input <> io.memorySetup

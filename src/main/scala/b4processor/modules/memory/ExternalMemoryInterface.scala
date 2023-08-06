@@ -18,8 +18,9 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     val instructionFetchRequest =
       Vec(params.threads, Flipped(Irrevocable(new MemoryReadTransaction)))
     val dataReadOut = Irrevocable(new OutputValue)
-    val dataAmoOut = Irrevocable(new OutputValue)
-    val dataWriteOut = Valid(new WriteResponse)
+    val dataWriteOut = Irrevocable(new OutputValue)
+    val amoReadOut = Irrevocable(new OutputValue)
+    val amoWriteOut = Irrevocable(new OutputValue)
     val instructionOut = Vec(params.threads, Valid(new InstructionResponse))
     val coordinator = new ChiselAXI(64, 64)
   })
@@ -65,8 +66,10 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
   io.dataWriteOut.valid := false.B
   io.dataWriteOut.bits := DontCare
   io.dataReadOut.valid := false.B
-  io.dataAmoOut.valid := false.B
-  io.dataAmoOut.bits := 0.U.asTypeOf(new OutputValue)
+  io.amoReadOut.valid := false.B
+  io.amoReadOut.bits := 0.U.asTypeOf(new OutputValue)
+  io.amoWriteOut.valid := false.B
+  io.amoWriteOut.bits := 0.U.asTypeOf(new OutputValue)
   for (tid <- 0 until params.threads) {
     io.instructionFetchRequest(tid).ready := false.B
     io.instructionOut(tid).valid := false.B
@@ -140,7 +143,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     }.elsewhen(readQueue.output.bits.accessType === MemoryReadIntent.Data) {
       io.coordinator.read.ready := io.dataReadOut.ready
     }.elsewhen(readQueue.output.bits.accessType === MemoryReadIntent.Amo) {
-      io.coordinator.read.ready := io.dataAmoOut.ready
+      io.coordinator.read.ready := io.amoReadOut.ready
     }
     when(io.coordinator.read.valid) {
       when(io.coordinator.read.ready) {
@@ -159,71 +162,81 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
         io.dataReadOut.valid := true.B
         io.dataReadOut.bits.tag := readQueue.output.bits.tag
         val data = io.coordinator.read.bits.DATA
-        io.dataReadOut.bits.value := Mux1H(
-          Seq(
-            (readQueue.output.bits.size === MemoryAccessWidth.Byte) -> Mux1H(
-              (0 until 8).map(i =>
-                (readQueue.output.bits.offset === i.U) -> Cat(
-                  Mux(
-                    readQueue.output.bits.signed && data(i * 8 + 7),
-                    "xFFFF_FFFF_FFFF_FF".U,
-                    0.U
-                  ),
-                  data(i * 8 + 7, i * 8)
+        val isError = io.coordinator.read.bits.RESP =/= Response.Okay
+        io.dataReadOut.bits.value := Mux(
+          isError,
+          5.U,
+          Mux1H(
+            Seq(
+              (readQueue.output.bits.size === MemoryAccessWidth.Byte) -> Mux1H(
+                (0 until 8).map(i =>
+                  (readQueue.output.bits.offset === i.U) -> Cat(
+                    Mux(
+                      readQueue.output.bits.signed && data(i * 8 + 7),
+                      "xFFFF_FFFF_FFFF_FF".U,
+                      0.U
+                    ),
+                    data(i * 8 + 7, i * 8)
+                  )
                 )
-              )
-            ),
-            (readQueue.output.bits.size === MemoryAccessWidth.HalfWord) -> Mux1H(
-              Seq(0, 2, 4, 6).map(i =>
-                (readQueue.output.bits.offset === i.U) -> Cat(
-                  Mux(
-                    readQueue.output.bits.signed && data(i * 8 + 15),
-                    "xFFFF_FFFF_FFFF".U,
-                    0.U
-                  ),
-                  data(i * 8 + 15, i * 8)
+              ),
+              (readQueue.output.bits.size === MemoryAccessWidth.HalfWord) -> Mux1H(
+                Seq(0, 2, 4, 6).map(i =>
+                  (readQueue.output.bits.offset === i.U) -> Cat(
+                    Mux(
+                      readQueue.output.bits.signed && data(i * 8 + 15),
+                      "xFFFF_FFFF_FFFF".U,
+                      0.U
+                    ),
+                    data(i * 8 + 15, i * 8)
+                  )
                 )
-              )
-            ),
-            (readQueue.output.bits.size === MemoryAccessWidth.Word) -> Mux1H(
-              Seq(0, 4).map(i =>
-                (readQueue.output.bits.offset === i.U) -> Cat(
-                  Mux(
-                    readQueue.output.bits.signed && data(i * 8 + 31),
-                    "xFFFF_FFFF".U,
-                    0.U
-                  ),
-                  data(i * 8 + 31, i * 8)
+              ),
+              (readQueue.output.bits.size === MemoryAccessWidth.Word) -> Mux1H(
+                Seq(0, 4).map(i =>
+                  (readQueue.output.bits.offset === i.U) -> Cat(
+                    Mux(
+                      readQueue.output.bits.signed && data(i * 8 + 31),
+                      "xFFFF_FFFF".U,
+                      0.U
+                    ),
+                    data(i * 8 + 31, i * 8)
+                  )
                 )
-              )
-            ),
-            (readQueue.output.bits.size === MemoryAccessWidth.DoubleWord) -> data
+              ),
+              (readQueue.output.bits.size === MemoryAccessWidth.DoubleWord) -> data
+            )
           )
         )
-        io.dataReadOut.bits.isError := io.coordinator.read.bits.RESP =/= Response.Okay
+        io.dataReadOut.bits.isError := isError
       }.elsewhen(readQueue.output.bits.accessType === MemoryReadIntent.Amo) {
-        io.dataAmoOut.valid := true.B
-        io.dataAmoOut.bits.tag := readQueue.output.bits.tag
+        io.amoReadOut.valid := true.B
+        io.amoReadOut.bits.tag := readQueue.output.bits.tag
         val data = io.coordinator.read.bits.DATA
-        io.dataAmoOut.bits.value := MuxCase(
-          0.U,
-          Seq(
-            (readQueue.output.bits.size === MemoryAccessWidth.Word) -> Mux1H(
-              Seq(0, 4).map(i =>
-                (readQueue.output.bits.offset === i.U) -> Cat(
-                  Mux(
-                    readQueue.output.bits.signed && data(i * 8 + 31),
-                    "xFFFF_FFFF".U,
-                    0.U
-                  ),
-                  data(i * 8 + 31, i * 8)
+        val isError = io.coordinator.read.bits.RESP =/= Response.Okay
+        io.amoReadOut.bits.value := Mux(
+          isError,
+          7.U,
+          MuxCase(
+            0.U,
+            Seq(
+              (readQueue.output.bits.size === MemoryAccessWidth.Word) -> Mux1H(
+                Seq(0, 4).map(i =>
+                  (readQueue.output.bits.offset === i.U) -> Cat(
+                    Mux(
+                      readQueue.output.bits.signed && data(i * 8 + 31),
+                      "xFFFF_FFFF".U,
+                      0.U
+                    ),
+                    data(i * 8 + 31, i * 8)
+                  )
                 )
-              )
-            ),
-            (readQueue.output.bits.size === MemoryAccessWidth.DoubleWord) -> data
+              ),
+              (readQueue.output.bits.size === MemoryAccessWidth.DoubleWord) -> data
+            )
           )
         )
-        io.dataAmoOut.bits.isError := io.coordinator.read.bits.RESP =/= Response.Okay
+        io.amoReadOut.bits.isError := isError
       }
     }
   }
@@ -248,7 +261,8 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
   dataWriteQueue.input.bits := DontCare
 //  dataWriteQueue.flush := false.B
   val writeResponseQueue = Module(new FIFO(3)(new Bundle {
-    val tag = new Tag
+    val tag = new Tag()
+    val accessType = new MemoryWriteIntent.Type()
   }))
   writeResponseQueue.output.ready := false.B
   writeResponseQueue.input.valid := false.B
@@ -271,6 +285,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
       dataWriteQueue.input.bits.strb := dataWriteRequestQueue.output.bits.mask
       writeResponseQueue.input.valid := !writeQueued
       writeResponseQueue.input.bits.tag := dataWriteRequestQueue.output.bits.outputTag
+      writeResponseQueue.input.bits.accessType := dataWriteRequestQueue.output.bits.accessType
       writeQueued := true.B
     }
     when(io.coordinator.writeAddress.ready) {
@@ -290,13 +305,31 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
   }
 
   when(!writeResponseQueue.empty) {
-    io.coordinator.writeResponse.ready := true.B
-    when(io.coordinator.writeResponse.valid) {
-      writeResponseQueue.output.ready := true.B
-      io.dataWriteOut.valid := true.B
-      io.dataWriteOut.bits.tag := writeResponseQueue.output.bits.tag
-      io.dataWriteOut.bits.isError := false.B
-    }
+    when(writeResponseQueue.output.bits.accessType === MemoryWriteIntent.Data) {
+      io.coordinator.writeResponse.ready := io.dataWriteOut.ready
+      when(io.coordinator.writeResponse.valid) {
+        io.dataWriteOut.valid := true.B
+        io.dataWriteOut.bits.tag := writeResponseQueue.output.bits.tag
+        io.dataWriteOut.bits.isError := io.coordinator.writeResponse.bits.RESP =/= Response.Okay
+        io.dataWriteOut.bits.value := 7.U
+        when(io.dataWriteOut.ready) {
+          writeResponseQueue.output.ready := true.B
+        }
+      }
+    }.elsewhen(
+      writeResponseQueue.output.bits.accessType === MemoryWriteIntent.Amo
+    ) {
+      io.coordinator.writeResponse.ready := io.amoWriteOut.ready
+      when(io.coordinator.writeResponse.valid) {
+        io.amoWriteOut.valid := true.B
+        io.amoWriteOut.bits.tag := writeResponseQueue.output.bits.tag
+        io.amoWriteOut.bits.isError := io.coordinator.writeResponse.bits.RESP =/= Response.Okay
+        io.amoWriteOut.bits.value := 7.U
+        when(io.amoWriteOut.ready) {
+          writeResponseQueue.output.ready := true.B
+        }
+      }
+    }.otherwise { assert(false.B) }
   }
 
 }

@@ -5,16 +5,22 @@ import b4processor.structures.memoryAccess.MemoryAccessWidth
 import b4processor.utils.Tag
 import chisel3._
 
+object MemoryReadIntent extends ChiselEnum {
+  val Instruction, Data, Amo = Value
+}
+
+object MemoryWriteIntent extends ChiselEnum {
+  val Data, Amo = Value
+}
+
 class MemoryWriteTransaction(implicit params: Parameters) extends Bundle {
+  val accessType = new MemoryWriteIntent.Type()
   val outputTag = new Tag()
   val address = UInt(64.W)
   val data = UInt(64.W)
   val mask = UInt(8.W)
 }
 
-object MemoryReadIntent extends ChiselEnum {
-  val Instruction, Data, Amo = Value
-}
 class MemoryReadTransaction(implicit params: Parameters) extends Bundle {
   val accessType = MemoryReadIntent.Type()
   val address = UInt(64.W)

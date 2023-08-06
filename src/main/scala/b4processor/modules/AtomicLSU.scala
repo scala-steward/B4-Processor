@@ -1,13 +1,18 @@
 package b4processor.modules
 
 import b4processor.Parameters
-import b4processor.connections.{CollectedOutput, OutputValue}
+import b4processor.connections.{
+  CollectedOutput,
+  LoadStoreQueue2ReorderBuffer,
+  OutputValue
+}
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
 import b4processor.modules.memory.{
   MemoryReadTransaction,
-  MemoryWriteTransaction
+  MemoryWriteTransaction,
+  MemoryWriteIntent
 }
 import b4processor.structures.memoryAccess.MemoryAccessWidth
 import b4processor.utils.{B4RRArbiter, FIFO, Tag}
@@ -33,6 +38,8 @@ class Decoder2AtomicLSU(implicit params: Parameters) extends Bundle {
   val srcReg = new Tag
   val srcValue = UInt(64.W)
   val srcValid = Bool()
+
+  val storeOk = Bool()
 }
 
 class AtomicLSU(implicit params: Parameters) extends Module {
@@ -46,6 +53,16 @@ class AtomicLSU(implicit params: Parameters) extends Module {
     val readRequest = Decoupled(new MemoryReadTransaction)
     val writeRequest = Decoupled(new MemoryWriteTransaction)
     val readResponse = Flipped(Decoupled(new OutputValue))
+    val writeResponse = Flipped(Decoupled(new OutputValue))
+    val reorderBuffer = Flipped(
+      Vec(
+        params.threads,
+        Vec(
+          params.maxRegisterFileCommitCount,
+          Valid(new LoadStoreQueue2ReorderBuffer)
+        )
+      )
+    )
   })
 
   io.output.valid := false.B
@@ -55,6 +72,8 @@ class AtomicLSU(implicit params: Parameters) extends Module {
   io.writeRequest.valid := false.B
   io.writeRequest.bits := 0.U.asTypeOf(new MemoryWriteTransaction())
   io.readResponse.ready := false.B
+  io.writeResponse.ready := false.B
+  io.writeRequest.bits.accessType := MemoryWriteIntent.Amo
 
   private val bufferLength = pow(2, 3).toInt
   private val heads = RegInit(
@@ -92,13 +111,26 @@ class AtomicLSU(implicit params: Parameters) extends Module {
       when(o.valid) {
         for (b <- buf) {
           when(b.addressReg === o.bits.tag && !b.addressValid) {
-            b.addressValue === o.bits.value
+            b.addressValue := o.bits.value
             b.addressValid := true.B
           }
 
           when(b.srcReg === o.bits.tag && !b.srcValid) {
-            b.srcValue === o.bits.value
+            b.srcValue := o.bits.value
             b.srcValid := true.B
+          }
+        }
+      }
+    }
+  }
+  for (t <- 0 until params.threads) {
+    val rb = io.reorderBuffer(t)
+    val tbuf = buffer(t)
+    for (r <- rb) {
+      when(r.valid) {
+        for (b <- tbuf) {
+          when(b.destinationTag === r.bits.destinationTag) {
+            b.storeOk := true.B
           }
         }
       }
@@ -124,7 +156,9 @@ class AtomicLSU(implicit params: Parameters) extends Module {
     arb.valid := false.B
     arb.bits := 0.U.asTypeOf(new AMOIssue)
 
-    when(heads(t) =/= tails(t) && buf.srcValid && buf.addressValid) {
+    when(
+      heads(t) =/= tails(t) && buf.srcValid && buf.addressValid && buf.storeOk
+    ) {
       arb.valid := true.B
       arb.bits.operation := buf.operation
       arb.bits.ordering := buf.ordering
@@ -141,10 +175,14 @@ class AtomicLSU(implicit params: Parameters) extends Module {
 
   issueQueue.input <> issueArbiter.io.out
 
-  private val load_request :: load_wait_response :: write_request :: write_back :: Nil =
-    Enum(4)
+  private val load_request :: load_wait_response :: write_request :: write_wait_response :: write_back :: Nil =
+    Enum(5)
   private val state = RegInit(load_request)
+  val response = Reg(UInt(64.W))
+  val isError = Reg(Bool())
   when(state === load_request) {
+    isError := false.B
+    response := 0.U
     when(!issueQueue.empty) {
       when(issueQueue.output.bits.operation === AMOOperation.Sc) {
         state := write_request
@@ -167,31 +205,40 @@ class AtomicLSU(implicit params: Parameters) extends Module {
     }
   }
 
-  val response = Reg(UInt(64.W))
-  val isError = Reg(Bool())
   when(state === load_wait_response) {
     io.readResponse.ready := true.B
     when(io.readResponse.valid) {
       assert(issueQueue.output.bits.destinationTag === io.readResponse.bits.tag)
       response := io.readResponse.bits.value
       isError := io.readResponse.bits.isError
-      when(!io.readResponse.bits.isError) {
-        state := write_request
-      }.otherwise {
+      when(io.readResponse.bits.isError) {
         state := write_back
+      }.elsewhen(issueQueue.output.bits.operation === AMOOperation.Lr) {
+        state := write_back
+        reservation(
+          issueQueue.output.bits.destinationTag.threadId
+        ).valid := true.B
+        reservation(
+          issueQueue.output.bits.destinationTag.threadId
+        ).bits := issueQueue.output.bits.addressValue
+      }.otherwise {
+        state := write_request
       }
     }
   }
 
   when(state === write_request) {
+    val res = reservation(issueQueue.output.bits.destinationTag.threadId)
     val scInvalid =
-      issueQueue.output.bits.operation === AMOOperation.Sc && !reservation(
-        issueQueue.output.bits.destinationTag.threadId
-      ).valid
+      issueQueue.output.bits.operation === AMOOperation.Sc && (!res.valid || res.bits =/= issueQueue.output.bits.addressValue)
     when(scInvalid) {
       response := 1.U
       state := write_back
+      res.valid := false.B
     }.otherwise {
+      when(issueQueue.output.bits.operation === AMOOperation.Sc) {
+        response := 0.U
+      }
       io.writeRequest.valid := true.B
       val srcValue = issueQueue.output.bits.srcValue
       import AMOOperation._
@@ -199,13 +246,30 @@ class AtomicLSU(implicit params: Parameters) extends Module {
         Seq(
           Add -> (response + srcValue),
           And -> (response & srcValue),
-          Max -> (response.asSInt.max(srcValue.asSInt)).asUInt,
-          MaxU -> (response.max(srcValue)),
-          Min -> (response.asSInt.min(srcValue.asSInt)).asUInt,
-          MinU -> (response.min(srcValue)),
+          Max -> Mux(
+            issueQueue.output.bits.operationWidth === AMOOperationWidth.DoubleWord,
+            (response.asSInt.max(srcValue.asSInt)).asUInt,
+            (response(31, 0).asSInt.max(srcValue(31, 0).asSInt)).asUInt
+          ),
+          MaxU -> Mux(
+            issueQueue.output.bits.operationWidth === AMOOperationWidth.DoubleWord,
+            (response.max(srcValue)),
+            (response(31, 0).max(srcValue(31, 0)))
+          ),
+          Min -> Mux(
+            issueQueue.output.bits.operationWidth === AMOOperationWidth.DoubleWord,
+            (response.asSInt.min(srcValue.asSInt)).asUInt,
+            (response(31, 0).asSInt.min(srcValue(31, 0).asSInt)).asUInt
+          ),
+          MinU -> Mux(
+            issueQueue.output.bits.operationWidth === AMOOperationWidth.DoubleWord,
+            (response.min(srcValue)),
+            (response(31, 0).min(srcValue(31, 0)))
+          ),
           Or -> (response | srcValue),
           Swap -> srcValue,
-          Xor -> (response ^ srcValue)
+          Xor -> (response ^ srcValue),
+          Sc -> srcValue
         )
       )
       io.writeRequest.bits.address := issueQueue.output.bits.addressValue
@@ -225,8 +289,17 @@ class AtomicLSU(implicit params: Parameters) extends Module {
         )
       )
       when(io.writeRequest.ready) {
-        state := write_back
+        state := write_wait_response
+        res.valid := false.B
       }
+    }
+  }
+
+  when(state === write_wait_response) {
+    io.writeResponse.ready := true.B
+    when(io.writeResponse.valid) {
+      state := write_back
+      isError := isError | io.writeResponse.bits.isError
     }
   }
 

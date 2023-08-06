@@ -6,6 +6,7 @@ import b4processor.connections.LoadStoreQueue2Memory
 import b4processor.modules.memory.{
   MemoryReadIntent,
   MemoryReadTransaction,
+  MemoryWriteIntent,
   MemoryWriteTransaction
 }
 import b4processor.structures.memoryAccess.{MemoryAccessType, MemoryAccessWidth}
@@ -44,6 +45,7 @@ class DataMemoryBuffer(implicit params: Parameters) extends Module {
   io.dataReadRequest.valid := false.B
   io.dataWriteRequest.bits := 0.U.asTypeOf(new MemoryWriteTransaction)
   io.dataWriteRequest.valid := false.B
+  io.dataWriteRequest.bits.accessType := MemoryWriteIntent.Data
 
   when(!buffer.empty) {
     val entry = buffer.output.bits

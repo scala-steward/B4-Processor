@@ -70,7 +70,8 @@ class B4Processor(implicit params: Parameters) extends Module {
   axi <> externalMemoryInterface.io.coordinator
 
   /** 出力コレクタとデータメモリ */
-  outputCollector.io.dataMemory <> externalMemoryInterface.io.dataReadOut
+  outputCollector.io.memoryReadResult <> externalMemoryInterface.io.dataReadOut
+  outputCollector.io.memoryWriteResult <> externalMemoryInterface.io.dataWriteOut
 
   /** レジスタのコンテンツをデバッグ時に接続 */
   if (params.debug) {
@@ -97,8 +98,10 @@ class B4Processor(implicit params: Parameters) extends Module {
     amo.io.collectedOutput := outputCollector.io.outputs
     amo.io.readRequest <> externalMemoryInterface.io.amoReadRequests
     amo.io.writeRequest <> externalMemoryInterface.io.amoWriteRequests
-    amo.io.readResponse <> externalMemoryInterface.io.dataAmoOut
+    amo.io.readResponse <> externalMemoryInterface.io.amoReadOut
+    amo.io.writeResponse <> externalMemoryInterface.io.amoWriteOut
     amo.io.output <> outputCollector.io.amo
+    amo.io.reorderBuffer(tid) <> reorderBuffer(tid).io.loadStoreQueue
 
     /** リザベーションステーションと実行ユニットの接続 */
     reservationStation(tid).io.collectedOutput :=
@@ -238,7 +241,6 @@ object B4Processor extends App {
 //      "--disable-mem-randomization",
 //      "--disable-reg-randomization",
       "--disable-all-randomization",
-      "--lowering-options=mitigateVivadoArrayIndexConstPropBug",
       "--add-vivado-ram-address-conflict-synthesis-bug-workaround"
     )
   )

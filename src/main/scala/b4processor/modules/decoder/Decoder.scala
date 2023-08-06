@@ -40,7 +40,8 @@ class Decoder(implicit params: Parameters) extends Module {
 
   io.reorderBuffer.isDecodeError := io.instructionFetch.valid && !operations.valid
 
-  val operationIsStore = LoadStoreOperation.Store === operations.loadStoreOp
+  val operationIsStore =
+    LoadStoreOperation.Store === operations.loadStoreOp || operations.amoOp =/= AMOOperation.None
 
   // リオーダバッファへの入力
   io.reorderBuffer.source1.sourceRegister := operations.rs1
