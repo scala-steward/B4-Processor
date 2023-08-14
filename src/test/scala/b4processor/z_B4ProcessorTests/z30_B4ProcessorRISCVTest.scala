@@ -33,7 +33,7 @@ class B4ProcessorRISCVTestWrapper()(implicit params: Parameters)
 abstract class RiscvTest(val testPrefix: String)
     extends AnyFlatSpec
     with ChiselScalatestTester {
-  val params = Parameters(
+  var params = Parameters(
     debug = true,
     threads = 1,
     decoderPerThread = 4,

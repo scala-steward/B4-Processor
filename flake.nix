@@ -97,6 +97,9 @@
             verilog
             verilator
             zlib
+            yosys
+            graphviz
+            xdot
           ];
         };
       });

@@ -215,12 +215,9 @@ class AtomicLSU(implicit params: Parameters) extends Module {
         state := write_back
       }.elsewhen(issueQueue.output.bits.operation === AMOOperation.Lr) {
         state := write_back
-        reservation(
-          issueQueue.output.bits.destinationTag.threadId
-        ).valid := true.B
-        reservation(
-          issueQueue.output.bits.destinationTag.threadId
-        ).bits := issueQueue.output.bits.addressValue
+        val res = reservation(issueQueue.output.bits.destinationTag.threadId)
+        res.valid := true.B
+        res.bits := issueQueue.output.bits.addressValue
       }.otherwise {
         state := write_request
       }
@@ -291,6 +288,11 @@ class AtomicLSU(implicit params: Parameters) extends Module {
       when(io.writeRequest.ready) {
         state := write_wait_response
         res.valid := false.B
+        for (r <- reservation) {
+          when(r.bits === issueQueue.output.bits.addressValue) {
+            r.valid := false.B
+          }
+        }
       }
     }
   }
