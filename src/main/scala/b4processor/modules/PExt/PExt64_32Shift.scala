@@ -43,18 +43,18 @@ object PExt64_32Shift {
     Seq[(PExtensionOperation.Type, (UInt, UInt, UInt) => (UInt, Bool))](
       SRA32 -> processShift32(RightArithmetic, false),
       SRAI32 -> processShift32(RightArithmetic, true),
-      SRA32u -> processShift32(RightArithmeticRound, false),
-      SRAI32u -> processShift32(RightArithmeticRound, true),
+      SRA32_U -> processShift32(RightArithmeticRound, false),
+      SRAI32_U -> processShift32(RightArithmeticRound, true),
       SRL32 -> processShift32(RightLogical, false),
       SRLI32 -> processShift32(RightLogical, true),
-      SRL32u -> processShift32(RightLogicalRound, false),
-      SRLI32u -> processShift32(RightLogicalRound, true),
+      SRL32_U -> processShift32(RightLogicalRound, false),
+      SRLI32_U -> processShift32(RightLogicalRound, true),
       SLL32 -> processShift32(Left, false),
       SLLI32 -> processShift32(Left, true),
       KSLL32 -> processShift32(LeftSaturating, false),
       KSLLI32 -> processShift32(LeftSaturating, true),
       KSLRA32 -> processShift32(LeftSaturatingRight, false),
-      KSLRA32u -> processShift32(LeftSaturatingRightRound, false)
+      KSLRA32_U -> processShift32(LeftSaturatingRightRound, false)
     )
   }
 

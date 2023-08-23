@@ -34,17 +34,17 @@ object PExt8AddSub {
 
     Seq[(PExtensionOperation.Type, (UInt, UInt) => (UInt, Bool))](
       // add
-      Add8 -> process8(Add, Normal),
-      RAdd8 -> process8(Add, SignedHalving),
-      URAdd8 -> process8(Add, UnsignedHalving),
-      KAdd8 -> process8(Add, SignedSaturate),
-      UKAdd8 -> process8(Add, UnsignedSaturate),
+      ADD8 -> process8(Add, Normal),
+      RADD8 -> process8(Add, SignedHalving),
+      URADD8 -> process8(Add, UnsignedHalving),
+      KADD8 -> process8(Add, SignedSaturate),
+      UKADD8 -> process8(Add, UnsignedSaturate),
       // sub
-      Sub8 -> process8(Sub, Normal),
-      RSub8 -> process8(Sub, SignedHalving),
-      URSub8 -> process8(Sub, UnsignedHalving),
-      KSub8 -> process8(Sub, SignedSaturate),
-      UKSub8 -> process8(Sub, UnsignedSaturate)
+      SUB8 -> process8(Sub, Normal),
+      RSUB8 -> process8(Sub, SignedHalving),
+      URSUB8 -> process8(Sub, UnsignedHalving),
+      KSUB8 -> process8(Sub, SignedSaturate),
+      UKSUB8 -> process8(Sub, UnsignedSaturate)
     )
   }
 

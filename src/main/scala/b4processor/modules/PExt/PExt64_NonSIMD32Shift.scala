@@ -7,7 +7,7 @@ object PExt64_NonSIMD32Shift {
   def pext64_NonSIMD32Shift = (rs1: UInt, imm: UInt) => {
     import b4processor.modules.PExt.PExtensionOperation._
 
-    Seq(SRAIWu -> {
+    Seq(SRAIW_U -> {
       val amt = imm(4, 0)
       val res =
         Mux(

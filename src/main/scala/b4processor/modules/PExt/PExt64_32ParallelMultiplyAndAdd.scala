@@ -31,7 +31,7 @@ object PExt64_32ParallelMultiplyAndAdd {
         val t1 = rs1.W(1).asSInt * rs2.W(0).asSInt
         SAT.Q63(rd + t1.asUInt + t0.asUInt)
       },
-      KMDS32 -> {
+      KMADS32 -> {
         val t0 = rs1.W(0).asSInt * rs2.W(0).asSInt
         val t1 = rs1.W(1).asSInt * rs2.W(1).asSInt
         SAT.Q63(rd + t1.asUInt - t0.asUInt)

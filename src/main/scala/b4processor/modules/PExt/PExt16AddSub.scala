@@ -37,17 +37,17 @@ object PExt16AddSub {
     import PExtensionOperation._
     Seq[(PExtensionOperation.Type, (UInt, UInt) => (UInt, Bool))](
       // add
-      Add16 -> process16(Straight, Add, Add, Normal),
-      RAdd16 -> process16(Straight, Add, Add, SignedHalving),
-      URAdd16 -> process16(Straight, Add, Add, UnsignedHalving),
-      KAdd16 -> process16(Straight, Add, Add, SignedSaturate),
-      UKAdd16 -> process16(Straight, Add, Add, UnsignedSaturate),
+      ADD16 -> process16(Straight, Add, Add, Normal),
+      RADD16 -> process16(Straight, Add, Add, SignedHalving),
+      URADD16 -> process16(Straight, Add, Add, UnsignedHalving),
+      KADD16 -> process16(Straight, Add, Add, SignedSaturate),
+      UKADD16 -> process16(Straight, Add, Add, UnsignedSaturate),
       // sub
-      Sub16 -> process16(Straight, Sub, Sub, Normal),
-      RSub16 -> process16(Straight, Sub, Sub, SignedHalving),
-      URSub16 -> process16(Straight, Sub, Sub, UnsignedHalving),
-      KSub16 -> process16(Straight, Sub, Sub, SignedSaturate),
-      UKSub16 -> process16(Straight, Sub, Sub, UnsignedSaturate),
+      SUB16 -> process16(Straight, Sub, Sub, Normal),
+      RSUB16 -> process16(Straight, Sub, Sub, SignedHalving),
+      URSUB16 -> process16(Straight, Sub, Sub, UnsignedHalving),
+      KSUB16 -> process16(Straight, Sub, Sub, SignedSaturate),
+      UKSUB16 -> process16(Straight, Sub, Sub, UnsignedSaturate),
       // cras
       CRAS16 -> process16(Cross, Add, Sub, Normal),
       RCRAS16 -> process16(Cross, Add, Sub, SignedHalving),

@@ -9,21 +9,21 @@ object PExtMSW32x16MulAdd {
     Seq(
       // signed
       SMMWB -> SMMWXx(false, false),
-      SMMWBu -> SMMWXx(false, true),
+      SMMWB_U -> SMMWXx(false, true),
       SMMWT -> SMMWXx(true, false),
-      SMMWTu -> SMMWXx(true, true),
+      SMMWT_U -> SMMWXx(true, true),
       KMMAWB -> KMMAWXx(false, false),
-      KMMAWBu -> KMMAWXx(false, true),
+      KMMAWB_U -> KMMAWXx(false, true),
       KMMAWT -> KMMAWXx(true, false),
-      KMMAWTu -> KMMAWXx(true, true),
+      KMMAWT_U -> KMMAWXx(true, true),
       KMMWB2 -> KMMWX2x(false, false),
-      KMMWB2u -> KMMWX2x(false, true),
+      KMMWB2_U -> KMMWX2x(false, true),
       KMMWT2 -> KMMWX2x(true, false),
-      KMMWT2u -> KMMWX2x(true, true),
+      KMMWT2_U -> KMMWX2x(true, true),
       KMMAWB2 -> KMMAWX2x(false, false),
-      KMMAWB2u -> KMMAWX2x(false, true),
+      KMMAWB2_U -> KMMAWX2x(false, true),
       KMMAWT2 -> KMMAWX2x(true, false),
-      KMMAWT2u -> KMMAWX2x(true, true)
+      KMMAWT2_U -> KMMAWX2x(true, true)
     ).map(a => a._1 -> a._2(rs1, rs2, rd))
 
   def SMMWXx(top: Boolean, round: Boolean) =

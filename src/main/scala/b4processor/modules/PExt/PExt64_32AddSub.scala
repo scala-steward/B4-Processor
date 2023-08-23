@@ -36,17 +36,17 @@ object PExt64_32AddSub {
     import PExtensionOperation._
     Seq[(PExtensionOperation.Type, (UInt, UInt) => (UInt, Bool))](
       // add
-      Add32 -> process32(Straight, Add, Add, Normal),
-      RAdd32 -> process32(Straight, Add, Add, SignedHalving),
-      URAdd32 -> process32(Straight, Add, Add, UnsignedHalving),
-      KAdd32 -> process32(Straight, Add, Add, SignedSaturate),
-      UKAdd32 -> process32(Straight, Add, Add, UnsignedSaturate),
+      ADD32 -> process32(Straight, Add, Add, Normal),
+      RADD32 -> process32(Straight, Add, Add, SignedHalving),
+      URADD32 -> process32(Straight, Add, Add, UnsignedHalving),
+      KADD32 -> process32(Straight, Add, Add, SignedSaturate),
+      UKADD32 -> process32(Straight, Add, Add, UnsignedSaturate),
       // sub
-      Sub32 -> process32(Straight, Sub, Sub, Normal),
-      RSub32 -> process32(Straight, Sub, Sub, SignedHalving),
-      URSub32 -> process32(Straight, Sub, Sub, UnsignedHalving),
-      KSub32 -> process32(Straight, Sub, Sub, SignedSaturate),
-      UKSub32 -> process32(Straight, Sub, Sub, UnsignedSaturate),
+      SUB32 -> process32(Straight, Sub, Sub, Normal),
+      RSUB32 -> process32(Straight, Sub, Sub, SignedHalving),
+      URSUB32 -> process32(Straight, Sub, Sub, UnsignedHalving),
+      KSUB32 -> process32(Straight, Sub, Sub, SignedSaturate),
+      UKSUB32 -> process32(Straight, Sub, Sub, UnsignedSaturate),
       // cras
       CRAS32 -> process32(Cross, Add, Sub, Normal),
       RCRAS32 -> process32(Cross, Add, Sub, SignedHalving),

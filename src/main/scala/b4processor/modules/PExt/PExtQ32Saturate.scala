@@ -82,7 +82,7 @@ object PExtQ32Saturate {
         }
         (rd, overflow)
       },
-      KSLRAWu -> {
+      KSLRAW_U -> {
         val rd = Wire(UInt(64.W))
         val overflow = WireInit(false.B)
         when(rs2(5, 0).asSInt >= 0.S) {

@@ -43,18 +43,18 @@ object PExt16Shift {
     Seq[(PExtensionOperation.Type, (UInt, UInt, UInt) => (UInt, Bool))](
       SRA16 -> processShift16(RightArithmetic, false),
       SRAI16 -> processShift16(RightArithmetic, true),
-      SRA16u -> processShift16(RightArithmeticRound, false),
-      SRAI16u -> processShift16(RightArithmeticRound, true),
+      SRA16_U -> processShift16(RightArithmeticRound, false),
+      SRAI16_U -> processShift16(RightArithmeticRound, true),
       SRL16 -> processShift16(RightLogical, false),
       SRLI16 -> processShift16(RightLogical, true),
-      SRL16u -> processShift16(RightLogicalRound, false),
-      SRLI16u -> processShift16(RightLogicalRound, true),
+      SRL16_U -> processShift16(RightLogicalRound, false),
+      SRLI16_U -> processShift16(RightLogicalRound, true),
       SLL16 -> processShift16(Left, false),
       SLLI16 -> processShift16(Left, true),
       KSLL16 -> processShift16(LeftSaturating, false),
       KSLLI16 -> processShift16(LeftSaturating, true),
       KSLRA16 -> processShift16(LeftSaturatingRight, false),
-      KSLRA16u -> processShift16(LeftSaturatingRightRound, false)
+      KSLRA16_U -> processShift16(LeftSaturatingRightRound, false)
     )
   }
 

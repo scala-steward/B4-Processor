@@ -1,7 +1,8 @@
 package b4processor.utils.operations
 
+import b4processor.modules.PExt.PExtensionOperation
 import b4processor.riscv.Instructions
-import b4processor.riscv.Instructions.C64Type
+import b4processor.riscv.Instructions.{C64Type, ZBPType}
 import b4processor.utils.BundleInitialize.AddBundleInitializeConstructor
 import b4processor.utils.RVRegister
 import b4processor.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
@@ -19,6 +20,7 @@ class Operations extends Bundle {
   val rs2 = new RVRegister
   val rs2Value = UInt(64.W)
   val rs2ValueValid = Bool()
+  val rs3 = new RVRegister
   val rd = new RVRegister
   val useRs2AsStoreSrc = Bool()
   val branchOffset = SInt(12.W)
@@ -31,10 +33,11 @@ class Operations extends Bundle {
   val fence_i = Bool()
   val compressed = Bool()
   val csrOp = CSROperation()
-  val csrAddress = UInt(12.W)
+//  val csrAddress = UInt(12.W)
   val amoOp = AMOOperation.Type()
   val amoWidth = AMOOperationWidth.Type()
   val amoOrdering = new AMOOrdering
+  val pextOp = new PExtensionOperation.Type()
 }
 
 object Operations {
@@ -68,6 +71,7 @@ object Operations {
     _.valid -> false.B,
     _.rs1 -> 0.reg,
     _.rs2 -> 0.reg,
+    _.rs3 -> 0.reg,
     _.rd -> 0.reg,
     _.useRs2AsStoreSrc -> false.B,
     _.rs1Value -> 0.U,
@@ -84,10 +88,11 @@ object Operations {
     _.ebreak -> false.B,
     _.compressed -> false.B,
     _.csrOp -> CSROperation.None,
-    _.csrAddress -> 0.U,
+//    _.csrAddress -> 0.U,
     _.amoOp -> AMOOperation.None,
     _.amoWidth -> AMOOperationWidth.Word,
-    _.amoOrdering -> AMOOrdering(false.B, false.B)
+    _.amoOrdering -> AMOOrdering(false.B, false.B),
+    _.pextOp -> PExtensionOperation.None
   )
 
   implicit class UIntAccess(u: UInt) {
@@ -433,8 +438,343 @@ object Operations {
 //    )
 //  }
 
+  def zpnRtypeOpWithRd(
+    op: PExtensionOperation.Type
+  ): (UInt, UInt) => Operations =
+    createOperation(
+      (u, _) => u.pextOp -> op,
+      _.rs1 -> _(19, 15).reg,
+      _.rs2 -> _(24, 20).reg,
+      _.rs3 -> _(11, 7).reg,
+      _.rd -> _(11, 7).reg
+    )
+
+  def zpnSingleOperandWithImm(
+    op: PExtensionOperation.Type
+  ): (UInt, UInt) => Operations =
+    createOperation(
+      (u, _) => u.pextOp -> op,
+      _.rs1 -> _(19, 15).reg,
+      (u, _) => u.rs2 -> 0.reg,
+      (a, b) => a.rs2Value -> b(24, 20),
+      (u, _) => u.rs2ValueValid -> true.B,
+      _.rd -> _(11, 7).reg
+    )
+
+  def zpnSingleOperand(
+    op: PExtensionOperation.Type
+  ): (UInt, UInt) => Operations =
+    createOperation(
+      (u, _) => u.pextOp -> op,
+      _.rs1 -> _(19, 15).reg,
+      _.rd -> _(11, 7).reg
+    )
+
+  def ZPN32ExtDecodingList = {
+    import Instructions.ZPNType
+    import PExtensionOperation._
+    Seq(
+      ZPNType("ADD8") -> zpnRtypeOpWithRd(ADD8),
+      ZPNType("AVE") -> zpnRtypeOpWithRd(AVE),
+//      ZPNType("CLROV") -> , // covered in csr
+      ZPNType("CLRS16") -> zpnSingleOperand(CLRS16),
+      ZPNType("CLRS32") -> zpnSingleOperand(CLRS32),
+      ZPNType("CLRS8") -> zpnSingleOperand(CLRS8),
+      ZPNType("CLZ16") -> zpnSingleOperand(CLZ16),
+      ZPNType("CLZ32") -> zpnSingleOperand(CLZ32),
+      ZPNType("CLZ8") -> zpnSingleOperand(CLZ8),
+      ZPNType("CMPEQ16") -> zpnRtypeOpWithRd(CMPEQ16),
+      ZPNType("CMPEQ8") -> zpnRtypeOpWithRd(CMPEQ8),
+      ZPNType("CRAS16") -> zpnRtypeOpWithRd(CRAS16),
+      ZPNType("CRSA16") -> zpnRtypeOpWithRd(CRSA16),
+      ZPNType("KABS16") -> zpnRtypeOpWithRd(CMPEQ8),
+      ZPNType("KABS8") -> zpnSingleOperand(KABS8),
+      ZPNType("KABSW") -> zpnSingleOperand(KABSW),
+      ZPNType("KADD16") -> zpnRtypeOpWithRd(KADD16),
+      ZPNType("KADD8") -> zpnRtypeOpWithRd(KADD8),
+      ZPNType("KADDH") -> zpnRtypeOpWithRd(KADDH),
+      ZPNType("KADDW") -> zpnRtypeOpWithRd(KADDW),
+      ZPNType("KCRAS16") -> zpnRtypeOpWithRd(KCRAS16),
+      ZPNType("KCRSA16") -> zpnRtypeOpWithRd(KCRSA16),
+      ZPNType("KDMABB") -> zpnRtypeOpWithRd(KDMABB),
+      ZPNType("KDMABT") -> zpnRtypeOpWithRd(KDMABT),
+      ZPNType("KDMATT") -> zpnRtypeOpWithRd(KDMATT),
+      ZPNType("KDMBB") -> zpnRtypeOpWithRd(KDMBB),
+      ZPNType("KDMBT") -> zpnRtypeOpWithRd(KDMBT),
+      ZPNType("KDMTT") -> zpnRtypeOpWithRd(KDMTT),
+      ZPNType("KHM16") -> zpnRtypeOpWithRd(KDMBB),
+      ZPNType("KHM8") -> zpnRtypeOpWithRd(KHM8),
+      ZPNType("KHMBB") -> zpnRtypeOpWithRd(KHMBB),
+      ZPNType("KHMBT") -> zpnRtypeOpWithRd(KHMBT),
+      ZPNType("KHMTT") -> zpnRtypeOpWithRd(KHMTT),
+      ZPNType("KHMX16") -> zpnRtypeOpWithRd(KHMX16),
+      ZPNType("KHMX8") -> zpnRtypeOpWithRd(KHMX8),
+      ZPNType("KMABB") -> zpnRtypeOpWithRd(KMABB),
+      ZPNType("KMABT") -> zpnRtypeOpWithRd(KMABT),
+      ZPNType("KMADA") -> zpnRtypeOpWithRd(KMADA),
+      ZPNType("KMADRS") -> zpnRtypeOpWithRd(KMADRS),
+      ZPNType("KMADS") -> zpnRtypeOpWithRd(KMADS),
+      ZPNType("KMATT") -> zpnRtypeOpWithRd(KMATT),
+      ZPNType("KMAXDA") -> zpnRtypeOpWithRd(KMAXDA),
+      ZPNType("KMAXDS") -> zpnRtypeOpWithRd(KMAXDS),
+      ZPNType("KMDA") -> zpnRtypeOpWithRd(KMDA),
+      ZPNType("KMMAC") -> zpnRtypeOpWithRd(KMMAC),
+      ZPNType("KMMAC_U") -> zpnRtypeOpWithRd(KMMAC_U),
+      ZPNType("KMMAWB") -> zpnRtypeOpWithRd(KMMAWB),
+      ZPNType("KMMAWB2") -> zpnRtypeOpWithRd(KMMAWB2),
+      ZPNType("KMMAWB2_U") -> zpnRtypeOpWithRd(KMMAWB2_U),
+      ZPNType("KMMAWB_U") -> zpnRtypeOpWithRd(KMMAWB_U),
+      ZPNType("KMMAWT") -> zpnRtypeOpWithRd(KMMAWT),
+      ZPNType("KMMAWT2") -> zpnRtypeOpWithRd(KMMAWT2),
+      ZPNType("KMMAWT2_U") -> zpnRtypeOpWithRd(KMMAWT2_U),
+      ZPNType("KMMAWT_U") -> zpnRtypeOpWithRd(KMMAWB_U),
+      ZPNType("KMMSB") -> zpnRtypeOpWithRd(KMMSB),
+      ZPNType("KMMSB_U") -> zpnRtypeOpWithRd(KMMSB_U),
+      ZPNType("KMMWB2") -> zpnRtypeOpWithRd(KMMWB2),
+      ZPNType("KMMWB2_U") -> zpnRtypeOpWithRd(KMMWB2_U),
+      ZPNType("KMMWT2") -> zpnRtypeOpWithRd(KMMWT2),
+      ZPNType("KMMWT2_U") -> zpnRtypeOpWithRd(KMMWT2_U),
+      ZPNType("KMSDA") -> zpnRtypeOpWithRd(KMSDA),
+      ZPNType("KMSXDA") -> zpnRtypeOpWithRd(KMSXDA),
+      ZPNType("KMXDA") -> zpnRtypeOpWithRd(KMXDA),
+      ZPNType("KSLL16") -> zpnRtypeOpWithRd(KSLL16),
+      ZPNType("KSLL8") -> zpnRtypeOpWithRd(KSLL8),
+      ZPNType("KSLLI16") -> zpnRtypeOpWithRd(KSLLI16),
+      ZPNType("KSLLI8") -> zpnRtypeOpWithRd(KSLLI8),
+      ZPNType("KSLLIW") -> zpnRtypeOpWithRd(KSLLIW),
+      ZPNType("KSLLW") -> zpnRtypeOpWithRd(KSLLW),
+      ZPNType("KSLRA16") -> zpnRtypeOpWithRd(KSLRA16),
+      ZPNType("KSLRA16_U") -> zpnRtypeOpWithRd(KSLRA16_U),
+      ZPNType("KSLRA8") -> zpnRtypeOpWithRd(KSLRA8),
+      ZPNType("KSLRA8_U") -> zpnRtypeOpWithRd(KSLRA8_U),
+      ZPNType("KSLRAW") -> zpnRtypeOpWithRd(KSLRAW),
+      ZPNType("KSLRAW_U") -> zpnRtypeOpWithRd(KSLRAW_U),
+      ZPNType("KSTAS16") -> zpnRtypeOpWithRd(KSTAS16),
+      ZPNType("KSTSA16") -> zpnRtypeOpWithRd(KSTSA16),
+      ZPNType("KSUB16") -> zpnRtypeOpWithRd(KSUB16),
+      ZPNType("KSUB8") -> zpnRtypeOpWithRd(KSUB8),
+      ZPNType("KSUBH") -> zpnRtypeOpWithRd(KSUBH),
+      ZPNType("KSUBW") -> zpnRtypeOpWithRd(KSUBW),
+      ZPNType("KWMMUL") -> zpnRtypeOpWithRd(KWMMUL),
+      ZPNType("KWMMUL_U") -> zpnRtypeOpWithRd(KWMMUL_U),
+      ZPNType("MADDR32") -> zpnRtypeOpWithRd(MADDR32),
+      ZPNType("MSUBR32") -> zpnRtypeOpWithRd(MSUBR32),
+      ZPNType("PBSAD") -> zpnRtypeOpWithRd(PBSAD),
+      ZPNType("PBSADA") -> zpnRtypeOpWithRd(PBSAD),
+      ZPNType("PKBT16") -> zpnRtypeOpWithRd(PKBT16),
+      ZPNType("PKTB16") -> zpnRtypeOpWithRd(PKTB16),
+      ZPNType("RADD16") -> zpnRtypeOpWithRd(RADD16),
+      ZPNType("RADD8") -> zpnRtypeOpWithRd(RADD8),
+      ZPNType("RADDW") -> zpnRtypeOpWithRd(RADDW),
+      ZPNType("RCRAS16") -> zpnRtypeOpWithRd(RCRAS16),
+      ZPNType("RCRSA16") -> zpnRtypeOpWithRd(RCRSA16),
+//      ZPNType("RDOV") ->, //covered by csr
+      ZPNType("RSTAS16") -> zpnRtypeOpWithRd(RSTAS16),
+      ZPNType("RSTSA16") -> zpnRtypeOpWithRd(RSTSA16),
+      ZPNType("RSUB16") -> zpnRtypeOpWithRd(RSUB16),
+      ZPNType("RSUB8") -> zpnRtypeOpWithRd(RSUB8),
+      ZPNType("RSUBW") -> zpnRtypeOpWithRd(RSUBW),
+      ZPNType("SCLIP16") -> zpnRtypeOpWithRd(SCLIP16),
+      ZPNType("SCLIP32") -> zpnRtypeOpWithRd(SCLIP32),
+      ZPNType("SCLIP8") -> zpnRtypeOpWithRd(SCLIP8),
+      ZPNType("SCMPLE16") -> zpnRtypeOpWithRd(SCMPLE16),
+      ZPNType("SCMPLE8") -> zpnRtypeOpWithRd(SCMPLE8),
+      ZPNType("SCMPLT16") -> zpnRtypeOpWithRd(SCMPLT16),
+      ZPNType("SCMPLT8") -> zpnRtypeOpWithRd(SCMPLT8),
+      ZPNType("SLL16") -> zpnRtypeOpWithRd(SLL16),
+      ZPNType("SLL8") -> zpnRtypeOpWithRd(SLL8),
+      ZPNType("SLLI16") -> zpnRtypeOpWithRd(SLLI16),
+      ZPNType("SLLI8") -> zpnRtypeOpWithRd(SLLI8),
+      ZPNType("SMAQA") -> zpnRtypeOpWithRd(SMAQA),
+      ZPNType("SMAQA_SU") -> zpnRtypeOpWithRd(SMAQASU),
+      ZPNType("SMAX16") -> zpnRtypeOpWithRd(SMAX16),
+      ZPNType("SMAX8") -> zpnRtypeOpWithRd(SMAX8),
+      ZPNType("SMBB16") -> zpnRtypeOpWithRd(SMBB16),
+      ZPNType("SMBT16") -> zpnRtypeOpWithRd(SMBT16),
+      ZPNType("SMDRS") -> zpnRtypeOpWithRd(SMDRS),
+      ZPNType("SMDS") -> zpnRtypeOpWithRd(SMDS),
+      ZPNType("SMIN16") -> zpnRtypeOpWithRd(SMIN16),
+      ZPNType("SMIN8") -> zpnRtypeOpWithRd(SMIN8),
+      ZPNType("SMMUL_U") -> zpnRtypeOpWithRd(SMMUL_U),
+      ZPNType("SMMWB") -> zpnRtypeOpWithRd(SMMWB),
+      ZPNType("SMMWB_U") -> zpnRtypeOpWithRd(SMMWB_U),
+      ZPNType("SMMWT") -> zpnRtypeOpWithRd(SMMWT),
+      ZPNType("SMMWT_U") -> zpnRtypeOpWithRd(SMMWT_U),
+      ZPNType("SMTT16") -> zpnRtypeOpWithRd(SMTT16),
+      ZPNType("SMXDS") -> zpnRtypeOpWithRd(SMXDS),
+      ZPNType("SRA16") -> zpnRtypeOpWithRd(SRA16),
+      ZPNType("SRA16_U") -> zpnRtypeOpWithRd(SRA16_U),
+      ZPNType("SRA8") -> zpnRtypeOpWithRd(SRA8),
+      ZPNType("SRA8_U") -> zpnRtypeOpWithRd(SRA8_U),
+      ZPNType("SRA_U") -> zpnRtypeOpWithRd(SRA_U),
+      ZPNType("SRAI16") -> zpnRtypeOpWithRd(SRAI16),
+      ZPNType("SRAI16_U") -> zpnRtypeOpWithRd(SRAI16_U),
+      ZPNType("SRAI8") -> zpnRtypeOpWithRd(SRAI8),
+      ZPNType("SRAI8_U") -> zpnRtypeOpWithRd(SRAI8_U),
+      ZPNType("SRL16") -> zpnRtypeOpWithRd(SRL16),
+      ZPNType("SRL16_U") -> zpnRtypeOpWithRd(SRL16_U),
+      ZPNType("SRL8") -> zpnRtypeOpWithRd(SRL8),
+      ZPNType("SRL8_U") -> zpnRtypeOpWithRd(SRL8_U),
+      ZPNType("SRLI16") -> zpnRtypeOpWithRd(SRLI16),
+      ZPNType("SRLI16_U") -> zpnRtypeOpWithRd(SRLI16_U),
+      ZPNType("SRLI8") -> zpnRtypeOpWithRd(SRLI8),
+      ZPNType("SRLI8_U") -> zpnRtypeOpWithRd(SRLI8_U),
+      ZPNType("STAS16") -> zpnRtypeOpWithRd(STAS16),
+      ZPNType("STSA16") -> zpnRtypeOpWithRd(STSA16),
+      ZPNType("SUB16") -> zpnRtypeOpWithRd(SUB16),
+      ZPNType("SUB8") -> zpnRtypeOpWithRd(SUB8),
+      ZPNType("SUNPKD810") -> zpnRtypeOpWithRd(SUNPKD810),
+      ZPNType("SUNPKD820") -> zpnRtypeOpWithRd(SUNPKD820),
+      ZPNType("SUNPKD830") -> zpnRtypeOpWithRd(SUNPKD830),
+      ZPNType("SUNPKD831") -> zpnRtypeOpWithRd(SUNPKD831),
+      ZPNType("SUNPKD832") -> zpnRtypeOpWithRd(SUNPKD832),
+      ZPNType("UCLIP16") -> zpnRtypeOpWithRd(UCLIP16),
+      ZPNType("UCLIP32") -> zpnRtypeOpWithRd(UCLIP32),
+      ZPNType("UCLIP8") -> zpnRtypeOpWithRd(UCLIP8),
+      ZPNType("UCMPLE16") -> zpnRtypeOpWithRd(UCMPLE16),
+      ZPNType("UCMPLE8") -> zpnRtypeOpWithRd(UCMPLE8),
+      ZPNType("UCMPLT16") -> zpnRtypeOpWithRd(UCMPLT16),
+      ZPNType("UCMPLT8") -> zpnRtypeOpWithRd(UCMPLT8),
+      ZPNType("UKADD16") -> zpnRtypeOpWithRd(UKADD16),
+      ZPNType("UKADD8") -> zpnRtypeOpWithRd(UKADD8),
+      ZPNType("UKADDH") -> zpnRtypeOpWithRd(UKADDH),
+      ZPNType("UKADDW") -> zpnRtypeOpWithRd(UKADDW),
+      ZPNType("UKCRAS16") -> zpnRtypeOpWithRd(UKCRAS16),
+      ZPNType("UKCRSA16") -> zpnRtypeOpWithRd(UKCRSA16),
+      ZPNType("UKSTAS16") -> zpnRtypeOpWithRd(UKSTAS16),
+      ZPNType("UKSTSA16") -> zpnRtypeOpWithRd(UKSTSA16),
+      ZPNType("UKSUB16") -> zpnRtypeOpWithRd(UKSUB16),
+      ZPNType("UKSUB8") -> zpnRtypeOpWithRd(UKSUB8),
+      ZPNType("UKSUBH") -> zpnRtypeOpWithRd(UKSUBH),
+      ZPNType("UKSUBW") -> zpnRtypeOpWithRd(UKSUBW),
+      ZPNType("UMAQA") -> zpnRtypeOpWithRd(UMAQA),
+      ZPNType("UMAX16") -> zpnRtypeOpWithRd(UMAX16),
+      ZPNType("UMAX8") -> zpnRtypeOpWithRd(UMAX8),
+      ZPNType("UMIN16") -> zpnRtypeOpWithRd(UMIN16),
+      ZPNType("UMIN8") -> zpnRtypeOpWithRd(UMIN8),
+      ZPNType("URADD16") -> zpnRtypeOpWithRd(URADD16),
+      ZPNType("URADD8") -> zpnRtypeOpWithRd(URADD8),
+      ZPNType("URADDW") -> zpnRtypeOpWithRd(URADDW),
+      ZPNType("URCRAS16") -> zpnRtypeOpWithRd(URCRAS16),
+      ZPNType("URCRSA16") -> zpnRtypeOpWithRd(URCRSA16),
+      ZPNType("URSTAS16") -> zpnRtypeOpWithRd(URSTAS16),
+      ZPNType("URSTSA16") -> zpnRtypeOpWithRd(URSTSA16),
+      ZPNType("URSUB16") -> zpnRtypeOpWithRd(URSUB16),
+      ZPNType("URSUB8") -> zpnRtypeOpWithRd(URSUB8),
+      ZPNType("URSUBW") -> zpnRtypeOpWithRd(URSUBW),
+      ZPNType("ZUNPKD810") -> zpnRtypeOpWithRd(ZUNPKD810),
+      ZPNType("ZUNPKD820") -> zpnRtypeOpWithRd(ZUNPKD820),
+      ZPNType("ZUNPKD830") -> zpnRtypeOpWithRd(ZUNPKD830),
+      ZPNType("ZUNPKD831") -> zpnRtypeOpWithRd(ZUNPKD831),
+      ZPNType("ZUNPKD832") -> zpnRtypeOpWithRd(ZUNPKD832)
+    )
+  }
+
+  def ZPN64ExtDecodingList = {
+    import Instructions.ZPN64Type
+    import PExtensionOperation._
+    Seq(
+      ZPN64Type("ADD32") -> zpnRtypeOpWithRd(ADD32),
+      ZPN64Type("CRAS32") -> zpnRtypeOpWithRd(CRAS32),
+      ZPN64Type("CRSA32") -> zpnRtypeOpWithRd(CRSA32),
+      ZPN64Type("INSB") -> zpnRtypeOpWithRd(INSB),
+      ZPN64Type("KABS32") -> zpnRtypeOpWithRd(KABS32),
+      ZPN64Type("KADD32") -> zpnRtypeOpWithRd(KADD32),
+      ZPN64Type("KCRAS32") -> zpnRtypeOpWithRd(KCRAS32),
+      ZPN64Type("KCRSA32") -> zpnRtypeOpWithRd(KCRSA32),
+      ZPN64Type("KDMABB16") -> zpnRtypeOpWithRd(KDMABB16),
+      ZPN64Type("KDMABT16") -> zpnRtypeOpWithRd(KDMABT16),
+      ZPN64Type("KDMATT16") -> zpnRtypeOpWithRd(KDMATT16),
+      ZPN64Type("KDMBB16") -> zpnRtypeOpWithRd(KDMBB16),
+      ZPN64Type("KDMBT16") -> zpnRtypeOpWithRd(KDMBT16),
+      ZPN64Type("KDMTT16") -> zpnRtypeOpWithRd(KDMTT16),
+      ZPN64Type("KHMBB16") -> zpnRtypeOpWithRd(KHMBB16),
+      ZPN64Type("KHMBT16") -> zpnRtypeOpWithRd(KHMBT16),
+      ZPN64Type("KHMTT16") -> zpnRtypeOpWithRd(KHMTT16),
+      ZPN64Type("KMABB32") -> zpnRtypeOpWithRd(KMABB32),
+      ZPN64Type("KMABT32") -> zpnRtypeOpWithRd(KMABT32),
+      ZPN64Type("KMADRS32") -> zpnRtypeOpWithRd(KMADRS32),
+      ZPN64Type("KMADS32") -> zpnRtypeOpWithRd(KMADS32),
+      ZPN64Type("KMATT32") -> zpnRtypeOpWithRd(KMATT32),
+      ZPN64Type("KMAXDA32") -> zpnRtypeOpWithRd(KMAXDA32),
+      ZPN64Type("KMAXDS32") -> zpnRtypeOpWithRd(KMAXDS32),
+      ZPN64Type("KMDA32") -> zpnRtypeOpWithRd(KMDA32),
+      ZPN64Type("KMSDA32") -> zpnRtypeOpWithRd(KMSDA32),
+      ZPN64Type("KMSXDA32") -> zpnRtypeOpWithRd(KMSXDA32),
+      ZPN64Type("KMXDA32") -> zpnRtypeOpWithRd(KMXDA32),
+      ZPN64Type("KSLL32") -> zpnRtypeOpWithRd(KSLL32),
+      ZPN64Type("KSLLI32") -> zpnRtypeOpWithRd(KSLLI32),
+      ZPN64Type("KSLRA32") -> zpnRtypeOpWithRd(KSLRA32),
+      ZPN64Type("KSLRA32_U") -> zpnRtypeOpWithRd(KSLRA32_U),
+      ZPN64Type("KSTAS32") -> zpnRtypeOpWithRd(KSTAS32),
+      ZPN64Type("KSTSA32") -> zpnRtypeOpWithRd(KSTSA32),
+      ZPN64Type("KSUB32") -> zpnRtypeOpWithRd(KSUB32),
+      ZPN64Type("PKBB16") -> zpnRtypeOpWithRd(PKBB16),
+      ZPN64Type("PKBT32") -> zpnRtypeOpWithRd(PKBT32),
+      ZPN64Type("PKTB32") -> zpnRtypeOpWithRd(PKTB32),
+      ZPN64Type("PKTT16") -> zpnRtypeOpWithRd(PKTT16),
+      ZPN64Type("RADD32") -> zpnRtypeOpWithRd(RADD32),
+      ZPN64Type("RCRAS32") -> zpnRtypeOpWithRd(RCRAS32),
+      ZPN64Type("RCRSA32") -> zpnRtypeOpWithRd(RCRSA32),
+      ZPN64Type("RSTAS32") -> zpnRtypeOpWithRd(RSTAS32),
+      ZPN64Type("RSTSA32") -> zpnRtypeOpWithRd(RSTSA32),
+      ZPN64Type("RSUB32") -> zpnRtypeOpWithRd(RSUB32),
+      ZPN64Type("SLL32") -> zpnRtypeOpWithRd(SLL32),
+      ZPN64Type("SLLI32") -> zpnRtypeOpWithRd(SLLI32),
+      ZPN64Type("SMAX32") -> zpnRtypeOpWithRd(SMAX32),
+      ZPN64Type("SMBT32") -> zpnRtypeOpWithRd(SMBT32),
+      ZPN64Type("SMDRS32") -> zpnRtypeOpWithRd(SMDRS32),
+      ZPN64Type("SMDS32") -> zpnRtypeOpWithRd(SMDS32),
+      ZPN64Type("SMIN32") -> zpnRtypeOpWithRd(SMIN32),
+      ZPN64Type("SMMUL") -> zpnRtypeOpWithRd(SMMUL),
+      ZPN64Type("SMTT32") -> zpnRtypeOpWithRd(SMTT32),
+      ZPN64Type("SMXDS32") -> zpnRtypeOpWithRd(SMXDS32),
+      ZPN64Type("SRA32") -> zpnRtypeOpWithRd(SRA32),
+      ZPN64Type("SRA32_U") -> zpnRtypeOpWithRd(SRA32_U),
+      ZPN64Type("SRAI32") -> zpnRtypeOpWithRd(SRAI32),
+      ZPN64Type("SRAI32_U") -> zpnRtypeOpWithRd(SRAI32_U),
+      ZPN64Type("SRAI_U") -> zpnRtypeOpWithRd(SRAI_U),
+      ZPN64Type("SRAIW_U") -> zpnRtypeOpWithRd(SRAIW_U),
+      ZPN64Type("SRL32") -> zpnRtypeOpWithRd(SRL32),
+      ZPN64Type("SRL32_U") -> zpnRtypeOpWithRd(SRL32_U),
+      ZPN64Type("SRLI32") -> zpnRtypeOpWithRd(SRLI32),
+      ZPN64Type("SRLI32_U") -> zpnRtypeOpWithRd(SRLI32_U),
+      ZPN64Type("STAS32") -> zpnRtypeOpWithRd(STAS32),
+      ZPN64Type("STSA32") -> zpnRtypeOpWithRd(STSA32),
+      ZPN64Type("SUB32") -> zpnRtypeOpWithRd(SUB32),
+      ZPN64Type("UKADD32") -> zpnRtypeOpWithRd(UKADD32),
+      ZPN64Type("UKCRAS32") -> zpnRtypeOpWithRd(UKCRAS32),
+      ZPN64Type("UKCRSA32") -> zpnRtypeOpWithRd(UKCRSA32),
+      ZPN64Type("UKSTAS32") -> zpnRtypeOpWithRd(UKSTAS32),
+      ZPN64Type("UKSTSA32") -> zpnRtypeOpWithRd(UKSTSA32),
+      ZPN64Type("UKSUB32") -> zpnRtypeOpWithRd(UKSUB32),
+      ZPN64Type("UMAX32") -> zpnRtypeOpWithRd(UMAX32),
+      ZPN64Type("UMIN32") -> zpnRtypeOpWithRd(UMIN32),
+      ZPN64Type("URADD32") -> zpnRtypeOpWithRd(URADD32),
+      ZPN64Type("URCRAS32") -> zpnRtypeOpWithRd(URCRAS32),
+      ZPN64Type("URCRSA32") -> zpnRtypeOpWithRd(URCRSA32),
+      ZPN64Type("URSTAS32") -> zpnRtypeOpWithRd(URSTAS32),
+      ZPN64Type("URSTSA32") -> zpnRtypeOpWithRd(URSTSA32),
+      ZPN64Type("URSUB32") -> zpnRtypeOpWithRd(URSUB32)
+    )
+  }
+
+//  def ZPN32ExtDecodingList = {
+//    import Instructions.ZPN64Type
+//    import PExtensionOperation._
+//    Seq(
+//      ZBPType("GORC") -> zpnRtypeOpWithRd(GORC),
+//      ZBPType("GREV") -> zpnRtypeOpWithRd(GREV),
+//      ZBPType("PACKU") -> zpnRtypeOpWithRd(PACKU),
+//      ZBPType("SHFL") -> zpnRtypeOpWithRd(SHFL),
+//      ZBPType("UNSHFL") -> zpnRtypeOpWithRd(UNSHFL),
+//      ZBPType("XPERM16") -> zpnRtypeOpWithRd(XPERM16),
+//      ZBPType("XPERM4") -> zpnRtypeOpWithRd(XPERM4),
+//      ZBPType("XPERM8") -> zpnRtypeOpWithRd(XPERM8)
+//    )}
+
   def decodingList = {
-    BaseDecodingList ++ AextDecodingList
+    BaseDecodingList ++ AextDecodingList ++ ZPN32ExtDecodingList ++ ZPN64ExtDecodingList
   }
 
   def genDecoder(inst: UInt, pc: UInt): Operations = {
@@ -463,7 +803,12 @@ object DecodingMod {
 }
 
 object OperationDecoderApp extends App {
-  ChiselStage.emitSystemVerilogFile(new DecodingMod)
+  ChiselStage.emitSystemVerilogFile(
+    new DecodingMod,
+    firtoolOpts = Array(
+      "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb"
+    )
+  )
 }
 
 object ALUOperation extends ChiselEnum {

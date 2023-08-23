@@ -26,18 +26,18 @@ object PExt8Shift {
     Seq[(PExtensionOperation.Type, (UInt, UInt, UInt) => (UInt, Bool))](
       SRA8 -> processShift8(RightArithmetic, false),
       SRAI8 -> processShift8(RightArithmetic, true),
-      SRA8u -> processShift8(RightArithmeticRound, false),
-      SRAI8u -> processShift8(RightArithmeticRound, true),
+      SRA8_U -> processShift8(RightArithmeticRound, false),
+      SRAI8_U -> processShift8(RightArithmeticRound, true),
       SRL8 -> processShift8(RightLogical, false),
       SRLI8 -> processShift8(RightLogical, true),
-      SRL8u -> processShift8(RightLogicalRound, false),
-      SRLI8u -> processShift8(RightLogicalRound, true),
+      SRL8_U -> processShift8(RightLogicalRound, false),
+      SRLI8_U -> processShift8(RightLogicalRound, true),
       SLL8 -> processShift8(Left, false),
       SLLI8 -> processShift8(Left, true),
       KSLL8 -> processShift8(LeftSaturating, false),
       KSLLI8 -> processShift8(LeftSaturating, true),
       KSLRA8 -> processShift8(LeftSaturatingRight, false),
-      KSLRA8u -> processShift8(LeftSaturatingRightRound, false)
+      KSLRA8_U -> processShift8(LeftSaturatingRightRound, false)
     )
   }
 

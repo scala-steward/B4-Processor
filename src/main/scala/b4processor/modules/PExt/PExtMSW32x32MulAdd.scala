@@ -17,7 +17,7 @@ object PExtMSW32x32MulAdd {
         }
         (out.reverse.reduce(_ ## _), false.B)
       },
-      SMMULu -> {
+      SMMUL_U -> {
         val out = Seq.fill(2)(Wire(UInt(32.W)))
         for (x <- 0 until 2) {
           val t64 = (rs1.W(x).asSInt * rs2.W(x).asSInt).asUInt
@@ -37,7 +37,7 @@ object PExtMSW32x32MulAdd {
         }
         (out.reverse.reduce(_ ## _), overflow)
       },
-      KMMACu -> {
+      KMMAC_U -> {
         val out = Seq.fill(2)(Wire(UInt(32.W)))
         var overflow = false.B
         for (x <- 0 until 2) {
@@ -62,7 +62,7 @@ object PExtMSW32x32MulAdd {
         }
         (out.reverse.reduce(_ ## _), overflow)
       },
-      KMMSBu -> {
+      KMMSB_U -> {
         val out = Seq.fill(2)(Wire(UInt(32.W)))
         var overflow = false.B
         for (x <- 0 until 2) {
@@ -86,7 +86,7 @@ object PExtMSW32x32MulAdd {
         }
         (out.reverse.reduce(_ ## _), overflow)
       },
-      KWMMULu -> {
+      KWMMUL_U -> {
         val out = Seq.fill(2)(Wire(UInt(32.W)))
         var overflow = false.B
         for (x <- 0 until 2) {

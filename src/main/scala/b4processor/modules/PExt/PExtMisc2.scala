@@ -12,7 +12,7 @@ object PExtMisc2 {
         val res = SE65(rs1) + SE65(rs2) + SE65(1.U)
         (res(64, 1), false.B)
       },
-      SRAu -> {
+      SRA_U -> {
         val sa = rs2(5, 0)
         val res = Mux(
           sa =/= 0.U,
@@ -21,7 +21,7 @@ object PExtMisc2 {
         )
         (res, false.B)
       },
-      SRAIu -> {
+      SRAI_U -> {
         val sa = imm(5, 0)
         val res = Mux(
           sa =/= 0.U,
