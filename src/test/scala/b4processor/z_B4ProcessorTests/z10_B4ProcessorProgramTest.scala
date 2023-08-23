@@ -556,4 +556,73 @@ class z10_B4ProcessorProgramTest
         c.clock.step(20)
       }
   }
+
+  it should "run io_test" in {
+    test(
+      new B4ProcessorWithMemory(
+      )(
+        defaultParams.copy(
+          threads = 1,
+          decoderPerThread = 1,
+          maxRegisterFileCommitCount = 2,
+          loadStoreQueueIndexWidth = 2
+        )
+      )
+    )
+      .withAnnotations(
+        Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation)
+      ) { c =>
+        c.initialize("programs/riscv-sample-programs/io_test")
+        for (p <- "ABCDEFGHIJK")
+          c.checkForOutput(p)
+        c.checkForOutput('O')
+      }
+  }
+
+  it should "run bench" in {
+    val p = defaultParams.copy(
+      threads = 1,
+      decoderPerThread = 2,
+      maxRegisterFileCommitCount = 2,
+      loadStoreQueueIndexWidth = 3,
+      tagWidth = 5,
+      executors = 4,
+      instructionStart = 0x8000_0000L
+    )
+    test(
+      new B4ProcessorWithMemory(
+      )(p)
+    )
+      .withAnnotations(
+        Seq(
+          WriteWaveformAnnotation,
+          VerilatorBackendAnnotation,
+          CachingAnnotation
+        )
+      ) { c =>
+        c.initialize("out")
+        c.io.simulationIO.output.ready.poke(true)
+        for (_ <- 0 until p.threads)
+          c.checkForOutputAny(2000, print_value = true)
+        for (_ <- "OK!\n")
+          c.checkForOutputAny(2000, print_value = true)
+        for (p <- "took ")
+          c.checkForOutput(p, 20000, print_value = true)
+        var end = false
+        while (!end) {
+          val p = c.getOutput(2000)
+          print(p)
+          if (p == ' ') {
+            end = true
+          }
+        }
+        for (p <- "cycles\n")
+          c.checkForOutput(p, 1000, print_value = true)
+
+        for (n <- Seq(1, 2, 3, 5, 8, 13, 21, 34, 55))
+          for (p <- n.toString + "\n")
+            c.checkForOutput(p, 2000, print_value = true)
+      }
+
+  }
 }

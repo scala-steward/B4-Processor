@@ -85,6 +85,11 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     }
   }
 
+  io.csr.mcause.valid := false.B
+  io.csr.mcause.bits := 0.U
+  io.csr.mepc.valid := false.B
+  io.csr.mepc.bits := 0.U
+
   private val registerTagMap = RegInit(
     VecInit(Seq.fill(32)(RegisterTagMapContent.default))
   )
@@ -118,25 +123,21 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       val index = tail + i.U
       val biVal = buffer(index)
 
-      if (i == 0) when(biVal.storeSign) {
+      if (i == 0) when(biVal.operationInorder) {
         lsq.valid := true.B
         lsq.bits.destinationTag.id := index
         lsq.bits.destinationTag.threadId := io.threadId
-        biVal.storeSign := false.B
+        biVal.operationInorder := false.B
       }
 
-      val instructionOk =
-        (biVal.valueReady || biVal.isError) && !biVal.storeSign
-      val canCommit = lastValid && index =/= head && instructionOk
       val isError = biVal.isError
+      val instructionOk =
+        (biVal.valueReady || isError) && !biVal.operationInorder
+      val canCommit = lastValid && index =/= head && instructionOk
 
-      rf.valid := canCommit && !isError
+      rf.valid := canCommit
       rf.bits.value := 0.U
       rf.bits.destinationRegister := 0.reg
-      io.csr.mcause.valid := false.B
-      io.csr.mcause.bits := DontCare
-      io.csr.mepc.valid := false.B
-      io.csr.mepc.bits := DontCare
       when(canCommit) {
         when(!isError) {
           rf.bits.value := biVal.value
@@ -177,7 +178,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         buffer(insertIndex) := {
           val entry = Wire(new ReorderBufferEntry)
           entry.destinationRegister := decoder.destination.destinationRegister
-          entry.storeSign := decoder.destination.storeSign
+          entry.operationInorder := decoder.destination.operationInorder
           entry.programCounter := decoder.programCounter
           entry.isError := decoder.isDecodeError
           entry.value := Mux(
@@ -185,11 +186,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
             Causes.illegal_instruction.U,
             0.U
           )
-          entry.valueReady := Mux(
-            decoder.destination.destinationRegister === 0.reg,
-            true.B,
-            false.B
-          )
+          entry.valueReady := false.B
           entry
         }
       }

@@ -19,8 +19,7 @@ class ReorderBufferEntry extends Bundle {
   /** プログラムカウンタ */
   val programCounter = UInt(64.W)
 
-  /** 該当のbufferがStore命令かどうか */
-  val storeSign = Bool()
+  val operationInorder = Bool()
 
   /** isError */
   val isError = Bool()
@@ -34,6 +33,6 @@ object ReorderBufferEntry {
       _.isError -> false.B,
       _.value -> 0.U,
       _.programCounter -> 0.U,
-      _.storeSign -> false.B
+      _.operationInorder -> false.B
     )
 }

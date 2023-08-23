@@ -374,7 +374,7 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.branchTypes(0).expect(BranchType.Next4)
       c.io.branchTypes(1).expect(BranchType.Fence)
       c.io.decoders.toBuffer(0).valid.expect(true)
-      c.io.decoders.toBuffer(1).valid.expect(true)
+      c.io.decoders.toBuffer(1).valid.expect(false)
       c.io.nextPC.expect(0x10000004)
 
       c.clock.step()

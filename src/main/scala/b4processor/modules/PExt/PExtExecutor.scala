@@ -7,7 +7,17 @@ import b4processor.modules.PExt.PExt16Misc.pext16misc
 import b4processor.modules.PExt.PExt16Multiply.pext16mul
 import b4processor.modules.PExt.PExt16Pack.pext16pack
 import b4processor.modules.PExt.PExt16Shift.{pext16shift, processShift16}
+import b4processor.modules.PExt.PExt32Computation.pext32Computation
+import b4processor.modules.PExt.PExt64_32AddSub.pext32addsub
 import b4processor.modules.PExt.PExt64DataComputation.pext64DataComputation
+import b4processor.modules.PExt.PExt64_32Misc.pext32misc
+import b4processor.modules.PExt.PExt64_32Multiply.pext32mul
+import b4processor.modules.PExt.PExt64_32MultiplyAndAdd.pext64_32MultiplyAndAdd
+import b4processor.modules.PExt.PExt64_32ParallelMultiplyAndAdd.pext64_32ParallelMultiplyAndAdd
+import b4processor.modules.PExt.PExt64_32Shift.pext32shift
+import b4processor.modules.PExt.PExt64_32packing.pext64_32packing
+import b4processor.modules.PExt.PExt64_NonSIMD32Shift.pext64_NonSIMD32Shift
+import b4processor.modules.PExt.PExt64_Q15.pextQ15
 import b4processor.modules.PExt.PExt8AddSub.pext8addsub
 import b4processor.modules.PExt.PExt8Compare.pext8cmp
 import b4processor.modules.PExt.PExt8Misc.pext8misc
@@ -18,8 +28,10 @@ import b4processor.modules.PExt.PExt8Unpack.pext8unpack
 import b4processor.modules.PExt.PExtMSW32x16MulAdd.pextMsw32x16
 import b4processor.modules.PExt.PExtMSW32x32MulAdd.pextMsw32x32
 import b4processor.modules.PExt.PExtMisc.pextMisc
+import b4processor.modules.PExt.PExtMisc2.pextMisc2
+import b4processor.modules.PExt.PExtQ16Saturate.pextQ16Saturate
+import b4processor.modules.PExt.PExtQ32Saturate.pextQ32Saturate
 import b4processor.modules.PExt.PExtSigned16MulWith32AddSub.pextSigned16MulWith32AddSub
-import b4processor.modules.PExt.PExtSigned16MulWith64AddSub.pextSigned16MulWith64AddSub
 import chisel3._
 import chisel3.util._
 
@@ -75,18 +87,18 @@ object PExtensionOperation extends ChiselEnum {
     SMAR64,SMSR64,UMAR64,UMSR64,KMAR64,KMSR64,UKMAR64,UKMSR64,
   // signed 16 mul with 64 add/sub
     SMALBB,SMALBT,SMALTT,SMALDA,SMALXDA,SMALDS,SMALDRS,SMALXDS,SMSLDA,SMSLXDA,
-  // non simd
+  // non simd Q15 saturate
     KADDH,KSUBH, KHMBB,KHMBT,KHMTT,UKADDH,UKSUBH,
   // Q31 saturate
-    KADDW,UKADDW,KSUBW,UKSUBW,KDMBB,KDMBT,KDMTT,KSLRAW,KSLRAWu,KSLLIW,KDMABB,KDMABT,KDMATT,KABSW,
+    KADDW,UKADDW,KSUBW,UKSUBW,KDMBB,KDMBT,KDMTT,KSLRAW,KSLRAWu,KSLLW,KSLLIW,KDMABB,KDMABT,KDMATT,KABSW,
   // 32 computation
     RADDW,URADDW,RSUBW,URSUBW,MULR64,MULSR64,MSUBR32,
-  // overflow saturation status manipulation
-    RDOV,CLROV,
+  // overflow saturation status manipulation (pseudo)
+//    RDOV,CLROV,
   // Misc2
     AVE,SRAu,SRAIu,BITREV,BITREVI,WEXT,WEXTI,CMIX,INSB,MADDR32,//MSUBR32,???
     MAX,MIN,
-  // RV64 only
+  // RV64 only add sub
   Add32, RAdd32, URAdd32, KAdd32, UKAdd32, Sub32, RSub32, URSub32, KSub32,
   UKSub32, CRAS32, RCRAS32, URCRAS32, KCRAS32, UKCRAS32, CRSA32, RCRSA32,
   URCRSA32, KCRSA32, UKCRSA32, STAS32, RSTAS32, URSTAS32, KSTAS32, UKSTAS32,
@@ -97,13 +109,13 @@ object PExtensionOperation extends ChiselEnum {
   // 64 only 32 misc
     SMIN32,UMIN32,SMAX32,UMAX32,KABS32,
   // 64 only Q15
-    KHMBB16,KHMBT16,KHMTT16,KDMBB16,KDMBT16,KDMTT16,KDMABT16,KDMATT16,
+    KHMBB16,KHMBT16,KHMTT16,KDMBB16,KDMBT16,KDMTT16,KDMABB16,KDMABT16,KDMATT16,
   // 64 only 32 mul
     SMBB32,SMBT32,SMTT32,
   // 64 only 32 mul and add
   KMABB32,KMABT32,KMATT32,
   // 64 only 32 parallel mul and add
-    KMDA32,KMXDA32,KMADA32,KMAXDA32,KMAD32,KMADR32,KMAXDS32,KMSDA32,KMSXDA32,SMDS32,SMDRS32,SMXDS32,
+    KMDA32,KMXDA32,KMADA32,KMAXDA32,KMDS32,KMADRS32,KMAXDS32,KMSDA32,KMSXDA32,SMDS32,SMDRS32,SMXDS32,
   // 64 only non simd 32 shift
     SRAIWu,
     // 64 only 32 pack
@@ -117,8 +129,9 @@ class PExtExecutor extends Module {
       val oeration = new PExtensionOperation.Type()
       val rs1 = UInt(64.W)
       val rs2 = UInt(64.W)
+      val rs3 = UInt(64.W)
       val rd = UInt(64.W)
-      val imm = UInt(5.W)
+      val imm = UInt(6.W)
     })
     val output = Output(new Bundle{
       val value = UInt(64.W)
@@ -145,11 +158,27 @@ class PExtExecutor extends Module {
     pextMsw32x32(io.input.rs1,io.input.rs2,io.input.rd) ++
     pextMsw32x16(io.input.rs1,io.input.rs2,io.input.rd) ++
     pextSigned16MulWith32AddSub(io.input.rs1,io.input.rs2,io.input.rd) ++
-    pextSigned16MulWith64AddSub(io.input.rs1,io.input.rs2) ++
+//    pextSigned16MulWith64AddSub(io.input.rs1,io.input.rs2) ++
     pextMisc(io.input.rs1,io.input.rs2,io.input.rd,io.input.imm) ++
     pext8MulWith32Add(io.input.rs1,io.input.rs2,io.input.rd,io.input.imm) ++
     pext64DataComputation(io.input.rs1,io.input.rs2) ++
-    pextMsw32x16(io.input.rs1,io.input.rs2,io.input.rd)
+    pextMsw32x16(io.input.rs1,io.input.rs2,io.input.rd) ++
+    pextMsw32x32(io.input.rs1,io.input.rs2,io.input.rd) ++
+    pextQ16Saturate(io.input.rs1,io.input.rs2,io.input.rd) ++
+    pextQ32Saturate(io.input.rs1,io.input.rs2,io.input.rd,io.input.imm) ++
+      pext32Computation(io.input.rs1,io.input.rs2,io.input.rd,io.input.imm) ++
+    pextMisc2(io.input.rs1,io.input.rs2,io.input.rs3,io.input.rd,io.input.imm) ++
+    pext32addsub.map { case (a, b) => a -> b(io.input.rs1, io.input.rs2) } ++
+    pext32shift.map(a =>
+      a._1 -> a._2(io.input.rs1, io.input.rs2, io.input.imm)
+    ) ++
+    pext32misc(io.input.rs1, io.input.rs2, io.input.imm) ++
+    pextQ15(io.input.rs1, io.input.rs2, io.input.rd) ++
+    pext32mul(io.input.rs1,io.input.rs2)++
+    pext64_32MultiplyAndAdd(io.input.rs1, io.input.rs2, io.input.rd) ++
+    pext64_32ParallelMultiplyAndAdd(io.input.rs1, io.input.rs2, io.input.rd) ++
+    pext64_NonSIMD32Shift(io.input.rs1,io.input.imm) ++
+    pext64_32packing(io.input.rs1,io.input.rs2)
 
   io.output.value := MuxLookup(io.input.oeration, 0.U)(
     instructions.map { case (a, b) => a-> b._1 }
@@ -175,6 +204,9 @@ object UIntSectionHelper {
   }
 
   def SE17(x: UInt) = SE(17)(x)
+  def SE64(x: UInt) = SE(64)(x)
+  def SE65(x: UInt) = SE(65)(x)
+  def SE33(x: UInt) = SE(33)(x)
 
   def SE16(x: UInt) = SE(16)(x)
 
@@ -188,7 +220,8 @@ object UIntSectionHelper {
   }
 
   def ZE17(x: UInt) = ZE(17)(x)
-  def ZE16(x: UInt) = ZE(17)(x)
+  def ZE33(x: UInt) = ZE(33)(x)
+  def ZE16(x: UInt) = ZE(16)(x)
 
   def ZE9(x: UInt) = ZE(9)(x)
 
@@ -198,7 +231,7 @@ object UIntSectionHelper {
       val v = x.asSInt
       val max = (pow(2, n) - 1).toInt.S
       val min = -pow(2, n).toInt.S
-      (Mux(v > max, max, Mux(v < min, min, v)).asUInt,
+      (Mux(v > max, max, Mux(v < min, min, v)).asUInt(n,0),
         Mux(v > max, true.B, Mux(v < min, true.B, false.B)))
     }
 
@@ -249,7 +282,9 @@ object UIntSectionHelper {
       val max = (pow(2, n) - 1).toInt.U
       (Mux(x > max, max, x),Mux(x > max, true.B, false.B))
     }
-    def U64 = U(16)
+    def U64 = U(64)
+
+    def U32 = U(32)
 
     def U16 = U(16)
 
@@ -275,10 +310,30 @@ object UIntSectionHelper {
     )
   }
 
+  def RoundingShiftRightUnsigned32(x: UInt, shamt: UInt) = {
+    val amt = shamt(4, 0)
+    Mux(amt === 0.U, x, ZE33((x >> (amt - 1.U)).asUInt + 1.U)(32, 1))
+  }
+
+  def RoundingShiftRightSigned32(x: UInt, shamt: UInt) = {
+    val amt = shamt(4, 0)
+    Mux(
+      amt === 0.U,
+      x,
+      SE33(((x.asSInt >> (amt - 1.U)).asSInt + 1.S).asUInt)(32, 1)
+    )
+  }
+
   def SaturatingShiftLeft16(x: UInt, shamt: UInt) = {
     val amt = shamt(3, 0)
     val shifted = (x << amt).asUInt
     SAT.Q15(shifted)
+  }
+
+  def SaturatingShiftLeft32(x: UInt, shamt: UInt) = {
+    val amt = shamt(4, 0)
+    val shifted = (x << amt).asUInt
+    SAT.Q31(shifted)
   }
 
   def RoundingShiftRightUnsigned8(x: UInt, shamt: UInt) = {

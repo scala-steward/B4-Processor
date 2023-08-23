@@ -29,6 +29,6 @@ class Decoder2ReorderBuffer(implicit params: Parameters) extends Bundle {
   class DestinationRegister extends Bundle {
     val destinationRegister = Output(new RVRegister())
     val destinationTag = Input(new Tag)
-    val storeSign = Output(Bool())
+    val operationInorder = Output(Bool())
   }
 }

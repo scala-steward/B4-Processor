@@ -40,14 +40,16 @@ class Decoder(implicit params: Parameters) extends Module {
 
   io.reorderBuffer.isDecodeError := io.instructionFetch.valid && !operations.valid
 
-  val operationIsStore =
-    LoadStoreOperation.Store === operations.loadStoreOp || operations.amoOp =/= AMOOperation.None
+  val operationInorder =
+    LoadStoreOperation.Store === operations.loadStoreOp ||
+      operations.amoOp =/= AMOOperation.None ||
+      operations.csrOp =/= CSROperation.None
 
   // リオーダバッファへの入力
   io.reorderBuffer.source1.sourceRegister := operations.rs1
   io.reorderBuffer.source2.sourceRegister := operations.rs2
   io.reorderBuffer.destination.destinationRegister := operations.rd
-  io.reorderBuffer.destination.storeSign := operationIsStore
+  io.reorderBuffer.destination.operationInorder := operationInorder
   io.reorderBuffer.programCounter := io.instructionFetch.bits.programCounter
 
   // レジスタファイルへの入力
@@ -128,7 +130,7 @@ class Decoder(implicit params: Parameters) extends Module {
     io.loadStoreQueue.bits.address := value1.bits
     io.loadStoreQueue.bits.addressTag := sourceTag1.bits
     io.loadStoreQueue.bits.addressOffset := operations.rs2Value(11, 0).asSInt
-    when(operationIsStore) {
+    when(operationInorder) {
       io.loadStoreQueue.bits.storeDataTag := sourceTag2.bits
       io.loadStoreQueue.bits.storeData := value2.bits
       io.loadStoreQueue.bits.storeDataValid := value2.valid
@@ -160,6 +162,7 @@ class Decoder(implicit params: Parameters) extends Module {
   io.amo.valid := io.amo.ready && io.instructionFetch.ready && io.instructionFetch.valid && operations.amoOp =/= AMOOperation.None
   io.amo.bits := 0.U.asTypeOf(new Decoder2AtomicLSU)
   when(io.amo.valid) {
+    io.amo.bits.valid := true.B
     io.amo.bits.operation := operations.amoOp
     io.amo.bits.operationWidth := operations.amoWidth
     io.amo.bits.ordering := operations.amoOrdering

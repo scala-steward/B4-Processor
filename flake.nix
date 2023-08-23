@@ -3,15 +3,10 @@
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
-    #    nixpkgs-stable.url = "nixpkgs/nixos-22.11";
+    #  nixpkgs-stable.url = "nixpkgs/nixos-22.11";
     flake-utils.url = "github:numtide/flake-utils";
     nix-filter.url = "github:numtide/nix-filter";
-    riscv-test-src = {
-      url = "https://github.com/riscv-software-src/riscv-tests";
-      type = "git";
-      submodules = true;
-      flake = false;
-    };
+    riscv-test.url = "path:./riscv-tests-files";
     nix-sbt = {
       url = "github:zaninime/sbt-derivation";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -19,7 +14,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, riscv-test-src, nix-sbt, nix-filter }:
+  outputs = { self, nixpkgs, flake-utils, riscv-test, nix-sbt, nix-filter }:
     flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
         pkgs = import nixpkgs { inherit system; };
@@ -72,7 +67,7 @@
       in
       {
         packages = rec {
-          riscv-tests = import ./riscv-tests-files/riscv-tests.nix { inherit pkgs riscv-test-src; };
+          riscv-tests = riscv-test.packages.${system}.default;
           riscv-sample-programs = import ./riscv-sample-programs/sample-programs.nix { inherit pkgs; };
           processor = B4ProcessorDerivation { };
           default = pkgs.linkFarm "processor test programs" [

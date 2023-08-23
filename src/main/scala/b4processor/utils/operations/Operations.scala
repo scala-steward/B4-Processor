@@ -1,10 +1,12 @@
 package b4processor.utils.operations
 
 import b4processor.riscv.Instructions
+import b4processor.riscv.Instructions.C64Type
 import b4processor.utils.BundleInitialize.AddBundleInitializeConstructor
 import b4processor.utils.RVRegister
 import b4processor.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
 import chisel3._
+import chisel3.util.{BitPat, Cat}
 import circt.stage.ChiselStage
 
 import scala.language.implicitConversions
@@ -368,6 +370,68 @@ object Operations {
       A64Type("SC_D") -> amoOp(Sc, DoubleWord)
     )
   }
+
+//  def CextDecodingList = {
+//    import Instructions.CType
+//
+//    Seq(
+//      // 32
+//      CType("C_ADD") -> createOperation(),
+//      CType("C_ADDI") -> createOperation(),
+//      CType("C_ADDI16SP") -> createOperation(
+//        _.aluOp -> ALUOperation.Add,
+//        _.rs1 -> 2.reg,
+//        _.rd -> 1.U ## _(4, 2),
+//        (u, i) =>
+//          u.rs2Value -> (i.catAccess((6, 5), (12, 10)) ## 0.U(3.W)),
+//        _.rs2ValueValid -> true.B
+//      ),
+//      CType("C_ADDI4SPN") -> createOperation(
+//        _.aluOp -> ALUOperation.Add,
+//        _.rs1 -> 2.reg,
+//        _.rd -> 1.U ## _(4, 2),
+//        (u, i) =>
+//          u.rs2Value -> (i.catAccess((10, 7), (12, 11), 5, 6) ## 0.U(2.W)),
+//        _.rs2ValueValid -> true.B
+//      ),
+//      CType("C_AND") -> createOperation(),
+//      CType("C_ANDI") -> createOperation(),
+//      CType("C_BEQZ") -> createOperation(),
+//      CType("C_BNEZ") -> createOperation(),
+//      CType("C_EBREAK") -> createOperation(),
+//      CType("C_J") -> createOperation(),
+//      CType("C_JALR") -> createOperation(),
+//      CType("C_JR") -> createOperation(),
+//      CType("C_LI") -> createOperation(),
+//      CType("C_LUI") -> createOperation(),
+//      CType("C_LW") -> createOperation(
+//        (u, _) => u.loadStoreOp -> LoadStoreOperation.Load,
+//        (u, _) => u.loadStoreWidth -> LoadStoreWidth.Word,
+//        (u, i) => u.rs1 -> ("b01".U(2.W) ## i(9, 7)).reg,
+//        (u, i) => u.rs2Value -> (i.catAccess(5, (12, 10), 6) ## 0.U(2.W)),
+//        (u, _) => u.rs2ValueValid -> true.B,
+//        (u, i) => u.rd -> ("b01".U(2.W) ## i(4, 2)).reg
+//      ),
+//      CType("C_LWSP") -> createOperation(),
+//      CType("C_MV") -> createOperation(),
+//      CType("C_NOP") -> createOperation(),
+//      CType("C_OR") -> createOperation(),
+//      CType("C_SUB") -> createOperation(),
+//      CType("C_SW") -> createOperation(),
+//      CType("C_SWSP") -> createOperation(),
+//      CType("C_XOR") -> createOperation(),
+//      C64Type("C_ADDIW") -> createOperation(),
+//      C64Type("C_ADDW") -> createOperation(),
+//      C64Type("C_LD") -> createOperation(),
+//      C64Type("C_LDSP") -> createOperation(),
+//      C64Type("C_SD") -> createOperation(),
+//      C64Type("C_SDSP") -> createOperation(),
+//      C64Type("C_SLLI") -> createOperation(),
+//      C64Type("C_SRAI") -> createOperation(),
+//      C64Type("C_SRLI") -> createOperation(),
+//      C64Type("C_SUBW") -> createOperation()
+//    )
+//  }
 
   def decodingList = {
     BaseDecodingList ++ AextDecodingList

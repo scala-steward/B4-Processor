@@ -25,6 +25,7 @@ import b4processor.utils.operations.{
 import scala.math.pow
 
 class Decoder2AtomicLSU(implicit params: Parameters) extends Bundle {
+  val valid = Bool()
   val operation = AMOOperation.Type()
   val operationWidth = AMOOperationWidth.Type()
   val ordering = new AMOOrdering
@@ -89,33 +90,16 @@ class AtomicLSU(implicit params: Parameters) extends Module {
   private val reservation = Reg(Vec(params.threads, Valid(UInt(64.W))))
 
   for (t <- 0 until params.threads) {
-    var nextHead = heads(t)
-    for (i <- 0 until params.decoderPerThread) {
-      val dec = io.decoders(t)(i)
-      dec.ready := false.B
-      when(nextHead + 1.U =/= tails(t)) {
-        dec.ready := true.B
-        when(dec.valid) {
-          buffer(t)(nextHead) := dec.bits
-        }
-      }
-      nextHead =
-        Mux(nextHead + 1.U =/= tails(t) && dec.valid, nextHead + 1.U, nextHead)
-    }
-    heads(t) := nextHead
-  }
-
-  for (t <- 0 until params.threads) {
     val buf = buffer(t)
     for (o <- io.collectedOutput(t).outputs) {
       when(o.valid) {
         for (b <- buf) {
-          when(b.addressReg === o.bits.tag && !b.addressValid) {
+          when(b.addressReg === o.bits.tag && !b.addressValid && b.valid) {
             b.addressValue := o.bits.value
             b.addressValid := true.B
           }
 
-          when(b.srcReg === o.bits.tag && !b.srcValid) {
+          when(b.srcReg === o.bits.tag && !b.srcValid && b.valid) {
             b.srcValue := o.bits.value
             b.srcValid := true.B
           }
@@ -135,6 +119,23 @@ class AtomicLSU(implicit params: Parameters) extends Module {
         }
       }
     }
+  }
+
+  for (t <- 0 until params.threads) {
+    var nextHead = heads(t)
+    for (i <- 0 until params.decoderPerThread) {
+      val dec = io.decoders(t)(i)
+      dec.ready := false.B
+      when(nextHead + 1.U =/= tails(t)) {
+        dec.ready := true.B
+        when(dec.valid) {
+          buffer(t)(nextHead) := dec.bits
+        }
+      }
+      nextHead =
+        Mux(nextHead + 1.U =/= tails(t) && dec.valid, nextHead + 1.U, nextHead)
+    }
+    heads(t) := nextHead
   }
 
   class AMOIssue extends Bundle {

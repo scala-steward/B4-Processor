@@ -103,6 +103,10 @@ class B4Processor(implicit params: Parameters) extends Module {
     amo.io.output <> outputCollector.io.amo
     amo.io.reorderBuffer(tid) <> reorderBuffer(tid).io.loadStoreQueue
 
+    csrReservationStation(tid).io.reorderBuffer <>
+      reorderBuffer(tid).io.loadStoreQueue
+    csrReservationStation(tid).io.isError := reorderBuffer(tid).io.isError
+
     /** リザベーションステーションと実行ユニットの接続 */
     reservationStation(tid).io.collectedOutput :=
       outputCollector.io.outputs(tid)
@@ -240,6 +244,7 @@ object B4Processor extends App {
     Array(
 //      "--disable-mem-randomization",
 //      "--disable-reg-randomization",
+      "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb",
       "--disable-all-randomization",
       "--add-vivado-ram-address-conflict-synthesis-bug-workaround"
     )

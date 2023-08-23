@@ -76,7 +76,9 @@ class Fetch(implicit params: Parameters) extends Module {
 
     // キャッシュからの値があり、待つ必要はなく、JAL命令ではない（JALはアドレスを変えるだけとして処理できて、デコーダ以降を使う必要はない）
     val instructionValid = cache.output.valid && nextWait === WaitingReason.None
-    decoder.valid := instructionValid && branch.io.branchType =/= BranchType.mret && !io.isError
+    decoder.valid := instructionValid &&
+      (branch.io.branchType =/= BranchType.mret && branch.io.branchType =/= BranchType.Fence && branch.io.branchType =/= BranchType.FenceI&& branch.io.branchType =/= BranchType.Wfi) &&
+      !io.isError
     decoder.bits.programCounter := nextPC
     decoder.bits.instruction := cache.output.bits
 
