@@ -59,7 +59,7 @@ class CheckBranch extends Module {
     (instruction === IType("FENCE")) -> (BranchType.Fence, 4.S),
     (instruction === ZIFENCEIType("FENCE_I")) -> (BranchType.FenceI, 4.S),
     (instruction === SYSTEMType("MRET")) -> (BranchType.mret, 4.S),
-    (instruction === SYSTEMType("WFI")) -> (BranchType.mret, 4.S)
+    (instruction === SYSTEMType("WFI")) -> (BranchType.Wfi, 4.S)
   )
 
   val defaultOffset =

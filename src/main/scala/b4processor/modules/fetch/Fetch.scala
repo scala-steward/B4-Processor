@@ -11,9 +11,12 @@ import b4processor.modules.branch_output_collector.CollectedBranchAddresses
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
+import b4processor.utils.FormalTools
 
 /** 命令フェッチ用モジュール */
-class Fetch(implicit params: Parameters) extends Module {
+class Fetch(wfiWaitWidth: Int = 10)(implicit params: Parameters)
+    extends Module
+    with FormalTools {
   val io = IO(new Bundle {
 
     /** 命令キャッシュ */
@@ -41,6 +44,7 @@ class Fetch(implicit params: Parameters) extends Module {
     val csrReservationStationEmpty = Input(Bool())
 
     val isError = Input(Bool())
+    val interrupt = Input(Bool())
 
     val threadId = Input(UInt(log2Up(params.threads).W))
 
@@ -77,7 +81,7 @@ class Fetch(implicit params: Parameters) extends Module {
     // キャッシュからの値があり、待つ必要はなく、JAL命令ではない（JALはアドレスを変えるだけとして処理できて、デコーダ以降を使う必要はない）
     val instructionValid = cache.output.valid && nextWait === WaitingReason.None
     decoder.valid := instructionValid &&
-      (branch.io.branchType =/= BranchType.mret && branch.io.branchType =/= BranchType.Fence && branch.io.branchType =/= BranchType.FenceI&& branch.io.branchType =/= BranchType.Wfi) &&
+      (branch.io.branchType =/= BranchType.mret && branch.io.branchType =/= BranchType.Fence && branch.io.branchType =/= BranchType.FenceI && branch.io.branchType =/= BranchType.Wfi) &&
       !io.isError
     decoder.bits.programCounter := nextPC
     decoder.bits.instruction := cache.output.bits
@@ -88,18 +92,19 @@ class Fetch(implicit params: Parameters) extends Module {
     nextWait = Mux(
       nextWait =/= WaitingReason.None || !decoder.ready || !instructionValid,
       nextWait,
-      MuxLookup(branch.io.branchType.asUInt, nextWait)(
+      MuxLookup(branch.io.branchType, nextWait)(
         Seq(
-          BranchType.Branch.asUInt -> WaitingReason.Branch,
-          BranchType.JALR.asUInt -> WaitingReason.JALR,
-          BranchType.Fence.asUInt -> WaitingReason.Fence,
-          BranchType.FenceI.asUInt -> WaitingReason.FenceI,
-          BranchType.JAL.asUInt -> Mux(
+          BranchType.Branch -> WaitingReason.Branch,
+          BranchType.JALR -> WaitingReason.JALR,
+          BranchType.Fence -> WaitingReason.Fence,
+          BranchType.FenceI -> WaitingReason.FenceI,
+          BranchType.JAL -> Mux(
             branch.io.offset === 0.S,
             WaitingReason.BusyLoop,
             WaitingReason.None
           ),
-          BranchType.mret.asUInt -> WaitingReason.mret
+          BranchType.mret -> WaitingReason.mret,
+          BranchType.Wfi -> WaitingReason.WaitForInterrupt
         )
       )
     )
@@ -117,6 +122,8 @@ class Fetch(implicit params: Parameters) extends Module {
   }
   pc := nextPC
   waiting := nextWait
+
+  val wfiCnt = Reg(UInt(wfiWaitWidth.W))
 
   // 停止している際の挙動
   when(waiting =/= WaitingReason.None) {
@@ -136,9 +143,10 @@ class Fetch(implicit params: Parameters) extends Module {
       }
     }
     when(waiting === WaitingReason.BusyLoop) {
-
-//      /** 1クロック遅らせるだけ */
-//      waiting := WaitingReason.None
+      when(io.interrupt) {
+        pc := io.csr.mtvec
+        waiting := WaitingReason.None
+      }
     }
     when(waiting === WaitingReason.mret) {
       when(io.csrReservationStationEmpty && io.fetchBuffer.empty) {
@@ -156,6 +164,16 @@ class Fetch(implicit params: Parameters) extends Module {
         }
       }
     }
+    when(waiting === WaitingReason.WaitForInterrupt) {
+      when(io.interrupt) {
+        pc := io.csr.mtvec
+        waiting := WaitingReason.None
+      }
+      when(wfiCnt === 0.U) {
+        waiting := WaitingReason.None
+      }
+      wfiCnt := wfiCnt + 1.U
+    }
   }
 
   when(io.isError) {
@@ -172,6 +190,19 @@ class Fetch(implicit params: Parameters) extends Module {
     p.isBranch := DontCare
     p.prediction := DontCare
     p.addressLowerBits := DontCare
+  }
+
+  // FORMAL
+  for (reason <- WaitingReason.all) {
+    if (reason != WaitingReason.None) {
+      cover(waiting === reason)
+      when(pastValid && past(waiting === reason)) {
+        cover(
+          waiting === WaitingReason.None,
+          s"could not come back from $reason"
+        )
+      }
+    }
   }
 }
 

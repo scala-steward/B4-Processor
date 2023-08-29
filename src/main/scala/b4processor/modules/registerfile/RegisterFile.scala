@@ -53,8 +53,9 @@ class RegisterFile(implicit params: Parameters) extends Module {
   // それぞれのデコーダへの信号
   for (dec <- io.decoders) {
     // ソースレジスタが0ならば0それ以外ならばレジスタから
-    dec.value1 := registers(dec.sourceRegister1.inner)
-    dec.value2 := registers(dec.sourceRegister2.inner)
+    dec.values zip dec.sourceRegisters foreach { case (v, s) =>
+      v := registers(s.inner)
+    }
   }
 
   registers(0) := 0.U

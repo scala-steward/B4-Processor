@@ -10,28 +10,18 @@ import _root_.circt.stage.ChiselStage
 
 import scala.math.pow
 
-class IssueBuffer(implicit params: Parameters) extends Module {
+class IssueBuffer[T <: Data](t: T)(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val reservationStations = Vec(
-      params.threads,
-      Vec(
-        params.decoderPerThread,
-        Flipped(Decoupled(new ReservationStation2Executor))
-      )
-    )
+    val reservationStations =
+      Vec(params.threads, Vec(params.decoderPerThread, Flipped(Decoupled(t))))
     val executors =
-      Vec(params.executors, Decoupled(new ReservationStation2Executor()))
+      Vec(params.executors, Decoupled(t))
   })
 
   private val widthPerThread = log2Up(params.decoderPerThread * 2)
 
   val heads = RegInit(VecInit(Seq.fill(params.threads)(0.U(widthPerThread.W))))
-  val buffers = Reg(
-    Vec(
-      params.threads,
-      Vec(pow(2, widthPerThread).toInt, new ReservationStation2Executor)
-    )
-  )
+  val buffers = Reg(Vec(params.threads, Vec(pow(2, widthPerThread).toInt, t)))
   val buffers_valid = RegInit(
     VecInit(
       Seq.fill(params.threads)(
@@ -64,7 +54,7 @@ class IssueBuffer(implicit params: Parameters) extends Module {
 
   val arbiter = Module(
     new MMArbiter(
-      new ReservationStation2Executor,
+      t,
       params.threads * pow(2, widthPerThread).toInt,
       params.executors
     )
@@ -90,5 +80,5 @@ class IssueBuffer(implicit params: Parameters) extends Module {
 
 object IssueBuffer extends App {
   implicit val params = Parameters()
-  ChiselStage.emitSystemVerilogFile(new IssueBuffer)
+  ChiselStage.emitSystemVerilogFile(new IssueBuffer(UInt(32.W)))
 }

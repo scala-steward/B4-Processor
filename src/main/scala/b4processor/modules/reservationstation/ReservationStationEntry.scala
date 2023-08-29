@@ -1,10 +1,14 @@
 package b4processor.modules.reservationstation
 
 import b4processor.Parameters
-import b4processor.utils.Tag
+import b4processor.modules.reorderbuffer.ReorderBufferEntry
+import b4processor.utils.RVRegister.AddRegConstructor
+import b4processor.utils.{ForPext, Tag}
 import b4processor.utils.operations.ALUOperation
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
+
+import scala.math
 
 /** デコーダとリザベーションステーションをつなぐ
   *
@@ -13,46 +17,38 @@ import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
   */
 class ReservationStationEntry(implicit params: Parameters) extends Bundle {
   val operation = ALUOperation()
-  val sourceTag1 = new Tag()
-  val ready1 = Bool()
-  val value1 = UInt(64.W)
-  val sourceTag2 = new Tag()
-  val ready2 = Bool()
-  val value2 = UInt(64.W)
+  val sources = Vec(3, new SourceVariables)
   val destinationTag = new Tag()
   val wasCompressed = Bool()
   val branchOffset = SInt(12.W)
   val valid = Bool()
 }
 
+class SourceVariables(implicit params: Parameters) extends Bundle {
+  val ready = Bool()
+  val tag = new Tag
+  val value = UInt(64.W)
+}
+
 object ReservationStationEntry {
-  def default(implicit params: Parameters): ReservationStationEntry =
-    (new ReservationStationEntry).Lit(
-      _.operation -> ALUOperation.None,
-      _.sourceTag1 -> Tag(0, 0),
-      _.ready1 -> false.B,
-      _.value1 -> 0.U,
-      _.sourceTag2 -> Tag(0, 0),
-      _.ready2 -> false.B,
-      _.value2 -> 0.U,
-      _.destinationTag -> Tag(0, 0),
-      _.wasCompressed -> false.B,
-      _.valid -> false.B,
-      _.branchOffset -> 0.S
-    )
+
+  def default(implicit params: Parameters) = zero
 
   def zero(implicit params: Parameters): ReservationStationEntry =
-    (new ReservationStationEntry).Lit(
-      _.operation -> ALUOperation.None,
-      _.sourceTag1 -> Tag(0, 0),
-      _.ready1 -> false.B,
-      _.value1 -> 0.U,
-      _.sourceTag2 -> Tag(0, 0),
-      _.ready2 -> false.B,
-      _.value2 -> 0.U,
+    new ReservationStationEntry().Lit(
+      _.sources(0).ready -> false.B,
+      _.sources(0).tag -> Tag(0, 0),
+      _.sources(0).value -> 0.U,
+      _.sources(1).ready -> false.B,
+      _.sources(1).tag -> Tag(0, 0),
+      _.sources(1).value -> 0.U,
+      _.sources(2).ready -> false.B,
+      _.sources(2).tag -> Tag(0, 0),
+      _.sources(2).value -> 0.U,
+      _.operation -> ALUOperation.BranchEqual,
       _.destinationTag -> Tag(0, 0),
       _.wasCompressed -> false.B,
-      _.valid -> false.B,
-      _.branchOffset -> 0.S
+      _.branchOffset -> 0.S,
+      _.valid -> false.B
     )
 }

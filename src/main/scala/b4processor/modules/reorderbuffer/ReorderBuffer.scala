@@ -202,64 +202,43 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
         RegisterTagMapContent(insertIndex)
 
       locally {
-        prefix(s"prev_dec_check_${i}_src1") {
-          val matches_prev_decoder = (0 until i)
-            .map(n =>
-              (previousDecoderMap(n).valid &&
-                previousDecoderMap(n).destinationRegister
-                === decoder.source1.sourceRegister)
-            )
-            .fold(false.B)(_ || _)
-          val matchingBits = MuxCase(
-            registerTagMap(decoder.source1.sourceRegister.inner),
-            (0 until i)
+        for (source_index <- 0 until 3) {
+          prefix(s"prev_dec_check_${i}_src${source_index}") {
+            val matches_prev_decoder = (0 until i)
               .map(n =>
                 (previousDecoderMap(n).valid &&
                   previousDecoderMap(n).destinationRegister
-                  === decoder.source1.sourceRegister) ->
-                  RegisterTagMapContent(previousDecoderMap(n).tagId)
+                  === decoder.sources(source_index).sourceRegister)
               )
-              .reverse
-          )
-          val hasMatching = matchingBits.valid
-          val matchingBuf = buffer(matchingBits.tagId)
-
-          decoder.source1.matchingTag.valid := hasMatching
-          decoder.source1.matchingTag.bits := Tag(
-            io.threadId,
-            matchingBits.tagId
-          )
-          decoder.source1.value.valid := matchingBuf.valueReady && !matches_prev_decoder
-          decoder.source1.value.bits := matchingBuf.value
-        }
-      }
-
-      locally {
-        val matches_prev_decoder = (0 until i)
-          .map(n =>
-            (previousDecoderMap(n).valid &&
-              previousDecoderMap(n).destinationRegister
-              === decoder.source2.sourceRegister)
-          )
-          .fold(false.B)(_ || _)
-        val matchingBits = MuxCase(
-          registerTagMap(decoder.source2.sourceRegister.inner),
-          (0 until i)
-            .map(n =>
-              (previousDecoderMap(n).valid &&
-                previousDecoderMap(n).destinationRegister
-                === decoder.source2.sourceRegister) ->
-                RegisterTagMapContent(previousDecoderMap(n).tagId)
+              .fold(false.B)(_ || _)
+            val matchingBits = MuxCase(
+              registerTagMap(
+                decoder.sources(source_index).sourceRegister.inner
+              ),
+              (0 until i)
+                .map(n =>
+                  (previousDecoderMap(n).valid &&
+                    previousDecoderMap(n).destinationRegister
+                    === decoder.sources(source_index).sourceRegister) ->
+                    RegisterTagMapContent(previousDecoderMap(n).tagId)
+                )
+                .reverse
             )
-            .reverse
-        )
-        val hasMatching = matchingBits.valid
-        val matchingBuf = buffer(matchingBits.tagId)
+            val hasMatching = matchingBits.valid
+            val matchingBuf = buffer(matchingBits.tagId)
 
-        decoder.source2.matchingTag.valid := hasMatching
-        decoder.source2.matchingTag.bits := Tag(io.threadId, matchingBits.tagId)
-        decoder.source2.value.valid := matchingBuf.valueReady && !matches_prev_decoder
-        decoder.source2.value.bits := matchingBuf.value
+            decoder.sources(source_index).matchingTag.valid := hasMatching
+            decoder.sources(source_index).matchingTag.bits := Tag(
+              io.threadId,
+              matchingBits.tagId
+            )
+            decoder
+              .sources(source_index)
+              .value
+              .valid := matchingBuf.valueReady && !matches_prev_decoder
+            decoder.sources(source_index).value.bits := matchingBuf.value
+          }
+        }
       }
 
       // 次のループで使用するinserIndexとlastReadyを変える
@@ -295,6 +274,11 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     io.bufferIndex0.get := buffer(0)
     //    printf(p"reorder buffer pc=${buffer(0).programCounter} value=${buffer(0).value} ready=${buffer(0).ready} rd=${buffer(0).destinationRegister}\n")
   }
+
+  // FORMAL
+  for (d <- io.decoders)
+    for (s <- d.sources)
+      assert(s.matchingTag.bits.threadId === io.threadId)
 }
 
 object ReorderBuffer extends App {

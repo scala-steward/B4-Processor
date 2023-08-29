@@ -1,7 +1,7 @@
 package b4processor.connections
 
 import b4processor.Parameters
-import b4processor.utils.{RVRegister, Tag}
+import b4processor.utils.{ForPext, RVRegister, Tag}
 import chisel3._
 import chisel3.util._
 
@@ -11,8 +11,7 @@ import chisel3.util._
   *   パラメータ
   */
 class Decoder2ReorderBuffer(implicit params: Parameters) extends Bundle {
-  val source1 = new SourceRegister()
-  val source2 = new SourceRegister()
+  val sources = Vec(3, new SourceRegister())
   val destination = new DestinationRegister()
   val programCounter = Output(UInt(64.W))
   val isDecodeError = Output(Bool())

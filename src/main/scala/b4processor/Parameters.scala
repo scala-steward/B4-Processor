@@ -34,5 +34,6 @@ case class Parameters(
   branchPredictionWidth: Int = 4,
   parallelOutput: Int = 2,
   instructionStart: Long = 0x8010_0000L,
-  debug: Boolean = false
+  debug: Boolean = false,
+  enablePExt: Boolean = false
 )

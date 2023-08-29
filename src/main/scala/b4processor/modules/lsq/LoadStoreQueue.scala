@@ -10,10 +10,12 @@ import b4processor.connections.{
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
-import b4processor.utils.Tag
+import b4processor.utils.{FormalTools, Tag}
 import b4processor.utils.operations.LoadStoreOperation
 
-class LoadStoreQueue(implicit params: Parameters) extends Module {
+class LoadStoreQueue(implicit params: Parameters)
+    extends Module
+    with FormalTools {
   val io = IO(new Bundle {
     val decoders =
       Vec(
@@ -28,7 +30,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       )
     )
     val memory = Decoupled(new LoadStoreQueue2Memory)
-    val isEmpty = Output(Bool())
+    val empty = Output(Bool())
+    val full = Output(Bool())
 
     val head =
       if (params.debug) Some(Output(UInt(params.loadStoreQueueIndexWidth.W)))
@@ -43,7 +46,8 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   val head = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
   val tail = RegInit(0.U(params.loadStoreQueueIndexWidth.W))
-  io.isEmpty := head === tail
+  io.empty := head === tail
+  io.full := head + 1.U === tail
 
   val buffer = RegInit(
     VecInit(
@@ -89,7 +93,9 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
   for (buf <- buffer) {
     for (o <- output) {
       when(o.valid && buf.valid) {
-        when(buf.storeDataTag === o.bits.tag && !buf.storeDataValid) {
+        when(
+          buf.storeDataTag === o.bits.tag && !buf.storeDataValid && buf.operation === LoadStoreOperation.Store
+        ) {
           buf.storeDataTag := Tag(0, 0)
           buf.storeData := o.bits.value
           buf.storeDataValid := true.B
@@ -140,6 +146,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
 
   io.memory.bits := 0.U.asTypeOf(new LoadStoreQueue2Memory)
   io.memory.valid := false.B
+  val toMemoryIndex = WireDefault(0.U(head.getWidth.W))
   for (i <- 0 until params.loadStoreQueueCheckLength) {
     val checkIndex = tail + i.U
     val checkOk = WireDefault(false.B)
@@ -175,6 +182,7 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
       io.memory.valid := checkOk | isSet
       // 送出実行
       when(checkOk && !isSet) {
+        toMemoryIndex := checkIndex
         io.memory.bits.tag := buf.destinationTag
         io.memory.bits.data := buf.storeData
         io.memory.bits.address := Address(i)
@@ -197,9 +205,104 @@ class LoadStoreQueue(implicit params: Parameters) extends Module {
     io.head.get := head
     io.tail.get := tail
   }
+
+  cover(io.full, "could be full at some point")
+  cover(io.empty, "could be empty at some point")
+//  cover(io.full && io.empty, "this should not happen only test perpose")
+
+  // both full and empty should not be high at the same time
+  assert(!(io.full && io.empty))
+
+  when(pastValid) {
+    for (i <- 0 to params.decoderPerThread) {
+      cover(
+        head === past(head) + i.U,
+        "there should ba a time where head increments by $i"
+      )
+    }
+
+    // head should move at maximum the number of decoders valid
+    val valid_count =
+      io.decoders
+        .map(i => {
+          val w = Wire(UInt(head.getWidth.W))
+          w := i.valid.asUInt
+          w
+        })
+        .reduce(_ + _)
+    assert((head - past(head)) <= past(valid_count), "head is moving too fast?")
+
+    // when full decoders ready should not be asserted
+    when(io.full) {
+      for ((d, i) <- io.decoders.zipWithIndex)
+        assert(!d.ready, s"decoder $i should not be ready")
+    }
+
+    // when empty at least 1 decoder is asserted ready
+    when(io.empty) {
+      assert(
+        io.decoders.map(_.ready).reduce(_ || _),
+        "no decoders are ready when empty"
+      )
+    }
+
+    // output to memory should be true at some point
+    cover(io.memory.valid, "memory should be valid at some point")
+
+    for ((b, i) <- buffer.zipWithIndex) {
+      cover(b.valid, s"buffer $i valid should be valid at some point")
+    }
+
+    when(past(io.memory.valid && !io.memory.ready)) {
+      assert(io.memory.valid)
+      assert(
+        stable(io.memory.bits) || past(toMemoryIndex) - toMemoryIndex > 0.U
+      )
+    }
+  }
+
+  var wasHead = false.B
+  for (i <- buffer.indices) {
+    val idx = tail + i.U
+    val ishead = idx === head
+    wasHead = wasHead | ishead
+    when(wasHead) {
+      assume(!buffer(idx).valid,s"$i")
+    }
+  }
+
+  takesEveryValue(head)
+  takesEveryValue(tail)
 }
 
 object LoadStoreQueue extends App {
-  implicit val params = Parameters(maxRegisterFileCommitCount = 2, tagWidth = 4)
-  ChiselStage.emitSystemVerilogFile(new LoadStoreQueue)
+  implicit val params =
+    Parameters(
+      maxRegisterFileCommitCount = 2,
+      tagWidth = 4,
+      loadStoreQueueIndexWidth = 3
+    )
+
+//  println(ChiselStage.emitCHIRRTL(new LoadStoreQueue))
+//  println(ChiselStage.emitFIRRTLDialect(new LoadStoreQueue))
+//  println(ChiselStage.emitHWDialect(new LoadStoreQueue))
+
+  ChiselStage.emitSystemVerilogFile(
+    new LoadStoreQueue,
+    firtoolOpts = Array(
+      "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb,verifLabels",
+//      "--emit-chisel-asserts-as-sva",
+      "--dedup",
+      "--mlir-pass-statistics"
+    )
+  )
+
+  var s = ChiselStage.emitSystemVerilog(
+    new LoadStoreQueue,
+    firtoolOpts = Array(
+      "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb,verifLabels",
+//      "--emit-chisel-asserts-as-sva",
+      "--dedup"
+    )
+  )
 }

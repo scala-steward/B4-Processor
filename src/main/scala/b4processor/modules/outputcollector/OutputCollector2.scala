@@ -67,9 +67,21 @@ class OutputCollector2(implicit params: Parameters) extends Module {
     for (i <- 0 until params.parallelOutput) {
       io.outputs(t).outputs(i).valid := mmarb(t).io.output(i).valid
       io.outputs(t).outputs(i).bits := mmarb(t).io.output(i).bits
+      when(mmarb(t).io.output(i).valid) {
+        assert(
+          mmarb(t).io.output(i).bits.tag.threadId === t.U,
+          s"check for thread $t, output ${i}"
+        )
+      }
+      io.outputs(t).outputs(i).bits.tag.threadId := t.U
       mmarb(t).io.output(i).ready := true.B
     }
+    assume(
+      io.csr(t).bits.tag.threadId === t.U,
+      s"csr outputs should have correct threadid ${t}"
+    )
   }
+
 }
 
 object OutputCollector2 extends App {

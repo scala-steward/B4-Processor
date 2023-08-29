@@ -1,5 +1,6 @@
 package b4processor
 
+import b4processor.connections.ReservationStation2Executor
 import b4processor.modules.AtomicLSU
 import circt.stage.ChiselStage
 import b4processor.modules.branch_output_collector.BranchOutputCollector
@@ -57,7 +58,9 @@ class B4Processor(implicit params: Parameters) extends Module {
   )
   private val reservationStation =
     Seq.fill(params.threads)(Module(new ReservationStation))
-  private val issueBuffer = Module(new IssueBuffer)
+  private val issueBuffer = Module(
+    new IssueBuffer(new ReservationStation2Executor)
+  )
   private val executors = Seq.fill(params.executors)(Module(new Executor))
 
   private val externalMemoryInterface = Module(new ExternalMemoryInterface)
@@ -184,7 +187,7 @@ class B4Processor(implicit params: Parameters) extends Module {
     registerFile(tid).io.reorderBuffer <> reorderBuffer(tid).io.registerFile
 
     /** フェッチとLSQの接続 */
-    fetch(tid).io.loadStoreQueueEmpty := loadStoreQueue(tid).io.isEmpty
+    fetch(tid).io.loadStoreQueueEmpty := loadStoreQueue(tid).io.empty
 
     /** フェッチとリオーダバッファの接続 */
     fetch(tid).io.reorderBufferEmpty := reorderBuffer(tid).io.isEmpty
@@ -235,7 +238,8 @@ object B4Processor extends App {
     maxRegisterFileCommitCount = 1,
     tagWidth = 4,
     parallelOutput = 1,
-    instructionStart = 0x2000_0000L
+    instructionStart = 0x2000_0000L,
+    enablePExt = true
   )
 
   ChiselStage.emitSystemVerilogFile(

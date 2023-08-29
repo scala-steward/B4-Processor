@@ -1,23 +1,29 @@
 {
   description = "riscv test flake";
 
-  inputs = {
-    nixpkgs.url = "nixpkgs/nixos-unstable";
-    #  nixpkgs-stable.url = "nixpkgs/nixos-22.11";
-    flake-utils.url = "github:numtide/flake-utils";
-    nix-filter.url = "github:numtide/nix-filter";
-    riscv-test.url = "path:./riscv-tests-files";
-    nix-sbt = {
-      url = "github:zaninime/sbt-derivation";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
+
+  inputs.nixpkgs.url = "nixpkgs/nixpkgs-unstable";
+  #inputs.nixpkgs-stable.url = "nixpkgs/nixos-23.05";
+  inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs.nix-filter.url = "github:numtide/nix-filter";
+  inputs.nix-sbt = {
+    url = "github:zaninime/sbt-derivation";
+    inputs.nixpkgs.follows = "nixpkgs";
+    inputs.flake-utils.follows = "flake-utils";
+  };
+  inputs.espresso-flake.url = "github:pineapplehunter/espresso-flake";
+  inputs.riscv-test-src = {
+    url = "https://github.com/riscv-software-src/riscv-tests";
+    type = "git";
+    submodules = true;
+    flake = false;
   };
 
-  outputs = { self, nixpkgs, flake-utils, riscv-test, nix-sbt, nix-filter }:
+  outputs = { self, nixpkgs, flake-utils, nix-sbt, nix-filter, espresso-flake, riscv-test-src, ... }@inputs:
     flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = import nixpkgs { inherit system; overlays = [ espresso-flake.overlays.default ]; };
+        # pkgsStable = nixpkgs-stable.legacyPackages.${system};
         nf = import nix-filter;
         B4ProcessorDerivation = attrs: nix-sbt.mkSbtDerivation.x86_64-linux ({
           pname = "B4Processor";
@@ -31,7 +37,7 @@
             ];
           };
           buildInputs = with pkgs; [ circt ripgrep ];
-          depsSha256 = "sha256-5n5dajXb62YzKSLmxlKfKdDMdLOjZqRTOiFJGPMs+HE=";
+          depsSha256 = "sha256-3XQjSx6m6r5DbNc8pWSC2ihG36TKMG0a9VLxXNfXat0=";
           buildPhase = ''
             sbt "runMain b4processor.B4Processor"
             cat B4Processor.sv | rg -U '(?s)module B4Processor\(.*endmodule' > B4Processor.wrapper.v
@@ -67,7 +73,7 @@
       in
       {
         packages = rec {
-          riscv-tests = riscv-test.packages.${system}.default;
+          riscv-tests = pkgs.callPackage ./riscv-tests-files {inherit riscv-test-src;};
           riscv-sample-programs = import ./riscv-sample-programs/sample-programs.nix { inherit pkgs; };
           processor = B4ProcessorDerivation { };
           default = pkgs.linkFarm "processor test programs" [
@@ -95,6 +101,10 @@
             yosys
             graphviz
             xdot
+            espresso
+            z3
+            symbiyosys
+            yices
           ];
         };
       });

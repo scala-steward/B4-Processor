@@ -29,5 +29,5 @@ object WaitingReason extends ChiselEnum {
   val Exception = Value
 
   /** WFI */
-  val aWitForIntterupt = Value
+  val WaitForInterrupt = Value
 }

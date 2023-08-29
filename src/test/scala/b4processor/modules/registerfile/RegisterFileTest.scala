@@ -24,8 +24,8 @@ class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.clock.step()
 
-      c.io.decoders(0).sourceRegister1.poke(5.reg)
-      c.io.decoders(0).value1.expect(123)
+      c.io.decoders(0).sourceRegisters(0).poke(5.reg)
+      c.io.decoders(0).values(0).expect(123)
     }
   }
 
@@ -37,8 +37,8 @@ class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.clock.step()
 
-      c.io.decoders(0).sourceRegister1.poke(0.reg)
-      c.io.decoders(0).value1.expect(0)
+      c.io.decoders(0).sourceRegisters(0).poke(0.reg)
+      c.io.decoders(0).values(0).expect(0)
     }
   }
 
@@ -55,10 +55,10 @@ class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.clock.step()
 
-      c.io.decoders(0).sourceRegister1.poke(1.reg)
-      c.io.decoders(0).value1.expect(123)
-      c.io.decoders(0).sourceRegister2.poke(2.reg)
-      c.io.decoders(0).value2.expect(456)
+      c.io.decoders(0).sourceRegisters(0).poke(1.reg)
+      c.io.decoders(0).values(0).expect(123)
+      c.io.decoders(0).sourceRegisters(1).poke(2.reg)
+      c.io.decoders(0).values(1).expect(456)
     }
   }
 
@@ -75,8 +75,8 @@ class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.clock.step()
 
-      c.io.decoders(0).sourceRegister1.poke(1.reg)
-      c.io.decoders(0).value1.expect(456)
+      c.io.decoders(0).sourceRegisters(0).poke(1.reg)
+      c.io.decoders(0).values(0).expect(456)
     }
   }
 }

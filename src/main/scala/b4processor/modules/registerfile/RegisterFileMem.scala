@@ -59,13 +59,11 @@ class RegisterFileMem(implicit params: Parameters) extends Module {
   for ((dec, i) <- io.decoders.zipWithIndex) {
     prefix(s"for_decoder_$i") {
       // ソースレジスタが0ならば0それ以外ならばレジスタから
-      dec.value1 := 0.U
-      dec.value2 := 0.U
-      when(dec.sourceRegister1 =/= 0.reg) {
-        dec.value1 := registers.read(dec.sourceRegister1.inner - 1.U)
-      }
-      when(dec.sourceRegister2 =/= 0.reg) {
-        dec.value2 := registers.read(dec.sourceRegister2.inner - 1.U)
+      dec.values := 0.U.asTypeOf(dec.values)
+      dec.values zip dec.sourceRegisters foreach { case (v, s) =>
+        when(s =/= 0.reg) {
+          v := registers.read(s.inner - 1.U)
+        }
       }
     }
   }

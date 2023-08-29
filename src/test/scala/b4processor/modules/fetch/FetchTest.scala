@@ -5,7 +5,7 @@ import b4processor.connections.{Fetch2BranchPrediction, Fetch2FetchBuffer}
 import b4processor.modules.branch_output_collector.CollectedBranchAddresses
 import b4processor.modules.cache.InstructionMemoryCache
 import b4processor.modules.memory.{ExternalMemoryInterface, InstructionMemory}
-import b4processor.utils.{InstructionUtil, SimpleAXIMemory}
+import b4processor.utils.{InstructionUtil, SimpleAXIMemory, SymbiYosysFormal}
 import chisel3._
 import chisel3.util._
 import chiseltest._
@@ -51,9 +51,12 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
     val branchTypes = Output(Vec(params.decoderPerThread, new BranchType.Type))
 
     val memorySetup = Flipped(Valid(UInt(64.W)))
+
+    val interrupt = Input(Bool())
+    val isError = Input(Bool())
   })
 
-  val fetch = Module(new Fetch)
+  val fetch = Module(new Fetch(1))
   val cache = Module(new InstructionMemoryCache)
   val memoryInterface = Module(new ExternalMemoryInterface)
   val axiMemory = Module(new SimpleAXIMemory)
@@ -67,8 +70,9 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
   fetch.io.csr := DontCare
   fetch.io.csrReservationStationEmpty := true.B
   fetch.io.fetchBuffer.empty := true.B
-  fetch.io.isError := false.B
+  fetch.io.isError := io.isError
   fetch.io.threadId := 0.U
+  fetch.io.interrupt := io.interrupt
 
   cache.io.fetch <> fetch.io.cache
   cache.io.memory.request <> memoryInterface.io.instructionFetchRequest(0)
@@ -134,7 +138,10 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
   }
 }
 
-class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
+class FetchTest
+    extends AnyFlatSpec
+    with ChiselScalatestTester
+    with SymbiYosysFormal {
   behavior of "Fetch"
   implicit val defaultParams =
     Parameters(
@@ -399,5 +406,9 @@ class FetchTest extends AnyFlatSpec with ChiselScalatestTester {
       c.io.decoders.toBuffer(0).valid.expect(true)
       c.io.decoders.toBuffer(1).valid.expect(true)
     }
+  }
+
+  it should "check formal" in {
+    symbiYosysCheck(new FetchWrapper())
   }
 }

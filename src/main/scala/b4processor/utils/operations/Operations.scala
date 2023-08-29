@@ -1,43 +1,46 @@
 package b4processor.utils.operations
 
+import circt.stage.ChiselStage
+import b4processor.Parameters
 import b4processor.modules.PExt.PExtensionOperation
 import b4processor.riscv.Instructions
-import b4processor.riscv.Instructions.{C64Type, ZBPType}
 import b4processor.utils.BundleInitialize.AddBundleInitializeConstructor
 import b4processor.utils.RVRegister
 import b4processor.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
+import b4processor.utils.operations.OptionalBundle.{invalid, valid}
 import chisel3._
-import chisel3.util.{BitPat, Cat}
-import circt.stage.ChiselStage
+import chisel3.util._
+import chisel3.util.experimental.decode.{TruthTable, decoder}
 
+import scala.+:
 import scala.language.implicitConversions
 
 class Operations extends Bundle {
   val valid = Bool()
-  val rs1 = new RVRegister
-  val rs1Value = UInt(64.W)
-  val rs1ValueValid = Bool()
-  val rs2 = new RVRegister
-  val rs2Value = UInt(64.W)
-  val rs2ValueValid = Bool()
-  val rs3 = new RVRegister
+  val sources = Vec(3, new SourceDef())
   val rd = new RVRegister
   val useRs2AsStoreSrc = Bool()
   val branchOffset = SInt(12.W)
-  val aluOp = ALUOperation()
-  val loadStoreOp = LoadStoreOperation()
+  val aluOp = OptionalBundle(ALUOperation())
+  val loadStoreOp = OptionalBundle(LoadStoreOperation())
   val loadStoreWidth = LoadStoreWidth()
   val fence = Bool()
   val ecall = Bool()
   val ebreak = Bool()
   val fence_i = Bool()
   val compressed = Bool()
-  val csrOp = CSROperation()
+  val csrOp = OptionalBundle(CSROperation())
 //  val csrAddress = UInt(12.W)
-  val amoOp = AMOOperation.Type()
+  val amoOp = OptionalBundle(AMOOperation.Type())
   val amoWidth = AMOOperationWidth.Type()
   val amoOrdering = new AMOOrdering
-  val pextOp = new PExtensionOperation.Type()
+  val pextOp = OptionalBundle(new PExtensionOperation.Type())
+
+  class SourceDef extends Bundle {
+    val reg = new RVRegister
+    val value = UInt(64.W)
+    val valid = Bool()
+  }
 }
 
 object Operations {
@@ -69,17 +72,19 @@ object Operations {
 
   def default: Operations = new Operations().initialize(
     _.valid -> false.B,
-    _.rs1 -> 0.reg,
-    _.rs2 -> 0.reg,
-    _.rs3 -> 0.reg,
+    _.sources(0).reg -> 0.reg,
+    _.sources(1).reg -> 0.reg,
+    _.sources(2).reg -> 0.reg,
     _.rd -> 0.reg,
     _.useRs2AsStoreSrc -> false.B,
-    _.rs1Value -> 0.U,
-    _.rs2Value -> 0.U,
-    _.rs1ValueValid -> false.B,
-    _.rs2ValueValid -> false.B,
-    _.aluOp -> ALUOperation.None,
-    _.loadStoreOp -> LoadStoreOperation.None,
+    _.sources(0).value -> 0.U,
+    _.sources(1).value -> 0.U,
+    _.sources(2).value -> 0.U,
+    _.sources(0).valid -> false.B,
+    _.sources(1).valid -> false.B,
+    _.sources(2).valid -> false.B,
+    _.aluOp -> invalid(ALUOperation.Type()),
+    _.loadStoreOp -> invalid(LoadStoreOperation.Type()),
     _.loadStoreWidth -> LoadStoreWidth.Byte,
     _.branchOffset -> 0.S,
     _.fence -> false.B,
@@ -87,12 +92,12 @@ object Operations {
     _.ecall -> false.B,
     _.ebreak -> false.B,
     _.compressed -> false.B,
-    _.csrOp -> CSROperation.None,
+    _.csrOp -> invalid(CSROperation.Type()),
 //    _.csrAddress -> 0.U,
-    _.amoOp -> AMOOperation.None,
+    _.amoOp -> invalid(AMOOperation.Type()),
     _.amoWidth -> AMOOperationWidth.Word,
     _.amoOrdering -> AMOOrdering(false.B, false.B),
-    _.pextOp -> PExtensionOperation.None
+    _.pextOp -> invalid(PExtensionOperation.Type())
   )
 
   implicit class UIntAccess(u: UInt) {
@@ -104,56 +109,55 @@ object Operations {
 
   def btypeOp(op: ALUOperation.Type): (UInt, UInt) => Operations =
     createOperation(
-      (u, _) => u.aluOp -> op,
-      _.rs1 -> _(19, 15).reg,
-      _.rs2 -> _(24, 20).reg,
+      (u, _) => u.aluOp -> OptionalBundle.valid(op),
+      _.sources(0).reg -> _(19, 15).reg,
+      _.sources(1).reg -> _(24, 20).reg,
       _.branchOffset -> _.catAccess(31, 7, (30, 25), (11, 8)).asSInt
     )
   def rtypeOp(op: ALUOperation.Type): (UInt, UInt) => Operations =
     createOperation(
-      (u, _) => u.aluOp -> op,
-      _.rs1 -> _(19, 15).reg,
-      _.rs2 -> _(24, 20).reg,
+      (u, _) => u.aluOp -> valid(op),
+      _.sources(0).reg -> _(19, 15).reg,
+      _.sources(1).reg -> _(24, 20).reg,
       _.rd -> _(11, 7).reg
     )
 
   def itypeOp(op: ALUOperation.Type): (UInt, UInt) => Operations =
     createOperation(
-      (u, _) => u.aluOp -> op,
-      _.rs1 -> _(19, 15).reg,
-      (u, _) => u.rs2 -> 0.reg,
-      (a, b) => a.rs2Value -> b(31, 20).asSInt.pad(64).asUInt,
-      (u, _) => u.rs2ValueValid -> true.B,
+      (u, _) => u.aluOp -> valid(op),
+      _.sources(0).reg -> _(19, 15).reg,
+      (u, _) => u.sources(1).reg -> 0.reg,
+      (a, b) => a.sources(1).value -> b(31, 20).asSInt.pad(64).asUInt,
+      (u, _) => u.sources(1).valid -> true.B,
       _.rd -> _(11, 7).reg
     )
 
   def itype64ShiftOp(op: ALUOperation.Type): (UInt, UInt) => Operations =
     createOperation(
-      (u, _) => u.aluOp -> op,
-      _.rs1 -> _(19, 15).reg,
-      (u, _) => u.rs2 -> 0.reg,
-      _.rs2Value -> _(25, 20),
-      (u, _) => u.rs2ValueValid -> true.B,
+      (u, _) => u.aluOp -> valid(op),
+      _.sources(0).reg -> _(19, 15).reg,
+      _.sources(1).value -> _(25, 20),
+      (u, _) => u.sources(1).valid -> true.B,
       _.rd -> _(11, 7).reg
     )
 
   def itype64ShiftWOp(op: ALUOperation.Type): (UInt, UInt) => Operations =
     createOperation(
-      (u, _) => u.aluOp -> op,
-      _.rs1 -> _(19, 15).reg,
-      (u, _) => u.rs2 -> 0.reg,
-      _.rs2Value -> _(24, 20),
-      (u, _) => u.rs2ValueValid -> true.B,
+      (u, _) => u.aluOp -> valid(op),
+      _.sources(0).reg -> _(19, 15).reg,
+      (u, _) => u.sources(1).reg -> 0.reg,
+      _.sources(1).value -> _(24, 20),
+      (u, _) => u.sources(1).valid -> true.B,
       _.rd -> _(11, 7).reg
     )
 
   def utypeOp(op: ALUOperation.Type): (UInt, UInt) => Operations =
     createOperation(
-      (u, _) => u.aluOp -> op,
-      _.rs1 -> _(19, 15).reg,
-      (u, _) => u.rs2 -> 0.reg,
-      _.rs2Value -> _(31, 20),
-      (u, _) => u.rs2ValueValid -> true.B,
+      (u, _) => u.aluOp -> valid(op),
+      _.sources(0).reg -> _(19, 15).reg,
+      (u, _) => u.sources(1).reg -> 0.reg,
+      _.sources(1).value -> _(31, 20),
+      (u, _) => u.sources(1).valid -> true.B,
       _.rd -> _(11, 7).reg
     )
 
@@ -162,12 +166,11 @@ object Operations {
     width: LoadStoreWidth.Type
   ): (UInt, UInt) => Operations =
     createOperation(
-      (u, _) => u.aluOp -> ALUOperation.None,
-      (u, _) => u.loadStoreOp -> op,
+      (u, _) => u.loadStoreOp -> valid(op),
       (u, _) => u.loadStoreWidth -> width,
-      _.rs1 -> _(19, 15).reg,
-      _.rs2Value -> _(31, 20).asSInt.pad(64).asUInt,
-      (u, _) => u.rs2ValueValid -> true.B,
+      _.sources(0).reg -> _(19, 15).reg,
+      _.sources(1).value -> _(31, 20).asSInt.pad(64).asUInt,
+      (u, _) => u.sources(1).valid -> true.B,
       _.rd -> _(11, 7).reg
     )
 
@@ -176,34 +179,35 @@ object Operations {
     width: LoadStoreWidth.Type
   ): (UInt, UInt) => Operations =
     createOperation(
-      (u, _) => u.aluOp -> ALUOperation.None,
-      (u, _) => u.loadStoreOp -> op,
+      (u, _) => u.loadStoreOp -> valid(op),
       (u, _) => u.loadStoreWidth -> width,
-      _.rs1 -> _(19, 15).reg,
-      _.rs2Value -> _.catAccess((31, 25), (11, 7)).asSInt.pad(64).asUInt,
-      (u, _) => u.rs2ValueValid -> true.B,
+      _.sources(0).reg -> _(19, 15).reg,
+      _.sources(1).value -> _.catAccess((31, 25), (11, 7)).asSInt
+        .pad(64)
+        .asUInt,
+      (u, _) => u.sources(1).valid -> true.B,
       (u, _) => u.rd -> 0.reg,
-      _.rs2 -> _(24, 20).reg,
+      _.sources(1).reg -> _(24, 20).reg,
       (u, _) => u.useRs2AsStoreSrc -> true.B
     )
 
   def csrOp(op: CSROperation.Type): (UInt, UInt) => Operations =
     createOperation(
       _.rd -> _(11, 7).reg,
-      _.rs1 -> _(19, 15).reg,
-      _.rs2Value -> _(31, 20),
-      (u, _) => u.rs2ValueValid -> true.B,
-      (u, _) => u.csrOp -> op
+      _.sources(0).reg -> _(19, 15).reg,
+      _.sources(1).value -> _(31, 20),
+      (u, _) => u.sources(1).valid -> true.B,
+      (u, _) => u.csrOp -> valid(op)
     )
 
   def csrImmOp(op: CSROperation.Type): (UInt, UInt) => Operations =
     createOperation(
       _.rd -> _(11, 7).reg,
-      _.rs1Value -> _(19, 15),
-      (u, _) => u.rs1ValueValid -> true.B,
-      _.rs2Value -> _(31, 20),
-      (u, _) => u.rs2ValueValid -> true.B,
-      (u, _) => u.csrOp -> op
+      _.sources(0).value -> _(19, 15),
+      (u, _) => u.sources(0).valid -> true.B,
+      _.sources(1).value -> _(31, 20),
+      (u, _) => u.sources(1).valid -> true.B,
+      (u, _) => u.csrOp -> valid(op)
     )
 
   def BaseDecodingList = {
@@ -231,53 +235,53 @@ object Operations {
       IType("ANDI") -> itypeOp(ALUOperation.And),
       IType("ORI") -> itypeOp(ALUOperation.Or),
       IType("XORI") -> itypeOp(ALUOperation.Xor),
-      I64Type("SLLI") -> itypeOp(ALUOperation.Sll),
-      I64Type("SRLI") -> itypeOp(ALUOperation.Srl),
-      I64Type("SRAI") -> itypeOp(ALUOperation.Sra),
+//      I64Type("SLLI") -> itypeOp(ALUOperation.Sll),
+//      I64Type("SRLI") -> itypeOp(ALUOperation.Srl),
+//      I64Type("SRAI") -> itypeOp(ALUOperation.Sra),
       IType("LUI") -> createOperation(
         _.rd -> _(11, 7).reg,
-        (u, _) => u.rs1 -> 0.reg,
+        (u, _) => u.sources(0).reg -> 0.reg,
         (u, inst) =>
-          u.rs1Value ->
+          u.sources(0).value ->
             (inst(31, 12) ## 0.U(12.W)).asSInt
               .pad(64)
               .asUInt,
-        (u, _) => u.rs1ValueValid -> true.B,
-        (u, _) => u.rs2ValueValid -> true.B,
-        (u, _) => u.rs2Value -> 0.U,
-        (u, _) => u.aluOp -> ALUOperation.Add
+        (u, _) => u.sources(0).valid -> true.B,
+        (u, _) => u.sources(1).valid -> true.B,
+        (u, _) => u.sources(1).value -> 0.U,
+        (u, _) => u.aluOp -> valid(ALUOperation.Add)
       ),
       IType("AUIPC") -> createOperationWithPC(
         (u, inst, _) => u.rd -> inst(11, 7).reg,
         (u, inst, _) =>
-          u.rs1Value ->
+          u.sources(0).value ->
             (inst(31, 12) ## 0.U(12.W)).asSInt
               .pad(64)
               .asUInt,
-        (u, _, _) => u.rs1ValueValid -> true.B,
-        (u, _, _) => u.rs2ValueValid -> true.B,
-        (u, _, pc) => u.rs2Value -> pc,
-        (u, _, _) => u.aluOp -> ALUOperation.Add
+        (u, _, _) => u.sources(0).valid -> true.B,
+        (u, _, _) => u.sources(1).valid -> true.B,
+        (u, _, pc) => u.sources(1).value -> pc,
+        (u, _, _) => u.aluOp -> valid(ALUOperation.Add)
       ),
       IType("JAL") -> createOperationWithPC(
         (u, inst, _) => u.rd -> inst(11, 7).reg,
-        (u, _, pc) => u.rs2Value -> pc,
+        (u, _, pc) => u.sources(1).value -> pc,
         (u, inst, _) =>
-          u.rs1Value ->
+          u.sources(0).value ->
             (inst.catAccess(31, (19, 12), 20, (30, 21)) ## 0.U(1.W)).asSInt
               .pad(64)
               .asUInt,
-        (u, _, _) => u.rs1ValueValid -> true.B,
-        (u, _, _) => u.rs2ValueValid -> true.B,
-        (u, _, _) => u.aluOp -> ALUOperation.AddJAL
+        (u, _, _) => u.sources(0).valid -> true.B,
+        (u, _, _) => u.sources(1).valid -> true.B,
+        (u, _, _) => u.aluOp -> valid(ALUOperation.AddJAL)
       ),
       IType("JALR") -> createOperationWithPC(
         (u, inst, _) => u.rd -> inst(11, 7).reg,
-        (u, _, pc) => u.rs2Value -> pc,
-        (u, inst, _) => u.rs1 -> inst(19, 15).reg,
-        (u, _, _) => u.rs2ValueValid -> true.B,
+        (u, _, pc) => u.sources(1).value -> pc,
+        (u, inst, _) => u.sources(0).reg -> inst(19, 15).reg,
+        (u, _, _) => u.sources(1).valid -> true.B,
         (u, inst, _) => u.branchOffset -> inst(31, 20).asSInt,
-        (u, _, _) => u.aluOp -> ALUOperation.AddJALR
+        (u, _, _) => u.aluOp -> valid(ALUOperation.AddJALR)
       ),
       IType("LB") -> loadOp(LoadStoreOperation.Load, LoadStoreWidth.Byte),
       IType("LBU") -> loadOp(
@@ -336,10 +340,10 @@ object Operations {
   ): (UInt, UInt) => Operations =
     createOperation(
       _.rd -> _(11, 7).reg,
-      _.rs1 -> _(19, 15).reg,
-      _.rs2 -> _(24, 20).reg,
+      _.sources(0).reg -> _(19, 15).reg,
+      _.sources(1).reg -> _(24, 20).reg,
       (u, i) => u.amoOrdering -> AMOOrdering(i(26), i(25)),
-      (u, _) => u.amoOp -> op,
+      (u, _) => u.amoOp -> valid(op),
       (u, _) => u.amoWidth -> width
     )
 
@@ -385,19 +389,19 @@ object Operations {
 //      CType("C_ADDI") -> createOperation(),
 //      CType("C_ADDI16SP") -> createOperation(
 //        _.aluOp -> ALUOperation.Add,
-//        _.rs1 -> 2.reg,
+//        _.sources(0).reg -> 2.reg,
 //        _.rd -> 1.U ## _(4, 2),
 //        (u, i) =>
-//          u.rs2Value -> (i.catAccess((6, 5), (12, 10)) ## 0.U(3.W)),
-//        _.rs2ValueValid -> true.B
+//          u.sources(1).value -> (i.catAccess((6, 5), (12, 10)) ## 0.U(3.W)),
+//        _.sources(1).valid -> true.B
 //      ),
 //      CType("C_ADDI4SPN") -> createOperation(
 //        _.aluOp -> ALUOperation.Add,
-//        _.rs1 -> 2.reg,
+//        _.sources(0).reg -> 2.reg,
 //        _.rd -> 1.U ## _(4, 2),
 //        (u, i) =>
-//          u.rs2Value -> (i.catAccess((10, 7), (12, 11), 5, 6) ## 0.U(2.W)),
-//        _.rs2ValueValid -> true.B
+//          u.sources(1).value -> (i.catAccess((10, 7), (12, 11), 5, 6) ## 0.U(2.W)),
+//        _.sources(1).valid -> true.B
 //      ),
 //      CType("C_AND") -> createOperation(),
 //      CType("C_ANDI") -> createOperation(),
@@ -412,9 +416,9 @@ object Operations {
 //      CType("C_LW") -> createOperation(
 //        (u, _) => u.loadStoreOp -> LoadStoreOperation.Load,
 //        (u, _) => u.loadStoreWidth -> LoadStoreWidth.Word,
-//        (u, i) => u.rs1 -> ("b01".U(2.W) ## i(9, 7)).reg,
-//        (u, i) => u.rs2Value -> (i.catAccess(5, (12, 10), 6) ## 0.U(2.W)),
-//        (u, _) => u.rs2ValueValid -> true.B,
+//        (u, i) => u.sources(0).reg -> ("b01".U(2.W) ## i(9, 7)).reg,
+//        (u, i) => u.sources(1).value -> (i.catAccess(5, (12, 10), 6) ## 0.U(2.W)),
+//        (u, _) => u.sources(1).valid -> true.B,
 //        (u, i) => u.rd -> ("b01".U(2.W) ## i(4, 2)).reg
 //      ),
 //      CType("C_LWSP") -> createOperation(),
@@ -442,10 +446,10 @@ object Operations {
     op: PExtensionOperation.Type
   ): (UInt, UInt) => Operations =
     createOperation(
-      (u, _) => u.pextOp -> op,
-      _.rs1 -> _(19, 15).reg,
-      _.rs2 -> _(24, 20).reg,
-      _.rs3 -> _(11, 7).reg,
+      (u, _) => u.pextOp -> valid(op),
+      _.sources(0).reg -> _(19, 15).reg,
+      _.sources(1).reg -> _(24, 20).reg,
+      _.sources(2).reg -> _(11, 7).reg,
       _.rd -> _(11, 7).reg
     )
 
@@ -453,11 +457,11 @@ object Operations {
     op: PExtensionOperation.Type
   ): (UInt, UInt) => Operations =
     createOperation(
-      (u, _) => u.pextOp -> op,
-      _.rs1 -> _(19, 15).reg,
-      (u, _) => u.rs2 -> 0.reg,
-      (a, b) => a.rs2Value -> b(24, 20),
-      (u, _) => u.rs2ValueValid -> true.B,
+      (u, _) => u.pextOp -> valid(op),
+      _.sources(0).reg -> _(19, 15).reg,
+      (u, _) => u.sources(1).reg -> 0.reg,
+      (a, b) => a.sources(1).value -> b(24, 20),
+      (u, _) => u.sources(1).valid -> true.B,
       _.rd -> _(11, 7).reg
     )
 
@@ -465,8 +469,8 @@ object Operations {
     op: PExtensionOperation.Type
   ): (UInt, UInt) => Operations =
     createOperation(
-      (u, _) => u.pextOp -> op,
-      _.rs1 -> _(19, 15).reg,
+      (u, _) => u.pextOp -> valid(op),
+      _.sources(0).reg -> _(19, 15).reg,
       _.rd -> _(11, 7).reg
     )
 
@@ -773,20 +777,69 @@ object Operations {
 //      ZBPType("XPERM8") -> zpnRtypeOpWithRd(XPERM8)
 //    )}
 
-  def decodingList = {
-    BaseDecodingList ++ AextDecodingList ++ ZPN32ExtDecodingList ++ ZPN64ExtDecodingList
+  def decodingList(implicit
+    params: Parameters
+  ): Seq[(BitPat, (UInt, UInt) => Operations)] = {
+    val output =
+      Seq(BaseDecodingList, AextDecodingList) ++ (if (params.enablePExt)
+                                                    Seq(
+                                                      ZPN32ExtDecodingList,
+                                                      ZPN64ExtDecodingList
+                                                    )
+                                                  else Seq())
+    output.flatten
   }
 
-  def genDecoder(inst: UInt, pc: UInt): Operations = {
-    var output = Operations.default
-    for (d <- decodingList) {
-      output = Mux(d._1 === inst, d._2(inst, pc), output)
-    }
-    output
+  def genDecoder(inst: UInt, pc: UInt)(implicit
+    params: Parameters
+  ): Operations = {
+    // strategy1
+    MuxCase(
+      Operations.default,
+      decodingList.map { case (a, b) => (a === inst) -> b(inst, pc) }
+    )
+    // strategy 2
+//    val idx = MuxCase(
+//      decodingList.length.U,
+//      decodingList.map(_._1 === inst).zipWithIndex.map { case (cond, i) =>
+//        cond -> i.U
+//      }
+//    )
+//    val ops = VecInit(decodingList.map(_._2(inst, pc)) :+ Operations.default)
+//    ops(idx)
+
+    // strategy3
+//    val idx =
+//      decodingList
+//        .map(_._1 === inst)
+//        .zipWithIndex
+//        .map { case (cond, i) =>
+//          Mux(cond, (i + 1).U, 0.U)
+//        }
+//        .reduce(_ | _)
+//
+//    val ops = VecInit(
+//      Seq(Operations.default) ++ decodingList.map(_._2(inst, pc))
+//    )
+//    ops(idx)
+
+    // strategy4
+//    val idxWidth = log2Up(decodingList.length)
+//    val table = TruthTable(
+//      decodingList.map(_._1).zipWithIndex.map { case (a, b) =>
+//        a -> BitPat((b + 1).U(idxWidth.W))
+//      },
+//      BitPat(0.U(idxWidth.W))
+//    )
+//    val idx = decoder(inst, table)
+//    val ops = VecInit(
+//      Seq(Operations.default) ++ decodingList.map(_._2(inst, pc))
+//    )
+//    ops(idx)
   }
 }
 
-class DecodingMod extends Module {
+class DecodingMod(implicit params: Parameters) extends Module {
   val input = IO(Input(UInt(32.W)))
   val pc = IO(Input(UInt(64.W)))
   val out = IO(Output(new Operations()))
@@ -794,7 +847,9 @@ class DecodingMod extends Module {
 }
 
 object DecodingMod {
-  def apply(instruction: UInt, programCounter: UInt): Operations = {
+  def apply(instruction: UInt, programCounter: UInt)(implicit
+    params: Parameters
+  ): Operations = {
     val m = Module(new DecodingMod())
     m.input := instruction
     m.pc := programCounter
@@ -803,6 +858,7 @@ object DecodingMod {
 }
 
 object OperationDecoderApp extends App {
+  implicit val params = Parameters()
   ChiselStage.emitSystemVerilogFile(
     new DecodingMod,
     firtoolOpts = Array(
@@ -811,19 +867,45 @@ object OperationDecoderApp extends App {
   )
 }
 
+class OptionalBundle[T <: Data](t: T) extends Bundle {
+  val valid = Bool()
+  val bits = t.cloneType
+
+  def isValid: Bool = valid
+  def validDataOrZero: T = Mux(valid, bits, 0.U.asTypeOf(t))
+  def validDataOr(t2: T): T = Mux(valid, bits, t2)
+}
+
+object OptionalBundle {
+  def apply[T <: Data](t: T): OptionalBundle[T] = new OptionalBundle(t)
+  def valid[T <: Data](t: T): OptionalBundle[T] = {
+    val w = Wire(new OptionalBundle(t))
+    w.bits := t
+    w.valid := true.B
+    w
+  }
+
+  def invalid[T <: Data](t: T): OptionalBundle[T] = {
+    val w = Wire(new OptionalBundle(t))
+    w.bits := DontCare
+    w.valid := false.B
+    w
+  }
+}
+
 object ALUOperation extends ChiselEnum {
-  val None, BranchEqual, BranchNotEqual, BranchLessThan,
-    BranchGreaterThanOrEqual, BranchLessThanUnsigned,
-    BranchGreaterThanOrEqualUnsigned, Add, Sub, And, Or, Slt, Sltu, Xor, Sll,
-    Srl, Sra, AddJALR, AddJAL, AddW, SllW, SrlW, SraW, SubW = Value
+  val BranchEqual, BranchNotEqual, BranchLessThan, BranchGreaterThanOrEqual,
+    BranchLessThanUnsigned, BranchGreaterThanOrEqualUnsigned, Add, Sub, And, Or,
+    Slt, Sltu, Xor, Sll, Srl, Sra, AddJALR, AddJAL, AddW, SllW, SrlW, SraW,
+    SubW = Value
 }
 
 object LoadStoreOperation extends ChiselEnum {
-  val None, Load, LoadUnsigned, Store = Value
+  val Load, LoadUnsigned, Store = Value
 }
 
 object AMOOperation extends ChiselEnum {
-  val None, Add, And, Max, MaxU, Min, MinU, Or, Swap, Xor, Lr, Sc = Value
+  val Add, And, Max, MaxU, Min, MinU, Or, Swap, Xor, Lr, Sc = Value
 }
 
 object AMOOperationWidth extends ChiselEnum {
@@ -849,5 +931,5 @@ object LoadStoreWidth extends ChiselEnum {
 }
 
 object CSROperation extends ChiselEnum {
-  val None, ReadWrite, ReadSet, ReadClear = Value
+  val ReadWrite, ReadSet, ReadClear = Value
 }

@@ -2,7 +2,13 @@ package b4processor.modules.reorderbuffer
 
 import b4processor.Parameters
 import b4processor.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
-import b4processor.utils.{DecoderValue, ExecutorValue, RegisterFileValue, Tag}
+import b4processor.utils.{
+  DecoderValue,
+  ExecutorValue,
+  RegisterFileValue,
+  SymbiYosysFormal,
+  Tag
+}
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
@@ -34,8 +40,8 @@ class ReorderBufferWrapper(implicit params: Parameters)
       val decoder = this.io.decoders(i)
       val values = decoderValues(i)
       decoder.valid.poke(values.valid)
-      decoder.source1.sourceRegister.poke(values.source1)
-      decoder.source2.sourceRegister.poke(values.source2)
+      decoder.sources(0).sourceRegister.poke(values.source1)
+      decoder.sources(1).sourceRegister.poke(values.source2)
       decoder.destination.destinationRegister.poke(values.destination)
     }
   }
@@ -64,7 +70,10 @@ class ReorderBufferWrapper(implicit params: Parameters)
   }
 }
 
-class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
+class ReorderBufferTest
+    extends AnyFlatSpec
+    with ChiselScalatestTester
+    with SymbiYosysFormal {
   behavior of "Reorder Buffer"
   implicit val defaultParams = Parameters(
     tagWidth = 4,
@@ -630,5 +639,9 @@ class ReorderBufferTest extends AnyFlatSpec with ChiselScalatestTester {
 
       c.clock.step(5)
     }
+  }
+
+  it should "check formal" in {
+    symbiYosysCheck(new ReorderBuffer())
   }
 }

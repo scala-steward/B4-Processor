@@ -5,11 +5,19 @@ import b4processor.structures.memoryAccess.MemoryAccessInfo
 import b4processor.structures.memoryAccess.MemoryAccessType._
 import b4processor.structures.memoryAccess.MemoryAccessWidth._
 import b4processor.utils.operations.{LoadStoreOperation, LoadStoreWidth}
-import b4processor.utils.{DecodeEnqueue, LSQ2Memory, LSQfromALU, Tag}
+import b4processor.utils.{
+  DecodeEnqueue,
+  FormalBackendOption,
+  LSQ2Memory,
+  LSQfromALU,
+  SymbiYosysFormal,
+  Tag
+}
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.util.{BitPat, DecoupledIO}
 import chiseltest._
+import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class LoadStoreQueueWrapper(implicit params: Parameters)
@@ -76,7 +84,10 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
 
 }
 
-class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
+class LoadStoreQueueTest
+    extends AnyFlatSpec
+    with ChiselScalatestTester
+    with SymbiYosysFormal {
   behavior of "Load Store Queue"
   implicit val defaultParams = Parameters(
     tagWidth = 4,
@@ -123,6 +134,16 @@ class LoadStoreQueueTest extends AnyFlatSpec with ChiselScalatestTester {
       c.clock.step(2)
     }
   }
+
+  it should "check formal" in {
+    symbiYosysCheck(
+      new LoadStoreQueueWrapper()(
+        defaultParams.copy(loadStoreQueueIndexWidth = 2)
+      ),
+      depth = 10
+    )
+  }
+
 // TODO: もとに戻す
 //  it should "load check" in {
 //    // runParallel = 1, maxRegisterFileCommitCount = 1

@@ -1,12 +1,14 @@
 package b4processor.utils
 
 import _root_.circt.stage.ChiselStage
+import b4processor.Parameters
 import b4processor.utils.axi.{ChiselAXI, Response}
 import chisel3._
 import chisel3.util._
 
-class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 20)
-    extends Module {
+class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 16)(
+  implicit params: Parameters
+) extends Module {
   val axi = IO(Flipped(new ChiselAXI(64, 64)))
   val simulationSource = IO(new Bundle {
     val input = Flipped(Valid(UInt(64.W)))
@@ -47,14 +49,14 @@ class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 20)
 
   val sourceReady = RegInit(false.B)
   val gotSize = RegInit(false.B)
-  val sourceSize = RegInit("xFFFFFFFF".U)
-  val sourceWriteIndex = RegInit(0.U(32.W))
-
+  val sourceSize = RegInit("xFFFFFFFF_FFFFFFFF".U)
+  val starting = (params.instructionStart.U(64.W) >> 3).asUInt
+  val sourceWriteIndex = RegInit(starting)
   when(!sourceReady) {
     when(!gotSize) {
       when(simulationSource.input.valid) {
-        sourceSize := simulationSource.input.bits
-        sourceWriteIndex := 0.U
+        sourceSize := simulationSource.input.bits + starting
+        sourceWriteIndex := starting
         gotSize := true.B
       }
     }.otherwise {
@@ -200,5 +202,6 @@ class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 20)
 }
 
 object SimpleAXIMemoryWithSimulationIO extends App {
+  implicit val params = Parameters()
   ChiselStage.emitSystemVerilogFile(new SimpleAXIMemoryWithSimulationIO())
 }
