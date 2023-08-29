@@ -46,15 +46,15 @@ abstract class RiscvTest(val testPrefix: String)
   val annotation = IcarusBackendAnnotation
   val writeWaveform = WriteFstAnnotation
 
-  object RISCVTest extends Tag("RISCVTests")
+  object RISCVTest extends Tag("RISCVTest")
 
   def riscv_test(
     test_name: String,
     timeout: Int = 2000,
-    backendAnnotation: Annotation = this.annotation
+    backendAnnotation: Annotation = annotation
   ): Unit = {
 
-    it should s"run risc-v test $test_name" taggedAs (RISCVTest, Slow) in {
+    it should s"run $test_name" taggedAs (RISCVTest, Slow) in {
       test( // FIXME fromFile8bit
         new B4ProcessorRISCVTestWrapper(
         )(this.params)

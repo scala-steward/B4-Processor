@@ -3,7 +3,7 @@
 
 
   inputs.nixpkgs.url = "nixpkgs/nixpkgs-unstable";
-  #inputs.nixpkgs-stable.url = "nixpkgs/nixos-23.05";
+  inputs.nixpkgs-old.url = "nixpkgs/nixos-22.05";
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.nix-filter.url = "github:numtide/nix-filter";
   inputs.nix-sbt = {
@@ -24,6 +24,7 @@
       let
         pkgs = import nixpkgs { inherit system; overlays = [ espresso-flake.overlays.default ]; };
         # pkgsStable = nixpkgs-stable.legacyPackages.${system};
+        verilator' = inputs.nixpkgs-old.legacyPackages.${system}.verilator;
         nf = import nix-filter;
         B4ProcessorDerivation = attrs: nix-sbt.mkSbtDerivation.x86_64-linux ({
           pname = "B4Processor";
@@ -56,7 +57,7 @@
           pname = "B4Processor-tests";
           buildInputs = with pkgs; [
             verilog
-            verilator
+            verilator'
             stdenv.cc
             zlib
             circt
@@ -78,8 +79,8 @@
       in
       {
         packages = rec {
-          riscv-tests = pkgs.callPackage ./riscv-tests-files {inherit riscv-test-src;};
-          riscv-sample-programs = import ./riscv-sample-programs/sample-programs.nix { inherit pkgs; };
+          riscv-tests = pkgs.callPackage ./riscv-tests-files { inherit riscv-test-src; };
+          riscv-sample-programs = pkgs.callPackage ./riscv-sample-programs/sample-programs.nix { };
           processor = B4ProcessorDerivation { };
           default = pkgs.linkFarm "processor test programs" [
             { name = "riscv-tests"; path = riscv-tests; }
@@ -101,7 +102,7 @@
             sbt
             jdk
             verilog
-            verilator
+            verilator'
             zlib
             yosys
             graphviz
