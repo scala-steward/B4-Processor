@@ -96,6 +96,7 @@ class B4Processor(implicit params: Parameters) extends Module {
   }
 
   for (tid <- 0 until params.threads) {
+    fetch(tid).io.interrupt := false.B
     reservationStation(tid).io.issue <> issueBuffer.io.reservationStations(tid)
 
     amo.io.collectedOutput := outputCollector.io.outputs

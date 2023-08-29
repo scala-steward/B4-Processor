@@ -60,6 +60,11 @@
             stdenv.cc
             zlib
             circt
+            yosys
+            yices
+            espresso
+            z3
+            symbiyosys
           ];
           buildPhase = ''
             ln -s ${self.packages.${system}.default} programs

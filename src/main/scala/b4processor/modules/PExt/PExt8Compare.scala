@@ -50,6 +50,6 @@ object PExt8Compare {
         })
         out(x) := t
       }
-      (out.reverse.reduce(_ ## _),false.B)
+      (out.reverse.reduce(_ ## _), false.B)
     }
 }

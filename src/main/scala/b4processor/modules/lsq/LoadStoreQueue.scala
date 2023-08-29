@@ -267,12 +267,18 @@ class LoadStoreQueue(implicit params: Parameters)
     val ishead = idx === head
     wasHead = wasHead | ishead
     when(wasHead) {
-      assume(!buffer(idx).valid,s"$i")
+      assume(!buffer(idx).valid, s"$i")
     }
   }
 
   takesEveryValue(head)
   takesEveryValue(tail)
+
+  val wasFull = RegInit(false.B)
+  when(io.full) {
+    wasFull := true.B
+  }
+  cover(wasFull && io.empty)
 }
 
 object LoadStoreQueue extends App {
