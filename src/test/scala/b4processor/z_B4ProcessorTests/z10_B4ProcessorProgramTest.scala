@@ -600,7 +600,7 @@ class z10_B4ProcessorProgramTest
           CachingAnnotation
         )
       ) { c =>
-        c.initialize("out")
+        c.initialize("programs/riscv-sample-programs/bench")
         c.io.simulationIO.output.ready.poke(true)
         for (_ <- 0 until p.threads)
           c.checkForOutputAny(2000, print_value = true)
