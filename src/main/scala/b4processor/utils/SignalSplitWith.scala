@@ -20,6 +20,7 @@ class SignalSplitWith[T <: Data](
 }
 
 object SignalSplitWith extends App with FormalTools {
+  var globalIndex = 0
   def apply[T <: Data](outputs: Int, input: ReadyValidIO[T])(
     splittingLogic: T => UInt,
   ): Vec[DecoupledIO[T]] = {
@@ -43,9 +44,9 @@ object SignalSplitWith extends App with FormalTools {
     when(input.valid) {
       val valid_count =
         out map (_.valid) map (0.U(10.W) ## _.asUInt) reduce (_ + _)
-      assert(valid_count === 1.U)
+      assert(valid_count === 1.U, s"${globalIndex}")
     }
-
+    globalIndex += 1
     out
   }
 
