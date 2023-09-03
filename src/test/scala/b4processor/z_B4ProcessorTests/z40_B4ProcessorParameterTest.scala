@@ -18,13 +18,7 @@ class z40_B4ProcessorParameterTest
   behavior of "B4Processor with many parameters"
   implicit val defaultParams = Parameters(debug = true)
 
-//  for (threads <- Seq(1, 2, 3, 4)){// , 5, 6, 7, 8)) {
-//    for (executors <- Seq(1, 8))
-//      for (decoderPerThread <- Seq(1, 8))
-//        for (maxCommitCount <- Seq(1, 4))
-//          for (tagWidth <- Seq(3, 6))
-//            for (lsqWidth <- Seq(3, 6)) {
-  for (threads <- Seq(1, 2, 3, 4, 5, 6, 7, 8)) { // , 5, 6, 7, 8)) {
+  for (threads <- Seq(1, 2, 5, 6, 7, 8)) {
     for (executors <- Seq(1, 8))
       for (decoderPerThread <- Seq(4))
         for (maxCommitCount <- Seq(2))

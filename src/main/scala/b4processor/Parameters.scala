@@ -35,5 +35,6 @@ case class Parameters(
   parallelOutput: Int = 2,
   instructionStart: Long = 0x8010_0000L,
   debug: Boolean = false,
-  enablePExt: Boolean = false
+  enablePExt: Boolean = false,
+  pextExecutors: Int = 1
 )

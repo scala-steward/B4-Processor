@@ -2,7 +2,7 @@ package b4processor.modules.csr
 
 import b4processor.Parameters
 import b4processor.riscv.CSRs
-import b4processor.utils.Tag
+import b4processor.utils.{SymbiYosysFormal, Tag}
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
@@ -33,7 +33,10 @@ class CSRWrapper(implicit params: Parameters) extends CSR {
   }
 }
 
-class CSRTest extends AnyFlatSpec with ChiselScalatestTester {
+class CSRTest
+    extends AnyFlatSpec
+    with ChiselScalatestTester
+    with SymbiYosysFormal {
   behavior of "CSR"
 
   implicit val params = Parameters()
@@ -74,5 +77,9 @@ class CSRTest extends AnyFlatSpec with ChiselScalatestTester {
       c.setDecoderInput(CSRs.time)
       c.expectOutput(isError = true)
     }
+  }
+
+  it should "check formal" in {
+    symbiYosysCheck(new CSR()(params.copy(threads = 2)))
   }
 }

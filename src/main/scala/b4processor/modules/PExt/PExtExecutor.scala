@@ -61,11 +61,11 @@ object PExtensionOperation extends ChiselEnum {
   // 8 mul
   val SMUL8, SMULX8, UMUL8, UMULX8, KHM8, KHMX8 = Value
   // 16 misc
-  val SMIN16, UMIN16, SMAX16, UMAX16, SCLIP16, UCLIP16, KABS16, CLRS16, CLZ16,
-    SWAP16 = Value
+  val SMIN16, UMIN16, SMAX16, UMAX16, SCLIP16, UCLIP16, KABS16, CLRS16, CLZ16 =
+    Value // SWAP16 <- alias
   // 8 misc
-  val SMIN8, UMIN8, SMAX8, UMAX8, SCLIP8, UCLIP8, KABS8, CLRS8, CLZ8, SWAP8 =
-    Value
+  val SMIN8, UMIN8, SMAX8, UMAX8, SCLIP8, UCLIP8, KABS8, CLRS8, CLZ8 =
+    Value // SWAP8 <- alias
   // 8 unpack
   val SUNPKD810, SUNPKD820, SUNPKD830, SUNPKD831, SUNPKD832, ZUNPKD810,
     ZUNPKD820, ZUNPKD830, ZUNPKD831, ZUNPKD832 = Value
@@ -87,8 +87,8 @@ object PExtensionOperation extends ChiselEnum {
   // 8bul with 32 add
   val SMAQA, UMAQA, SMAQASU = Value
   // 64 data computation
-  val ADD64, RADD64, URADD64, KADD64, UKADD64, SUB64, RSUB64, URSUB64, KSUB64,
-    UKSUB64 = Value
+  val /*ADD64,TODO */ RADD64, URADD64, KADD64, UKADD64, /*SUB64, TODO*/ RSUB64,
+    URSUB64, KSUB64, UKSUB64 = Value
   // 32 mul with 64 add sub
   val SMAR64, SMSR64, UMAR64, UMSR64, KMAR64, KMSR64, UKMAR64, UKMSR64 = Value
   // signed 16 mul with 64 add/sub
@@ -104,7 +104,8 @@ object PExtensionOperation extends ChiselEnum {
   // overflow saturation status manipulation (pseudo)
 //    RDOV,CLROV,
   // Misc2
-  val AVE, SRA_U, SRAI_U, BITREV, BITREVI, WEXT, WEXTI, CMIX, INSB,
+  val AVE, SRA_U, SRAI_U,
+  /*BITREV,  BITREVI, TODO:? */ /*WEXT, WEXTI, TODO:OK? */ CMIX, INSB,
     MADDR32, // MSUBR32,???
   MAX, MIN = Value
   // RV64 only add sub
@@ -120,17 +121,17 @@ object PExtensionOperation extends ChiselEnum {
   // 64 only Q15
   val KHMBB16, KHMBT16, KHMTT16, KDMBB16, KDMBT16, KDMTT16, KDMABB16, KDMABT16,
     KDMATT16 = Value
-  // 64 only 32 mul
-  val SMBB32, SMBT32, SMTT32 = Value
+  // 64 only 32 mul TODO: is this correct? does not seem like an alias
+  /* val SMBB32, SMBT32, SMTT32 = Value */
   // 64 only 32 mul and add
   val KMABB32, KMABT32, KMATT32 = Value
   // 64 only 32 parallel mul and add
-  val KMDA32, KMXDA32, KMADA32, KMAXDA32, KMADS32, KMADRS32, KMAXDS32, KMSDA32,
-    KMSXDA32, SMDS32, SMDRS32, SMXDS32 = Value
+  val KMDA32, KMXDA32, /*KMADA32, alias*/ KMAXDA32, KMADS32, KMADRS32, KMAXDS32,
+    KMSDA32, KMSXDA32, SMDS32, SMDRS32, SMXDS32 = Value
   // 64 only non simd 32 shift
   val SRAIW_U = Value
-  // 64 only 32 pack
-  val PKBB32, PKBT32, PKTB32, PKTT32 = Value
+//  // 64 only 32 pack
+//  val PKBB32, PKBT32, PKTB32, PKTT32 = Value
 }
 
 class PExtExecutor extends Module {

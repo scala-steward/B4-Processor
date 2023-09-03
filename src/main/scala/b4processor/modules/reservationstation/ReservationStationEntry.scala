@@ -1,6 +1,7 @@
 package b4processor.modules.reservationstation
 
 import b4processor.Parameters
+import b4processor.modules.PExt.PExtensionOperation
 import b4processor.modules.reorderbuffer.ReorderBufferEntry
 import b4processor.utils.RVRegister.AddRegConstructor
 import b4processor.utils.{ForPext, Tag}
@@ -21,6 +22,8 @@ class ReservationStationEntry(implicit params: Parameters) extends Bundle {
   val destinationTag = new Tag()
   val wasCompressed = Bool()
   val branchOffset = SInt(12.W)
+  val pextOperation = PExtensionOperation()
+  val ispext = Bool()
   val valid = Bool()
 }
 
@@ -46,6 +49,8 @@ object ReservationStationEntry {
       _.sources(2).tag -> Tag(0, 0),
       _.sources(2).value -> 0.U,
       _.operation -> ALUOperation.BranchEqual,
+      _.pextOperation -> PExtensionOperation.ADD16,
+      _.ispext -> false.B,
       _.destinationTag -> Tag(0, 0),
       _.wasCompressed -> false.B,
       _.branchOffset -> 0.S,

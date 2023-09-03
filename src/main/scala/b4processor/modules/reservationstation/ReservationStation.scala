@@ -5,7 +5,8 @@ import b4processor.Parameters
 import b4processor.connections.{
   CollectedOutput,
   Decoder2ReservationStation,
-  ReservationStation2Executor
+  ReservationStation2Executor,
+  ReservationStation2PExtExecutor
 }
 import b4processor.utils.{B4RRArbiter, MMArbiter}
 import chisel3._
@@ -17,6 +18,10 @@ class ReservationStation(implicit params: Parameters) extends Module {
     val collectedOutput = Flipped(new CollectedOutput)
     val issue =
       Vec(params.decoderPerThread, Irrevocable(new ReservationStation2Executor))
+    val pextIssue = Vec(
+      params.decoderPerThread,
+      Irrevocable(new ReservationStation2PExtExecutor())
+    )
 //    val issuePext =
 //      Vec(params.decoderPerThread, Irrevocable(new ReservationStation2Executor))
     val decoder =
@@ -39,6 +44,14 @@ class ReservationStation(implicit params: Parameters) extends Module {
     )
   )
 
+  private val pextOutputArbiter = Module(
+    new MMArbiter(
+      new ReservationStation2PExtExecutor(),
+      reservation.length,
+      params.decoderPerThread
+    )
+  )
+
   for (i <- 0 until reservation.length) {
     prefix(s"issue${i % params.decoderPerThread}_resv$i") {
       val a = outputArbiter.io.input(i)
@@ -49,12 +62,35 @@ class ReservationStation(implicit params: Parameters) extends Module {
       a.bits.value2 := r.sources(1).value
       a.bits.wasCompressed := r.wasCompressed
       a.bits.branchOffset := r.branchOffset
-      a.valid := r.valid && r.sources(0).ready && r.sources(1).ready
+      a.valid := r.valid && r.sources(0).ready && r
+        .sources(1)
+        .ready && !r.ispext
       when(a.valid && a.ready) {
         r := ReservationStationEntry.default
       }
     }
     io.issue(i % params.decoderPerThread) <> outputArbiter.io.output(
+      i % params.decoderPerThread
+    )
+  }
+
+  for (i <- 0 until reservation.length) {
+    prefix(s"issue${i % params.decoderPerThread}_resv$i") {
+      val a = pextOutputArbiter.io.input(i)
+      val r = reservation(i)
+      a.bits.operation := r.pextOperation
+      a.bits.destinationTag := r.destinationTag
+      a.bits.value1 := r.sources(0).value
+      a.bits.value2 := r.sources(1).value
+      a.bits.value3 := r.sources(2).value
+      a.valid := r.valid && r.sources(0).ready && r.sources(1).ready && r
+        .sources(2)
+        .ready && r.ispext
+      when(a.valid && a.ready) {
+        r := ReservationStationEntry.default
+      }
+    }
+    io.pextIssue(i % params.decoderPerThread) <> pextOutputArbiter.io.output(
       i % params.decoderPerThread
     )
   }
@@ -99,6 +135,6 @@ class ReservationStation(implicit params: Parameters) extends Module {
 
 object ReservationStation extends App {
   implicit val params =
-    Parameters(tagWidth = 2, decoderPerThread = 1, threads = 1)
+    Parameters(tagWidth = 3, decoderPerThread = 2, threads = 2)
   ChiselStage.emitSystemVerilogFile(new ReservationStation())
 }

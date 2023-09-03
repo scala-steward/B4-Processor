@@ -12,7 +12,13 @@ class z10_B4ProcessorProgramTest
   behavior of "B4Processor test programs"
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
   implicit val defaultParams =
-    Parameters(debug = true, tagWidth = 4, threads = 1, decoderPerThread = 1)
+    Parameters(
+      debug = true,
+      tagWidth = 4,
+      threads = 1,
+      decoderPerThread = 1
+//      enablePExt = true
+    )
   val backendAnnotation = IcarusBackendAnnotation
   val WriteWaveformAnnotation = WriteFstAnnotation
 
@@ -623,6 +629,30 @@ class z10_B4ProcessorProgramTest
           for (p <- n.toString + "\n")
             c.checkForOutput(p, 2000, print_value = true)
       }
+  }
 
+  it should "run pext_test" in {
+    test(
+      new B4ProcessorWithMemory(
+      )(
+        defaultParams.copy(
+          threads = 1,
+          decoderPerThread = 1,
+          maxRegisterFileCommitCount = 1,
+          loadStoreQueueIndexWidth = 2,
+          enablePExt = true
+        )
+      )
+    )
+      .withAnnotations(
+        Seq(
+          WriteWaveformAnnotation,
+          VerilatorBackendAnnotation,
+          CachingAnnotation
+        )
+      ) { c =>
+        c.initialize("programs/riscv-sample-programs/pext_test")
+        c.clock.step(300)
+      }
   }
 }

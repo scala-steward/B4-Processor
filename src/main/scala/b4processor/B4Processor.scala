@@ -1,7 +1,12 @@
 package b4processor
 
-import b4processor.connections.ReservationStation2Executor
+import b4processor.connections.{
+  OutputValue,
+  ReservationStation2Executor,
+  ReservationStation2PExtExecutor
+}
 import b4processor.modules.AtomicLSU
+import b4processor.modules.PExt.B4PExtExecutor
 import circt.stage.ChiselStage
 import b4processor.modules.branch_output_collector.BranchOutputCollector
 import b4processor.modules.cache.{DataMemoryBuffer, InstructionMemoryCache}
@@ -59,7 +64,7 @@ class B4Processor(implicit params: Parameters) extends Module {
   private val reservationStation =
     Seq.fill(params.threads)(Module(new ReservationStation))
   private val issueBuffer = Module(
-    new IssueBuffer(new ReservationStation2Executor)
+    new IssueBuffer(params.executors, new ReservationStation2Executor)
   )
   private val executors = Seq.fill(params.executors)(Module(new Executor))
 
@@ -69,6 +74,22 @@ class B4Processor(implicit params: Parameters) extends Module {
     Seq.fill(params.threads)(Module(new CSRReservationStation))
   private val csr = Seq.fill(params.threads)(Module(new CSR))
   private val amo = Module(new AtomicLSU)
+
+  private val pextIssueBuffer =
+    if (params.enablePExt)
+      Some(
+        Module(
+          new IssueBuffer(
+            params.pextExecutors,
+            new ReservationStation2PExtExecutor()
+          )
+        )
+      )
+    else None
+  private val pextExecutors =
+    if (params.enablePExt)
+      Some(Seq.fill(params.pextExecutors)(Module(new B4PExtExecutor())))
+    else None
 
   axi <> externalMemoryInterface.io.coordinator
 
@@ -81,6 +102,17 @@ class B4Processor(implicit params: Parameters) extends Module {
     for (tid <- 0 until params.threads)
       for (i <- 0 until 32)
         registerFileContents.get(tid)(i) <> registerFile(tid).io.values.get(i)
+  }
+  if (params.enablePExt) {
+    for (pe <- 0 until params.pextExecutors) {
+      pextIssueBuffer.get.io.executors(pe) <> pextExecutors.get(pe).io.input
+      outputCollector.io.pextExecutor(pe) <> pextExecutors.get(pe).io.output
+    }
+  } else {
+    outputCollector.io.pextExecutor foreach { o =>
+      o.valid := false.B
+      o.bits := 0.U.asTypeOf(new OutputValue())
+    }
   }
 
   for (e <- 0 until params.executors) {
@@ -98,6 +130,11 @@ class B4Processor(implicit params: Parameters) extends Module {
   for (tid <- 0 until params.threads) {
     fetch(tid).io.interrupt := false.B
     reservationStation(tid).io.issue <> issueBuffer.io.reservationStations(tid)
+    if (params.enablePExt)
+      reservationStation(tid).io.pextIssue <>
+        pextIssueBuffer.get.io.reservationStations(tid)
+    else
+      reservationStation(tid).io.pextIssue foreach { _.ready := false.B }
 
     amo.io.collectedOutput := outputCollector.io.outputs
     amo.io.readRequest <> externalMemoryInterface.io.amoReadRequests

@@ -31,56 +31,56 @@ object PExtMisc2 {
         (res, false.B)
 
       },
-      BITREV -> {
-        val msb = rs2(5, 0)
-        val rev = MuxCase(
-          0.U,
-          (0 until 64).map(i => {
-            (msb === i.U) -> {
-              Cat(rs1(i, 0).asBools)
-            }
-          })
-        )
-        (rev, false.B)
-      },
-      BITREVI -> {
-        val msb = imm(5, 0)
-        val rev = MuxCase(
-          0.U,
-          (0 until 64).map(i => {
-            (msb === i.U) -> {
-              Cat(rs1(i, 0).asBools)
-            }
-          })
-        )
-        (rev, false.B)
-      },
-      WEXT -> {
-        val LSBloc = rs2(4, 0)
-        val extractW = MuxCase(
-          0.U,
-          (0 until 31).map(i => {
-            (LSBloc === i.U) -> {
-              rs1(i + 31, i)
-            }
-          })
-        )
-        (SE64(extractW), false.B)
-      },
-      WEXTI -> {
-        {
-          val LSBloc = imm(4, 0)
-          val extractW = MuxCase(
-            0.U,
-            (0 until 31).map(i => {
-              (LSBloc === i.U) -> {
-                rs1(i + 31, i)
-              }
-            })
-          )
-          (SE64(extractW), false.B)
-        }
-      },
+//      BITREV -> {
+//        val msb = rs2(5, 0)
+//        val rev = MuxCase(
+//          0.U,
+//          (0 until 64).map(i => {
+//            (msb === i.U) -> {
+//              Cat(rs1(i, 0).asBools)
+//            }
+//          })
+//        )
+//        (rev, false.B)
+//      },
+//      BITREVI -> {
+//        val msb = imm(5, 0)
+//        val rev = MuxCase(
+//          0.U,
+//          (0 until 64).map(i => {
+//            (msb === i.U) -> {
+//              Cat(rs1(i, 0).asBools)
+//            }
+//          })
+//        )
+//        (rev, false.B)
+//      },
+//      WEXT -> {
+//        val LSBloc = rs2(4, 0)
+//        val extractW = MuxCase(
+//          0.U,
+//          (0 until 31).map(i => {
+//            (LSBloc === i.U) -> {
+//              rs1(i + 31, i)
+//            }
+//          })
+//        )
+//        (SE64(extractW), false.B)
+//      },
+//      WEXTI -> {
+//        {
+//          val LSBloc = imm(4, 0)
+//          val extractW = MuxCase(
+//            0.U,
+//            (0 until 31).map(i => {
+//              (LSBloc === i.U) -> {
+//                rs1(i + 31, i)
+//              }
+//            })
+//          )
+//          (SE64(extractW), false.B)
+//        }
+//      },
       CMIX -> {
         val res =
           Cat((0 until 64).map(x => Mux(rs2(x), rs1(x), rs3(x))).reverse)

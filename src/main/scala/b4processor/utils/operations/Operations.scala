@@ -453,6 +453,15 @@ object Operations {
       _.rd -> _(11, 7).reg
     )
 
+  def rtypeWithR3(op: PExtensionOperation.Type): (UInt, UInt) => Operations =
+    createOperation(
+      (u, _) => u.pextOp -> valid(op),
+      _.sources(0).reg -> _(19, 15).reg,
+      _.sources(1).reg -> _(24, 20).reg,
+      _.sources(2).reg -> _(31, 27).reg,
+      _.rd -> _(11, 7).reg
+    )
+
   def zpnSingleOperandWithImm(
     op: PExtensionOperation.Type
   ): (UInt, UInt) => Operations =
@@ -478,6 +487,7 @@ object Operations {
     import Instructions.ZPNType
     import PExtensionOperation._
     Seq(
+      ZPNType("ADD16") -> zpnRtypeOpWithRd(ADD16),
       ZPNType("ADD8") -> zpnRtypeOpWithRd(ADD8),
       ZPNType("AVE") -> zpnRtypeOpWithRd(AVE),
 //      ZPNType("CLROV") -> , // covered in csr
@@ -491,7 +501,7 @@ object Operations {
       ZPNType("CMPEQ8") -> zpnRtypeOpWithRd(CMPEQ8),
       ZPNType("CRAS16") -> zpnRtypeOpWithRd(CRAS16),
       ZPNType("CRSA16") -> zpnRtypeOpWithRd(CRSA16),
-      ZPNType("KABS16") -> zpnRtypeOpWithRd(CMPEQ8),
+      ZPNType("KABS16") -> zpnRtypeOpWithRd(KABS16),
       ZPNType("KABS8") -> zpnSingleOperand(KABS8),
       ZPNType("KABSW") -> zpnSingleOperand(KABSW),
       ZPNType("KADD16") -> zpnRtypeOpWithRd(KADD16),
@@ -506,7 +516,7 @@ object Operations {
       ZPNType("KDMBB") -> zpnRtypeOpWithRd(KDMBB),
       ZPNType("KDMBT") -> zpnRtypeOpWithRd(KDMBT),
       ZPNType("KDMTT") -> zpnRtypeOpWithRd(KDMTT),
-      ZPNType("KHM16") -> zpnRtypeOpWithRd(KDMBB),
+      ZPNType("KHM16") -> zpnRtypeOpWithRd(KHM16),
       ZPNType("KHM8") -> zpnRtypeOpWithRd(KHM8),
       ZPNType("KHMBB") -> zpnRtypeOpWithRd(KHMBB),
       ZPNType("KHMBT") -> zpnRtypeOpWithRd(KHMBT),
@@ -531,7 +541,7 @@ object Operations {
       ZPNType("KMMAWT") -> zpnRtypeOpWithRd(KMMAWT),
       ZPNType("KMMAWT2") -> zpnRtypeOpWithRd(KMMAWT2),
       ZPNType("KMMAWT2_U") -> zpnRtypeOpWithRd(KMMAWT2_U),
-      ZPNType("KMMAWT_U") -> zpnRtypeOpWithRd(KMMAWB_U),
+      ZPNType("KMMAWT_U") -> zpnRtypeOpWithRd(KMMAWT_U),
       ZPNType("KMMSB") -> zpnRtypeOpWithRd(KMMSB),
       ZPNType("KMMSB_U") -> zpnRtypeOpWithRd(KMMSB_U),
       ZPNType("KMMWB2") -> zpnRtypeOpWithRd(KMMWB2),
@@ -564,7 +574,7 @@ object Operations {
       ZPNType("MADDR32") -> zpnRtypeOpWithRd(MADDR32),
       ZPNType("MSUBR32") -> zpnRtypeOpWithRd(MSUBR32),
       ZPNType("PBSAD") -> zpnRtypeOpWithRd(PBSAD),
-      ZPNType("PBSADA") -> zpnRtypeOpWithRd(PBSAD),
+      ZPNType("PBSADA") -> zpnRtypeOpWithRd(PBSADA),
       ZPNType("PKBT16") -> zpnRtypeOpWithRd(PKBT16),
       ZPNType("PKTB16") -> zpnRtypeOpWithRd(PKTB16),
       ZPNType("RADD16") -> zpnRtypeOpWithRd(RADD16),
@@ -714,8 +724,8 @@ object Operations {
       ZPN64Type("KSTSA32") -> zpnRtypeOpWithRd(KSTSA32),
       ZPN64Type("KSUB32") -> zpnRtypeOpWithRd(KSUB32),
       ZPN64Type("PKBB16") -> zpnRtypeOpWithRd(PKBB16),
-      ZPN64Type("PKBT32") -> zpnRtypeOpWithRd(PKBT32),
-      ZPN64Type("PKTB32") -> zpnRtypeOpWithRd(PKTB32),
+//      ZPN64Type("PKBT32") -> zpnRtypeOpWithRd(PKBT32),
+//      ZPN64Type("PKTB32") -> zpnRtypeOpWithRd(PKTB32),
       ZPN64Type("PKTT16") -> zpnRtypeOpWithRd(PKTT16),
       ZPN64Type("RADD32") -> zpnRtypeOpWithRd(RADD32),
       ZPN64Type("RCRAS32") -> zpnRtypeOpWithRd(RCRAS32),
@@ -726,12 +736,12 @@ object Operations {
       ZPN64Type("SLL32") -> zpnRtypeOpWithRd(SLL32),
       ZPN64Type("SLLI32") -> zpnRtypeOpWithRd(SLLI32),
       ZPN64Type("SMAX32") -> zpnRtypeOpWithRd(SMAX32),
-      ZPN64Type("SMBT32") -> zpnRtypeOpWithRd(SMBT32),
+//      ZPN64Type("SMBT32") -> zpnRtypeOpWithRd(SMBT32),
       ZPN64Type("SMDRS32") -> zpnRtypeOpWithRd(SMDRS32),
       ZPN64Type("SMDS32") -> zpnRtypeOpWithRd(SMDS32),
       ZPN64Type("SMIN32") -> zpnRtypeOpWithRd(SMIN32),
       ZPN64Type("SMMUL") -> zpnRtypeOpWithRd(SMMUL),
-      ZPN64Type("SMTT32") -> zpnRtypeOpWithRd(SMTT32),
+//      ZPN64Type("SMTT32") -> zpnRtypeOpWithRd(SMTT32),
       ZPN64Type("SMXDS32") -> zpnRtypeOpWithRd(SMXDS32),
       ZPN64Type("SRA32") -> zpnRtypeOpWithRd(SRA32),
       ZPN64Type("SRA32_U") -> zpnRtypeOpWithRd(SRA32_U),
@@ -763,6 +773,83 @@ object Operations {
     )
   }
 
+  def ZBBExtDecodingList = {
+    import Instructions.ZBBType
+    import PExtensionOperation._
+    Seq(
+//      ZBBType("ANDN") -> zpnRtypeOpWithRd(ANDN),
+//      ZBBType("CLZ") -> zpnRtypeOpWithRd(CLZ),
+//      ZBBType("CPOP") -> zpnRtypeOpWithRd(CPOP),
+//      ZBBType("CTZ") -> zpnRtypeOpWithRd(CTZ),
+      ZBBType("MAX") -> zpnRtypeOpWithRd(MAX),
+//      ZBBType("MAXU") -> zpnRtypeOpWithRd(MAXU),
+      ZBBType("MIN") -> zpnRtypeOpWithRd(MIN)
+//      ZBBType("MINU") -> zpnRtypeOpWithRd(MINU),
+//      ZBBType("ORC_B") -> zpnRtypeOpWithRd(ORC_B),
+//      ZBBType("ORN") -> zpnRtypeOpWithRd(ORN),
+//      ZBBType("ROL") -> zpnRtypeOpWithRd(ROL),
+//      ZBBType("ROR") -> zpnRtypeOpWithRd(ROR),
+//      ZBBType("SEXT_B") -> zpnRtypeOpWithRd(SEXT_B),
+//      ZBBType("SEXT_H") -> zpnRtypeOpWithRd(SEXT_H),
+//      ZBBType("XNOR") -> zpnRtypeOpWithRd(XNOR)
+    )
+  }
+
+  def ZBTExtDecodingList = {
+    import Instructions.ZBTType
+    import PExtensionOperation._
+    Seq(
+      ZBTType("CMIX") -> rtypeWithR3(CMIX),
+      ZBTType("CMOV") -> createOperation(),
+      ZBTType("FSL") -> createOperation(),
+      ZBTType("FSR") -> createOperation()
+    )
+  }
+
+  def ZPSFExtDecodingList = {
+    import Instructions.ZPSFType
+    import PExtensionOperation._
+    Seq(
+      ZPSFType("KADD64") -> zpnRtypeOpWithRd(KADD64),
+      ZPSFType("KMAR64") -> zpnRtypeOpWithRd(KMAR64),
+      ZPSFType("KMSR64") -> zpnRtypeOpWithRd(KMSR64),
+      ZPSFType("KSUB64") -> zpnRtypeOpWithRd(KSUB64),
+      ZPSFType("MULR64") -> zpnRtypeOpWithRd(MULR64),
+      ZPSFType("MULSR64") -> zpnRtypeOpWithRd(MULSR64),
+      ZPSFType("RADD64") -> zpnRtypeOpWithRd(RADD64),
+      ZPSFType("RSUB64") -> zpnRtypeOpWithRd(RSUB64),
+      ZPSFType("SMAL") -> zpnRtypeOpWithRd(SMAL),
+      ZPSFType("SMALBB") -> zpnRtypeOpWithRd(SMALBB),
+      ZPSFType("SMALBT") -> zpnRtypeOpWithRd(SMALBT),
+      ZPSFType("SMALDA") -> zpnRtypeOpWithRd(SMALDA),
+      ZPSFType("SMALDRS") -> zpnRtypeOpWithRd(SMALDRS),
+      ZPSFType("SMALDS") -> zpnRtypeOpWithRd(SMALDS),
+      ZPSFType("SMALTT") -> zpnRtypeOpWithRd(SMALTT),
+      ZPSFType("SMALXDA") -> zpnRtypeOpWithRd(SMALXDA),
+      ZPSFType("SMALXDS") -> zpnRtypeOpWithRd(SMALXDS),
+      ZPSFType("SMAR64") -> zpnRtypeOpWithRd(SMAR64),
+      ZPSFType("SMSLDA") -> zpnRtypeOpWithRd(SMSLDA),
+      ZPSFType("SMSLXDA") -> zpnRtypeOpWithRd(SMSLXDA),
+      ZPSFType("SMSR64") -> zpnRtypeOpWithRd(SMSR64),
+      ZPSFType("SMUL16") -> zpnRtypeOpWithRd(SMUL16),
+      ZPSFType("SMUL8") -> zpnRtypeOpWithRd(SMUL8),
+      ZPSFType("SMULX16") -> zpnRtypeOpWithRd(SMULX16),
+      ZPSFType("SMULX8") -> zpnRtypeOpWithRd(SMULX8),
+      ZPSFType("UKADD64") -> zpnRtypeOpWithRd(UKADD64),
+      ZPSFType("UKMAR64") -> zpnRtypeOpWithRd(UKMAR64),
+      ZPSFType("UKMSR64") -> zpnRtypeOpWithRd(UKMSR64),
+      ZPSFType("UKSUB64") -> zpnRtypeOpWithRd(UKSUB64),
+      ZPSFType("UMAR64") -> zpnRtypeOpWithRd(UMAR64),
+      ZPSFType("UMSR64") -> zpnRtypeOpWithRd(UMSR64),
+      ZPSFType("UMUL16") -> zpnRtypeOpWithRd(UMUL16),
+      ZPSFType("UMUL8") -> zpnRtypeOpWithRd(UMUL8),
+      ZPSFType("UMULX16") -> zpnRtypeOpWithRd(UMULX16),
+      ZPSFType("UMULX8") -> zpnRtypeOpWithRd(UMULX8),
+      ZPSFType("URADD64") -> zpnRtypeOpWithRd(URADD64),
+      ZPSFType("URSUB64") -> zpnRtypeOpWithRd(URSUB64)
+    )
+  }
+
 //  def ZPN32ExtDecodingList = {
 //    import Instructions.ZPN64Type
 //    import PExtensionOperation._
@@ -784,7 +871,10 @@ object Operations {
       Seq(BaseDecodingList, AextDecodingList) ++ (if (params.enablePExt)
                                                     Seq(
                                                       ZPN32ExtDecodingList,
-                                                      ZPN64ExtDecodingList
+                                                      ZPN64ExtDecodingList,
+                                                      ZPSFExtDecodingList,
+                                                      ZBBExtDecodingList,
+                                                      ZBTExtDecodingList
                                                     )
                                                   else Seq())
     output.flatten
@@ -844,6 +934,20 @@ class DecodingMod(implicit params: Parameters) extends Module {
   val pc = IO(Input(UInt(64.W)))
   val out = IO(Output(new Operations()))
   out := Operations.genDecoder(input, pc)
+
+  when(out.aluOp.valid) {
+    for (a <- ALUOperation.all) {
+      cover(out.aluOp.bits === a)
+    }
+  }
+
+  if (params.enablePExt) {
+    when(out.pextOp.valid) {
+      for (p <- PExtensionOperation.all) {
+        cover(out.pextOp.bits === p)
+      }
+    }
+  }
 }
 
 object DecodingMod {

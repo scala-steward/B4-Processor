@@ -23,9 +23,9 @@ object PExt64_32Multiply {
       ((rs1.W(fst).asSInt * rs2.W(snd).asSInt).asUInt, false.B)
     }
     Seq(
-      SMBB32 -> processMul64(0, 0),
-      SMBT32 -> processMul64(0, 1),
-      SMTT32 -> processMul64(1, 1)
+//      SMBB32 -> processMul64(0, 0),
+//      SMBT32 -> processMul64(0, 1),
+//      SMTT32 -> processMul64(1, 1)
     )
   }
 }

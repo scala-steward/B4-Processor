@@ -40,7 +40,8 @@ abstract class RiscvTest(val testPrefix: String)
     tagWidth = 4,
     loadStoreQueueIndexWidth = 2,
     maxRegisterFileCommitCount = 2,
-    instructionStart = 0x8000_0000L
+    instructionStart = 0x8000_0000L,
+//    enablePExt = true
   )
 
   val annotation = IcarusBackendAnnotation

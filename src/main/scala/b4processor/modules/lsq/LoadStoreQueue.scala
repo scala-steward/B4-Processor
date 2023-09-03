@@ -254,7 +254,7 @@ class LoadStoreQueue(implicit params: Parameters)
     }
 
     when(past(io.memory.valid && !io.memory.ready)) {
-      assert(io.memory.valid)
+      assert(stable(io.memory.valid))
       assert(
         stable(io.memory.bits) || past(toMemoryIndex) - toMemoryIndex > 0.U
       )

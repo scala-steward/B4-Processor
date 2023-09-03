@@ -80,15 +80,15 @@ object PExt8Misc {
         }
         (out.reverse.reduce(_ ## _), false.B)
       },
-      SWAP8 -> {
-        val out = Seq.fill(4)(Wire(UInt(16.W)))
-        for (x <- 0 until 4) {
-          val ah0 = rs1.H(x).B(0)
-          val ah1 = rs1.H(x).B(1)
-          out(x) := ah0 ## ah1
-        }
-        (out.reverse.reduce(_ ## _), false.B)
-      }
+//      SWAP8 -> {
+      //        val out = Seq.fill(4)(Wire(UInt(16.W)))
+      //        for (x <- 0 until 4) {
+      //          val ah0 = rs1.H(x).B(0)
+      //          val ah1 = rs1.H(x).B(1)
+      //          out(x) := ah0 ## ah1
+      //        }
+      //        (out.reverse.reduce(_ ## _), false.B)
+      //      }
     )
 
 }
