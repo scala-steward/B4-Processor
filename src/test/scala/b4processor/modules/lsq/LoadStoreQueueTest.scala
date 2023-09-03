@@ -11,7 +11,7 @@ import b4processor.utils.{
   LSQ2Memory,
   LSQfromALU,
   SymbiYosysFormal,
-  Tag
+  Tag,
 }
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
@@ -40,7 +40,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
   }
 
   def setDecoder(
-    values: Seq[Option[DecodeEnqueue]] = Seq.fill(params.decoderPerThread)(None)
+    values: Seq[Option[DecodeEnqueue]] = Seq.fill(params.decoderPerThread)(None),
   ): Unit = {
     for (i <- 0 until params.decoderPerThread) {
       val decoder = this.io.decoders(i)
@@ -61,7 +61,7 @@ class LoadStoreQueueWrapper(implicit params: Parameters)
 
   def setReorderBuffer(
     DestinationTags: Seq[Int] = Seq.fill(params.maxRegisterFileCommitCount)(0),
-    valids: Seq[Boolean] = Seq.fill(params.maxRegisterFileCommitCount)(false)
+    valids: Seq[Boolean] = Seq.fill(params.maxRegisterFileCommitCount)(false),
   ): Unit = {
     for (i <- 0 until params.maxRegisterFileCommitCount) {
       val tag = DestinationTags(i)
@@ -94,7 +94,7 @@ class LoadStoreQueueTest
     threads = 1,
     decoderPerThread = 2,
     maxRegisterFileCommitCount = 2,
-    debug = true
+    debug = true,
   )
 
   it should "Both Of Instructions Enqueue LSQ" in {
@@ -112,8 +112,8 @@ class LoadStoreQueueTest
               storeDataTag = 5,
               storeData = None,
               operation = LoadStoreOperation.Load,
-              operationWidth = LoadStoreWidth.Byte
-            )
+              operationWidth = LoadStoreWidth.Byte,
+            ),
           ),
           Some(
             DecodeEnqueue(
@@ -121,10 +121,10 @@ class LoadStoreQueueTest
               storeDataTag = 6,
               storeData = None,
               operation = LoadStoreOperation.Load,
-              operationWidth = LoadStoreWidth.Byte
-            )
-          )
-        )
+              operationWidth = LoadStoreWidth.Byte,
+            ),
+          ),
+        ),
       )
       c.clock.step(1)
 
@@ -138,9 +138,9 @@ class LoadStoreQueueTest
   it should "check formal" in {
     symbiYosysCheck(
       new LoadStoreQueueWrapper()(
-        defaultParams.copy(loadStoreQueueIndexWidth = 2)
+        defaultParams.copy(loadStoreQueueIndexWidth = 2),
       ),
-      depth = 10
+      depth = 10,
     )
   }
 

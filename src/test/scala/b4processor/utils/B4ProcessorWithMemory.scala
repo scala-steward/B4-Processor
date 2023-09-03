@@ -105,7 +105,7 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
     regNum: Int,
     value: BigInt,
     timeout: Int = 500,
-    thread: Int = 0
+    thread: Int = 0,
   ): Unit = {
     this.clock.setTimeout(timeout)
     while (this.io.registerFileContents.get(thread)(regNum).peekInt() != value)
@@ -116,7 +116,7 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
   def checkForOutput(
     value: Char,
     timeout: Int = 500,
-    print_value: Boolean = false
+    print_value: Boolean = false,
   ): Unit = {
     this.clock.setTimeout(timeout)
     while (!this.io.simulationIO.output.valid.peekBoolean())
@@ -132,7 +132,7 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
 
   def checkForOutputAny(
     timeout: Int = 500,
-    print_value: Boolean = false
+    print_value: Boolean = false,
   ): Unit = {
     this.clock.setTimeout(timeout)
     while (!this.io.simulationIO.output.valid.peekBoolean())
@@ -160,7 +160,7 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
     regNum: Int,
     value: BigInt,
     timeout: Int = 500,
-    thread: Int = 0
+    thread: Int = 0,
   ): Unit = {
     this.clock.setTimeout(timeout)
     while (this.io.registerFileContents.get(thread)(regNum).peekInt() == 0)
@@ -177,7 +177,7 @@ object B4ProcessorWithMemory extends App {
     decoderPerThread = 2,
     maxRegisterFileCommitCount = 4,
     tagWidth = 5,
-    loadStoreQueueIndexWidth = 3
+    loadStoreQueueIndexWidth = 3,
   )
   ChiselStage.emitSystemVerilogFile(new B4ProcessorWithMemory())
 }

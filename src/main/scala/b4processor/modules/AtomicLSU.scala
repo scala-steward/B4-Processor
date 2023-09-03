@@ -4,7 +4,7 @@ import b4processor.Parameters
 import b4processor.connections.{
   CollectedOutput,
   LoadStoreQueue2ReorderBuffer,
-  OutputValue
+  OutputValue,
 }
 import chisel3._
 import chisel3.util._
@@ -12,14 +12,14 @@ import _root_.circt.stage.ChiselStage
 import b4processor.modules.memory.{
   MemoryReadTransaction,
   MemoryWriteTransaction,
-  MemoryWriteIntent
+  MemoryWriteIntent,
 }
 import b4processor.structures.memoryAccess.MemoryAccessWidth
 import b4processor.utils.{B4RRArbiter, FIFO, Tag}
 import b4processor.utils.operations.{
   AMOOperation,
   AMOOperationWidth,
-  AMOOrdering
+  AMOOrdering,
 }
 
 import scala.math.pow
@@ -47,7 +47,7 @@ class AtomicLSU(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val decoders = Vec(
       params.threads,
-      Vec(params.decoderPerThread, Flipped(Decoupled(new Decoder2AtomicLSU)))
+      Vec(params.decoderPerThread, Flipped(Decoupled(new Decoder2AtomicLSU))),
     )
     val collectedOutput = Flipped(Vec(params.threads, new CollectedOutput()))
     val output = Decoupled(new OutputValue)
@@ -60,9 +60,9 @@ class AtomicLSU(implicit params: Parameters) extends Module {
         params.threads,
         Vec(
           params.maxRegisterFileCommitCount,
-          Valid(new LoadStoreQueue2ReorderBuffer)
-        )
-      )
+          Valid(new LoadStoreQueue2ReorderBuffer),
+        ),
+      ),
     )
   })
 
@@ -78,13 +78,13 @@ class AtomicLSU(implicit params: Parameters) extends Module {
 
   private val bufferLength = pow(2, 3).toInt
   private val heads = RegInit(
-    VecInit(Seq.fill(params.threads)(0.U(log2Up(bufferLength).W)))
+    VecInit(Seq.fill(params.threads)(0.U(log2Up(bufferLength).W))),
   )
   private val tails = RegInit(
-    VecInit(Seq.fill(params.threads)(0.U(log2Up(bufferLength).W)))
+    VecInit(Seq.fill(params.threads)(0.U(log2Up(bufferLength).W))),
   )
   private val buffer = Reg(
-    Vec(params.threads, Vec(bufferLength, new Decoder2AtomicLSU))
+    Vec(params.threads, Vec(bufferLength, new Decoder2AtomicLSU)),
   )
 
   private val reservation = Reg(Vec(params.threads, Valid(UInt(64.W))))
@@ -158,7 +158,7 @@ class AtomicLSU(implicit params: Parameters) extends Module {
     arb.bits := 0.U.asTypeOf(new AMOIssue)
 
     when(
-      heads(t) =/= tails(t) && buf.srcValid && buf.addressValid && buf.storeOk
+      heads(t) =/= tails(t) && buf.srcValid && buf.addressValid && buf.storeOk,
     ) {
       arb.valid := true.B
       arb.bits.operation := buf.operation
@@ -192,12 +192,12 @@ class AtomicLSU(implicit params: Parameters) extends Module {
         val accessWidth = Mux(
           issueQueue.output.bits.operationWidth === AMOOperationWidth.Word,
           MemoryAccessWidth.Word,
-          MemoryAccessWidth.DoubleWord
+          MemoryAccessWidth.DoubleWord,
         )
         io.readRequest.bits := MemoryReadTransaction.ReadToAmo(
           issueQueue.output.bits.addressValue,
           accessWidth,
-          issueQueue.output.bits.destinationTag
+          issueQueue.output.bits.destinationTag,
         )
         when(io.readRequest.ready) {
           state := load_wait_response
@@ -247,35 +247,35 @@ class AtomicLSU(implicit params: Parameters) extends Module {
           Max -> Mux(
             issueQueue.output.bits.operationWidth === AMOOperationWidth.DoubleWord,
             (response.asSInt.max(srcValue.asSInt)).asUInt,
-            (response(31, 0).asSInt.max(srcValue(31, 0).asSInt)).asUInt
+            (response(31, 0).asSInt.max(srcValue(31, 0).asSInt)).asUInt,
           ),
           MaxU -> Mux(
             issueQueue.output.bits.operationWidth === AMOOperationWidth.DoubleWord,
             (response.max(srcValue)),
-            (response(31, 0).max(srcValue(31, 0)))
+            (response(31, 0).max(srcValue(31, 0))),
           ),
           Min -> Mux(
             issueQueue.output.bits.operationWidth === AMOOperationWidth.DoubleWord,
             (response.asSInt.min(srcValue.asSInt)).asUInt,
-            (response(31, 0).asSInt.min(srcValue(31, 0).asSInt)).asUInt
+            (response(31, 0).asSInt.min(srcValue(31, 0).asSInt)).asUInt,
           ),
           MinU -> Mux(
             issueQueue.output.bits.operationWidth === AMOOperationWidth.DoubleWord,
             (response.min(srcValue)),
-            (response(31, 0).min(srcValue(31, 0)))
+            (response(31, 0).min(srcValue(31, 0))),
           ),
           Or -> (response | srcValue),
           Swap -> srcValue,
           Xor -> (response ^ srcValue),
-          Sc -> srcValue
-        )
+          Sc -> srcValue,
+        ),
       )
       io.writeRequest.bits.address := issueQueue.output.bits.addressValue
       io.writeRequest.bits.outputTag := issueQueue.output.bits.destinationTag
       io.writeRequest.bits.mask := Mux(
         issueQueue.output.bits.operationWidth === AMOOperationWidth.DoubleWord,
         0xff.U,
-        Mux(issueQueue.output.bits.addressValue(2), 0xf0.U, 0x0f.U)
+        Mux(issueQueue.output.bits.addressValue(2), 0xf0.U, 0x0f.U),
       )
       io.writeRequest.bits.data := Mux(
         issueQueue.output.bits.operationWidth === AMOOperationWidth.DoubleWord,
@@ -283,8 +283,8 @@ class AtomicLSU(implicit params: Parameters) extends Module {
         Mux(
           issueQueue.output.bits.addressValue(2),
           writeData(31, 0) ## 0.U(32.W),
-          writeData
-        )
+          writeData,
+        ),
       )
       when(io.writeRequest.ready) {
         state := write_wait_response

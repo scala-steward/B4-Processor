@@ -5,7 +5,7 @@ import b4processor.connections.{
   CSR2Fetch,
   CSRReservationStation2CSR,
   OutputValue,
-  ReorderBuffer2CSR
+  ReorderBuffer2CSR,
 }
 import chisel3._
 import chisel3.util._
@@ -51,8 +51,8 @@ class CSR(implicit params: Parameters) extends Module with FormalTools {
         Seq(
           CSROperation.ReadWrite -> io.decoderInput.bits.value,
           CSROperation.ReadSet -> (reg | io.decoderInput.bits.value),
-          CSROperation.ReadClear -> (reg & io.decoderInput.bits.value)
-        )
+          CSROperation.ReadClear -> (reg & io.decoderInput.bits.value),
+        ),
       )
     }
   }

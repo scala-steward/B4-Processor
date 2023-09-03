@@ -32,9 +32,9 @@ class z20_B4ProcessorElaborateTest
                         tagWidth = tagWidth,
                         enablePExt = enablePExt,
                         executors = executors,
-                        pextExecutors = pextExecutors
-                      )
-                    )
+                        pextExecutors = pextExecutors,
+                      ),
+                    ),
                   )
                 }
               }

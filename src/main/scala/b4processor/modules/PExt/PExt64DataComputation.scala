@@ -14,6 +14,6 @@ object PExt64DataComputation {
       RSUB64 -> (((rs1.asSInt - rs2.asSInt) >> 1).asUInt, false.B),
       URSUB64 -> (((rs1 - rs2) >> 1).asUInt, false.B),
       KSUB64 -> SAT.Q63(rs1 - rs2),
-      UKSUB64 -> SAT.U64(rs1 - rs2)
+      UKSUB64 -> SAT.U64(rs1 - rs2),
     )
 }

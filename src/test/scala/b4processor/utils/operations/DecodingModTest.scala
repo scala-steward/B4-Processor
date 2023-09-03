@@ -19,7 +19,7 @@ class DecodingModTest
   it should "check formal with pext" in {
     symbiYosysCheck(
       new DecodingMod()(params.copy(enablePExt = true)),
-      depth = 3
+      depth = 3,
     )
   }
 

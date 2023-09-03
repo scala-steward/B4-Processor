@@ -44,7 +44,7 @@ object PExt8AddSub {
       RSUB8 -> process8(Sub, SignedHalving),
       URSUB8 -> process8(Sub, UnsignedHalving),
       KSUB8 -> process8(Sub, SignedSaturate),
-      UKSUB8 -> process8(Sub, UnsignedSaturate)
+      UKSUB8 -> process8(Sub, UnsignedSaturate),
     )
   }
 

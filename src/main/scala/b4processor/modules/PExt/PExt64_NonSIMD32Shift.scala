@@ -13,7 +13,7 @@ object PExt64_NonSIMD32Shift {
         Mux(
           amt === 0.U,
           rs1.W(0),
-          (SE33((rs1.W(0) >> (amt - 1.U)).asUInt) + 1.U)(32, 1)
+          (SE33((rs1.W(0) >> (amt - 1.U)).asUInt) + 1.U)(32, 1),
         )
       (SE64(res), false.B)
     })

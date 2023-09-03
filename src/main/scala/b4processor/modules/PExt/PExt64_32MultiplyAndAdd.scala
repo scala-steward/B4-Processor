@@ -13,7 +13,7 @@ object PExt64_32MultiplyAndAdd {
     Seq(
       KMABB32 -> processMul64(0, 0),
       KMABT32 -> processMul64(0, 1),
-      KMATT32 -> processMul64(1, 1)
+      KMATT32 -> processMul64(1, 1),
     )
   }
 }

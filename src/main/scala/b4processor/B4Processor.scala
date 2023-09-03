@@ -3,7 +3,7 @@ package b4processor
 import b4processor.connections.{
   OutputValue,
   ReservationStation2Executor,
-  ReservationStation2PExtExecutor
+  ReservationStation2PExtExecutor,
 }
 import b4processor.modules.AtomicLSU
 import b4processor.modules.PExt.B4PExtExecutor
@@ -37,7 +37,7 @@ class B4Processor(implicit params: Parameters) extends Module {
   require(params.tagWidth >= 1, "タグ幅は1以上である必要があります。")
   require(
     params.maxRegisterFileCommitCount >= 1,
-    "レジスタファイルへのコミット数は1以上である必要があります。"
+    "レジスタファイルへのコミット数は1以上である必要があります。",
   )
 
   private val instructionCache =
@@ -56,15 +56,15 @@ class B4Processor(implicit params: Parameters) extends Module {
   private val branchAddressCollector = Module(new BranchOutputCollector())
 
   private val uncompresser = Seq.fill(params.threads)(
-    Seq.fill(params.decoderPerThread)(Module(new Uncompresser))
+    Seq.fill(params.decoderPerThread)(Module(new Uncompresser)),
   )
   private val decoders = Seq.fill(params.threads)(
-    (0 until params.decoderPerThread).map(n => Module(new Decoder))
+    (0 until params.decoderPerThread).map(n => Module(new Decoder)),
   )
   private val reservationStation =
     Seq.fill(params.threads)(Module(new ReservationStation))
   private val issueBuffer = Module(
-    new IssueBuffer(params.executors, new ReservationStation2Executor)
+    new IssueBuffer(params.executors, new ReservationStation2Executor),
   )
   private val executors = Seq.fill(params.executors)(Module(new Executor))
 
@@ -81,9 +81,9 @@ class B4Processor(implicit params: Parameters) extends Module {
         Module(
           new IssueBuffer(
             params.pextExecutors,
-            new ReservationStation2PExtExecutor()
-          )
-        )
+            new ReservationStation2PExtExecutor(),
+          ),
+        ),
       )
     else None
   private val pextExecutors =
@@ -277,7 +277,7 @@ object B4Processor extends App {
     tagWidth = 4,
     parallelOutput = 1,
     instructionStart = 0x2000_0000L,
-    enablePExt = true
+    enablePExt = true,
   )
 
   ChiselStage.emitSystemVerilogFile(
@@ -288,7 +288,7 @@ object B4Processor extends App {
 //      "--disable-reg-randomization",
       "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb",
       "--disable-all-randomization",
-      "--add-vivado-ram-address-conflict-synthesis-bug-workaround"
-    )
+      "--add-vivado-ram-address-conflict-synthesis-bug-workaround",
+    ),
   )
 }

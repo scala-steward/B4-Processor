@@ -26,7 +26,7 @@ object PExt8Compare {
       SCMPLT8 -> processCmp8(SignedLessThan),
       SCMPLE8 -> processCmp8(SignedLessThanEqual),
       UCMPLT8 -> processCmp8(UnsignedLessThan),
-      UCMPLE8 -> processCmp8(UnsignedLessThanEqual)
+      UCMPLE8 -> processCmp8(UnsignedLessThanEqual),
     )
   }
 

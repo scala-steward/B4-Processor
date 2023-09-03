@@ -70,7 +70,7 @@ object PExtSigned16MulWith64AddSub {
         val m2 = rs1.W(1).H(0).asSInt * rs2.W(1).H(1).asSInt
         val m3 = rs1.W(1).H(1).asSInt * rs2.W(1).H(0).asSInt
         ((rd.asSInt + m0 - m1 + m2 - m3).asUInt, false.B)
-      }
+      },
     )
   }
 

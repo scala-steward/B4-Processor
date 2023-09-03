@@ -54,7 +54,7 @@ object PExt16Shift {
       KSLL16 -> processShift16(LeftSaturating, false),
       KSLLI16 -> processShift16(LeftSaturating, true),
       KSLRA16 -> processShift16(LeftSaturatingRight, false),
-      KSLRA16_U -> processShift16(LeftSaturatingRightRound, false)
+      KSLRA16_U -> processShift16(LeftSaturatingRightRound, false),
     )
   }
 
@@ -97,7 +97,7 @@ object PExt16Shift {
             Mux(
               amts < 0.S,
               RoundingShiftRightSigned16(a, (0.S - amts).asUInt),
-              out_t._1
+              out_t._1,
             )
           }
         })

@@ -8,7 +8,7 @@ import chisel3.experimental.prefix
 class SignalSplitWith[T <: Data](
   outputs: Int,
   gen: T,
-  splittingLogic: T => UInt
+  splittingLogic: T => UInt,
 ) extends Module
     with FormalTools {
   val io = IO(new Bundle {
@@ -21,7 +21,7 @@ class SignalSplitWith[T <: Data](
 
 object SignalSplitWith extends App with FormalTools {
   def apply[T <: Data](outputs: Int, input: ReadyValidIO[T])(
-    splittingLogic: T => UInt
+    splittingLogic: T => UInt,
   ): Vec[DecoupledIO[T]] = {
     val t: T = input.bits.cloneType
     val out = Wire(Vec(outputs, Decoupled(t)))
@@ -50,6 +50,6 @@ object SignalSplitWith extends App with FormalTools {
   }
 
   ChiselStage.emitSystemVerilogFile(
-    new SignalSplitWith[UInt](4, UInt(4.W), _(1, 0))
+    new SignalSplitWith[UInt](4, UInt(4.W), _(1, 0)),
   )
 }

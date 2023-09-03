@@ -54,7 +54,7 @@ object PExt64_32Shift {
       KSLL32 -> processShift32(LeftSaturating, false),
       KSLLI32 -> processShift32(LeftSaturating, true),
       KSLRA32 -> processShift32(LeftSaturatingRight, false),
-      KSLRA32_U -> processShift32(LeftSaturatingRightRound, false)
+      KSLRA32_U -> processShift32(LeftSaturatingRightRound, false),
     )
   }
 
@@ -97,7 +97,7 @@ object PExt64_32Shift {
             Mux(
               amts < 0.S,
               RoundingShiftRightSigned32(a, (0.S - amts).asUInt),
-              out_t._1
+              out_t._1,
             )
           }
         })

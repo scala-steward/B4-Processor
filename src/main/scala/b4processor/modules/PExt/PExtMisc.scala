@@ -56,6 +56,6 @@ object PExtMisc {
           d(x) := ABS(rs1.B(x) - rs2.B(x))
         }
         (rd + d.reverse.reduce(_ + _), false.B)
-      }
+      },
     )
 }

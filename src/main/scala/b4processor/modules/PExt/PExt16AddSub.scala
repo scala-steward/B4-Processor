@@ -71,7 +71,7 @@ object PExt16AddSub {
       RSTSA16 -> process16(Straight, Sub, Add, SignedHalving),
       URSTSA16 -> process16(Straight, Sub, Add, UnsignedHalving),
       KSTSA16 -> process16(Straight, Sub, Add, SignedSaturate),
-      UKSTSA16 -> process16(Straight, Sub, Add, UnsignedSaturate)
+      UKSTSA16 -> process16(Straight, Sub, Add, UnsignedSaturate),
     )
   }
 
@@ -79,7 +79,7 @@ object PExt16AddSub {
     dir: DirectionType,
     high: AddSub,
     low: AddSub,
-    ptype: ProcessType
+    ptype: ProcessType,
   ): (UInt, UInt) => (UInt, Bool) = (rs1: UInt, rs2: UInt) => {
     val out = Seq.fill(4)(Wire(UInt(16.W)))
     var overflow = WireInit(false.B)

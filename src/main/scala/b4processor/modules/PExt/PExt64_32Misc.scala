@@ -57,7 +57,7 @@ object PExt64_32Misc {
         for (x <- 0 until 2)
           out(x) := ABS(rs1.W(x))
         (out.reverse.reduce(_ ## _), false.B)
-      }
+      },
     )
 
 }

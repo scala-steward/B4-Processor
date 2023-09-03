@@ -8,7 +8,7 @@ import b4processor.connections.{
   Decoder2ReorderBuffer,
   LoadStoreQueue2ReorderBuffer,
   ReorderBuffer2CSR,
-  ReorderBuffer2RegisterFile
+  ReorderBuffer2RegisterFile,
 }
 import b4processor.riscv.{CSRs, Causes}
 import b4processor.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
@@ -45,11 +45,11 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val registerFile =
       Vec(
         params.maxRegisterFileCommitCount,
-        Valid(new ReorderBuffer2RegisterFile())
+        Valid(new ReorderBuffer2RegisterFile()),
       )
     val loadStoreQueue = Vec(
       params.maxRegisterFileCommitCount,
-      Valid(new LoadStoreQueue2ReorderBuffer)
+      Valid(new LoadStoreQueue2ReorderBuffer),
     )
     val isEmpty = Output(Bool())
     val csr = new ReorderBuffer2CSR
@@ -66,7 +66,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   val head = RegInit(0.U(tagWidth.W))
   val tail = RegInit(0.U(tagWidth.W))
   val buffer = RegInit(
-    VecInit(Seq.fill(math.pow(2, tagWidth).toInt)(ReorderBufferEntry.default))
+    VecInit(Seq.fill(math.pow(2, tagWidth).toInt)(ReorderBufferEntry.default)),
   )
 
   class RegisterTagMapContent extends Bundle {
@@ -91,7 +91,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   io.csr.mepc.bits := 0.U
 
   private val registerTagMap = RegInit(
-    VecInit(Seq.fill(32)(RegisterTagMapContent.default))
+    VecInit(Seq.fill(32)(RegisterTagMapContent.default)),
   )
 
   class DecoderMap extends Bundle {
@@ -105,7 +105,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
       new DecoderMap().Lit(
         _.valid -> false.B,
         _.tagId -> 0.U,
-        _.destinationRegister -> 0.reg
+        _.destinationRegister -> 0.reg,
       )
   }
 
@@ -143,7 +143,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
           rf.bits.value := biVal.value
           rf.bits.destinationRegister := biVal.destinationRegister
           when(
-            index === registerTagMap(biVal.destinationRegister.inner).tagId
+            index === registerTagMap(biVal.destinationRegister.inner).tagId,
           ) {
             registerTagMap(biVal.destinationRegister.inner) :=
               RegisterTagMapContent.default
@@ -164,7 +164,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     params.maxRegisterFileCommitCount.U,
     io.registerFile.zipWithIndex.map { case (entry, index) =>
       !entry.valid -> index.U
-    }
+    },
   )
 
   // デコーダからの読み取りと書き込み
@@ -184,7 +184,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
           entry.value := Mux(
             decoder.isDecodeError,
             Causes.illegal_instruction.U,
-            0.U
+            0.U,
           )
           entry.valueReady := false.B
           entry
@@ -208,21 +208,21 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
               .map(n =>
                 (previousDecoderMap(n).valid &&
                   previousDecoderMap(n).destinationRegister
-                  === decoder.sources(source_index).sourceRegister)
+                  === decoder.sources(source_index).sourceRegister),
               )
               .fold(false.B)(_ || _)
             val matchingBits = MuxCase(
               registerTagMap(
-                decoder.sources(source_index).sourceRegister.inner
+                decoder.sources(source_index).sourceRegister.inner,
               ),
               (0 until i)
                 .map(n =>
                   (previousDecoderMap(n).valid &&
                     previousDecoderMap(n).destinationRegister
                     === decoder.sources(source_index).sourceRegister) ->
-                    RegisterTagMapContent(previousDecoderMap(n).tagId)
+                    RegisterTagMapContent(previousDecoderMap(n).tagId),
                 )
-                .reverse
+                .reverse,
             )
             val hasMatching = matchingBits.valid
             val matchingBuf = buffer(matchingBits.tagId)
@@ -230,7 +230,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
             decoder.sources(source_index).matchingTag.valid := hasMatching
             decoder.sources(source_index).matchingTag.bits := Tag(
               io.threadId,
-              matchingBits.tagId
+              matchingBits.tagId,
             )
             decoder
               .sources(source_index)
@@ -286,7 +286,7 @@ object ReorderBuffer extends App {
     Parameters(
       threads = 2,
       decoderPerThread = 2,
-      maxRegisterFileCommitCount = 2
+      maxRegisterFileCommitCount = 2,
     )
   ChiselStage.emitSystemVerilogFile(new ReorderBuffer)
 }

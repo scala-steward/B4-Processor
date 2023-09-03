@@ -52,20 +52,20 @@ abstract class RiscvTest(val testPrefix: String)
   def riscv_test(
     test_name: String,
     timeout: Int = 2000,
-    backendAnnotation: Annotation = annotation
+    backendAnnotation: Annotation = annotation,
   ): Unit = {
 
     it should s"run $test_name" taggedAs (RISCVTest, Slow) in {
       test( // FIXME fromFile8bit
         new B4ProcessorRISCVTestWrapper(
-        )(this.params)
+        )(this.params),
       )
         .withAnnotations(
-          Seq(backendAnnotation, CachingAnnotation, this.writeWaveform)
+          Seq(backendAnnotation, CachingAnnotation, this.writeWaveform),
         ) { c =>
           c.clock.setTimeout(timeout)
           c.initialize(
-            s"programs/riscv-tests/share/riscv-tests/isa/rv64u$testPrefix-p-$test_name"
+            s"programs/riscv-tests/share/riscv-tests/isa/rv64u$testPrefix-p-$test_name",
           )
           c.riscv_test()
         }

@@ -14,7 +14,7 @@ import org.scalatest.{
   Suite,
   TestData,
   TestSuite,
-  TestSuiteMixin
+  TestSuiteMixin,
 }
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -41,7 +41,7 @@ class DecoderWrapper(implicit params: Parameters) extends Decoder {
   def setImem(
     instruction: UInt,
     programCounter: Int,
-    isPrediction: Boolean = false
+    isPrediction: Boolean = false,
   ): Unit = {
     this.io.instructionFetch.bits.instruction.poke(instruction)
     this.io.instructionFetch.bits.programCounter.poke(programCounter)
@@ -53,7 +53,7 @@ class DecoderWrapper(implicit params: Parameters) extends Decoder {
     sourceTag1: Option[Int] = None,
     value1: Option[Int] = None,
     sourceTag2: Option[Int] = None,
-    value2: Option[Int] = None
+    value2: Option[Int] = None,
   ): Unit = {
     this.io.reorderBuffer.destination.destinationTag
       .poke(Tag(0, destinationTag))
@@ -103,8 +103,8 @@ class DecoderWrapper(implicit params: Parameters) extends Decoder {
           0,
           bypassedValues
             .getOrElse(ExecutorValue(destinationTag = 0, value = 0))
-            .destinationTag
-        )
+            .destinationTag,
+        ),
       )
     this.io.outputCollector
       .outputs(0)
@@ -113,7 +113,7 @@ class DecoderWrapper(implicit params: Parameters) extends Decoder {
       .poke(
         bypassedValues
           .getOrElse(ExecutorValue(destinationTag = 0, value = 0))
-          .value
+          .value,
       )
   }
 
@@ -124,7 +124,7 @@ class DecoderWrapper(implicit params: Parameters) extends Decoder {
   def expectReorderBuffer(
     destinationRegister: RVRegister = RVRegister(0),
     sourceRegister1: RVRegister = RVRegister(0),
-    sourceRegister2: RVRegister = RVRegister(0)
+    sourceRegister2: RVRegister = RVRegister(0),
   ): Unit = {
     // check rd
     this.io.reorderBuffer.destination.destinationRegister
@@ -147,7 +147,7 @@ class DecoderWrapper(implicit params: Parameters) extends Decoder {
     sourceTag2: Int = 0,
     value1: Int = 0,
     value2: Int = 0,
-    immediateOrFunction7: Int = 0
+    immediateOrFunction7: Int = 0,
   ): Unit = {
     this.io.reservationStation.entry.destinationTag
       .expect(Tag(0, destinationTag))
@@ -185,7 +185,7 @@ class DecoderTest
       c.expectReorderBuffer(
         destinationRegister = 1.reg,
         sourceRegister1 = 2.reg,
-        sourceRegister2 = 3.reg
+        sourceRegister2 = 3.reg,
       )
     }
   }
@@ -202,7 +202,7 @@ class DecoderTest
       c.expectReorderBuffer(
         destinationRegister = 1.reg,
         sourceRegister1 = 2.reg,
-        sourceRegister2 = 3.reg
+        sourceRegister2 = 3.reg,
       )
       c.expectReservationStation(value1 = 10, value2 = 20)
     }
@@ -216,18 +216,18 @@ class DecoderTest
       c.setReorderBuffer(
         destinationTag = 5,
         sourceTag1 = Some(6),
-        sourceTag2 = Some(7)
+        sourceTag2 = Some(7),
       )
 
       c.expectReorderBuffer(
         destinationRegister = 1.reg,
         sourceRegister1 = 2.reg,
-        sourceRegister2 = 3.reg
+        sourceRegister2 = 3.reg,
       )
       c.expectReservationStation(
         destinationTag = 5,
         sourceTag1 = 6,
-        sourceTag2 = 7
+        sourceTag2 = 7,
       )
     }
   }
@@ -242,13 +242,13 @@ class DecoderTest
         sourceTag1 = Some(6),
         sourceTag2 = Some(7),
         value1 = Some(20),
-        value2 = Some(21)
+        value2 = Some(21),
       )
 
       c.expectReorderBuffer(
         destinationRegister = 1.reg,
         sourceRegister1 = 2.reg,
-        sourceRegister2 = 3.reg
+        sourceRegister2 = 3.reg,
       )
       c.expectReservationStation(destinationTag = 5, value1 = 20, value2 = 21)
     }
@@ -272,7 +272,7 @@ class DecoderTest
       c.setReorderBuffer(
         destinationTag = 5,
         sourceTag1 = Some(6),
-        sourceTag2 = Some(7)
+        sourceTag2 = Some(7),
       )
 
       c.expectReorderBuffer(1.reg, sourceRegister1 = 2.reg)
@@ -285,7 +285,7 @@ class DecoderTest
       c.expectReservationStation(
         destinationTag = 5,
         sourceTag1 = 6,
-        value2 = 20
+        value2 = 20,
       )
       c.clock.step(1)
     }
@@ -294,26 +294,26 @@ class DecoderTest
   // ALUからの値を使える
   it should "do register bypass" in {
     test(
-      new DecoderWrapper()(testParams.copy(threads = 1, decoderPerThread = 2))
+      new DecoderWrapper()(testParams.copy(threads = 1, decoderPerThread = 2)),
     ) { c =>
       // add x1,x2,x3
       c.initialize("x003100b3".U)
       c.setReorderBuffer(
         destinationTag = 5,
         sourceTag1 = Some(6),
-        sourceTag2 = Some(7)
+        sourceTag2 = Some(7),
       )
       c.setOutputs(Some(ExecutorValue(6, 20)))
 
       c.expectReorderBuffer(
         destinationRegister = 1.reg,
         sourceRegister1 = 2.reg,
-        sourceRegister2 = 3.reg
+        sourceRegister2 = 3.reg,
       )
       c.expectReservationStation(
         destinationTag = 5,
         value1 = 20,
-        sourceTag2 = 7
+        sourceTag2 = 7,
       )
     }
   }
@@ -353,7 +353,7 @@ class DecoderTest
       c.expectReservationStation(
         destinationTag = 5,
         value1 = 503808,
-        value2 = 0
+        value2 = 0,
       )
     }
   }
@@ -397,7 +397,7 @@ class DecoderTest
       c.expectReorderBuffer(
         destinationRegister = 25.reg,
         sourceRegister1 = 21.reg,
-        sourceRegister2 = 10.reg
+        sourceRegister2 = 10.reg,
       )
     }
   }

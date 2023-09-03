@@ -29,7 +29,7 @@ class Decoder(implicit params: Parameters) extends Module with FormalTools {
 
   val operations = DecodingMod(
     io.instructionFetch.bits.instruction,
-    io.instructionFetch.bits.programCounter
+    io.instructionFetch.bits.programCounter,
   )
 
   io.reorderBuffer.isDecodeError := io.instructionFetch.valid && !operations.valid
@@ -140,8 +140,8 @@ class Decoder(implicit params: Parameters) extends Module with FormalTools {
       0.U,
       Seq(
         operations.sources(0).valid -> operations.sources(0).value,
-        values(0).valid -> values(0).bits
-      )
+        values(0).valid -> values(0).bits,
+      ),
     )
     io.csr.bits.ready := operations.sources(0).valid || values(0).valid
     io.csr.bits.destinationTag := io.reorderBuffer.destination.destinationTag
@@ -185,11 +185,11 @@ class Decoder(implicit params: Parameters) extends Module with FormalTools {
   }
   assert(
     io.amo.bits.srcReg.threadId === io.threadId,
-    "amo source thread id wrong"
+    "amo source thread id wrong",
   )
   assert(
     io.amo.bits.destinationTag.threadId === io.threadId,
-    "amo destination thread id wrong"
+    "amo destination thread id wrong",
   )
   assert(io.csr.bits.sourceTag.threadId === io.threadId)
   assert(io.csr.bits.destinationTag.threadId === io.threadId)

@@ -9,7 +9,7 @@ import b4processor.utils.{
   FormalTools,
   MMArbiter,
   PassthroughBuffer,
-  SignalSplitWith
+  SignalSplitWith,
 }
 import chisel3._
 import chisel3.experimental.prefix
@@ -32,7 +32,7 @@ class OutputCollector2(implicit params: Parameters)
   val allInputs = io.csr ++ Seq(
     io.amo,
     io.memoryReadResult,
-    io.memoryWriteResult
+    io.memoryWriteResult,
   ) ++ io.pextExecutor ++ io.executor
 
   val bufferedInputs = allInputs map { PassthroughBuffer(_) }
@@ -50,8 +50,8 @@ class OutputCollector2(implicit params: Parameters)
   val splittedTransposed = Wire(
     Vec(
       splitted(0).length,
-      Vec(splitted.length, Decoupled(new OutputValue()).cloneType)
-    )
+      Vec(splitted.length, Decoupled(new OutputValue()).cloneType),
+    ),
   )
 
   for (s <- splitted.indices) {
@@ -69,7 +69,7 @@ class OutputCollector2(implicit params: Parameters)
       when(mmarb(t)(i).valid) {
         assert(
           mmarb(t)(i).bits.tag.threadId === t.U,
-          s"check for thread $t, output ${i}"
+          s"check for thread $t, output ${i}",
         )
       }
       takesEveryValue(io.outputs(t).outputs(i).valid)
@@ -89,11 +89,11 @@ class OutputCollector2(implicit params: Parameters)
 
   // if all inputs are !valid
   when(
-    !(splittedTransposed map (_ map (_.valid) reduce (_ || _)) reduce (_ || _))
+    !(splittedTransposed map (_ map (_.valid) reduce (_ || _)) reduce (_ || _)),
   ) {
     // all outputs should not be valid
     assert(
-      !(io.outputs map (_.outputs map (_.valid) reduce (_ || _)) reduce (_ || _))
+      !(io.outputs map (_.outputs map (_.valid) reduce (_ || _)) reduce (_ || _)),
     )
   }
 }

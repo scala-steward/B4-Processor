@@ -64,7 +64,7 @@ object PExt16Misc {
           val snum = rs1.H(x).asSInt
           out(x) := MuxCase(
             0.U,
-            (0 until 15).map(i => (snum(i) === snum(15)) -> (15 - i).U)
+            (0 until 15).map(i => (snum(i) === snum(15)) -> (15 - i).U),
           )
         }
         (out.reverse.reduce(_ ## _), false.B)
@@ -75,11 +75,11 @@ object PExt16Misc {
           val snum = rs1.H(x).asSInt
           out(x) := MuxCase(
             0.U,
-            (0 until 16).map(i => (snum(i) === 0.U) -> (15 - i).U)
+            (0 until 16).map(i => (snum(i) === 0.U) -> (15 - i).U),
           )
         }
         (out.reverse.reduce(_ ## _), false.B)
-      }
+      },
 //      SWAP16 -> {
 //        val out = Seq.fill(2)(Wire(UInt(32.W)))
 //        for (x <- 0 until 2) {

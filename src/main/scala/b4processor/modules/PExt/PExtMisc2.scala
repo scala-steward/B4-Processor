@@ -17,7 +17,7 @@ object PExtMisc2 {
         val res = Mux(
           sa =/= 0.U,
           (SE65((rs1.asSInt >> (sa - 1.U)).asUInt) + 1.U)(64, 1),
-          rs1
+          rs1,
         )
         (res, false.B)
       },
@@ -26,7 +26,7 @@ object PExtMisc2 {
         val res = Mux(
           sa =/= 0.U,
           (SE65((rs1.asSInt >> (sa - 1.U)).asUInt) + 1.U)(64, 1),
-          rs1
+          rs1,
         )
         (res, false.B)
 
@@ -90,7 +90,7 @@ object PExtMisc2 {
         val bpos = imm(2, 0)
         val res =
           Cat(
-            (0 until 8).reverse.map(x => Mux(bpos === x.U, rs1.B(0), rd.B(x)))
+            (0 until 8).reverse.map(x => Mux(bpos === x.U, rs1.B(0), rd.B(x))),
           )
         (res, false.B)
       },
@@ -100,6 +100,6 @@ object PExtMisc2 {
         (SE64(tres), false.B)
       },
       MAX -> (Mux(rs1.asSInt > rs2.asSInt, rs1, rs2), false.B),
-      MIN -> (Mux(rs1.asSInt > rs2.asSInt, rs2, rs1), false.B)
+      MIN -> (Mux(rs1.asSInt > rs2.asSInt, rs2, rs1), false.B),
     )
 }

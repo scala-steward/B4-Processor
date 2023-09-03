@@ -46,7 +46,7 @@ class SimpleAXIMemory(sizeBytes: Int = 1024 * 1024) extends Module {
       when(simulationSource.input.valid) {
         mem.write(
           sourceWriteIndex,
-          simulationSource.input.bits.asTypeOf(Vec(8, UInt(8.W)))
+          simulationSource.input.bits.asTypeOf(Vec(8, UInt(8.W))),
         )
         sourceWriteIndex := sourceWriteIndex + 1.U
       }
@@ -89,7 +89,7 @@ class SimpleAXIMemory(sizeBytes: Int = 1024 * 1024) extends Module {
         mem.write(
           writeState.output.bits.address(63, 3) + burstLen,
           axi.write.bits.DATA.asTypeOf(Vec(8, UInt(8.W))),
-          axi.write.bits.STRB.asBools
+          axi.write.bits.STRB.asBools,
         )
         burstLen := burstLen + 1.U
         when(burstLen === writeState.output.bits.burstLength) {

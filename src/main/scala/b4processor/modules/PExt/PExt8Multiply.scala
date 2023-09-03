@@ -27,7 +27,7 @@ object PExt8Multiply {
       UMUL8 -> processMul8(UnsignedMultiply),
       UMULX8 -> processMul8(UnsignedCrossedMultiply),
       KHM8 -> processMul8(SaturatingMultiply),
-      KHMX8 -> processMul8(SaturatingCrossedMultiply)
+      KHMX8 -> processMul8(SaturatingCrossedMultiply),
     )
   }
 
@@ -82,7 +82,7 @@ object PExt8Multiply {
               (3, 2),
               (2, 3),
               (1, 0),
-              (0, 1)
+              (0, 1),
             )
           ) {
             val t = rs1.B(x).asSInt * rs2.B(y).asSInt

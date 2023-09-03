@@ -16,15 +16,15 @@ trait SymbiYosysFormal {
   def symbiYosysCheck(
     gen: => RawModule,
     depth: Int = 20,
-    engine: String = ""
+    engine: String = "",
   ) = {
     var s = ChiselStage.emitSystemVerilog(
       gen,
       firtoolOpts = Array(
         "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb,verifLabels",
         //      "--emit-chisel-asserts-as-sva",
-        "--dedup"
-      )
+        "--dedup",
+      ),
     )
 
     val rrr =
@@ -43,7 +43,7 @@ trait SymbiYosysFormal {
           .replaceAll("[ :]+", "_")
           .stripMargin('_')
         Matcher.quoteReplacement(s"$label: assert(0); // ${comment}")
-      }
+      },
     )
     s = rrr2.replaceAllIn(
       s,
@@ -54,7 +54,7 @@ trait SymbiYosysFormal {
           .replaceAll("[ :]+", "_")
           .stripMargin('_')
         Matcher.quoteReplacement(s"$label: assume(0); // ${m.group(1)}")
-      }
+      },
     )
     s = rrr3.replaceAllIn(s, "")
     s = rrr4.replaceAllIn(
@@ -65,7 +65,7 @@ trait SymbiYosysFormal {
         "      f_valid <= 0;\n" +
         "      assume (reset == f_valid);\n" +
         "    end\n" +
-        "endmodule"
+        "endmodule",
     )
     s = rrr5.replaceAllIn(
       s,
@@ -76,7 +76,7 @@ trait SymbiYosysFormal {
           .replaceAll("[ :]+", "_")
           .stripMargin('_')
         s"${m.group(1)}__${normalized_comment}: ${m.group(2)} // ${m.group(3)}"
-      }
+      },
     )
     val name = sanitizeFileName(getTestName)
     Directory("formal").createDirectory()

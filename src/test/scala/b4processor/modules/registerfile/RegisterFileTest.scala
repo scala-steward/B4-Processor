@@ -13,7 +13,7 @@ class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
     Parameters(
       threads = 1,
       decoderPerThread = 1,
-      maxRegisterFileCommitCount = 1
+      maxRegisterFileCommitCount = 1,
     )
 
   it should "save a value" in {
@@ -44,7 +44,7 @@ class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "resolve multiple inputs and outputs" in {
     test(
-      new RegisterFile()(detfaultParams.copy(maxRegisterFileCommitCount = 2))
+      new RegisterFile()(detfaultParams.copy(maxRegisterFileCommitCount = 2)),
     ) { c =>
       c.io.reorderBuffer(0).valid.poke(true)
       c.io.reorderBuffer(0).bits.value.poke(123)
@@ -64,7 +64,7 @@ class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "resolve multiple inputs overlapping" in {
     test(
-      new RegisterFile()(detfaultParams.copy(maxRegisterFileCommitCount = 2))
+      new RegisterFile()(detfaultParams.copy(maxRegisterFileCommitCount = 2)),
     ) { c =>
       c.io.reorderBuffer(0).valid.poke(true)
       c.io.reorderBuffer(0).bits.value.poke(123)

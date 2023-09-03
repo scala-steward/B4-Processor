@@ -97,6 +97,6 @@ object PExtMSW32x32MulAdd {
           overflow = overflow | out_t._2
         }
         (out.reverse.reduce(_ ## _), overflow)
-      }
+      },
     )
 }

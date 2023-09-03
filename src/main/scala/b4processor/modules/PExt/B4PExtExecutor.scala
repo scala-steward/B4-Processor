@@ -44,7 +44,7 @@ object B4PExtExecutor extends App {
   ChiselStage.emitSystemVerilogFile(
     new B4PExtExecutor(),
     firtoolOpts = Array(
-      "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb"
-    )
+      "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb",
+    ),
   )
 }

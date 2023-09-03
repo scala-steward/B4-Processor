@@ -157,7 +157,7 @@ class PExtExecutor extends Module {
         a -> b(io.input.rs1, io.input.rs2, io.input.imm)
       } ++
       pext8shift.map(a =>
-        a._1 -> a._2(io.input.rs1, io.input.rs2, io.input.imm)
+        a._1 -> a._2(io.input.rs1, io.input.rs2, io.input.imm),
       ) ++
       pext16cmp.map(a => a._1 -> a._2(io.input.rs1, io.input.rs2)) ++
       pext8cmp.map(a => a._1 -> a._2(io.input.rs1, io.input.rs2)) ++
@@ -176,7 +176,7 @@ class PExtExecutor extends Module {
         io.input.rs1,
         io.input.rs2,
         io.input.rd,
-        io.input.imm
+        io.input.imm,
       ) ++
       pext64DataComputation(io.input.rs1, io.input.rs2) ++
       pextMsw32x16(io.input.rs1, io.input.rs2, io.input.rd) ++
@@ -187,18 +187,18 @@ class PExtExecutor extends Module {
         io.input.rs1,
         io.input.rs2,
         io.input.rd,
-        io.input.imm
+        io.input.imm,
       ) ++
       pextMisc2(
         io.input.rs1,
         io.input.rs2,
         io.input.rs3,
         io.input.rd,
-        io.input.imm
+        io.input.imm,
       ) ++
       pext32addsub.map { case (a, b) => a -> b(io.input.rs1, io.input.rs2) } ++
       pext32shift.map(a =>
-        a._1 -> a._2(io.input.rs1, io.input.rs2, io.input.imm)
+        a._1 -> a._2(io.input.rs1, io.input.rs2, io.input.imm),
       ) ++
       pext32misc(io.input.rs1, io.input.rs2, io.input.imm) ++
       pextQ15(io.input.rs1, io.input.rs2, io.input.rd) ++
@@ -207,7 +207,7 @@ class PExtExecutor extends Module {
       pext64_32ParallelMultiplyAndAdd(
         io.input.rs1,
         io.input.rs2,
-        io.input.rd
+        io.input.rd,
       ) ++
       pext64_NonSIMD32Shift(io.input.rs1, io.input.imm) ++
       pext64_32packing(io.input.rs1, io.input.rs2)
@@ -265,7 +265,7 @@ object UIntSectionHelper {
       val min = -pow(2, n).toInt.S
       (
         Mux(v > max, max, Mux(v < min, min, v)).asUInt(n, 0),
-        Mux(v > max, true.B, Mux(v < min, true.B, false.B))
+        Mux(v > max, true.B, Mux(v < min, true.B, false.B)),
       )
     }
 
@@ -287,8 +287,8 @@ object UIntSectionHelper {
               val max = (pow(2, i) - 1).toInt.S
               val min = -pow(2, i).toInt.S
               Mux(v > max, max, Mux(v < min, min, v)).asUInt
-            }
-          )
+            },
+          ),
         ),
         MuxLookup(amt, false.B)(
           (0 until pow(2, n.getWidth).toInt).map(i =>
@@ -296,9 +296,9 @@ object UIntSectionHelper {
               val max = (pow(2, i) - 1).toInt.S
               val min = -pow(2, i).toInt.S
               Mux(v > max, true.B, Mux(v < min, true.B, false.B))
-            }
-          )
-        )
+            },
+          ),
+        ),
       )
     }
 
@@ -310,17 +310,17 @@ object UIntSectionHelper {
             i.U -> {
               val max = (pow(2, i) - 1).toInt.U
               Mux(x > max, max, x)
-            }
-          )
+            },
+          ),
         ),
         MuxLookup(amt, false.B)(
           (0 until pow(2, n.getWidth).toInt).map(i =>
             i.U -> {
               val max = (pow(2, i) - 1).toInt.U
               Mux(x > max, true.B, false.B)
-            }
-          )
-        )
+            },
+          ),
+        ),
       )
     }
 
@@ -352,7 +352,7 @@ object UIntSectionHelper {
     Mux(
       amt === 0.U,
       x,
-      SE17(((x.asSInt >> (amt - 1.U)).asSInt + 1.S).asUInt)(16, 1)
+      SE17(((x.asSInt >> (amt - 1.U)).asSInt + 1.S).asUInt)(16, 1),
     )
   }
 
@@ -366,7 +366,7 @@ object UIntSectionHelper {
     Mux(
       amt === 0.U,
       x,
-      SE33(((x.asSInt >> (amt - 1.U)).asSInt + 1.S).asUInt)(32, 1)
+      SE33(((x.asSInt >> (amt - 1.U)).asSInt + 1.S).asUInt)(32, 1),
     )
   }
 
@@ -392,7 +392,7 @@ object UIntSectionHelper {
     Mux(
       amt === 0.U,
       x,
-      SE9(((x.asSInt >> (amt - 1.U)).asSInt + 1.S).asUInt)(8, 1)
+      SE9(((x.asSInt >> (amt - 1.U)).asSInt + 1.S).asUInt)(8, 1),
     )
   }
 
@@ -409,7 +409,7 @@ object UIntSectionHelper {
       0.U,
       (0 until x.getWidth - 1).reverse.map(i => {
         (x(x.getWidth - 1) === x(i)) -> (x.getWidth - i).U
-      })
+      }),
     )
   }
 
@@ -418,7 +418,7 @@ object UIntSectionHelper {
       0.U,
       (0 until x.getWidth).reverse.map(i => {
         (x(i) === 0.U) -> (x.getWidth - i).U
-      })
+      }),
     )
   }
 }
@@ -427,8 +427,8 @@ object PExtExecutor extends App {
   ChiselStage.emitSystemVerilogFile(
     new PExtExecutor,
     firtoolOpts = Array(
-      "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb"
-    )
+      "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb",
+    ),
   )
 
 }

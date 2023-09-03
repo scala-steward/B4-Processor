@@ -22,7 +22,7 @@ object PExt16Compare {
       SCMPLT16 -> processCmp16(SignedLessThan),
       SCMPLE16 -> processCmp16(SignedLessThanEqual),
       UCMPLT16 -> processCmp16(UnsignedLessThan),
-      UCMPLE16 -> processCmp16(UnsignedLessThanEqual)
+      UCMPLE16 -> processCmp16(UnsignedLessThanEqual),
     )
   }
 

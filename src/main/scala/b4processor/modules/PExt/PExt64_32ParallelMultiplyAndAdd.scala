@@ -70,7 +70,7 @@ object PExt64_32ParallelMultiplyAndAdd {
         val t0 = rs1.W(0).asSInt * rs2.W(1).asSInt
         val t1 = rs1.W(1).asSInt * rs2.W(0).asSInt
         (t1.asUInt - t0.asUInt, false.B)
-      }
+      },
     )
   }
 }

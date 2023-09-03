@@ -20,7 +20,7 @@ class OutputCollector(implicit params: Parameters) extends Module {
     Seq.fill(params.executors)(Module(new FIFO(2)(new OutputValue)))
   val threadsArbiter =
     Seq.fill(params.threads)(
-      Module(new B4RRArbiter(new OutputValue, params.executors + 2))
+      Module(new B4RRArbiter(new OutputValue, params.executors + 2)),
     )
 
   for (i <- 0 until params.executors) {
@@ -74,7 +74,7 @@ class OutputCollector(implicit params: Parameters) extends Module {
       .map(tid =>
         threadsArbiter(tid).io
           .in(i)
-          .ready && executorQueue(i).output.bits.tag.threadId === tid.U
+          .ready && executorQueue(i).output.bits.tag.threadId === tid.U,
       )
       .reduce(_ || _)
   }
@@ -82,7 +82,7 @@ class OutputCollector(implicit params: Parameters) extends Module {
     .map(tid =>
       threadsArbiter(tid).io
         .in(params.executors)
-        .ready && io.dataMemory.bits.tag.threadId === tid.U
+        .ready && io.dataMemory.bits.tag.threadId === tid.U,
     )
     .reduce(_ || _)
 }

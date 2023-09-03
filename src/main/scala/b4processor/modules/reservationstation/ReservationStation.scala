@@ -6,7 +6,7 @@ import b4processor.connections.{
   CollectedOutput,
   Decoder2ReservationStation,
   ReservationStation2Executor,
-  ReservationStation2PExtExecutor
+  ReservationStation2PExtExecutor,
 }
 import b4processor.utils.{B4RRArbiter, MMArbiter}
 import chisel3._
@@ -20,7 +20,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
       Vec(params.decoderPerThread, Irrevocable(new ReservationStation2Executor))
     val pextIssue = Vec(
       params.decoderPerThread,
-      Irrevocable(new ReservationStation2PExtExecutor())
+      Irrevocable(new ReservationStation2PExtExecutor()),
     )
 //    val issuePext =
 //      Vec(params.decoderPerThread, Irrevocable(new ReservationStation2Executor))
@@ -32,24 +32,24 @@ class ReservationStation(implicit params: Parameters) extends Module {
 
   val reservation = RegInit(
     VecInit(
-      Seq.fill(math.pow(2, rsWidth).toInt)(ReservationStationEntry.default)
-    )
+      Seq.fill(math.pow(2, rsWidth).toInt)(ReservationStationEntry.default),
+    ),
   )
 
   private val outputArbiter = Module(
     new MMArbiter(
       new ReservationStation2Executor,
       reservation.length,
-      params.decoderPerThread
-    )
+      params.decoderPerThread,
+    ),
   )
 
   private val pextOutputArbiter = Module(
     new MMArbiter(
       new ReservationStation2PExtExecutor(),
       reservation.length,
-      params.decoderPerThread
-    )
+      params.decoderPerThread,
+    ),
   )
 
   for (i <- 0 until reservation.length) {
@@ -70,7 +70,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
       }
     }
     io.issue(i % params.decoderPerThread) <> outputArbiter.io.output(
-      i % params.decoderPerThread
+      i % params.decoderPerThread,
     )
   }
 
@@ -91,7 +91,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
       }
     }
     io.pextIssue(i % params.decoderPerThread) <> pextOutputArbiter.io.output(
-      i % params.decoderPerThread
+      i % params.decoderPerThread,
     )
   }
 

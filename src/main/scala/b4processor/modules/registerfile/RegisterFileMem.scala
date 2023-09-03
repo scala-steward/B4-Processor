@@ -3,7 +3,7 @@ package b4processor.modules.registerfile
 import b4processor.Parameters
 import b4processor.connections.{
   Decoder2RegisterFile,
-  ReorderBuffer2RegisterFile
+  ReorderBuffer2RegisterFile,
 }
 import b4processor.utils.RVRegister.AddRegConstructor
 import chisel3._
@@ -27,8 +27,8 @@ class RegisterFileMem(implicit params: Parameters) extends Module {
     val reorderBuffer = Flipped(
       Vec(
         params.maxRegisterFileCommitCount,
-        Valid(new ReorderBuffer2RegisterFile())
-      )
+        Valid(new ReorderBuffer2RegisterFile()),
+      ),
     )
 
     val threadId = Input(UInt(log2Up(params.threads).W))
@@ -81,6 +81,6 @@ object RegisterFileMem extends App {
   ChiselStage.emitSystemVerilogFile(
     new RegisterFileMem,
     Array(),
-    Array("--disable-all-randomization")
+    Array("--disable-all-randomization"),
   )
 }

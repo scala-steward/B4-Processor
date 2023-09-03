@@ -189,7 +189,7 @@ object PExtSigned16MulWith32AddSub {
           overflow = overflow | t._2
         }
         (out.reverse.reduce(_ ## _), overflow)
-      }
+      },
     )
 
   def SMXX16(fst: Boolean, snd: Boolean) = (rs1: UInt, rs2: UInt, rd: UInt) => {

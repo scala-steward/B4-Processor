@@ -33,7 +33,7 @@ object PExt32Computation {
         val mres = rs1.W(0) * rs2.W(0)
         val tres = rd.W(0) - mres.W(0)
         (SE64(tres), false.B)
-      }
+      },
     )
   }
 

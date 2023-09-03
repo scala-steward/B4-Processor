@@ -35,16 +35,16 @@ class z40_B4ProcessorParameterTest
                       decoderPerThread = decoderPerThread,
                       tagWidth = tagWidth,
                       maxRegisterFileCommitCount = maxCommitCount,
-                      loadStoreQueueIndexWidth = lsqWidth
-                    )
-                  )
+                      loadStoreQueueIndexWidth = lsqWidth,
+                    ),
+                  ),
                 )
                   .withAnnotations(
                     Seq(
                       WriteFstAnnotation,
                       VerilatorBackendAnnotation,
-                      CachingAnnotation
-                    )
+                      CachingAnnotation,
+                    ),
                   ) { c =>
                     c.initialize64("programs/riscv-sample-programs/fibonacci_c")
                     for (t <- 0 until threads)
@@ -52,7 +52,7 @@ class z40_B4ProcessorParameterTest
                         3,
                         1298777728820984005L,
                         20000,
-                        t
+                        t,
                       )
                     val fw = new FileWriter("stats.jsonl", true)
                     val ipcs = (0 until threads)
@@ -63,13 +63,13 @@ class z40_B4ProcessorParameterTest
                           .toDouble / c.io.registerFileContents
                           .get(t)(5)
                           .peekInt()
-                          .toDouble
+                          .toDouble,
                       )
                       .map(_.toString)
                       .reduce((a, b) => a + "," + b)
                     try {
                       fw.write(
-                        s"{\"threads\":$threads, \"executor\":$executors, \"decoders\":$decoderPerThread, \"maxCommitCount\":$maxCommitCount, \"tagWidth\":$tagWidth, \"lsqWidth\":${lsqWidth}, \"ipc\":[$ipcs]}\n"
+                        s"{\"threads\":$threads, \"executor\":$executors, \"decoders\":$decoderPerThread, \"maxCommitCount\":$maxCommitCount, \"tagWidth\":$tagWidth, \"lsqWidth\":${lsqWidth}, \"ipc\":[$ipcs]}\n",
                       )
                     } finally fw.close()
 

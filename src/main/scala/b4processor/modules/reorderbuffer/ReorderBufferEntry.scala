@@ -33,6 +33,6 @@ object ReorderBufferEntry {
       _.isError -> false.B,
       _.value -> 0.U,
       _.programCounter -> 0.U,
-      _.operationInorder -> false.B
+      _.operationInorder -> false.B,
     )
 }

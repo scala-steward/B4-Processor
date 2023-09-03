@@ -11,7 +11,7 @@ class CSRWrapper(implicit params: Parameters) extends CSR {
   def setDecoderInput(
     address: Int = 0,
     destinationTag: Tag = Tag(0, 0),
-    value: UInt = 0.U
+    value: UInt = 0.U,
   ): Unit = {
     this.io.decoderInput.valid.poke(true)
     this.io.decoderInput.bits.address.poke(address)

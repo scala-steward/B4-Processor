@@ -19,7 +19,7 @@ object PExt8Unpack {
       ZUNPKD820 -> processZ(Seq((3, 6), (2, 4), (1, 2), (0, 0))),
       ZUNPKD830 -> processZ(Seq((3, 7), (2, 4), (1, 3), (0, 0))),
       ZUNPKD831 -> processZ(Seq((3, 7), (2, 5), (1, 3), (0, 1))),
-      ZUNPKD832 -> processZ(Seq((3, 7), (2, 6), (1, 3), (0, 2)))
+      ZUNPKD832 -> processZ(Seq((3, 7), (2, 6), (1, 3), (0, 2))),
     ).map(i => i._1 -> i._2(rs1))
 
   def processS(seq: Seq[(Int, Int)]) = (rs1: UInt) => {

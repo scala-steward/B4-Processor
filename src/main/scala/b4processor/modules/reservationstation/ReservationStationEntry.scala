@@ -54,6 +54,6 @@ object ReservationStationEntry {
       _.destinationTag -> Tag(0, 0),
       _.wasCompressed -> false.B,
       _.branchOffset -> 0.S,
-      _.valid -> false.B
+      _.valid -> false.B,
     )
 }

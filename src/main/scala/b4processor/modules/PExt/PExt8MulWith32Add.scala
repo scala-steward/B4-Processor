@@ -45,6 +45,6 @@ object PExt8MulWith32Add {
           out(x) := (rd.W(x).asSInt + m.reduce(_ + _)).asUInt
         }
         (out.reverse.reduce(_ ## _), false.B)
-      }
+      },
     )
 }

@@ -5,7 +5,7 @@ import b4processor.connections.{
   CollectedOutput,
   Decoder2LoadStoreQueue,
   LoadStoreQueue2Memory,
-  LoadStoreQueue2ReorderBuffer
+  LoadStoreQueue2ReorderBuffer,
 }
 import chisel3._
 import chisel3.util._
@@ -20,14 +20,14 @@ class LoadStoreQueue(implicit params: Parameters)
     val decoders =
       Vec(
         params.decoderPerThread,
-        Flipped(Decoupled(new Decoder2LoadStoreQueue()))
+        Flipped(Decoupled(new Decoder2LoadStoreQueue())),
       )
     val outputCollector = Flipped(new CollectedOutput)
     val reorderBuffer = Flipped(
       Vec(
         params.maxRegisterFileCommitCount,
-        Valid(new LoadStoreQueue2ReorderBuffer)
-      )
+        Valid(new LoadStoreQueue2ReorderBuffer),
+      ),
     )
     val memory = Decoupled(new LoadStoreQueue2Memory)
     val empty = Output(Bool())
@@ -51,8 +51,8 @@ class LoadStoreQueue(implicit params: Parameters)
 
   val buffer = RegInit(
     VecInit(
-      Seq.fill(math.pow(2, params.loadStoreQueueIndexWidth).toInt)(defaultEntry)
-    )
+      Seq.fill(math.pow(2, params.loadStoreQueueIndexWidth).toInt)(defaultEntry),
+    ),
   )
   var insertIndex = head
 
@@ -79,7 +79,7 @@ class LoadStoreQueue(implicit params: Parameters)
         addressTag = decoder.bits.addressTag,
         storeDataTag = decoder.bits.storeDataTag,
         storeData = decoder.bits.storeData,
-        storeDataValid = decoder.bits.storeDataValid
+        storeDataValid = decoder.bits.storeDataValid,
       )
     }
     insertIndex = insertIndex + entryValid.asUInt
@@ -94,7 +94,7 @@ class LoadStoreQueue(implicit params: Parameters)
     for (o <- output) {
       when(o.valid && buf.valid) {
         when(
-          buf.storeDataTag === o.bits.tag && !buf.storeDataValid && buf.operation === LoadStoreOperation.Store
+          buf.storeDataTag === o.bits.tag && !buf.storeDataValid && buf.operation === LoadStoreOperation.Store,
         ) {
           buf.storeDataTag := Tag(0, 0)
           buf.storeData := o.bits.value
@@ -127,16 +127,16 @@ class LoadStoreQueue(implicit params: Parameters)
   // Overlap : 先行する命令の実効アドレスとの被りがあるかのフラグ (T:あり　F:なし)
   // Address : 送出対象の命令のアドレスを格納
   val Overlap = WireInit(
-    VecInit(Seq.fill(params.loadStoreQueueCheckLength)(false.B))
+    VecInit(Seq.fill(params.loadStoreQueueCheckLength)(false.B)),
   )
   val Address = WireInit(
-    VecInit(Seq.fill(params.loadStoreQueueCheckLength)(0.U(64.W)))
+    VecInit(Seq.fill(params.loadStoreQueueCheckLength)(0.U(64.W))),
   )
   val AddressValid = WireInit(
-    VecInit(Seq.fill(params.loadStoreQueueCheckLength)(false.B))
+    VecInit(Seq.fill(params.loadStoreQueueCheckLength)(false.B)),
   )
   val EntryValid = WireInit(
-    VecInit(Seq.fill(params.loadStoreQueueCheckLength)(false.B))
+    VecInit(Seq.fill(params.loadStoreQueueCheckLength)(false.B)),
   )
 
   // emissionindex : 送出可能か調べるエントリを指すindex
@@ -161,7 +161,7 @@ class LoadStoreQueue(implicit params: Parameters)
         for (j <- 0 until i) {
           when(EntryValid(j)) {
             when(
-              (AddressValid(j) && Address(j) === Address(i)) || !AddressValid(j)
+              (AddressValid(j) && Address(j) === Address(i)) || !AddressValid(j),
             ) {
               Overlap(i) := true.B
             }
@@ -217,7 +217,7 @@ class LoadStoreQueue(implicit params: Parameters)
     for (i <- 0 to params.decoderPerThread) {
       cover(
         head === past(head) + i.U,
-        "there should ba a time where head increments by $i"
+        "there should ba a time where head increments by $i",
       )
     }
 
@@ -242,7 +242,7 @@ class LoadStoreQueue(implicit params: Parameters)
     when(io.empty) {
       assert(
         io.decoders.map(_.ready).reduce(_ || _),
-        "no decoders are ready when empty"
+        "no decoders are ready when empty",
       )
     }
 
@@ -256,7 +256,7 @@ class LoadStoreQueue(implicit params: Parameters)
     when(past(io.memory.valid && !io.memory.ready)) {
       assert(stable(io.memory.valid))
       assert(
-        stable(io.memory.bits) || past(toMemoryIndex) - toMemoryIndex > 0.U
+        stable(io.memory.bits) || past(toMemoryIndex) - toMemoryIndex > 0.U,
       )
     }
   }
@@ -286,7 +286,7 @@ object LoadStoreQueue extends App {
     Parameters(
       maxRegisterFileCommitCount = 2,
       tagWidth = 4,
-      loadStoreQueueIndexWidth = 3
+      loadStoreQueueIndexWidth = 3,
     )
 
 //  println(ChiselStage.emitCHIRRTL(new LoadStoreQueue))
@@ -299,8 +299,8 @@ object LoadStoreQueue extends App {
       "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb,verifLabels",
 //      "--emit-chisel-asserts-as-sva",
       "--dedup",
-      "--mlir-pass-statistics"
-    )
+      "--mlir-pass-statistics",
+    ),
   )
 
   var s = ChiselStage.emitSystemVerilog(
@@ -308,7 +308,7 @@ object LoadStoreQueue extends App {
     firtoolOpts = Array(
       "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb,verifLabels",
 //      "--emit-chisel-asserts-as-sva",
-      "--dedup"
-    )
+      "--dedup",
+    ),
   )
 }

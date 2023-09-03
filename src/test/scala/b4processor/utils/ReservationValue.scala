@@ -9,5 +9,5 @@ case class ReservationValue(
   value2: BigInt = 0,
   operation: ALUOperation.Type = ALUOperation.BranchEqual,
   wasCompressed: Boolean = false,
-  branchOffset: Int = 0
+  branchOffset: Int = 0,
 )

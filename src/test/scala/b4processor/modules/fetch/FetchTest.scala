@@ -148,7 +148,7 @@ class FetchTest
       debug = true,
       threads = 1,
       decoderPerThread = 2,
-      instructionStart = 0x1000_0000
+      instructionStart = 0x1000_0000,
     )
 
   // 普通の命令と分岐を区別できるか
@@ -160,11 +160,11 @@ class FetchTest
   it should "load memory" in {
     test(
       new FetchWrapper(
-      )
+      ),
     ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize(
         InstructionUtil
-          .fromStringSeq32bit(Seq("00000013", "00000463", "00000013"))
+          .fromStringSeq32bit(Seq("00000013", "00000463", "00000013")),
       )
 
       c.waitForCacheValid()
@@ -186,10 +186,10 @@ class FetchTest
   it should "read both values in loop" in {
     test(
       new FetchWrapper(
-      )
+      ),
     ) { c =>
       c.initialize(
-        InstructionUtil.fromStringSeq32bit(Seq("00000063", "00000000"))
+        InstructionUtil.fromStringSeq32bit(Seq("00000063", "00000000")),
       )
       c.setPrediction(Seq(true, true))
 
@@ -216,11 +216,11 @@ class FetchTest
   it should "understand branch prediction=false" in {
     test(
       new FetchWrapper(
-      )
+      ),
     ) { c =>
       c.initialize(
         InstructionUtil
-          .fromStringSeq32bit(Seq("00000013", "00000463", "00000013"))
+          .fromStringSeq32bit(Seq("00000013", "00000463", "00000013")),
       )
       c.waitForCacheValid()
       c.io.nextPC.expect(0x10000004)
@@ -236,11 +236,11 @@ class FetchTest
   it should "understand branch prediction=true" in {
     test(
       new FetchWrapper(
-      )
+      ),
     ) { c =>
       c.initialize(
         InstructionUtil
-          .fromStringSeq32bit(Seq("00000013", "00000463", "00000013"))
+          .fromStringSeq32bit(Seq("00000013", "00000463", "00000013")),
       )
       c.waitForCacheValid()
       c.io.nextPC.expect(0x10000004)
@@ -255,10 +255,10 @@ class FetchTest
   it should "understand loop to self" in {
     test(
       new FetchWrapper(
-      )
+      ),
     ) { c =>
       c.initialize(
-        InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063"))
+        InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063")),
       )
       c.waitForCacheValid()
       c.io.nextPC.expect(0x10000004)
@@ -279,10 +279,10 @@ class FetchTest
   it should "understand loop" in {
     test(
       new FetchWrapper(
-      )
+      ),
     ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize(
-        InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063"))
+        InstructionUtil.fromStringSeq32bit(Seq("00000013", "00000063")),
       )
       c.waitForCacheValid()
       c.io.nextPC.expect(0x10000004)
@@ -305,10 +305,10 @@ class FetchTest
   it should "understand jal loop" in {
     test(
       new FetchWrapper(
-      )
+      ),
     ) { c =>
       c.initialize(
-        InstructionUtil.fromStringSeq32bit(Seq("00000013", "ffdff06f"))
+        InstructionUtil.fromStringSeq32bit(Seq("00000013", "ffdff06f")),
       )
       c.waitForCacheValid()
       c.io.nextPC.expect(0x10000000)
@@ -331,7 +331,7 @@ class FetchTest
   it should "understand jal jumps" in {
     test(
       new FetchWrapper(
-      )
+      ),
     ) { c =>
       c.initialize(
         InstructionUtil.fromStringSeq32bit(
@@ -344,9 +344,9 @@ class FetchTest
             "00000013",
             "00000013",
             "00000013",
-            "fe1ff06f"
-          )
-        )
+            "fe1ff06f",
+          ),
+        ),
       )
       c.waitForCacheValid()
       c.io.nextPC.expect(0x1000001c)
@@ -370,12 +370,12 @@ class FetchTest
   it should "understand fence" in {
     test(
       new FetchWrapper(
-      )
+      ),
     ).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
       c.initialize(
         InstructionUtil.fromStringSeq32bit(
-          Seq("00000013", "0ff0000f", "00000013", "00000013")
-        )
+          Seq("00000013", "0ff0000f", "00000013", "00000013"),
+        ),
       )
       c.waitForCacheValid()
       c.io.branchTypes(0).expect(BranchType.Next4)

@@ -6,7 +6,7 @@ import b4processor.connections.{
   CSRReservationStation2CSR,
   CollectedOutput,
   Decoder2CSRReservationStation,
-  LoadStoreQueue2ReorderBuffer
+  LoadStoreQueue2ReorderBuffer,
 }
 import chisel3._
 import chisel3.util._
@@ -16,7 +16,7 @@ class CSRReservationStation(implicit params: Parameters) extends Module {
     val decoderInput =
       Vec(
         params.decoderPerThread,
-        Flipped(Decoupled(new Decoder2CSRReservationStation))
+        Flipped(Decoupled(new Decoder2CSRReservationStation)),
       )
     val toCSR =
       Decoupled(new CSRReservationStation2CSR())
@@ -24,8 +24,8 @@ class CSRReservationStation(implicit params: Parameters) extends Module {
     val reorderBuffer = Flipped(
       Vec(
         params.maxRegisterFileCommitCount,
-        Valid(new LoadStoreQueue2ReorderBuffer)
-      )
+        Valid(new LoadStoreQueue2ReorderBuffer),
+      ),
     )
     val empty = Output(Bool())
     val isError = Input(Bool())
@@ -37,7 +37,7 @@ class CSRReservationStation(implicit params: Parameters) extends Module {
   private val head = RegInit(0.U(2.W))
   private val tail = RegInit(0.U(2.W))
   private val buf = RegInit(
-    VecInit(Seq.fill(4)(CSRReservationStationEntry.default))
+    VecInit(Seq.fill(4)(CSRReservationStationEntry.default)),
   )
   io.empty := head === tail
 

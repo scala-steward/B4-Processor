@@ -32,7 +32,7 @@ class SomeTest
 
   it should "10-3=7" in {
     test(new Adder).withAnnotations(
-      Seq(WriteFstAnnotation, VerilatorBackendAnnotation)
+      Seq(WriteFstAnnotation, VerilatorBackendAnnotation),
     ) { c =>
       c.a.poke(10)
       c.b.poke(-3)

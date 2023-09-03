@@ -35,7 +35,7 @@ object MemoryReadTransaction {
     address: UInt,
     size: MemoryAccessWidth.Type,
     signed: Bool,
-    outputTag: Tag
+    outputTag: Tag,
   )(implicit params: Parameters): MemoryReadTransaction = {
     val w = Wire(new MemoryReadTransaction)
     w.accessType := MemoryReadIntent.Data
@@ -48,7 +48,7 @@ object MemoryReadTransaction {
   }
 
   def ReadToAmo(address: UInt, size: MemoryAccessWidth.Type, outputTag: Tag)(
-    implicit params: Parameters
+    implicit params: Parameters,
   ): MemoryReadTransaction = {
     val w = Wire(new MemoryReadTransaction)
     w.accessType := MemoryReadIntent.Amo
@@ -61,7 +61,7 @@ object MemoryReadTransaction {
   }
 
   def ReadInstruction(address: UInt, length: Int, threadId: UInt)(implicit
-    params: Parameters
+    params: Parameters,
   ): MemoryReadTransaction = {
     val w = Wire(new MemoryReadTransaction)
     w.accessType := MemoryReadIntent.Instruction

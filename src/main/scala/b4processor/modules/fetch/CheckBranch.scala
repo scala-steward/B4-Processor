@@ -34,14 +34,14 @@ class CheckBranch extends Module {
       io.instruction(2),
       io.instruction(11),
       io.instruction(5, 3),
-      0.U(1.W)
+      0.U(1.W),
     ).asSInt),
     (instruction === IType("JAL")) -> (BranchType.JAL, Cat(
       io.instruction(31),
       io.instruction(19, 12),
       io.instruction(20),
       io.instruction(30, 21),
-      0.U(1.W)
+      0.U(1.W),
     ).asSInt),
     (instruction === IType("JALR")) -> (BranchType.JALR, 0.S),
     (instruction === CType("C_JALR")) -> (BranchType.JALR, 0.S),
@@ -54,12 +54,12 @@ class CheckBranch extends Module {
       IType("BLTU"),
       IType("BNE"),
       CType("C_BEQZ"),
-      CType("C_BNEZ")
+      CType("C_BNEZ"),
     )) -> (BranchType.Branch, 4.S),
     (instruction === IType("FENCE")) -> (BranchType.Fence, 4.S),
     (instruction === ZIFENCEIType("FENCE_I")) -> (BranchType.FenceI, 4.S),
     (instruction === SYSTEMType("MRET")) -> (BranchType.mret, 4.S),
-    (instruction === SYSTEMType("WFI")) -> (BranchType.Wfi, 4.S)
+    (instruction === SYSTEMType("WFI")) -> (BranchType.Wfi, 4.S),
   )
 
   val defaultOffset =
@@ -67,7 +67,7 @@ class CheckBranch extends Module {
   // 分岐のオフセット
   io.offset := MuxCase(
     defaultOffset,
-    branchTypeAndOffset.map(a => a._1 -> a._2._2)
+    branchTypeAndOffset.map(a => a._1 -> a._2._2),
   )
 
   val defaultNext =
@@ -75,7 +75,7 @@ class CheckBranch extends Module {
   // 分岐の種類の抽出
   io.branchType := MuxCase(
     defaultNext,
-    branchTypeAndOffset.map(a => a._1 -> a._2._1)
+    branchTypeAndOffset.map(a => a._1 -> a._2._1),
   )
 }
 

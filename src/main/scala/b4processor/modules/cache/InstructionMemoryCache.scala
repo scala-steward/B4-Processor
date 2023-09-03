@@ -96,7 +96,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
       MemoryReadTransaction.ReadInstruction(
         Cat(request, 0.U(4.W)),
         2,
-        io.threadId
+        io.threadId,
       )
     transaction := tmp_transaction
     io.memory.request.valid := true.B

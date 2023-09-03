@@ -17,7 +17,7 @@ object MMArbiter extends App {
 
   def apply[T <: Data](
     outputs: Int,
-    inputs: Vec[DecoupledIO[T]]
+    inputs: Vec[DecoupledIO[T]],
   ): Vec[DecoupledIO[T]] = {
     val t: T = inputs(0).bits.cloneType
     val inputSize = inputs.length

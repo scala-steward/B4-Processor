@@ -64,7 +64,7 @@ object PExt8Misc {
           val snum = rs1.B(x).asSInt
           out(x) := MuxCase(
             0.U,
-            (0 until 7).map(i => (snum(i) === snum(7)) -> (7 - i).U)
+            (0 until 7).map(i => (snum(i) === snum(7)) -> (7 - i).U),
           )
         }
         (out.reverse.reduce(_ ## _), false.B)
@@ -75,7 +75,7 @@ object PExt8Misc {
           val snum = rs1.B(x).asSInt
           out(x) := MuxCase(
             0.U,
-            (0 until 8).map(i => (snum(i) === 0.U) -> (7 - i).U)
+            (0 until 8).map(i => (snum(i) === 0.U) -> (7 - i).U),
           )
         }
         (out.reverse.reduce(_ ## _), false.B)

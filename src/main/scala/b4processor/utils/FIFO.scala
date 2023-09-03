@@ -18,10 +18,10 @@ class FIFO[T <: Data](width: Int)(t: T, flow: Boolean = false) extends Module {
 //      UInt(t.getWidth.W),
       t,
       pow(2, width).toInt,
-      useSyncReadMem = true
+      useSyncReadMem = true,
 //      hasFlush = true,
 //      flow = flow
-    )
+    ),
   )
   //  queue.io.enq.bits := input.bits.asUInt
   queue.io.enq.bits := input.bits
@@ -84,8 +84,8 @@ object MyFIFO extends App {
     Array(
       "--disable-mem-randomization",
       "--disable-reg-randomization",
-      "--disable-all-randomization"
-    )
+      "--disable-all-randomization",
+    ),
   )
 }
 
@@ -130,7 +130,7 @@ object MyFIFO2 extends App {
     Array(
       "--disable-mem-randomization",
       "--disable-reg-randomization",
-      "--disable-all-randomization"
-    )
+      "--disable-all-randomization",
+    ),
   )
 }

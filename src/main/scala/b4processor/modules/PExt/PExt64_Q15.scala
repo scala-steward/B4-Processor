@@ -53,7 +53,7 @@ object PExt64_Q15 {
       KDMTT16 -> KDMXX16(1, 1),
       KDMABB16 -> KDMAXX16(0, 0),
       KDMABT16 -> KDMAXX16(0, 1),
-      KDMATT16 -> KDMAXX16(1, 1)
+      KDMATT16 -> KDMAXX16(1, 1),
     )
   }
 

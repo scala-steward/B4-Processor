@@ -34,7 +34,7 @@ class OpcodeFormatChecker extends Module {
       "b0100011".U -> OpcodeFormat.S, // store
       // R
       "b0110011".U -> OpcodeFormat.R, // 演算
-      "b0111011".U -> OpcodeFormat.R // 演算(64I)
-    )
+      "b0111011".U -> OpcodeFormat.R, // 演算(64I)
+    ),
   )
 }

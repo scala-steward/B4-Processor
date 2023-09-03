@@ -37,7 +37,7 @@ object PExt8Shift {
       KSLL8 -> processShift8(LeftSaturating, false),
       KSLLI8 -> processShift8(LeftSaturating, true),
       KSLRA8 -> processShift8(LeftSaturatingRight, false),
-      KSLRA8_U -> processShift8(LeftSaturatingRightRound, false)
+      KSLRA8_U -> processShift8(LeftSaturatingRightRound, false),
     )
   }
 
@@ -80,7 +80,7 @@ object PExt8Shift {
             Mux(
               amts < 0.S,
               RoundingShiftRightSigned8(a, (0.S - amts).asUInt),
-              out_t._1
+              out_t._1,
             )
           }
         })

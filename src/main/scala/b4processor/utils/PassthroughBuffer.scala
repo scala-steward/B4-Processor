@@ -20,8 +20,8 @@ object PassthroughBuffer extends App {
     Array(
       "--disable-mem-randomization",
       "--disable-reg-randomization",
-      "--disable-all-randomization"
-    )
+      "--disable-all-randomization",
+    ),
   )
 
   def apply[T <: Data](input: ReadyValidIO[T]): IrrevocableIO[T] = {

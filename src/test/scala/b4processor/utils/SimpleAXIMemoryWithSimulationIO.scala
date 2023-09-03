@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.util._
 
 class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 16)(
-  implicit params: Parameters
+  implicit params: Parameters,
 ) extends Module {
   val axi = IO(Flipped(new ChiselAXI(64, 64)))
   val simulationSource = IO(new Bundle {
@@ -19,10 +19,10 @@ class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 16)(
   })
 
   private val memAddrMask = BitPat(
-    "b00000000_00000000_00000000_00000000_1???????_????????_????????_????????"
+    "b00000000_00000000_00000000_00000000_1???????_????????_????????_????????",
   )
   private val ioAddrMask = BitPat(
-    "b00000000_00000000_00000000_00000000_0001????_????????_????????_????????"
+    "b00000000_00000000_00000000_00000000_0001????_????????_????????_????????",
   )
 
   locally {
@@ -63,7 +63,7 @@ class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 16)(
       when(simulationSource.input.valid) {
         mem.write(
           sourceWriteIndex,
-          simulationSource.input.bits.asTypeOf(Vec(8, UInt(8.W)))
+          simulationSource.input.bits.asTypeOf(Vec(8, UInt(8.W))),
         )
         sourceWriteIndex := sourceWriteIndex + 1.U
       }
@@ -107,7 +107,7 @@ class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 16)(
           mem.write(
             writeState.output.bits.address(63, 3) + burstLen,
             axi.write.bits.DATA.asTypeOf(Vec(8, UInt(8.W))),
-            axi.write.bits.STRB.asBools
+            axi.write.bits.STRB.asBools,
           )
           burstLen := burstLen + 1.U
           when(burstLen === writeState.output.bits.burstLength) {
@@ -136,7 +136,7 @@ class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 16)(
       axi.writeResponse.bits.RESP := Mux(
         writeResponseState.output.bits.isError,
         Response.DecErr,
-        Response.Okay
+        Response.Okay,
       )
       when(axi.writeResponse.ready) {
         writeResponseState.output.ready := true.B

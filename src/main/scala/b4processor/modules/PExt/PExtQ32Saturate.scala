@@ -128,7 +128,7 @@ object PExtQ32Saturate {
       KABSW -> {
         val out_t = SAT.Q31(ABS(rs1.W(0)))
         (SE64(out_t._1), out_t._2)
-      }
+      },
     )
   }
 

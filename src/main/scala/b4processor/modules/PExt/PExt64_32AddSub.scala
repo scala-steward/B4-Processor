@@ -70,7 +70,7 @@ object PExt64_32AddSub {
       RSTSA32 -> process32(Straight, Sub, Add, SignedHalving),
       URSTSA32 -> process32(Straight, Sub, Add, UnsignedHalving),
       KSTSA32 -> process32(Straight, Sub, Add, SignedSaturate),
-      UKSTSA32 -> process32(Straight, Sub, Add, UnsignedSaturate)
+      UKSTSA32 -> process32(Straight, Sub, Add, UnsignedSaturate),
     )
   }
 
@@ -78,7 +78,7 @@ object PExt64_32AddSub {
     dir: DirectionType,
     high: AddSub,
     low: AddSub,
-    ptype: ProcessType
+    ptype: ProcessType,
   ): (UInt, UInt) => (UInt, Bool) = (rs1: UInt, rs2: UInt) => {
     val out = Seq.fill(2)(Wire(UInt(32.W)))
     var overflow = WireInit(false.B)

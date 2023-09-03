@@ -11,7 +11,7 @@ object PExt16Pack {
       PKBB16 -> process(0, 0),
       PKBT16 -> process(0, 1),
       PKTB16 -> process(1, 0),
-      PKTT16 -> process(1, 1)
+      PKTT16 -> process(1, 1),
     ).map(i => i._1 -> i._2(rs1, rs2))
 
   def process(fst: Int, snd: Int) = (rs1: UInt, rs2: UInt) => {

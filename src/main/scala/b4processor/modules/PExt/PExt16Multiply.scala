@@ -27,7 +27,7 @@ object PExt16Multiply {
       UMUL16 -> processMul16(UnsignedMultiply),
       UMULX16 -> processMul16(UnsignedCrossedMultiply),
       KHM16 -> processMul16(SaturatingMultiply),
-      KHMX16 -> processMul16(SaturatingCrossedMultiply)
+      KHMX16 -> processMul16(SaturatingCrossedMultiply),
     )
   }
 

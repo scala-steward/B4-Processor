@@ -5,7 +5,7 @@ import b4processor.connections.{
   CSR2Fetch,
   Fetch2BranchPrediction,
   Fetch2FetchBuffer,
-  InstructionCache2Fetch
+  InstructionCache2Fetch,
 }
 import b4processor.modules.branch_output_collector.CollectedBranchAddresses
 import chisel3._
@@ -101,12 +101,12 @@ class Fetch(wfiWaitWidth: Int = 10)(implicit params: Parameters)
           BranchType.JAL -> Mux(
             branch.io.offset === 0.S,
             WaitingReason.BusyLoop,
-            WaitingReason.None
+            WaitingReason.None,
           ),
           BranchType.mret -> WaitingReason.mret,
-          BranchType.Wfi -> WaitingReason.WaitForInterrupt
-        )
-      )
+          BranchType.Wfi -> WaitingReason.WaitForInterrupt,
+        ),
+      ),
     )
     // PCの更新を確認
     nextPC = (nextPC.asSInt + MuxCase(
@@ -116,8 +116,8 @@ class Fetch(wfiWaitWidth: Int = 10)(implicit params: Parameters)
         (branch.io.branchType === BranchType.JAL) -> branch.io.offset,
         (branch.io.branchType === BranchType.Branch) -> 0.S,
         (nextWait =/= WaitingReason.None) -> 0.S,
-        (branch.io.branchType === BranchType.Next2) -> 2.S
-      )
+        (branch.io.branchType === BranchType.Next2) -> 2.S,
+      ),
     )).asUInt
   }
   pc := nextPC
@@ -136,7 +136,7 @@ class Fetch(wfiWaitWidth: Int = 10)(implicit params: Parameters)
     }
     when(waiting === WaitingReason.Fence || waiting === WaitingReason.FenceI) {
       when(
-        io.reorderBufferEmpty && io.loadStoreQueueEmpty && io.fetchBuffer.empty
+        io.reorderBufferEmpty && io.loadStoreQueueEmpty && io.fetchBuffer.empty,
       ) {
         waiting := WaitingReason.None
         pc := pc + 4.U
@@ -199,7 +199,7 @@ class Fetch(wfiWaitWidth: Int = 10)(implicit params: Parameters)
       when(pastValid && past(waiting === reason)) {
         cover(
           waiting === WaitingReason.None,
-          s"could not come back from $reason"
+          s"could not come back from $reason",
         )
       }
     }

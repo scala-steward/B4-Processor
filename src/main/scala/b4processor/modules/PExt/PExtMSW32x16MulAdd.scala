@@ -23,7 +23,7 @@ object PExtMSW32x16MulAdd {
       KMMAWB2 -> KMMAWX2x(false, false),
       KMMAWB2_U -> KMMAWX2x(false, true),
       KMMAWT2 -> KMMAWX2x(true, false),
-      KMMAWT2_U -> KMMAWX2x(true, true)
+      KMMAWT2_U -> KMMAWX2x(true, true),
     ).map(a => a._1 -> a._2(rs1, rs2, rd))
 
   def SMMWXx(top: Boolean, round: Boolean) =

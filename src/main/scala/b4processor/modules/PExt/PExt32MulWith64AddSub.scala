@@ -46,6 +46,6 @@ object PExt32MulWith64AddSub {
         val m0 = rs1.W(0) * rs2.W(0)
         val m1 = rs1.W(1) * rs2.W(1)
         SAT.U64(rd - m0 - m1)
-      }
+      },
     )
 }

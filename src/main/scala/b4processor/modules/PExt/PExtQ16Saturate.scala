@@ -56,7 +56,7 @@ object PExtQ16Saturate {
         val t = a - b
         val uk16 = SAT.U16(t)
         (SE(64)(uk16._1), uk16._2)
-      }
+      },
     )
   }
 

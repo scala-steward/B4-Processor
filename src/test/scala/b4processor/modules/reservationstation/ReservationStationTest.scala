@@ -21,7 +21,7 @@ class ReservationStationWrapper(implicit params: Parameters)
   def setDecoderInput(
     programCounter: Option[Int],
     value1: Option[Int] = None,
-    value2: Option[Int] = None
+    value2: Option[Int] = None,
   ): Unit = {
     this.io.decoder(0).entry.poke(ReservationStationEntry.zero)
     this.io.decoder(0).entry.valid.poke(programCounter.isDefined)
@@ -39,15 +39,15 @@ class ReservationStationWrapper(implicit params: Parameters)
     val bypassValue = io.collectedOutput.outputs
     bypassValue(0).valid.poke(values.isDefined)
     bypassValue(0).bits.value.poke(
-      values.getOrElse(ExecutorValue(destinationTag = 0, value = 0)).value
+      values.getOrElse(ExecutorValue(destinationTag = 0, value = 0)).value,
     )
     bypassValue(0).bits.tag.poke(
       Tag(
         0,
         values
           .getOrElse(ExecutorValue(destinationTag = 0, value = 0))
-          .destinationTag
-      )
+          .destinationTag,
+      ),
     )
 
   }
@@ -94,7 +94,7 @@ class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
           c.setDecoderInput(
             programCounter = Some(1),
             value1 = Some(2),
-            value2 = Some(3)
+            value2 = Some(3),
           )
           c.clock.step()
         }
@@ -116,7 +116,7 @@ class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
           c.setDecoderInput(
             programCounter = Some(1),
             value1 = Some(2),
-            value2 = Some(3)
+            value2 = Some(3),
           )
           c.clock.step()
         }

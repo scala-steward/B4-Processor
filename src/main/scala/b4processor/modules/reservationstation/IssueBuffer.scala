@@ -26,9 +26,9 @@ class IssueBuffer[T <: Data](outputs: Int, t: T)(implicit params: Parameters)
   val buffers_valid = RegInit(
     VecInit(
       Seq.fill(params.threads)(
-        VecInit(Seq.fill(pow(2, widthPerThread).toInt)(false.B))
-      )
-    )
+        VecInit(Seq.fill(pow(2, widthPerThread).toInt)(false.B)),
+      ),
+    ),
   )
 
   for (t <- 0 until params.threads) {
@@ -54,7 +54,7 @@ class IssueBuffer[T <: Data](outputs: Int, t: T)(implicit params: Parameters)
   }
 
   val arbiter = Module(
-    new MMArbiter(t, params.threads * pow(2, widthPerThread).toInt, outputs)
+    new MMArbiter(t, params.threads * pow(2, widthPerThread).toInt, outputs),
   )
 
   for (t <- 0 until params.threads) {
@@ -78,6 +78,6 @@ class IssueBuffer[T <: Data](outputs: Int, t: T)(implicit params: Parameters)
 object IssueBuffer extends App {
   implicit val params = Parameters()
   ChiselStage.emitSystemVerilogFile(
-    new IssueBuffer(params.executors, UInt(32.W))
+    new IssueBuffer(params.executors, UInt(32.W)),
   )
 }
