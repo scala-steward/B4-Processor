@@ -98,7 +98,7 @@
           buildInputs = with pkgs;[
             circt
             rustfilt
-            pkgsCross.riscv64-embedded.buildPackages.gcc
+            pkgsCross.riscv64.stdenv.cc
             sbt
             jdk
             verilog
