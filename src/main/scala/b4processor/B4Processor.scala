@@ -106,22 +106,20 @@ class B4Processor(implicit params: Parameters) extends Module {
   outputCollector.io.memoryWriteResult <> externalMemoryInterface.io.dataWriteOut
 
   /** レジスタのコンテンツをデバッグ時に接続 */
-  if (params.debug) {
+  if (params.debug)
     for (tid <- 0 until params.threads)
       for (i <- 0 until 32)
         registerFileContents.get(tid)(i) <> registerFile(tid).io.values.get(i)
-  }
-  if (params.enablePExt) {
+  if (params.enablePExt)
     for (pe <- 0 until params.pextExecutors) {
       pextIssueBuffer.get.io.executors(pe) <> pextExecutors.get(pe).io.input
       outputCollector.io.pextExecutor(pe) <> pextExecutors.get(pe).io.output
     }
-  } else {
+  else
     outputCollector.io.pextExecutor foreach { o =>
       o.valid := false.B
       o.bits := 0.U.asTypeOf(new OutputValue())
     }
-  }
 
   for (e <- 0 until params.executors) {
 

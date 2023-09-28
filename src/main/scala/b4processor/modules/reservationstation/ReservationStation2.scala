@@ -43,13 +43,14 @@ class ReservationStation2(implicit params: Parameters) extends Module {
       val r = reservation(i)
       a.bits.operation := r.operation
       a.bits.destinationTag := r.destinationTag
-      a.bits.value1 := r.sources(0).value
-      a.bits.value2 := r.sources(1).value
+      a.bits.value1 := r.sources(0).getValueUnsafe
+      a.bits.value2 := r.sources(1).getValueUnsafe
       a.bits.wasCompressed := r.wasCompressed
       a.bits.branchOffset := r.branchOffset
-      a.valid := r.valid && r.sources(0).ready && r
-        .sources(1)
-        .ready && !r.ispext
+      a.valid := r.valid &&
+        r.sources(0).isValue &&
+        r.sources(1).isValue &&
+        !r.ispext
       when(a.valid && a.ready) {
         r := ReservationStationEntry.default
       }
@@ -64,12 +65,14 @@ class ReservationStation2(implicit params: Parameters) extends Module {
       val r = reservation(i)
       a.bits.operation := r.pextOperation
       a.bits.destinationTag := r.destinationTag
-      a.bits.value1 := r.sources(0).value
-      a.bits.value2 := r.sources(1).value
-      a.bits.value3 := r.sources(2).value
-      a.valid := r.valid && r.sources(0).ready && r.sources(1).ready && r
-        .sources(2)
-        .ready && r.ispext
+      a.bits.value1 := r.sources(0).getValueUnsafe
+      a.bits.value2 := r.sources(1).getValueUnsafe
+      a.bits.value3 := r.sources(2).getValueUnsafe
+      a.valid := r.valid &&
+        r.sources(0).isValue &&
+        r.sources(1).isValue &&
+        r.sources(2).isValue &&
+        r.ispext
       when(a.valid && a.ready) {
         r := ReservationStationEntry.default
       }
@@ -98,10 +101,16 @@ class ReservationStation2(implicit params: Parameters) extends Module {
         for (entry <- reservation) {
           when(entry.valid) {
             for (source <- entry.sources) {
-              when(!source.ready && source.tag === o.bits.tag) {
-                source.value := o.bits.value
-                source.ready := true.B
-              }
+              source := source.matchExhaustive(
+                { tag =>
+                  Mux(
+                    tag === o.bits.tag,
+                    source.fromValue(o.bits.value),
+                    source.fromTag(tag),
+                  )
+                },
+                { v => source.fromValue(v) },
+              )
             }
           }
         }
@@ -114,5 +123,10 @@ class ReservationStation2(implicit params: Parameters) extends Module {
 object ReservationStation2 extends App {
   implicit val params =
     Parameters(tagWidth = 3, decoderPerThread = 2, threads = 2)
-  ChiselStage.emitSystemVerilogFile(new ReservationStation2())
+  ChiselStage.emitSystemVerilogFile(
+    new ReservationStation2(),
+    firtoolOpts = Array(
+      "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb",
+    ),
+  )
 }
