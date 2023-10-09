@@ -291,8 +291,6 @@ object B4Processor extends App {
     new B4ProcessorFixedPorts(),
     Array.empty,
     Array(
-//      "--disable-mem-randomization",
-//      "--disable-reg-randomization",
       "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb",
       "--disable-all-randomization",
       "--add-vivado-ram-address-conflict-synthesis-bug-workaround",

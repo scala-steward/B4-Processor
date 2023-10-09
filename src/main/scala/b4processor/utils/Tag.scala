@@ -17,6 +17,8 @@ class Tag(implicit params: Parameters) extends Bundle {
   } else {
     cf"Tag(thread=${this.threadId}, id=${this.id})"
   }
+
+  def =/=(other: Tag) = !(this === other)
 }
 
 object Tag {

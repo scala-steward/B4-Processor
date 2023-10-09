@@ -125,11 +125,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1695806987,
-        "narHash": "sha256-fX5kGs66NZIxCMcpAGIpxuftajHL8Hil1vjHmjjl118=",
+        "lastModified": 1696725822,
+        "narHash": "sha256-B7uAOS7TkLlOg1aX01rQlYbydcyB6ZnLJSfaYbKVww8=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "f3dab3509afca932f3f4fd0908957709bb1c1f57",
+        "rev": "5aabb5780a11c500981993d49ee93cfa6df9307b",
         "type": "github"
       },
       "original": {
@@ -141,11 +141,11 @@
     "riscv-test-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1690215307,
-        "narHash": "sha256-OG8t4w6LMyOqhH3FLnIEQGGG+IsX1VQjcfwUzcWNC/M=",
+        "lastModified": 1696349280,
+        "narHash": "sha256-IHk8dM3euJftVgj387a4Fvp5k5YGHG50YLvJum6Fsrw=",
         "ref": "refs/heads/master",
-        "rev": "d4eaa5bd6674b51d3b9b24913713c4638e99cdd9",
-        "revCount": 935,
+        "rev": "9905a434c9da6588763b31dd01d263144e0db0ed",
+        "revCount": 945,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/riscv-software-src/riscv-tests"

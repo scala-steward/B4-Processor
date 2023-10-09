@@ -61,6 +61,12 @@ class Decoder(implicit params: Parameters) extends Module with FormalTools {
   }
   val destinationTag = io.reorderBuffer.destination.destinationTag
 
+  for (s <- sourceTags) {
+    when(s.valid) {
+      assert(s.bits =/= destinationTag,"tag wrong?")
+    }
+  }
+
   // Valueの選択
   val values = Wire(Vec(3, Valid(UInt(64.W))))
   values := io.reorderBuffer.sources zip io.registerFile.values zip sourceTags map {
