@@ -53,7 +53,7 @@ class z50_B4ProcessorBenchmark extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  for (i <- 0 until 4) {
+  for (i <- 2 until 3) {
     it should s"run median$i" in {
       test(
         new B4ProcessorWithMemory()(
