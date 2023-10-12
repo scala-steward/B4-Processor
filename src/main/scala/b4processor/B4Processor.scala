@@ -101,10 +101,6 @@ class B4Processor(implicit params: Parameters) extends Module {
 
   axi <> externalMemoryInterface.io.coordinator
 
-  /** 出力コレクタとデータメモリ */
-  outputCollector.io.memoryReadResult <> externalMemoryInterface.io.dataReadOut
-  outputCollector.io.memoryWriteResult <> externalMemoryInterface.io.dataWriteOut
-
   /** レジスタのコンテンツをデバッグ時に接続 */
   if (params.debug)
     for (tid <- 0 until params.threads)
@@ -135,10 +131,6 @@ class B4Processor(implicit params: Parameters) extends Module {
 
   for (tid <- 0 until params.threads) {
     amo.io.collectedOutput := outputCollector.io.outputs
-    amo.io.readRequest <> externalMemoryInterface.io.amoReadRequests
-    amo.io.writeRequest <> externalMemoryInterface.io.amoWriteRequests
-    amo.io.readResponse <> externalMemoryInterface.io.amoReadOut
-    amo.io.writeResponse <> externalMemoryInterface.io.amoWriteOut
     amo.io.output <> outputCollector.io.amo
     amo.io.reorderBuffer(tid) <> reorderBuffer(tid).io.loadStoreQueue
 
@@ -179,6 +171,8 @@ class B4Processor(implicit params: Parameters) extends Module {
     for (d <- 0 until params.decoderPerThread) {
       reservationStation(tid)(d).io.collectedOutput :=
         outputCollector.io.outputs(tid)
+
+      reservationStation(tid)(d).io.threadId := tid.U
 
       fetch(tid).io.interrupt := false.B
       reservationStation(tid)(d).io.issue <>
@@ -246,18 +240,17 @@ class B4Processor(implicit params: Parameters) extends Module {
     reorderBuffer(tid).io.loadStoreQueue <> loadStoreQueue(tid).io.reorderBuffer
 
     /** 命令メモリと命令キャッシュを接続 */
-    externalMemoryInterface.io.instructionFetchRequest(tid) <>
-      instructionCache(tid).io.memory.request
-    externalMemoryInterface.io.instructionOut(tid) <>
-      instructionCache(tid).io.memory.response
+    externalMemoryInterface.io.instruction(tid) <>
+      instructionCache(tid).io.memory
 
     /** フェッチと分岐予測 TODO */
     fetch(tid).io.prediction <> DontCare
   }
 
   /** メモリとデータメモリバッファ */
-  externalMemoryInterface.io.dataReadRequests <> dataMemoryBuffer.io.dataReadRequest
-  externalMemoryInterface.io.dataWriteRequests <> dataMemoryBuffer.io.dataWriteRequest
+  externalMemoryInterface.io.data <> dataMemoryBuffer.io.memory
+  dataMemoryBuffer.io.output <> outputCollector.io.dataMemory
+  externalMemoryInterface.io.amo <> amo.io.memory
 }
 
 class B4ProcessorFixedPorts(implicit params: Parameters) extends RawModule {

@@ -53,21 +53,35 @@ class z50_B4ProcessorBenchmark extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "run median" in {
-    test(new B4ProcessorWithMemory()(defaultParams.copy(threads = 4)))
-      .withAnnotations(
-        Seq(
-          WriteWaveformAnnotation,
-          CachingAnnotation,
-          VerilatorBackendAnnotation,
+  for (i <- 0 until 4) {
+    it should s"run median$i" in {
+      test(
+        new B4ProcessorWithMemory()(
+          defaultParams.copy(
+            threads = 4,
+            enablePExt = true,
+            tagWidth = 5,
+            decoderPerThread = 2,
+          ),
         ),
-      ) { c =>
-        c.initialize("median")
-        c.io.simulationIO.output.ready.poke(true)
-        for (_ <- 0 until 100) {
-          c.getOutput(10000, print_value = true)
+      )
+        .withAnnotations(
+          Seq(
+            WriteWaveformAnnotation,
+            CachingAnnotation,
+            VerilatorBackendAnnotation,
+          ),
+        ) { c =>
+          c.initialize(s"median$i")
+          c.io.simulationIO.output.ready.poke(true)
+          //        val outputStr =
+          //          "median done\n0, 454, 454, 564, 335, 187, 187, 749, 749, 365, \nverify done with "
+          //        for (cc <- outputStr) {
+          //          c.checkForOutput(cc, 500000, print_value = true)
+          //        }
+          for (i <- 0 until 10000)
+            c.getOutput(100000, print_value = true)
         }
-      }
+    }
   }
-
 }

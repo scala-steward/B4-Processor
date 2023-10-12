@@ -7,18 +7,21 @@ import b4processor.connections.{
   ReservationStation2Executor,
   ReservationStation2PExtExecutor,
 }
-import b4processor.utils.MMArbiter
+import b4processor.utils.{FormalTools, MMArbiter}
 import chisel3._
 import chisel3.experimental.prefix
 import circt.stage.ChiselStage
 import chisel3.util._
 
-class ReservationStation2(implicit params: Parameters) extends Module {
+class ReservationStation2(implicit params: Parameters)
+    extends Module
+    with FormalTools {
   val io = IO(new Bundle {
     val collectedOutput = Flipped(new CollectedOutput)
     val issue = Irrevocable(new ReservationStation2Executor)
     val pextIssue = Irrevocable(new ReservationStation2PExtExecutor())
     val decoder = Flipped(new Decoder2ReservationStation)
+    val threadId = Input(UInt(log2Up(params.threads).W))
   })
 
   val rsWidth = 3
@@ -91,26 +94,38 @@ class ReservationStation2(implicit params: Parameters) extends Module {
     decoder.ready := true.B
     when(decoder.entry.valid) {
       resNext := decoder.entry
+      when(resNext.sources(0).isTag) {
+        assert(resNext.sources(0).getTagUnsafe.threadId === io.threadId)
+      }
+      when(resNext.sources(1).isTag) {
+        assert(resNext.sources(1).getTagUnsafe.threadId === io.threadId)
+      }
+      when(resNext.sources(2).isTag) {
+        assert(resNext.sources(2).getTagUnsafe.threadId === io.threadId)
+      }
       head := head + 1.U
     }
   }
 
+  val c = RegInit(0.U(64.W))
+  c := c + 1.U
+
   for ((o, i) <- io.collectedOutput.outputs.zipWithIndex) {
     prefix(s"out$i") {
       when(o.valid) {
-        for (entry <- reservation) {
+        for ((entry, ei) <- reservation.zipWithIndex) {
           when(entry.valid) {
             for (source <- entry.sources) {
-              source := source.matchExhaustive(
-                { tag =>
-                  Mux(
-                    tag === o.bits.tag,
-                    source.fromValue(o.bits.value),
-                    source.fromTag(tag),
-                  )
-                },
-                { v => source.fromValue(v) },
-              )
+              when(source.isTag) {
+                assert(
+                  source.getTagUnsafe.threadId === io.threadId,
+                  p"tid was ${source.getTagUnsafe.threadId} should be ${io.threadId} on $ei on ${c}",
+                )
+                assert(o.bits.tag.threadId === io.threadId)
+              }
+              when(source.isTag && source.getTagUnsafe === o.bits.tag) {
+                source := source.fromValue(o.bits.value)
+              }
             }
           }
         }
@@ -122,11 +137,16 @@ class ReservationStation2(implicit params: Parameters) extends Module {
 
 object ReservationStation2 extends App {
   implicit val params =
-    Parameters(tagWidth = 3, decoderPerThread = 2, threads = 2)
+    Parameters(
+      tagWidth = 3,
+      decoderPerThread = 2,
+      threads = 4,
+      enablePExt = false,
+    )
   ChiselStage.emitSystemVerilogFile(
     new ReservationStation2(),
     firtoolOpts = Array(
-      "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb",
+//      "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb",
     ),
   )
 }
