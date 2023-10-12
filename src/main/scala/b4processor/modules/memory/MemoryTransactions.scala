@@ -6,23 +6,9 @@ import b4processor.utils.Tag
 import chisel3._
 import chisel3.util.{Decoupled, Irrevocable}
 
-object MemoryReadIntent extends ChiselEnum {
-  val Instruction, Data, Amo = Value
-}
-
-class MemoryWriteRequest(implicit params: Parameters) extends Bundle {
-  val outputTag = new Tag()
-  val address = UInt(64.W)
-  val burstLen = UInt(8.W)
-}
-
-class MemoryReadRequest(implicit params: Parameters) extends Bundle {
-  val accessType = MemoryReadIntent.Type()
-  val address = UInt(64.W)
-  val burstLength = UInt(8.W)
-  val size = new MemoryAccessWidth.Type()
-  val signed = Bool()
-  val outputTag = new Tag()
+class MemoryAccessChannels(implicit params: Parameters) extends Bundle {
+  val read = new MemoryReadChannel()
+  val write = new MemoryWriteChannel()
 }
 
 class MemoryReadChannel(implicit params: Parameters) extends Bundle {
@@ -30,21 +16,14 @@ class MemoryReadChannel(implicit params: Parameters) extends Bundle {
   val response = Flipped(Irrevocable(new MemoryReadResponse()))
 }
 
-class MemoryWriteChannel(implicit params: Parameters) extends Bundle {
-  val request = Decoupled(new MemoryWriteRequest())
-  val requestData = Decoupled(new MemoryWriteRequestData())
-  val response = Flipped(Irrevocable(new MemoryWriteResponse()))
+class MemoryReadRequest(implicit params: Parameters) extends Bundle {
+  val address = UInt(64.W)
+  val burstLength = UInt(8.W)
+  val size = new MemoryAccessWidth.Type()
+  val signed = Bool()
+  val outputTag = new Tag()
 }
-
-class MemoryAccessChannels(implicit params: Parameters) extends Bundle {
-  val read = new MemoryReadChannel()
-  val write = new MemoryWriteChannel()
-}
-class MemoryWriteRequestData(implicit params: Parameters) extends Bundle {
-  val data = UInt(64.W)
-  val mask = UInt(8.W)
-}
-class MemoryWriteResponse(implicit params: Parameters) extends Bundle {
+class MemoryReadResponse(implicit params: Parameters) extends Bundle {
 
   /** 値 */
   val value = Output(UInt(64.W))
@@ -59,7 +38,24 @@ class MemoryWriteResponse(implicit params: Parameters) extends Bundle {
   val tag = Output(new Tag)
 }
 
-class MemoryReadResponse(implicit params: Parameters) extends Bundle {
+class MemoryWriteChannel(implicit params: Parameters) extends Bundle {
+  val request = Decoupled(new MemoryWriteRequest())
+  val requestData = Decoupled(new MemoryWriteRequestData())
+  val response = Flipped(Irrevocable(new MemoryWriteResponse()))
+}
+
+class MemoryWriteRequest(implicit params: Parameters) extends Bundle {
+  val outputTag = new Tag()
+  val address = UInt(64.W)
+  val burstLen = UInt(8.W)
+}
+
+class MemoryWriteRequestData(implicit params: Parameters) extends Bundle {
+  val data = UInt(64.W)
+  val mask = UInt(8.W)
+}
+
+class MemoryWriteResponse(implicit params: Parameters) extends Bundle {
 
   /** 値 */
   val value = Output(UInt(64.W))
@@ -82,7 +78,6 @@ object MemoryReadRequest {
     outputTag: Tag,
   )(implicit params: Parameters): MemoryReadRequest = {
     val w = Wire(new MemoryReadRequest)
-    w.accessType := MemoryReadIntent.Data
     w.address := address
     w.burstLength := 0.U
     w.size := size
@@ -95,7 +90,6 @@ object MemoryReadRequest {
     implicit params: Parameters,
   ): MemoryReadRequest = {
     val w = Wire(new MemoryReadRequest)
-    w.accessType := MemoryReadIntent.Amo
     w.address := address
     w.burstLength := 0.U
     w.size := size
@@ -108,7 +102,6 @@ object MemoryReadRequest {
     params: Parameters,
   ): MemoryReadRequest = {
     val w = Wire(new MemoryReadRequest)
-    w.accessType := MemoryReadIntent.Instruction
     w.address := address
     w.burstLength := (length - 1).U
     w.size := MemoryAccessWidth.DoubleWord

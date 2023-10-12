@@ -91,7 +91,6 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
 
   val readQueue = Module(new FIFO(3)(new Bundle {
     val burstLength = UInt(8.W)
-    val accessType = MemoryReadIntent.Type()
     val tag = new Tag
     val size = new MemoryAccessWidth.Type()
     val offset = UInt(3.W)
@@ -117,7 +116,6 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
       }
       readQueue.input.valid := !readQueued
       readQueue.input.bits.burstLength := readTransaction.burstLength
-      readQueue.input.bits.accessType := readTransaction.accessType
       readQueue.input.bits.tag := readTransaction.outputTag
       readQueue.input.bits.offset := readTransaction.address(2, 0)
       readQueue.input.bits.size := readTransaction.size

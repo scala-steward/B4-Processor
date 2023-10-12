@@ -63,7 +63,7 @@ class Decoder(implicit params: Parameters) extends Module with FormalTools {
 
   for (s <- sourceTags) {
     when(s.valid) {
-      assert(s.bits =/= destinationTag,"tag wrong?")
+      assert(s.bits =/= destinationTag, "tag wrong?")
     }
   }
 
