@@ -59,13 +59,8 @@ class Decoder(implicit params: Parameters) extends Module with FormalTools {
     sourceTags(2).valid := false.B
     sourceTags(2).bits := Tag(io.threadId, 0.U)
   }
+  sourceTags.foreach(s => s.bits.threadId := io.threadId)
   val destinationTag = io.reorderBuffer.destination.destinationTag
-
-  for (s <- sourceTags) {
-    when(s.valid) {
-      assert(s.bits =/= destinationTag, "tag wrong?")
-    }
-  }
 
   // Valueの選択
   val values = Wire(Vec(3, Valid(UInt(64.W))))
