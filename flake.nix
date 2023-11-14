@@ -47,7 +47,7 @@
             ];
           };
           buildInputs = with pkgs; [ circt ripgrep ];
-          depsSha256 = "sha256-JOxVZpQoFD0hhgRUjMgpPiM1gjwSdbOCac5ov5Tuo/Q=";
+          depsSha256 = "sha256-qmLfgoiku/GgZ0Td+ZsA9KqBsRySwN1Mmay95UOs/SY=";
           buildPhase = ''
             sbt "runMain b4processor.B4Processor"
             cat B4Processor.sv | rg -U '(?s)module B4Processor\(.*endmodule' > B4Processor.wrapper.v

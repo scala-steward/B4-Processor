@@ -11,6 +11,8 @@ scalacOptions ++= Seq(
   "-unchecked",
   "-language:reflectiveCalls",
   "-Ymacro-annotations",
+  "-JXss512m",
+  "-JXmx2G"
 )
 
 //Test / logBuffered := false
