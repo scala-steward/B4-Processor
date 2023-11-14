@@ -126,19 +126,19 @@
     "riscv-test-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1699637038,
-        "narHash": "sha256-OeNGdiYWG5HpxloU9IEBbKENlOO63EwNPdhWgFiL+jE=",
+        "lastModified": 1697111278,
+        "narHash": "sha256-ffrX4XqUfrOqvQsmd8cz+VF5MNcasG5Wb42/BgDd65k=",
         "ref": "refs/heads/master",
-        "rev": "bd0a19c136927eaa3b7296a591a896c141affb6b",
-        "revCount": 959,
+        "rev": "03cb19cbae8496b36eae846e51f796770437ac82",
+        "revCount": 953,
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/riscv-software-src/riscv-tests"
+        "url": "https://github.com/pineapplehunter/riscv-tests"
       },
       "original": {
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/riscv-software-src/riscv-tests"
+        "url": "https://github.com/pineapplehunter/riscv-tests"
       }
     },
     "root": {

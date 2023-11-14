@@ -12,7 +12,7 @@
   };
   inputs.espresso-flake.url = "github:pineapplehunter/espresso-flake";
   inputs.riscv-test-src = {
-    url = "https://github.com/riscv-software-src/riscv-tests";
+    url = "https://github.com/pineapplehunter/riscv-tests";
     type = "git";
     submodules = true;
     flake = false;
