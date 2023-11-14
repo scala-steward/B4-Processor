@@ -53,7 +53,7 @@ class z50_B4ProcessorBenchmark extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 
-  for (i <- 2 until 3) {
+  for (i <- 0 until 5) {
     it should s"run median$i" in {
       test(
         new B4ProcessorWithMemory()(
@@ -74,13 +74,11 @@ class z50_B4ProcessorBenchmark extends AnyFlatSpec with ChiselScalatestTester {
         ) { c =>
           c.initialize(s"median$i")
           c.io.simulationIO.output.ready.poke(true)
-          //        val outputStr =
-          //          "median done\n0, 454, 454, 564, 335, 187, 187, 749, 749, 365, \nverify done with "
-          //        for (cc <- outputStr) {
-          //          c.checkForOutput(cc, 500000, print_value = true)
-          //        }
-          for (i <- 0 until 10000)
-            c.getOutput(100000, print_value = true)
+          var inputs = Seq(' ', ' ', ' ');
+          while (inputs != Seq('e', 'n', 'd')) {
+            val p = c.getOutput(100000, print_value = true)
+            inputs = Seq(inputs(1), inputs(2), p)
+          }
         }
     }
   }

@@ -45,7 +45,7 @@ class DataMemoryBufferTest extends AnyFlatSpec with ChiselScalatestTester {
         } else if (c.io.dataIn(1).ready.peekBoolean()) {
           c.clock.step(1)
           c.io.dataIn(1).valid.poke(false)
-        }else{
+        } else {
           throw new RuntimeException("one should be ready")
         }
 

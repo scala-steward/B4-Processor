@@ -101,6 +101,7 @@
         checks =
           {
             quick = sbtTest ''sbt "testOnly * -- -l org.scalatest.tags.Slow"'';
+#            programs = sbtTest ''sbt "testOnly *ProgramTest*"'';
           };
         formatter = pkgs.nixpkgs-fmt;
         devShells.default = pkgs.mkShell {

@@ -17,7 +17,7 @@ trait SymbiYosysFormal {
     gen: => RawModule,
     depth: Int = 20,
     engine: String = "",
-  ):Unit = {
+  ): Unit = {
     var s = ChiselStage.emitSystemVerilog(
       gen,
       firtoolOpts = Array(
@@ -134,7 +134,7 @@ trait SymbiYosysFormal {
 
     val logger = ProcessLogger(
       line => outputBuffer.append(line).append("\n"),
-      line => errorBuffer.append(line).append("\n")
+      line => errorBuffer.append(line).append("\n"),
     )
 
     val result = s"sh -c 'cd formal/${name}; sby -f check.sby'".!(logger)
