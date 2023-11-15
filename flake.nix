@@ -12,7 +12,7 @@
   };
   inputs.espresso-flake.url = "github:pineapplehunter/espresso-flake";
   inputs.riscv-test-src = {
-    url = "https://github.com/riscv-software-src/riscv-tests";
+    url = "https://github.com/pineapplehunter/riscv-tests";
     type = "git";
     submodules = true;
     flake = false;
@@ -47,7 +47,7 @@
             ];
           };
           buildInputs = with pkgs; [ circt ripgrep ];
-          depsSha256 = "sha256-JOxVZpQoFD0hhgRUjMgpPiM1gjwSdbOCac5ov5Tuo/Q=";
+          depsSha256 = "sha256-qmLfgoiku/GgZ0Td+ZsA9KqBsRySwN1Mmay95UOs/SY=";
           buildPhase = ''
             sbt "runMain b4processor.B4Processor"
             cat B4Processor.sv | rg -U '(?s)module B4Processor\(.*endmodule' > B4Processor.wrapper.v
@@ -101,6 +101,7 @@
         checks =
           {
             quick = sbtTest ''sbt "testOnly * -- -l org.scalatest.tags.Slow"'';
+#            programs = sbtTest ''sbt "testOnly *ProgramTest*"'';
           };
         formatter = pkgs.nixpkgs-fmt;
         devShells.default = pkgs.mkShell {
