@@ -10,18 +10,18 @@ scalacOptions ++= Seq(
   "-feature",
   "-unchecked",
   "-language:reflectiveCalls",
-  "-Ymacro-annotations",
+  "-Ymacro-annotations"
 )
 
 //Test / logBuffered := false
 //Test / parallelExecution := false
 
-scalaVersion := "2.13.12"
+scalaVersion := "2.13.10"
 
 addCompilerPlugin(
-  "org.chipsalliance" % "chisel-plugin" % "5.0.0" cross CrossVersion.full,
+  "org.chipsalliance" % "chisel-plugin" % "5.0.0" cross CrossVersion.full
 )
 libraryDependencies ++= Seq(
   "org.chipsalliance" %% "chisel" % "5.0.0",
-  "edu.berkeley.cs" %% "chiseltest" % "5.0.2" % "test",
+  "edu.berkeley.cs" %% "chiseltest" % "5.0.2" % "test"
 )
