@@ -28,7 +28,7 @@ Nixについては[Nix]の公式サイトや[Zero to Nix]を参考にしてみ�
 
 テスト
 * Verilator
-* Ivarus Verilog
+* Icarus Verilog
 
 ## プロセッサの生成
 次のコマンドで`./processor`にSystem Verilogのソースが出力されます。
