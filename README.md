@@ -28,19 +28,19 @@ Nixについては[Nix]の公式サイトや[Zero to Nix]を参考にしてみ�
 
 テスト
 * Verilator
-* Ivarus Verilog
+* Icarus Verilog
 
 ## プロセッサの生成
 次のコマンドで`./processor`にSystem Verilogのソースが出力されます。
 
-```console
+```shell
 $ make processor
 ```
 
 ## テストコードの生成
 次のコマンドで`./programs`にいくつかテスト用のプログラムと[riscv-tests]のコンパイル結果が出力されます。
 
-```console
+```shell
 $ make programs
 ```
 
@@ -76,14 +76,14 @@ index 726feaa..478b09e 100644
              ];
            };
            buildInputs = with pkgs; [ circt ];
--          depsSha256 = "sha256-W1Kgoc58kruhLW0CDzvuUgAjuRZbT4QqStJLAAnPuhc=";
-+          depsSha256 = "sha256-0000000000000000000000000000000000000000000=";
+---        depsSha256 = "sha256-W1Kgoc58kruhLW0CDzvuUgAjuRZbT4QqStJLAAnPuhc=";
++++        depsSha256 = "sha256-0000000000000000000000000000000000000000000=";
            buildPhase = ''
              sbt "runMain b4processor.B4Processor"
            '';
 ```
 また一度makeすると次のエラーメッセージが出てきます。
-```shell
+```text
 error: hash mismatch in fixed-output derivation '/nix/store/01ghymlaf8f1r9ssqvdhn4j5kz3gk153-B4Processor-sbt-dependencies.tar.zst.drv':
          specified: sha256-0000000000000000000000000000000000000000000=
             got:    sha256-W1Kgoc58kruhLW0CDzvuUgAjuRZbT4QqStJLAAnPuhc=
