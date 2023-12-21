@@ -1,15 +1,19 @@
-{ pkgs }: pkgs.stdenv.mkDerivation {
+{ pkgsCross, stdenv, nix-filter }: stdenv.mkDerivation {
   name = "riscv-sample-programs";
-  src = ./.;
-  nativeBuildInputs = with pkgs;[
-    pkgsCross.riscv64-embedded.buildPackages.gcc
-    circt
+  src = nix-filter {
+    root = ./.;
+    exclude = [
+      (nix-filter.matchExt "o")
+      (nix-filter.matchExt "binary")
+    ];
+  };
+  nativeBuildInputs = [
+    pkgsCross.riscv64-embedded.stdenv.cc
   ];
-  #  enableParallelBuilding = true;
+  enableParallelBuilding = true;
   installPhase = "
     mkdir $out
     cp -fv **/*.{hex,bin,dump} $out
     cp -fv ${./bench.hex.generated} $out/bench.hex
   ";
-  fixupPhase = "true";
 }
