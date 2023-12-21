@@ -136,7 +136,7 @@ class ReservationStation2(implicit params: Parameters)
 }
 
 object ReservationStation2 extends App {
-  implicit val params =
+  implicit val params: b4processor.Parameters =
     Parameters(
       tagWidth = 3,
       decoderPerThread = 2,

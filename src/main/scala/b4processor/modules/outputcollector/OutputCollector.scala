@@ -88,6 +88,6 @@ class OutputCollector(implicit params: Parameters) extends Module {
 }
 
 object OutputCollector extends App {
-  implicit val params = Parameters()
+  implicit val params: b4processor.Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(new OutputCollector)
 }

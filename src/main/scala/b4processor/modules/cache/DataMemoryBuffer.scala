@@ -182,6 +182,7 @@ class DataMemoryBuffer(implicit params: Parameters)
 }
 
 object DataMemoryBuffer extends App {
-  implicit val params = Parameters(tagWidth = 4, maxRegisterFileCommitCount = 2)
+  implicit val params: b4processor.Parameters =
+    Parameters(tagWidth = 4, maxRegisterFileCommitCount = 2)
   ChiselStage.emitSystemVerilogFile(new DataMemoryBuffer)
 }

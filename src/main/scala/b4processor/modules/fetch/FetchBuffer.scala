@@ -62,7 +62,8 @@ sealed class BufferEntry extends Bundle {
 }
 
 object BufferEntry extends App {
-  implicit val params = Parameters(tagWidth = 2, decoderPerThread = 1)
+  implicit val params: b4processor.Parameters =
+    Parameters(tagWidth = 2, decoderPerThread = 1)
   ChiselStage.emitSystemVerilogFile(new FetchBuffer())
 
   def default(): BufferEntry = {

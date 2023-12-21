@@ -95,6 +95,7 @@ class OutputCollector2(implicit params: Parameters)
 }
 
 object OutputCollector2 extends App {
-  implicit val params = Parameters(threads = 4, executors = 4)
+  implicit val params: b4processor.Parameters =
+    Parameters(threads = 4, executors = 4)
   ChiselStage.emitSystemVerilogFile(new OutputCollector2)
 }

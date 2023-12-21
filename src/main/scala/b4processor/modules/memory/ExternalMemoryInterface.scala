@@ -310,7 +310,7 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
 }
 
 object ExternalMemoryInterface extends App {
-  implicit val params = {
+  implicit val params: b4processor.Parameters = {
     Parameters(decoderPerThread = 1, tagWidth = 4)
   }
   ChiselStage.emitSystemVerilogFile(new ExternalMemoryInterface)

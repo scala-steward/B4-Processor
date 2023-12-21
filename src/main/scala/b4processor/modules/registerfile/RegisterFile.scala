@@ -68,7 +68,7 @@ class RegisterFile(implicit params: Parameters) extends Module {
 }
 
 object RegisterFile extends App {
-  implicit val params = Parameters()
+  implicit val params: b4processor.Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(
     new RegisterFile,
     Array(),

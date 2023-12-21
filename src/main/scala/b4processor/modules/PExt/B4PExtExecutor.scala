@@ -40,7 +40,7 @@ class B4PExtExecutor(implicit params: Parameters) extends Module {
 }
 
 object B4PExtExecutor extends App {
-  implicit val params = Parameters()
+  implicit val params: b4processor.Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(
     new B4PExtExecutor(),
     firtoolOpts = Array(

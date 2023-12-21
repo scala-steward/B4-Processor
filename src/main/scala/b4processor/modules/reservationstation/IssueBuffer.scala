@@ -76,7 +76,7 @@ class IssueBuffer[T <: Data](outputs: Int, t: T)(implicit params: Parameters)
 }
 
 object IssueBuffer extends App {
-  implicit val params = Parameters()
+  implicit val params: b4processor.Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(
     new IssueBuffer(params.executors, UInt(32.W)),
   )

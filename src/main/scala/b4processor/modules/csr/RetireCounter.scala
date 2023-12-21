@@ -18,6 +18,6 @@ class RetireCounter(implicit params: Parameters) extends Module {
 }
 
 object RetireCounter extends App {
-  implicit val params = Parameters()
+  implicit val params: b4processor.Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(new RetireCounter)
 }

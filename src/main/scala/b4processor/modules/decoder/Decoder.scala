@@ -218,6 +218,6 @@ class Decoder(implicit params: Parameters) extends Module with FormalTools {
 }
 
 object Decoder extends App {
-  implicit val params = Parameters(enablePExt = false)
+  implicit val params: b4processor.Parameters = Parameters(enablePExt = false)
   ChiselStage.emitSystemVerilogFile(new Decoder)
 }

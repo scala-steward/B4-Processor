@@ -135,6 +135,6 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
 }
 
 object InstructionMemoryCache extends App {
-  implicit val params = Parameters()
+  implicit val params: Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(new InstructionMemoryCache)
 }

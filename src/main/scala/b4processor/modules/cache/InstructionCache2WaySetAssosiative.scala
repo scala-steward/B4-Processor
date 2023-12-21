@@ -37,7 +37,7 @@ class InstructionCache2WaySetAssosiative(cacheTagWidth: Int, offsetWidth: Int)(
 }
 
 object InstructionCache2WaySetAssosiative extends App {
-  implicit val params = Parameters()
+  implicit val params: b4processor.Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(new InstructionMemoryCache())
 }
 

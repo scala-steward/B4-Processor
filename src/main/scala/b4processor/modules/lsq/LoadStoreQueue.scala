@@ -282,7 +282,7 @@ class LoadStoreQueue(implicit params: Parameters)
 }
 
 object LoadStoreQueue extends App {
-  implicit val params =
+  implicit val params: b4processor.Parameters =
     Parameters(
       maxRegisterFileCommitCount = 2,
       tagWidth = 4,

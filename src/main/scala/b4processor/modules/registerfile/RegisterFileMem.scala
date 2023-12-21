@@ -77,7 +77,8 @@ class RegisterFileMem(implicit params: Parameters) extends Module {
 }
 
 object RegisterFileMem extends App {
-  implicit val params = Parameters(maxRegisterFileCommitCount = 2)
+  implicit val params: b4processor.Parameters =
+    Parameters(maxRegisterFileCommitCount = 2)
   ChiselStage.emitSystemVerilogFile(
     new RegisterFileMem,
     Array(),

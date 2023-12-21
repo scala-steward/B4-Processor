@@ -111,6 +111,6 @@ class Executor(implicit params: Parameters) extends Module {
 }
 
 object Executor extends App {
-  implicit val params = Parameters()
+  implicit val params: b4processor.Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(new Executor())
 }

@@ -143,7 +143,7 @@ class ReservationStation(implicit params: Parameters) extends Module {
 }
 
 object ReservationStation extends App {
-  implicit val params =
+  implicit val params: b4processor.Parameters =
     Parameters(tagWidth = 3, decoderPerThread = 2, threads = 2)
   ChiselStage.emitSystemVerilogFile(new ReservationStation())
 }

@@ -103,6 +103,6 @@ class CSR(implicit params: Parameters) extends Module with FormalTools {
 }
 
 object CSR extends App {
-  implicit val params = Parameters()
+  implicit val params: b4processor.Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(new CSR())
 }

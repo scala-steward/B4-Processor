@@ -341,6 +341,6 @@ class AtomicLSU(implicit params: Parameters) extends Module {
 }
 
 object AtomicLSU extends App {
-  implicit val params = Parameters()
+  implicit val params: b4processor.Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(new AtomicLSU())
 }

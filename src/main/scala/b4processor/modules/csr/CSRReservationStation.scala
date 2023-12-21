@@ -102,6 +102,6 @@ class CSRReservationStation(implicit params: Parameters) extends Module {
 }
 
 object CSRReservationStation extends App {
-  implicit val params = Parameters()
+  implicit val params: b4processor.Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(new CSRReservationStation())
 }

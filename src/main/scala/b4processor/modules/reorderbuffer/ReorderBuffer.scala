@@ -286,7 +286,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
 }
 
 object ReorderBuffer extends App {
-  implicit val params =
+  implicit val params: b4processor.Parameters =
     Parameters(
       threads = 2,
       decoderPerThread = 2,
