@@ -12,7 +12,7 @@ scalacOptions ++= Seq(
   "-language:reflectiveCalls",
   "-Ymacro-annotations",
   "-JXss512m",
-  "-JXmx2G"
+  "-JXmx2G",
 )
 
 Test / logBuffered := false
@@ -21,9 +21,9 @@ Test / parallelExecution := false
 scalaVersion := "2.13.12"
 
 addCompilerPlugin(
-  "org.chipsalliance" % "chisel-plugin" % "6.0.0-RC1" cross CrossVersion.full,
+  "org.chipsalliance" % "chisel-plugin" % "5.1.0" cross CrossVersion.full,
 )
 libraryDependencies ++= Seq(
-  "org.chipsalliance" %% "chisel" % "6.0.0-RC1",
+  "org.chipsalliance" %% "chisel" % "5.1.0",
   "edu.berkeley.cs" %% "chiseltest" % "5.0.2" % "test",
 )

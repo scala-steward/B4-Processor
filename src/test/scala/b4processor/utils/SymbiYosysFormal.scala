@@ -22,8 +22,6 @@ trait SymbiYosysFormal {
       gen,
       firtoolOpts = Array(
         "--lowering-options=disallowLocalVariables,disallowPackedArrays,noAlwaysComb,verifLabels",
-        //      "--emit-chisel-asserts-as-sva",
-        "--dedup",
       ),
     )
 

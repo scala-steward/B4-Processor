@@ -35,17 +35,18 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1703105089,
-        "narHash": "sha256-1F7hDLj58OQCADRtG2DRKpmJ8QVza0M0NK/kfLWLs3k=",
+        "lastModified": 1700457727,
+        "narHash": "sha256-5QykWTqMdJ9BAKEOG6HF58hh38LvFk4jlhDR4cPOKL0=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "2b9c57d33e3d5be6262e124fc66e3a8bc650b93d",
+        "rev": "f4f8e7c13d3e3b33e9a43f1e1ff97d1697ec6240",
         "type": "github"
       },
       "original": {
-        "id": "nixpkgs",
-        "ref": "nixpkgs-unstable",
-        "type": "indirect"
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "f4f8e7c13d3e3b33e9a43f1e1ff97d1697ec6240",
+        "type": "github"
       }
     },
     "nixpkgs-pineapplehunter2": {
