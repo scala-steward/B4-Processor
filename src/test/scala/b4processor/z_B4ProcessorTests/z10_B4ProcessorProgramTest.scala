@@ -655,4 +655,21 @@ class z10_B4ProcessorProgramTest
         c.clock.step(300)
       }
   }
+
+  it should "run get_core_count" in {
+    test(
+      new B4ProcessorWithMemory(
+      )(defaultParams.copy(threads = 3)),
+    )
+      .withAnnotations(
+        Seq(
+          WriteWaveformAnnotation,
+          VerilatorBackendAnnotation,
+          CachingAnnotation,
+        ),
+      ) { c =>
+        c.initialize("programs/riscv-sample-programs/get_core_count")
+        c.checkForRegister(1, 3)
+      }
+  }
 }

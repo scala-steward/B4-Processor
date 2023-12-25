@@ -6,7 +6,7 @@ import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.util._
 
 class Tag(implicit params: Parameters) extends Bundle {
-  val threadId = UInt(log2Up(params.threads).W)
+  val threadId = UInt(log2Ceil(params.threads).W)
   val id = UInt(params.tagWidth.W)
 
   override def toPrintable = if (params.threads == 1) {

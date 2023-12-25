@@ -80,6 +80,8 @@ class CSR(implicit params: Parameters) extends Module with FormalTools {
       setCSROutput(mstatus)
     }.elsewhen(address === CSRs.mie.U) {
       setCSROutput(mie)
+    }.elsewhen(address === CustomCSRAddress.coreCount.U) {
+      io.CSROutput.bits.value := params.threads.U
     }.otherwise {
       io.CSROutput.bits.isError := true.B
     }
