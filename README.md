@@ -1,6 +1,6 @@
 [![Scala CI](https://github.com/NakajoLab/B4-Processor/actions/workflows/scala.yml/badge.svg)](https://github.com/NakajoLab/B4-Processor/actions/workflows/scala.yml)
 
-# B4-Processor
+# B4SMT Core
 
 OoOのプロセッサ
 
@@ -69,23 +69,28 @@ $ sbt test
 その場合は`./flake.nix`を次のように編集します。
 ```diff
 diff --git a/flake.nix b/flake.nix
-index 726feaa..478b09e 100644
+index e04c9d2..5f6a965 100644
 --- a/flake.nix
 +++ b/flake.nix
-@@ -37,7 +37,7 @@
-             ];
-           };
-           buildInputs = with pkgs; [ circt ];
----        depsSha256 = "sha256-W1Kgoc58kruhLW0CDzvuUgAjuRZbT4QqStJLAAnPuhc=";
-+++        depsSha256 = "sha256-0000000000000000000000000000000000000000000=";
-           buildPhase = ''
-             sbt "runMain b4processor.B4Processor"
-           '';
+@@ -26,7 +26,7 @@
+           verilator_4 = final.callPackage ./nix/verilator_4.nix { };
+           espresso = (import inputs.nixpkgs-pineapplehunter2 { inherit system; config.allowUnfree = true; }).espresso;
+           b4smtGen = final.callPackage ./nix { riscv-programs = self.packages.${system}.default; };
+-          b4smt = final.b4smtGen { hash = "sha256-dm8qlhY87+9tKoX9TWACi+yyzPbSFEnQTGEdJmQl4LE="; };
++          b4smt = final.b4smtGen { hash = ""; };
+         };
+         pkgs = import nixpkgs {
+           inherit system;
 ```
+
 また一度makeすると次のエラーメッセージが出てきます。
-```text
-error: hash mismatch in fixed-output derivation '/nix/store/01ghymlaf8f1r9ssqvdhn4j5kz3gk153-B4Processor-sbt-dependencies.tar.zst.drv':
-         specified: sha256-0000000000000000000000000000000000000000000=
-            got:    sha256-W1Kgoc58kruhLW0CDzvuUgAjuRZbT4QqStJLAAnPuhc=
+
 ```
+...
+error: hash mismatch in fixed-output derivation '/nix/store/4i2jb1mhg695fbxm56wj50fpbyqjpc6n-b4smt-sbt-dependencies.tar.zst.drv':
+         specified: sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+            got:    sha256-dm8qlhY87+9tKoX9TWACi+yyzPbSFEnQTGEdJmQl4LE=
+...
+```
+
 ここで出てきたハッシュに置き換えてmakeするとうまくビルドされると思います。

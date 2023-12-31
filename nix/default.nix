@@ -7,7 +7,8 @@ let
     src = nix-filter {
       root = ../.;
       include = [
-        "src"
+        "b4smt"
+        "pext"
         "project"
         "build.sbt"
       ];
@@ -23,14 +24,14 @@ let
   } // attrs);
   b4smt = mkDerivation {
     buildPhase = ''
-      sbt "runMain b4processor.B4Processor"
-      cat B4Processor.sv | rg -U '(?s)module B4Processor\(.*endmodule' > B4Processor.wrapper.v
-      sed -i 's/module B4Processor(/module B4ProcessorUnused(/g' B4Processor.sv
+      sbt "b4smt/runMain b4smt.B4SMTCore"
+      cat B4SMTCore.sv | rg -U '(?s)module B4SMTCore\(.*endmodule' > B4SMTCore.wrapper.v
+      sed -i 's/module B4SMTCore(/module B4SMTCoreUnused(/g' B4SMTCore.sv
     '';
 
     installPhase = ''
       mkdir $out
-      cp B4Processor.* $out
+      cp B4SMTCore.* $out
     '';
 
     passthru = {

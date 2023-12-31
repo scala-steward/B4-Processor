@@ -1,6 +1,6 @@
 { b4smt, verilog, verilator_4, stdenv, zlib, circt, yosys, yices, espresso, z3, symbiyosys }:
 testCommand: b4smt.mkDerivation {
-  pname = "B4Processor-tests";
+  pname = "B4SMT-tests";
   buildInputs = [
     verilog
     verilator_4
