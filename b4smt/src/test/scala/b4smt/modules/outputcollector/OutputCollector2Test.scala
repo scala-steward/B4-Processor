@@ -10,7 +10,8 @@ class OutputCollector2Test
     with ChiselScalatestTester
     with SymbiYosysFormal {
   behavior of "output collector 2"
-  implicit val params: b4smt.Parameters = Parameters(threads = 4, parallelOutput = 4)
+  implicit val params: b4smt.Parameters =
+    Parameters(threads = 4, parallelOutput = 4)
   it should "check formal" in {
     symbiYosysCheck(new OutputCollector2())
   }

@@ -84,7 +84,8 @@ class ExecutorTest
     with GivenWhenThen {
   behavior of "Executor"
 
-  implicit val defaultParams: b4smt.Parameters = Parameters(decoderPerThread = 1)
+  implicit val defaultParams: b4smt.Parameters =
+    Parameters(decoderPerThread = 1)
 
   it should "be compatible with I extension" in {
     test(new ExecutorWrapper) { c =>

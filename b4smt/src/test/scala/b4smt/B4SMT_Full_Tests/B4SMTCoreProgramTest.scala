@@ -6,9 +6,7 @@ import chiseltest._
 import chiseltest.internal.CachingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 
-class B4SMTCoreProgramTest
-    extends AnyFlatSpec
-    with ChiselScalatestTester {
+class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "B4SMT test programs"
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
   implicit val defaultParams: b4smt.Parameters =

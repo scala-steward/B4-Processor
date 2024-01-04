@@ -62,7 +62,8 @@ class ValueSelectorWrapper(implicit params: Parameters) extends ValueSelector {
 class ValueSelectorTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "ValueSelector1"
 
-  implicit val defaultParams: b4smt.Parameters = Parameters(threads = 1, decoderPerThread = 1)
+  implicit val defaultParams: b4smt.Parameters =
+    Parameters(threads = 1, decoderPerThread = 1)
 
   it should "use the register file" in {
     test(new ValueSelectorWrapper) { c =>
