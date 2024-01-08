@@ -1,12 +1,12 @@
 package b4smt.utils.operations
 
 import b4smt.Parameters
-import b4smt.utils.SymbiYosysFormal
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 import chisel3._
 import chisel3.util._
+import chiselformal.SymbiYosysFormal
 
 class DecodingModTest
     extends AnyFlatSpec

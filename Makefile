@@ -19,3 +19,4 @@ processor:
 
 clean:
 	rm -rf programs processor result
+	rm -rf *.sv *.anno.json

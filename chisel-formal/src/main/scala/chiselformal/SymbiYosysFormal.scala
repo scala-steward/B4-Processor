@@ -1,4 +1,4 @@
-package b4smt.utils
+package chiselformal
 
 import chisel3._
 import chiseltest.ChiselScalatestTester
@@ -40,7 +40,7 @@ trait SymbiYosysFormal {
           .replaceAll("[^a-zA-Z0-9 ]", "")
           .replaceAll("[ :]+", "_")
           .stripMargin('_')
-        Matcher.quoteReplacement(s"$label: assert(0); // ${comment}")
+        Matcher.quoteReplacement(s"$label: assert(0); // $comment")
       },
     )
     s = rrr2.replaceAllIn(
@@ -73,13 +73,13 @@ trait SymbiYosysFormal {
           .replaceAll("[^a-zA-Z0-9 :]", "")
           .replaceAll("[ :]+", "_")
           .stripMargin('_')
-        s"${m.group(1)}__${normalized_comment}: ${m.group(2)} // ${m.group(3)}"
+        s"${m.group(1)}__$normalized_comment: ${m.group(2)} // ${m.group(3)}"
       },
     )
     val name = sanitizeFileName(getTestName)
     Directory("formal").createDirectory()
-    Directory(s"formal/${name}").createDirectory()
-    val file = new PrintWriter(s"formal/${name}/out.sv")
+    Directory(s"formal/$name").createDirectory()
+    val file = new PrintWriter(s"formal/$name/out.sv")
     file.write(s)
     file.close()
 
@@ -101,7 +101,7 @@ trait SymbiYosysFormal {
          |cover
          |
          |[options]
-         |depth ${depth}
+         |depth $depth
          |cover:
          |mode cover
          |--
@@ -113,17 +113,17 @@ trait SymbiYosysFormal {
          |--
          |
          |[engines]
-         |smtbmc ${engine}
+         |smtbmc $engine
          |
          |[script]
          |read -formal out.sv
-         |prep -top ${module_name}
+         |prep -top $module_name
          |opt_merge -share_all
          |
          |[files]
          |out.sv
          |""".stripMargin
-    val file2 = new PrintWriter(s"formal/${name}/check.sby")
+    val file2 = new PrintWriter(s"formal/$name/check.sby")
     file2.write(conf_file_content)
     file2.close()
 
@@ -135,13 +135,13 @@ trait SymbiYosysFormal {
       line => errorBuffer.append(line).append("\n"),
     )
 
-    val result = s"sh -c 'cd formal/${name}; sby -f check.sby'".!(logger)
+    val result = s"sh -c 'cd formal/$name; sby -f check.sby'".!(logger)
     if (result != 0) {
       Console.err.println("========= stdout ========")
       Console.err.println(outputBuffer.toString())
       Console.err.println("========= stderr ========")
       Console.err.println(errorBuffer.toString())
-      throw new RuntimeException(s"formal check failed! exeit code ${result}")
+      throw new RuntimeException(s"formal check failed! exeit code $result")
     }
   }
 }

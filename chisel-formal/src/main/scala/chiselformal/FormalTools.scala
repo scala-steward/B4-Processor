@@ -1,4 +1,4 @@
-package b4smt.utils
+package chiselformal
 
 import chisel3._
 

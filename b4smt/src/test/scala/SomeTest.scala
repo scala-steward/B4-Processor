@@ -1,5 +1,5 @@
-import b4smt.utils.SymbiYosysFormal
 import chisel3._
+import chiselformal.SymbiYosysFormal
 import chiseltest._
 import chiseltest.formal.{BoundedCheck, Formal, changed, past}
 import chiseltest.simulator.SimulatorDebugAnnotation

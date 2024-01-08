@@ -2,13 +2,14 @@ package b4smt.modules.decoder
 
 import b4smt.Parameters
 import b4smt.connections._
-import b4smt.utils.{FormalTools, Tag, TagValueBundle}
+import b4smt.utils.{Tag, TagValueBundle}
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
 import b4smt.modules.Decoder2AtomicLSU
 import b4smt.modules.reservationstation.ReservationStationEntry
 import b4smt.utils.operations.{DecodingMod, LoadStoreOperation}
+import chiselformal.FormalTools
 
 /** デコーダ
   */

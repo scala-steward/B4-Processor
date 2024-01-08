@@ -11,8 +11,8 @@ import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
 import b4smt.riscv.CSRs
-import b4smt.utils.FormalTools
 import b4smt.utils.operations.CSROperation
+import chiselformal.FormalTools
 
 class CSR(implicit params: Parameters) extends Module with FormalTools {
   val io = IO(new Bundle {

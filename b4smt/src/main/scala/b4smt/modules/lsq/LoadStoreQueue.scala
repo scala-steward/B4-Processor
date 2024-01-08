@@ -10,8 +10,9 @@ import b4smt.connections.{
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
-import b4smt.utils.{FormalTools, Tag}
+import b4smt.utils.Tag
 import b4smt.utils.operations.LoadStoreOperation
+import chiselformal.FormalTools
 
 class LoadStoreQueue(implicit params: Parameters)
     extends Module

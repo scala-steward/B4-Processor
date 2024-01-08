@@ -6,7 +6,6 @@ import b4smt.connections.{CollectedOutput, OutputValue}
 import b4smt.utils.{
   B4RRArbiter,
   FIFO,
-  FormalTools,
   MMArbiter,
   PassthroughBuffer,
   SignalSplitWith,
@@ -14,6 +13,7 @@ import b4smt.utils.{
 import chisel3._
 import chisel3.experimental.prefix
 import chisel3.util._
+import chiselformal.FormalTools
 
 class OutputCollector2(implicit params: Parameters)
     extends Module

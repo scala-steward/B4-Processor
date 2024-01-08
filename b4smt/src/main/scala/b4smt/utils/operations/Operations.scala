@@ -34,6 +34,7 @@ class Operations extends Bundle {
   val amoWidth = AMOOperationWidth.Type()
   val amoOrdering = new AMOOrdering
   val pextOp = OptionalBundle(new PExtensionOperation.Type())
+  val mOp = OptionalBundle(new MOperation.Type())
 
   class SourceDef extends Bundle {
     val reg = new RVRegister
@@ -97,6 +98,7 @@ object Operations {
     _.amoWidth -> AMOOperationWidth.Word,
     _.amoOrdering -> AMOOrdering(false.B, false.B),
     _.pextOp -> invalid(PExtensionOperation.Type()),
+    _.mOp -> invalid(MOperation.Type()),
   )
 
   implicit class UIntAccess(u: UInt) {
@@ -376,6 +378,34 @@ object Operations {
       A64Type("AMOXOR_D") -> amoOp(Xor, DoubleWord),
       A64Type("LR_D") -> amoOp(Lr, DoubleWord),
       A64Type("SC_D") -> amoOp(Sc, DoubleWord),
+    )
+  }
+
+  def mOp(op: MOperation.Type): (UInt, UInt) => Operations =
+    createOperation(
+      (u, _) => u.mOp -> valid(op),
+      _.sources(0).reg -> _(19, 15).reg,
+      _.sources(1).reg -> _(24, 20).reg,
+      _.rd -> _(11, 7).reg,
+    )
+
+  def MextDecodingList = {
+    import Instructions.{MType, M64Type}
+    import MOperation._
+    Seq(
+      MType("DIV") -> mOp(Div),
+      MType("DIVU") -> mOp(Divu),
+      MType("MUL") -> mOp(Mul),
+      MType("MULH") -> mOp(Mulh),
+      MType("MULHSU") -> mOp(Mulhsu),
+      MType("MULHU") -> mOp(Mulhu),
+      MType("REM") -> mOp(Rem),
+      MType("REMU") -> mOp(Remu),
+      M64Type("DIVUW") -> mOp(Divuw),
+      M64Type("DIVW") -> mOp(Divw),
+      M64Type("MULW") -> mOp(Mulw),
+      M64Type("REMUW") -> mOp(Remuw),
+      M64Type("REMW") -> mOp(Remw),
     )
   }
 
@@ -867,15 +897,17 @@ object Operations {
     params: Parameters,
   ): Seq[(BitPat, (UInt, UInt) => Operations)] = {
     val output =
-      Seq(BaseDecodingList, AextDecodingList) ++ (if (params.enablePExt)
-                                                    Seq(
-                                                      ZPN32ExtDecodingList,
-                                                      ZPN64ExtDecodingList,
-                                                      ZPSFExtDecodingList,
-                                                      ZBBExtDecodingList,
-                                                      ZBTExtDecodingList,
-                                                    )
-                                                  else Seq())
+      Seq(BaseDecodingList, AextDecodingList, MextDecodingList) ++ (if (
+                                                                      params.enablePExt
+                                                                    )
+                                                                      Seq(
+                                                                        ZPN32ExtDecodingList,
+                                                                        ZPN64ExtDecodingList,
+                                                                        ZPSFExtDecodingList,
+                                                                        ZBBExtDecodingList,
+                                                                        ZBTExtDecodingList,
+                                                                      )
+                                                                    else Seq())
     output.flatten
   }
 
@@ -937,6 +969,12 @@ class DecodingMod(implicit params: Parameters) extends Module {
   when(out.aluOp.valid) {
     for (a <- ALUOperation.all) {
       cover(out.aluOp.bits === a)
+    }
+  }
+
+  when(out.mOp.valid) {
+    for (a <- MOperation.all) {
+      cover(out.mOp.bits === a)
     }
   }
 
@@ -1035,4 +1073,9 @@ object LoadStoreWidth extends ChiselEnum {
 
 object CSROperation extends ChiselEnum {
   val ReadWrite, ReadSet, ReadClear = Value
+}
+
+object MOperation extends ChiselEnum {
+  val Div, Divu, Mul, Mulh, Mulhsu, Mulhu, Rem, Remu = Value
+  val Divuw, Divw, Mulw, Remuw, Remw = Value
 }

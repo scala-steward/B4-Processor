@@ -4,7 +4,7 @@
   # Blocked by chiseltest until 6.0.0
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/f4f8e7c13d3e3b33e9a43f1e1ff97d1697ec6240";
   #  inputs.nixpkgs.url = "nixpkgs/nixpkgs-unstable";
-  inputs.nixpkgs-pineapplehunter2.url = "github:pineapplehunter/nixpkgs/espresso";
+  inputs.nixpkgs-espresso.url = "github:pineapplehunter/nixpkgs/espresso";
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.nix-filter.url = "github:numtide/nix-filter";
   inputs.sbt-derivation = {
@@ -24,7 +24,7 @@
       let
         overlays = final: prev: {
           verilator_4 = final.callPackage ./nix/verilator_4.nix { };
-          espresso = (import inputs.nixpkgs-pineapplehunter2 { inherit system; config.allowUnfree = true; }).espresso;
+          espresso = (import inputs.nixpkgs-espresso { inherit system; config.allowUnfree = true; }).espresso;
           b4smtGen = final.callPackage ./nix { riscv-programs = self.packages.${system}.default; };
           b4smt = final.b4smtGen { hash = "sha256-dm8qlhY87+9tKoX9TWACi+yyzPbSFEnQTGEdJmQl4LE="; };
         };

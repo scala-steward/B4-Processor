@@ -13,7 +13,7 @@ class B4PExtExecutor(implicit params: Parameters) extends Module {
     val output = Decoupled(new OutputValue)
   })
 
-  val PextMod = Module(new PExtExecutor)
+  private val PextMod = Module(new PExtExecutor)
   PextMod.io.input.rs1 := io.input.bits.value1
   PextMod.io.input.rs2 := io.input.bits.value2
   PextMod.io.input.rs3 := io.input.bits.value3

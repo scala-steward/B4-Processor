@@ -1,7 +1,7 @@
 package b4smt.modules.outputcollector
 
 import b4smt.Parameters
-import b4smt.utils.SymbiYosysFormal
+import chiselformal.SymbiYosysFormal
 import chiseltest.ChiselScalatestTester
 import org.scalatest.flatspec.AnyFlatSpec
 

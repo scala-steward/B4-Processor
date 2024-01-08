@@ -6,12 +6,12 @@ import b4smt.utils.{
   DecoderValue,
   ExecutorValue,
   RegisterFileValue,
-  SymbiYosysFormal,
   Tag,
 }
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
+import chiselformal.SymbiYosysFormal
 
 import scala.util.Random
 

@@ -11,7 +11,7 @@ import b4smt.modules.branch_output_collector.CollectedBranchAddresses
 import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
-import b4smt.utils.FormalTools
+import chiselformal.FormalTools
 
 /** 命令フェッチ用モジュール */
 class Fetch(wfiWaitWidth: Int = 10)(implicit params: Parameters)

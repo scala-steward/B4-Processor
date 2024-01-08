@@ -2,10 +2,11 @@ package b4smt.modules.csr
 
 import b4smt.Parameters
 import b4smt.riscv.CSRs
-import b4smt.utils.{SymbiYosysFormal, Tag}
+import b4smt.utils.Tag
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
+import chiselformal.SymbiYosysFormal
 
 class CSRWrapper(implicit params: Parameters) extends CSR {
   def setDecoderInput(

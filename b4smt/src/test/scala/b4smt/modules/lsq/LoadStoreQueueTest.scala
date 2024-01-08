@@ -10,12 +10,12 @@ import b4smt.utils.{
   FormalBackendOption,
   LSQ2Memory,
   LSQfromALU,
-  SymbiYosysFormal,
   Tag,
 }
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.util.{BitPat, DecoupledIO}
+import chiselformal.SymbiYosysFormal
 import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec

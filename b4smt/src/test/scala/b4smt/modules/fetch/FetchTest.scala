@@ -5,9 +5,10 @@ import b4smt.connections.{Fetch2BranchPrediction, Fetch2FetchBuffer}
 import b4smt.modules.branch_output_collector.CollectedBranchAddresses
 import b4smt.modules.cache.InstructionMemoryCache
 import b4smt.modules.memory.{ExternalMemoryInterface, InstructionMemory}
-import b4smt.utils.{InstructionUtil, SimpleAXIMemory, SymbiYosysFormal}
+import b4smt.utils.{InstructionUtil, SimpleAXIMemory}
 import chisel3._
 import chisel3.util._
+import chiselformal.SymbiYosysFormal
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 

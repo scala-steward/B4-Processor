@@ -4,6 +4,7 @@ import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
 import chisel3.experimental.prefix
+import chiselformal.FormalTools
 
 class SignalSplitWith[T <: Data](
   outputs: Int,

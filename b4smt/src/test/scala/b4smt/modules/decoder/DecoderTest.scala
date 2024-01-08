@@ -2,8 +2,9 @@ package b4smt.modules.decoder
 
 import b4smt.Parameters
 import b4smt.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
-import b4smt.utils.{ExecutorValue, RVRegister, SymbiYosysFormal, Tag}
+import b4smt.utils.{ExecutorValue, RVRegister, Tag}
 import chisel3._
+import chiselformal.SymbiYosysFormal
 import chiseltest._
 import chiseltest.experimental.sanitizeFileName
 import chiseltest.internal.TestEnvInterface

@@ -7,11 +7,12 @@ import b4smt.connections.{
   ReservationStation2Executor,
   ReservationStation2PExtExecutor,
 }
-import b4smt.utils.{FormalTools, MMArbiter}
+import b4smt.utils.MMArbiter
 import chisel3._
 import chisel3.experimental.prefix
 import circt.stage.ChiselStage
 import chisel3.util._
+import chiselformal.FormalTools
 
 class ReservationStation2(implicit params: Parameters)
     extends Module

@@ -11,9 +11,10 @@ import b4smt.modules.memory.{
 }
 import b4smt.structures.memoryAccess.MemoryAccessWidth
 import b4smt.utils.operations.{LoadStoreOperation, LoadStoreWidth}
-import b4smt.utils.{B4RRArbiter, FIFO, FormalTools}
+import b4smt.utils.{B4RRArbiter, FIFO}
 import chisel3._
 import chisel3.util._
+import chiselformal.FormalTools
 
 /** from LSQ toDataMemory のためのバッファ
   *
