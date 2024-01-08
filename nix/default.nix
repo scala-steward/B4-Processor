@@ -9,6 +9,7 @@ let
       include = [
         "b4smt"
         "pext"
+        "chisel-formal"
         "project"
         "build.sbt"
       ];
