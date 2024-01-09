@@ -1,10 +1,9 @@
 {
   description = "riscv test flake";
 
+  inputs.nixpkgs.url = "nixpkgs/nixpkgs-unstable";
   # Blocked by chiseltest until 6.0.0
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/f4f8e7c13d3e3b33e9a43f1e1ff97d1697ec6240";
-  #  inputs.nixpkgs.url = "nixpkgs/nixpkgs-unstable";
-  inputs.nixpkgs-espresso.url = "github:pineapplehunter/nixpkgs/espresso";
+  inputs.nixpkgs-circt.url = "github:NixOS/nixpkgs/f4f8e7c13d3e3b33e9a43f1e1ff97d1697ec6240";
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.nix-filter.url = "github:numtide/nix-filter";
   inputs.sbt-derivation = {
@@ -24,7 +23,7 @@
       let
         overlays = final: prev: {
           verilator_4 = final.callPackage ./nix/verilator_4.nix { };
-          espresso = (import inputs.nixpkgs-espresso { inherit system; config.allowUnfree = true; }).espresso;
+          inherit (import inputs.nixpkgs-circt { inherit system; }) circt;
           b4smtGen = final.callPackage ./nix { riscv-programs = self.packages.${system}.default; };
           b4smt = final.b4smtGen { hash = "sha256-dm8qlhY87+9tKoX9TWACi+yyzPbSFEnQTGEdJmQl4LE="; };
         };
@@ -34,6 +33,9 @@
             inputs.nix-filter.overlays.default
             inputs.sbt-derivation.overlays.default
             overlays
+          ];
+          config.allowUnfreePredicate = pkg: builtins.elem (nixpkgs.lib.getName pkg) [
+            "espresso"
           ];
         };
 
@@ -60,8 +62,7 @@
         formatter = pkgs.nixpkgs-fmt;
 
         devShells.default = pkgs.mkShell {
-          name = "processor-shell";
-          buildInputs = with pkgs;[
+          packages = with pkgs;[
             circt
             rustfilt
             pkgsCross.riscv64.stdenv.cc

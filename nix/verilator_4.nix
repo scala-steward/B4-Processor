@@ -1,4 +1,5 @@
-{ verilator, fetchFromGitHub }: (verilator.overrideAttrs (old: rec {
+{ verilator, fetchFromGitHub }:
+verilator.overrideAttrs (old: rec {
   version = "4.228";
   src = fetchFromGitHub {
     owner = "verilator";
@@ -7,4 +8,4 @@
     sha256 = "sha256-ToYad8cvBF3Mio5fuT4Ce4zXbWxFxd6smqB1TxvlHao=";
   };
   doCheck = false;
-}))
+})

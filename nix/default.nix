@@ -1,4 +1,4 @@
-{ mkSbtDerivation, nix-filter, ripgrep, circt, callPackage, riscv-programs }:
+{ mkSbtDerivation, nix-filter, ripgrep, circt, callPackage, riscv-programs, lib }:
 { hash }:
 let
   mkDerivation = attrs: mkSbtDerivation ({
@@ -14,7 +14,7 @@ let
         "build.sbt"
       ];
     };
-    buildInputs = [ circt ripgrep ];
+    nativeBuildInputs = [ circt ripgrep ];
     depsSha256 = hash;
     buildPhase = ''
       echo no buildPhase set. Failing.
@@ -23,25 +23,24 @@ let
 
     fixupPhase = "true";
   } // attrs);
-  b4smt = mkDerivation {
-    buildPhase = ''
-      sbt "b4smt/runMain b4smt.B4SMTCore"
-      cat B4SMTCore.sv | rg -U '(?s)module B4SMTCore\(.*endmodule' > B4SMTCore.wrapper.v
-      sed -i 's/module B4SMTCore(/module B4SMTCoreUnused(/g' B4SMTCore.sv
-    '';
+in
+lib.fix (b4smt: mkDerivation {
+  buildPhase = ''
+    sbt "b4smt/runMain b4smt.B4SMTCore"
+    cat B4SMTCore.sv | rg -U '(?s)module B4SMTCore\(.*endmodule' > B4SMTCore.wrapper.v
+    sed -i 's/module B4SMTCore(/module B4SMTCoreUnused(/g' B4SMTCore.sv
+  '';
 
-    installPhase = ''
-      mkdir $out
-      cp B4SMTCore.* $out
-    '';
+  installPhase = ''
+    mkdir $out
+    cp B4SMTCore.* $out
+  '';
 
-    passthru = {
-      inherit riscv-programs mkDerivation;
-      sbtTest = callPackage ./b4smt_sbt_test.nix {
-        inherit b4smt;
-      };
+  passthru = {
+    inherit riscv-programs mkDerivation;
+    sbtTest = callPackage ./b4smt_sbt_test.nix {
+      inherit b4smt;
     };
   };
-in
-b4smt
+})
 

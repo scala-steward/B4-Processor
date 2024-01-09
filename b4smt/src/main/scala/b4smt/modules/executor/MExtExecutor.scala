@@ -2,14 +2,14 @@ package b4smt.modules.executor
 
 import b4smt.Parameters
 import b4smt.connections.OutputValue
-import b4smt.utils.operations.MOperation
+import b4smt.utils.operations.MulDivOperation
 import chisel3._
 import chisel3.util._
 
 class MExtExecutor(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val input = Flipped(Decoupled(new Bundle {
-      val operation = MOperation.Type()
+      val operation = MulDivOperation.Type()
       val rs1 = UInt(64.W)
       val rs2 = UInt(64.W)
     }))
@@ -21,7 +21,7 @@ class MExtExecutor(implicit params: Parameters) extends Module {
 
   val rs1Reg = Reg(UInt(64.W))
   val rs2Reg = Reg(UInt(64.W))
-  val opReg = Reg(MOperation.Type())
+  val opReg = Reg(MulDivOperation.Type())
   val outAcc = Reg(UInt(64.W))
 
   io.input.ready := state === waitingInput
@@ -39,19 +39,19 @@ class MExtExecutor(implicit params: Parameters) extends Module {
   when(state === executing) {
     io.output.bits.value := rs1Reg + rs2Reg
     switch(opReg) {
-      is(MOperation.Mul) {
+      is(MulDivOperation.Mul) {
         outAcc := (rs1Reg * rs2Reg)(63, 0)
       }
-      is(MOperation.Mulh) {
+      is(MulDivOperation.Mulh) {
         outAcc := (rs1Reg.asSInt * rs2Reg.asSInt)(127, 64)
       }
-      is(MOperation.Mulhu) {
+      is(MulDivOperation.Mulhu) {
         outAcc := (rs1Reg * rs2Reg)(127, 64)
       }
-      is(MOperation.Mulhsu) {
+      is(MulDivOperation.Mulhsu) {
         outAcc := (rs1Reg.asSInt * rs2Reg)(127, 64)
       }
-      is(MOperation.Div) {
+      is(MulDivOperation.Div) {
         outAcc := rs1Reg / rs2Reg
       }
     }

@@ -34,7 +34,7 @@ class Operations extends Bundle {
   val amoWidth = AMOOperationWidth.Type()
   val amoOrdering = new AMOOrdering
   val pextOp = OptionalBundle(new PExtensionOperation.Type())
-  val mOp = OptionalBundle(new MOperation.Type())
+  val mOp = OptionalBundle(new MulDivOperation.Type())
 
   class SourceDef extends Bundle {
     val reg = new RVRegister
@@ -98,7 +98,7 @@ object Operations {
     _.amoWidth -> AMOOperationWidth.Word,
     _.amoOrdering -> AMOOrdering(false.B, false.B),
     _.pextOp -> invalid(PExtensionOperation.Type()),
-    _.mOp -> invalid(MOperation.Type()),
+    _.mOp -> invalid(MulDivOperation.Type()),
   )
 
   implicit class UIntAccess(u: UInt) {
@@ -381,7 +381,7 @@ object Operations {
     )
   }
 
-  def mOp(op: MOperation.Type): (UInt, UInt) => Operations =
+  def mOp(op: MulDivOperation.Type): (UInt, UInt) => Operations =
     createOperation(
       (u, _) => u.mOp -> valid(op),
       _.sources(0).reg -> _(19, 15).reg,
@@ -391,7 +391,7 @@ object Operations {
 
   def MextDecodingList = {
     import Instructions.{MType, M64Type}
-    import MOperation._
+    import MulDivOperation._
     Seq(
       MType("DIV") -> mOp(Div),
       MType("DIVU") -> mOp(Divu),
@@ -973,7 +973,7 @@ class DecodingMod(implicit params: Parameters) extends Module {
   }
 
   when(out.mOp.valid) {
-    for (a <- MOperation.all) {
+    for (a <- MulDivOperation.all) {
       cover(out.mOp.bits === a)
     }
   }
@@ -1075,7 +1075,7 @@ object CSROperation extends ChiselEnum {
   val ReadWrite, ReadSet, ReadClear = Value
 }
 
-object MOperation extends ChiselEnum {
+object MulDivOperation extends ChiselEnum {
   val Div, Divu, Mul, Mulh, Mulhsu, Mulhu, Rem, Remu = Value
   val Divuw, Divw, Mulw, Remuw, Remw = Value
 }
