@@ -1,9 +1,8 @@
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 
-ThisBuild / version := "0.1.0-SNAPSHOT"
-
 val commonSettings = Seq(
+  scalaVersion := "2.13.12",
   scalacOptions := Seq(
     "-deprecation",
     "-encoding",
@@ -15,11 +14,12 @@ val commonSettings = Seq(
     "-JXss512m",
     "-JXmx2G",
   ),
-  scalaVersion := "2.13.12",
   libraryDependencies := Seq("org.chipsalliance" %% "chisel" % "5.1.0"),
   addCompilerPlugin(
     "org.chipsalliance" % "chisel-plugin" % "5.1.0" cross CrossVersion.full,
   ),
+  Test / logBuffered := false,
+  Test / parallelExecution := false,
 )
 
 lazy val pextExecutor = (project in file("pext"))
@@ -40,6 +40,3 @@ lazy val b4smt = (project in file("b4smt"))
     libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "5.0.2" % "test",
   )
   .dependsOn(pextExecutor, chiselFormal)
-
-Test / logBuffered := false
-Test / parallelExecution := false

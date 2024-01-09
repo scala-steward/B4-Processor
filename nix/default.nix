@@ -12,6 +12,7 @@ let
         "chisel-formal"
         "project"
         "build.sbt"
+        ".scalafmt.conf"
       ];
     };
     nativeBuildInputs = [ circt ripgrep ];
@@ -19,6 +20,11 @@ let
     buildPhase = ''
       echo no buildPhase set. Failing.
       false
+    '';
+
+    depsWarmupCommand =''
+      sbt compile
+      sbt scalafmtCheck || true
     '';
 
     fixupPhase = "true";

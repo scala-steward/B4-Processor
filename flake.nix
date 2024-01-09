@@ -25,7 +25,7 @@
           verilator_4 = final.callPackage ./nix/verilator_4.nix { };
           inherit (import inputs.nixpkgs-circt { inherit system; }) circt;
           b4smtGen = final.callPackage ./nix { riscv-programs = self.packages.${system}.default; };
-          b4smt = final.b4smtGen { hash = "sha256-dm8qlhY87+9tKoX9TWACi+yyzPbSFEnQTGEdJmQl4LE="; };
+          b4smt = final.b4smtGen { hash = "sha256-fu536SVh6hK44aPk0ByxPPp6rOE5e4j4R7oBUl2BIC4="; };
         };
         pkgs = import nixpkgs {
           inherit system;
@@ -49,13 +49,14 @@
             { name = "riscv-tests"; path = riscv-tests; }
             { name = "riscv-sample-programs"; path = riscv-sample-programs; }
           ];
-          slowChecks = pkgs.b4smt.sbtTest ''sbt "testOnly * -- -n org.scalatest.tags.Slow"'';
+          slowChecks = pkgs.b4smt.sbtTest "slow" ''sbt "testOnly * -- -n org.scalatest.tags.Slow"'';
           verilator = pkgs.verilator_4;
         };
 
         checks =
           {
-            quick = pkgs.b4smt.sbtTest ''sbt "testOnly * -- -l org.scalatest.tags.Slow"'';
+            quick = pkgs.b4smt.sbtTest "quick" ''sbt "testOnly * -- -l org.scalatest.tags.Slow"'';
+            format = pkgs.b4smt.sbtTest "format" ''sbt fmtCheck'';
             #            programs = sbtTest ''sbt "testOnly *ProgramTest*"'';
           };
 
