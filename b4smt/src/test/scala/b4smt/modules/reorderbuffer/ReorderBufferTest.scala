@@ -2,12 +2,7 @@ package b4smt.modules.reorderbuffer
 
 import b4smt.Parameters
 import b4smt.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
-import b4smt.utils.{
-  DecoderValue,
-  ExecutorValue,
-  RegisterFileValue,
-  Tag,
-}
+import b4smt.utils.{DecoderValue, ExecutorValue, RegisterFileValue, Tag}
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
