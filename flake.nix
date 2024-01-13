@@ -25,7 +25,7 @@
           verilator_4 = final.callPackage ./nix/verilator_4.nix { };
           inherit (import inputs.nixpkgs-circt { inherit system; }) circt;
           b4smtGen = final.callPackage ./nix { riscv-programs = self.packages.${system}.default; };
-          b4smt = final.b4smtGen { hash = "sha256-fu536SVh6hK44aPk0ByxPPp6rOE5e4j4R7oBUl2BIC4="; };
+          b4smt = final.b4smtGen { hash = "sha256-t46im42OmLMIGoch1D5fPKnz0C56M8kEOkAFm6G5s/4="; };
         };
         pkgs = import nixpkgs {
           inherit system;
