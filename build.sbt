@@ -1,6 +1,9 @@
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 
+name := "B4SMT-project"
+scalaVersion := "2.13.12"
+
 val commonSettings = Seq(
   scalaVersion := "2.13.12",
   scalacOptions := Seq(

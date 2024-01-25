@@ -8,7 +8,7 @@ import b4smt.connections.{
   ReservationStation2Executor,
   ReservationStation2PExtExecutor,
 }
-import b4smt.utils.{B4RRArbiter, MMArbiter}
+import b4smt.utils.{B4RRArbiter, MMArbiter, TagValueBundle}
 import chisel3._
 import chisel3.experimental.prefix
 import chisel3.util._
@@ -58,14 +58,14 @@ class ReservationStation(implicit params: Parameters) extends Module {
       val r = reservation(i)
       a.bits.operation := r.operation
       a.bits.destinationTag := r.destinationTag
-      a.bits.value1 := r.sources(0).getValueUnsafe
-      a.bits.value2 := r.sources(1).getValueUnsafe
+      a.bits.value1 := r.sources(0).value
+      a.bits.value2 := r.sources(1).value
       a.bits.wasCompressed := r.wasCompressed
       a.bits.branchOffset := r.branchOffset
       a.valid := r.valid &&
         r.sources(0).isValue &&
         r.sources(1).isValue &&
-        !r.ispext
+        r.exeType === ExecutorType.Regular
       when(a.valid && a.ready) {
         r := ReservationStationEntry.default
       }
@@ -81,14 +81,14 @@ class ReservationStation(implicit params: Parameters) extends Module {
       val r = reservation(i)
       a.bits.operation := r.pextOperation
       a.bits.destinationTag := r.destinationTag
-      a.bits.value1 := r.sources(0).getValueUnsafe
-      a.bits.value2 := r.sources(1).getValueUnsafe
-      a.bits.value3 := r.sources(2).getValueUnsafe
+      a.bits.value1 := r.sources(0).value
+      a.bits.value2 := r.sources(1).value
+      a.bits.value3 := r.sources(2).value
       a.valid := r.valid &&
         r.sources(0).isValue &&
         r.sources(1).isValue &&
         r.sources(2).isValue &&
-        r.ispext
+        r.exeType === ExecutorType.PExt
       when(a.valid && a.ready) {
         r := ReservationStationEntry.default
       }
@@ -127,11 +127,11 @@ class ReservationStation(implicit params: Parameters) extends Module {
                 { tag =>
                   Mux(
                     tag === o.bits.tag,
-                    source.fromValue(o.bits.value),
-                    source.fromTag(tag),
+                    TagValueBundle.fromValue(o.bits.value),
+                    TagValueBundle.fromTag(tag),
                   )
                 },
-                { v => source.fromValue(v) },
+                { v => TagValueBundle.fromValue(v) },
               )
             }
           }

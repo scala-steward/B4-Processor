@@ -1078,4 +1078,20 @@ object CSROperation extends ChiselEnum {
 object MulDivOperation extends ChiselEnum {
   val Div, Divu, Mul, Mulh, Mulhsu, Mulhu, Rem, Remu = Value
   val Divuw, Divw, Mulw, Remuw, Remw = Value
+
+  object SignType extends ChiselEnum {
+    val Unsigned, Signed, SignedUnsigned = Value
+  }
+
+  def isMul(it: MulDivOperation.Type) =
+    MuxLookup(it, false.B)(Seq(Mul, Mulh, Mulhsu, Mulhu, Mulw).map(_ -> true.B))
+  def isDiv(it: MulDivOperation.Type) =
+    MuxLookup(it, false.B)(Seq(Div, Divu, Divuw, Divw).map(_ -> true.B))
+  def isRem(it: MulDivOperation.Type) =
+    MuxLookup(it, false.B)(Seq(Rem, Remu, Remuw, Remw).map(_ -> true.B))
+  def signType(it: MulDivOperation.Type) = MuxLookup(it, SignType.Unsigned)(
+    Seq(Div, Mul, Mulh, Rem, Divw, Mulw, Remw).map(_ -> SignType.Signed)
+      ++ Seq(Divu, Mulhu, Remu, Divuw, Remuw).map(_ -> SignType.Unsigned)
+      ++ Seq(Mulhsu).map(_ -> SignType.SignedUnsigned),
+  )
 }

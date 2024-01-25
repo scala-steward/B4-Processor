@@ -1,27 +1,24 @@
 package b4smt.modules.muldiv
 
 import b4smt.Parameters
-import b4smt.connections.OutputValue
+import b4smt.connections.{OutputValue, ReservationStation2MulDivExecutor}
 import b4smt.utils.Tag
 import b4smt.utils.operations.MulDivOperation
+import b4smt.utils.operations.MulDivOperation.SignType
 import chisel3._
 import chisel3.util._
 
-class MulDiv(implicit params: Parameters) extends Module {
+class MulDivExecutor(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
-    val in = Flipped(Decoupled(new Bundle {
-      val rs1 = UInt(64.W)
-      val rs2 = UInt(64.W)
-      val dtag = new Tag()
-      val operation = MulDivOperation.Type()
-    }))
+    val reservationStation =
+      Flipped(Decoupled(new ReservationStation2MulDivExecutor()))
     val out = Decoupled(new OutputValue)
   })
 
   val mul = Module(new Multiplyer(32))
   val div = Module(new DivRem(32))
 
-  val waitingInput :: executing :: Nil = Enum(3)
+  val waitingInput :: executing :: waitingOutput :: Nil = Enum(3)
   val state = RegInit(waitingInput)
 
   val operationReg = Reg(new MulDivOperation.Type())
@@ -32,27 +29,33 @@ class MulDiv(implicit params: Parameters) extends Module {
 
   switch(state) {
     is(waitingInput) {
-      io.in.ready := true.B
-      operation := io.in.bits.operation
-      when(io.in.valid) {
-        operation := io.in.bits.operation
+      io.reservationStation.ready := true.B
+      operation := io.reservationStation.bits.operation
+      when(io.reservationStation.valid) {
+        operation := io.reservationStation.bits.operation
+        operationReg := io.reservationStation.bits.operation
         state := executing
       }
-      outputValid
+
+      when(MulDivOperation.isMul(operation)) {
+        mul.io.in.valid := io.reservationStation.valid
+        mul.io.in.bits.a := io.reservationStation.bits.value1
+        mul.io.in.bits.b := io.reservationStation.bits.value2
+        mul.io.in.bits.signType := MulDivOperation.signType(operation)
+        mul.io.out.ready := true.B
+      } otherwise {
+        div.io.in.valid := io.reservationStation.valid
+        div.io.in.bits.dividend := io.reservationStation.bits.value1
+        div.io.in.bits.divisor := io.reservationStation.bits.value2
+        div.io.in.bits.signed := MulDivOperation.signType(
+          operation,
+        ) === SignType.Signed
+        div.io.out.ready := true.B
+      }
     }
     is(executing) {}
   }
-
-  switch(io.in.bits.operation) {
-    is(MulDivOperation.Mul) {}
-  }
 }
-
-object SignType extends ChiselEnum {
-  val Unsigned, Signed, SignedUnsigned = Value
-}
-
-import SignType._
 
 class MulIO(inputWidth: Int) extends Bundle {
   val in = Flipped(Decoupled(new Bundle {
@@ -68,6 +71,7 @@ class MulBaseModule(inputWidth: Int) extends Module {
 }
 
 class Multiplyer(inputWidth: Int) extends MulBaseModule(inputWidth) {
+  import SignType._
   io.in.ready := io.out.ready
   io.out.valid := io.in.valid
   io.out.bits := MuxLookup(io.in.bits.signType, 0.U)(

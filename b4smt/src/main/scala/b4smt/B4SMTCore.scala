@@ -3,6 +3,7 @@ package b4smt
 import b4smt.connections.{
   OutputValue,
   ReservationStation2Executor,
+  ReservationStation2MulDivExecutor,
   ReservationStation2PExtExecutor,
 }
 import b4smt.modules.{AtomicLSU, B4PExtExecutor}
@@ -15,6 +16,7 @@ import b4smt.modules.executor.Executor
 import b4smt.modules.fetch.{Fetch, FetchBuffer}
 import b4smt.modules.lsq.LoadStoreQueue
 import b4smt.modules.memory.ExternalMemoryInterface
+import b4smt.modules.muldiv.MulDivExecutor
 import b4smt.modules.outputcollector.{OutputCollector, OutputCollector2}
 import b4smt.modules.registerfile.{RegisterFile, RegisterFileMem}
 import b4smt.modules.reorderbuffer.ReorderBuffer
@@ -82,6 +84,15 @@ class B4SMTCore(implicit params: Parameters) extends Module {
   private val csr = Seq.fill(params.threads)(Module(new CSR))
   private val amo = Module(new AtomicLSU)
 
+  private val issueBufferMulDiv = Module(
+    new IssueBuffer3(
+      params.mulDivExecutors,
+      new ReservationStation2MulDivExecutor,
+    ),
+  )
+  private val mulDivExecutor =
+    Seq.fill(params.mulDivExecutors)(Module(new MulDivExecutor()))
+
   private val pextIssueBuffer =
     if (params.enablePExt)
       Some(
@@ -115,6 +126,13 @@ class B4SMTCore(implicit params: Parameters) extends Module {
       o.valid := false.B
       o.bits := 0.U.asTypeOf(new OutputValue())
     }
+
+  for (me <- 0 until params.mulDivExecutors) {
+    issueBufferMulDiv.io.executors(me) <>
+      mulDivExecutor(me).io.reservationStation
+    outputCollector.io.mulDivExecutor(me) <>
+      mulDivExecutor(me).io.out
+  }
 
   for (e <- 0 until params.executors) {
 
@@ -181,6 +199,9 @@ class B4SMTCore(implicit params: Parameters) extends Module {
           pextIssueBuffer.get.io.reservationStations(tid)(d)
       else
         reservationStation(tid)(d).io.pextIssue.ready := false.B
+
+      reservationStation(tid)(d).io.mulDivIssue <>
+        issueBufferMulDiv.io.reservationStations(tid)(d)
 
       amo.io.decoders(tid)(d) <> decoders(tid)(d).io.amo
 
