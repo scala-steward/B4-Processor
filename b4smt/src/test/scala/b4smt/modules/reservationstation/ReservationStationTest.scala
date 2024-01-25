@@ -26,21 +26,21 @@ class ReservationStationWrapper(implicit params: Parameters)
     this.io.decoder(0).entry.poke(ReservationStationEntry.zero)
     this.io.decoder(0).entry.valid.poke(programCounter.isDefined)
     if (value1.isDefined) {
-      this.io.decoder(0).entry.sources(0).__internal_is_left.poke(false)
+      this.io.decoder(0).entry.sources(0).isTag.poke(false)
       this.io
         .decoder(0)
         .entry
         .sources(0)
-        .__internal_common_data
+        .value
         .poke(value1.get)
     }
     if (value2.isDefined) {
-      this.io.decoder(0).entry.sources(0).__internal_is_left.poke(false)
+      this.io.decoder(0).entry.sources(0).isTag.poke(false)
       this.io
         .decoder(0)
         .entry
         .sources(0)
-        .__internal_common_data
+        .value
         .poke(value2.get)
     }
   }

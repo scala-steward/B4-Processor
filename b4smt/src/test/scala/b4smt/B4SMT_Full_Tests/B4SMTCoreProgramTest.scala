@@ -637,4 +637,32 @@ class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         c.clock.step(300)
       }
   }
+
+  it should "run testhex" in {
+    test(
+      new B4SMTCoreWithMemory(
+      )(
+        defaultParams.copy(
+          threads = 1,
+          decoderPerThread = 1,
+          maxRegisterFileCommitCount = 1,
+          loadStoreQueueIndexWidth = 2,
+          enablePExt = true,
+        ),
+      ),
+    )
+      .withAnnotations(
+        Seq(
+          WriteWaveformAnnotation,
+          VerilatorBackendAnnotation,
+          CachingAnnotation,
+        ),
+      ) { c =>
+        c.initialize("test")
+        c.io.simulationIO.output.ready.poke(true)
+        c.clock.setTimeout(10000)
+        for (i <- 0 until 100)
+          c.checkForOutputAny(2000, print_value = true)
+      }
+  }
 }

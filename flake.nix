@@ -70,7 +70,8 @@
             sbt
             jdk
             verilog
-            verilator_4
+            verilator
+#            verilator_4
             zlib
             yosys
             graphviz
