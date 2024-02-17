@@ -41,6 +41,9 @@ class LoadStoreQueue(implicit params: Parameters)
       if (params.debug) Some(Output(UInt(params.loadStoreQueueIndexWidth.W)))
       else None
     // LSQのエントリ数はこのままでいいのか
+
+    val statusLoad = Output(Bool())
+    val statusStore = Output(Bool())
   })
 
   val defaultEntry = LoadStoreQueueEntry.default
@@ -199,6 +202,16 @@ class LoadStoreQueue(implicit params: Parameters)
   }
   when(!buffer(tail).valid && head =/= tail) {
     tail := tail + 1.U
+  }
+
+  io.statusStore := false.B
+  io.statusLoad := false.B
+  when(io.memory.ready && io.memory.valid) {
+    when(io.memory.bits.operation === LoadStoreOperation.Store) {
+      io.statusStore := true.B
+    }.otherwise {
+      io.statusLoad := true.B
+    }
   }
 
   // デバッグ

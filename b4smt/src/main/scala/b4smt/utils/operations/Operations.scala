@@ -391,21 +391,29 @@ object Operations {
 
   def MextDecodingList = {
     import Instructions.{MType, M64Type}
-    import MulDivOperation._
+//    import MulDivOperation._
+//    Seq(
+//      MType("DIV") -> mOp(Div),
+//      MType("DIVU") -> mOp(Divu),
+//      MType("MUL") -> mOp(Mul),
+//      MType("MULH") -> mOp(Mulh),
+//      MType("MULHSU") -> mOp(Mulhsu),
+//      MType("MULHU") -> mOp(Mulhu),
+//      MType("REM") -> mOp(Rem),
+//      MType("REMU") -> mOp(Remu),
+//      M64Type("DIVUW") -> mOp(Divuw),
+//      M64Type("DIVW") -> mOp(Divw),
+//      M64Type("MULW") -> mOp(Mulw),
+//      M64Type("REMUW") -> mOp(Remuw),
+//      M64Type("REMW") -> mOp(Remw),
+//    )
+    import ALUOperation._
     Seq(
-      MType("DIV") -> mOp(Div),
-      MType("DIVU") -> mOp(Divu),
-      MType("MUL") -> mOp(Mul),
-      MType("MULH") -> mOp(Mulh),
-      MType("MULHSU") -> mOp(Mulhsu),
-      MType("MULHU") -> mOp(Mulhu),
-      MType("REM") -> mOp(Rem),
-      MType("REMU") -> mOp(Remu),
-      M64Type("DIVUW") -> mOp(Divuw),
-      M64Type("DIVW") -> mOp(Divw),
-      M64Type("MULW") -> mOp(Mulw),
-      M64Type("REMUW") -> mOp(Remuw),
-      M64Type("REMW") -> mOp(Remw),
+      MType("MUL") -> rtypeOp(Mul),
+      MType("MULH") -> rtypeOp(Mulh),
+      MType("MULHSU") -> rtypeOp(Mulhsu),
+      MType("MULHU") -> rtypeOp(Mulhu),
+      M64Type("MULW") -> rtypeOp(Mulw),
     )
   }
 
@@ -1039,6 +1047,8 @@ object ALUOperation extends ChiselEnum {
     BranchLessThanUnsigned, BranchGreaterThanOrEqualUnsigned, Add, Sub, And, Or,
     Slt, Sltu, Xor, Sll, Srl, Sra, AddJALR, AddJAL, AddW, SllW, SrlW, SraW,
     SubW = Value
+  // TODO: CHANGE THIS TO ITS OWN
+  val Mul, Mulh, Mulhsu, Mulhu, Mulw = Value
 }
 
 object LoadStoreOperation extends ChiselEnum {

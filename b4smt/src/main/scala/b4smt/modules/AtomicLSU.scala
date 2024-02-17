@@ -58,6 +58,10 @@ class AtomicLSU(implicit params: Parameters) extends Module {
         ),
       ),
     )
+    val statusAmo = Output(UInt(params.threads.W))
+    val statusLr = Output(UInt(params.threads.W))
+    val statusSc = Output(UInt(params.threads.W))
+    val statusScFail = Output(UInt(params.threads.W))
   })
 
   io.output.valid := false.B
@@ -70,6 +74,11 @@ class AtomicLSU(implicit params: Parameters) extends Module {
   io.memory.write.requestData.bits := 0.U.asTypeOf(new MemoryWriteRequestData())
   io.memory.read.response.ready := false.B
   io.memory.write.response.ready := false.B
+
+  io.statusScFail := 0.U
+  io.statusSc := 0.U
+  io.statusLr := 0.U
+  io.statusAmo := 0.U
 
   private val bufferLength = pow(2, 3).toInt
   private val heads = RegInit(
@@ -182,6 +191,7 @@ class AtomicLSU(implicit params: Parameters) extends Module {
     when(!issueQueue.empty) {
       when(issueQueue.output.bits.operation === AMOOperation.Sc) {
         state := write_request
+        io.statusSc := 1.U << issueQueue.output.bits.destinationTag.threadId
       }.otherwise {
         io.memory.read.request.valid := true.B
         val accessWidth = Mux(
@@ -213,11 +223,13 @@ class AtomicLSU(implicit params: Parameters) extends Module {
         state := write_back
       }.elsewhen(issueQueue.output.bits.operation === AMOOperation.Lr) {
         state := write_back
+        io.statusLr := 1.U << issueQueue.output.bits.destinationTag.threadId
         val res = reservation(issueQueue.output.bits.destinationTag.threadId)
         res.valid := true.B
         res.bits := issueQueue.output.bits.addressValue
       }.otherwise {
         state := write_request
+        io.statusAmo := 1.U << issueQueue.output.bits.destinationTag.threadId
       }
     }
   }
@@ -233,6 +245,7 @@ class AtomicLSU(implicit params: Parameters) extends Module {
       response := 1.U
       state := write_back
       res.valid := false.B
+      io.statusScFail := 1.U << issueQueue.output.bits.destinationTag.threadId
     }.otherwise {
       when(issueQueue.output.bits.operation === AMOOperation.Sc) {
         response := 0.U
@@ -312,7 +325,6 @@ class AtomicLSU(implicit params: Parameters) extends Module {
       when(next) {
         state := write_wait_response
       }
-
     }
   }
 

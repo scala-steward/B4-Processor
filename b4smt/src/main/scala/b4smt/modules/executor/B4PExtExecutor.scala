@@ -1,4 +1,4 @@
-package b4smt.modules
+package b4smt.modules.executor
 
 import b4smt.Parameters
 import b4smt.connections.{OutputValue, ReservationStation2PExtExecutor}
@@ -11,6 +11,7 @@ class B4PExtExecutor(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
     val input = Flipped(Decoupled(new ReservationStation2PExtExecutor()))
     val output = Decoupled(new OutputValue)
+    val status = Output(UInt(params.threads.W))
   })
 
   private val PextMod = Module(new PExtExecutor)
@@ -25,6 +26,11 @@ class B4PExtExecutor(implicit params: Parameters) extends Module {
   io.output.bits.isError := false.B
   io.output.valid := io.input.valid
   io.input.ready := io.output.ready
+
+  io.status := 0.U
+  when(io.output.ready && io.output.valid) {
+    io.status := 1.U << io.output.bits.tag.threadId
+  }
 }
 
 object B4PExtExecutor extends App {

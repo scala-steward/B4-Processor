@@ -1,8 +1,7 @@
-package b4smt.modules.muldiv
+package b4smt.modules.executor
 
 import b4smt.Parameters
 import b4smt.connections.{OutputValue, ReservationStation2MulDivExecutor}
-import b4smt.utils.Tag
 import b4smt.utils.operations.MulDivOperation
 import b4smt.utils.operations.MulDivOperation.SignType
 import chisel3._
@@ -17,6 +16,12 @@ class MulDivExecutor(implicit params: Parameters) extends Module {
 
   val mul = Module(new Multiplyer(32))
   val div = Module(new DivRem(32))
+
+  mul.io <> DontCare
+  div.io <> DontCare
+  io.out.valid := false.B
+  io.out.bits <> DontCare
+  io.reservationStation.ready := false.B
 
   val waitingInput :: executing :: waitingOutput :: Nil = Enum(3)
   val state = RegInit(waitingInput)

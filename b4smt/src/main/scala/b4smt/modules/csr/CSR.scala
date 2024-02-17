@@ -21,6 +21,24 @@ class CSR(implicit params: Parameters) extends Module with FormalTools {
     val fetch = Output(new CSR2Fetch)
     val reorderBuffer = Flipped(new ReorderBuffer2CSR)
     val threadId = Input(UInt(log2Up(params.threads).W))
+    val customInt = Valid(UInt(params.threads.W))
+
+    // ---------------------- status inputs------------------------
+    // executors
+    val activeExecutor = Input(UInt(log2Up(params.executors).W))
+    // load store
+    val activeLoad = Input(Bool())
+    val activeStore = Input(Bool())
+    // A ext
+    val activeAmo = Input(Bool())
+    val activeLr = Input(Bool())
+    val activeSc = Input(Bool())
+    val activeScFail = Input(Bool())
+    // error
+    val activeError = Input(Bool())
+    // P ext
+    val activePext = Input(UInt(log2Up(params.pextExecutors).W))
+    // ------------------------------------------------------------
   })
 
   private val operation = io.decoderInput.bits.operation
@@ -30,6 +48,8 @@ class CSR(implicit params: Parameters) extends Module with FormalTools {
   io.CSROutput.bits.tag := io.decoderInput.bits.destinationTag
   io.CSROutput.bits.value := 0.U
   io.CSROutput.bits.isError := false.B
+  io.customInt.valid := false.B
+  io.customInt.bits := 0.U
 
   val retireCounter = Module(new RetireCounter)
   retireCounter.io.retireInCycle := io.reorderBuffer.retireCount
@@ -43,6 +63,25 @@ class CSR(implicit params: Parameters) extends Module with FormalTools {
   io.fetch.mcause := mcause
   val mstatus = RegInit(0.U(64.W))
   val mie = RegInit(0.U(64.W))
+
+  val executorCount = RegInit(0.U(64.W))
+  executorCount := executorCount + io.activeExecutor
+  val loadCount = RegInit(0.U(64.W))
+  loadCount := loadCount + io.activeLoad
+  val storeCount = RegInit(0.U(64.W))
+  storeCount := storeCount + io.activeStore
+  val amoCount = RegInit(0.U(64.W))
+  amoCount := amoCount + io.activeAmo
+  val lrCount = RegInit(0.U(64.W))
+  lrCount := lrCount + io.activeLr
+  val scCount = RegInit(0.U(64.W))
+  scCount := scCount + io.activeSc
+  val scFailCount = RegInit(0.U(64.W))
+  scFailCount := scFailCount + io.activeScFail
+  val errorCount = RegInit(0.U(64.W))
+  errorCount := errorCount + io.activeError
+  val pextCount = RegInit(0.U(64.W))
+  pextCount := pextCount + io.activePext
 
   def setCSROutput(reg: UInt): Unit = {
     io.CSROutput.bits.value := reg
@@ -80,8 +119,32 @@ class CSR(implicit params: Parameters) extends Module with FormalTools {
       setCSROutput(mstatus)
     }.elsewhen(address === CSRs.mie.U) {
       setCSROutput(mie)
+    }.elsewhen(address === CSRs.hpmcounter3.U) {
+      io.CSROutput.bits.value := executorCount
+    }.elsewhen(address === CSRs.hpmcounter4.U) {
+      io.CSROutput.bits.value := loadCount
+    }.elsewhen(address === CSRs.hpmcounter5.U) {
+      io.CSROutput.bits.value := storeCount
+    }.elsewhen(address === CSRs.hpmcounter6.U) {
+      io.CSROutput.bits.value := amoCount
+    }.elsewhen(address === CSRs.hpmcounter7.U) {
+      io.CSROutput.bits.value := lrCount
+    }.elsewhen(address === CSRs.hpmcounter8.U) {
+      io.CSROutput.bits.value := scCount
+    }.elsewhen(address === CSRs.hpmcounter9.U) {
+      io.CSROutput.bits.value := scFailCount
+    }.elsewhen(address === CSRs.hpmcounter10.U) {
+      io.CSROutput.bits.value := errorCount
+    }.elsewhen(address === CSRs.hpmcounter11.U) {
+      io.CSROutput.bits.value := pextCount
     }.elsewhen(address === CSRCustom.coreCount.U) {
       io.CSROutput.bits.value := params.threads.U
+    }.elsewhen(address === CSRCustom.customInt.U) {
+      io.CSROutput.bits.value := 0.U
+      when(io.CSROutput.ready && io.CSROutput.valid) {
+        io.customInt.valid := true.B
+        io.customInt.bits := io.decoderInput.bits.value
+      }
     }.otherwise {
       io.CSROutput.bits.isError := true.B
     }

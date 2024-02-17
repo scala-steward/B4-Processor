@@ -1,10 +1,11 @@
 package b4smt.modules.executor
 
-import circt.stage.ChiselStage
+import chisel3._
+import chisel3.util._
+import _root_.circt.stage.ChiselStage
 import b4smt.Parameters
 import b4smt.connections._
-import chisel3.util._
-import chisel3._
+import b4smt.utils.Tag
 import chisel3.experimental.prefix
 
 class Executor(implicit params: Parameters) extends Module {
@@ -13,6 +14,7 @@ class Executor(implicit params: Parameters) extends Module {
       Flipped(Irrevocable(new ReservationStation2Executor))
     val out = Irrevocable(new OutputValue)
     val fetch = Irrevocable(new BranchOutput)
+    val status = Output(UInt(params.threads.W))
   })
 
   private val operation = io.reservationStation.bits.operation
@@ -25,7 +27,10 @@ class Executor(implicit params: Parameters) extends Module {
   io.fetch.valid := false.B
   io.fetch.bits.threadId := 0.U
   io.out.valid := false.B
-  io.out.bits := DontCare
+  io.out.bits.value := 0.U
+  io.out.bits.tag := Tag(0, 0)
+  io.out.bits.isError := false.B
+  io.status := 0.U
 
   val a = io.reservationStation.bits.value1
   val b = io.reservationStation.bits.value2
@@ -58,6 +63,11 @@ class Executor(implicit params: Parameters) extends Module {
           SubW -> (a(31, 0).asSInt - b(31, 0).asSInt).pad(64).asUInt,
           AddJAL -> (b + nextOffset.asUInt),
           AddJALR -> (b + nextOffset.asUInt),
+          Mul -> (a.asSInt * b.asSInt)(63, 0).asUInt,
+          Mulh -> (a.asSInt * b.asSInt)(127, 64).asUInt,
+          Mulhu -> (a * b)(127, 64),
+          Mulhsu -> (a.asSInt * b)(127, 64).asUInt,
+          Mulw -> (a(31, 0).asSInt * b(31, 0).asSInt).asUInt,
         ),
       )
   }
@@ -105,6 +115,10 @@ class Executor(implicit params: Parameters) extends Module {
     io.out.valid := io.reservationStation.ready
     io.out.bits.value := executeOutput
     io.out.bits.tag := io.reservationStation.bits.destinationTag
+  }
+
+  when(io.out.valid && io.out.ready) {
+    io.status := 1.U << io.out.bits.tag.threadId
   }
 
   io.out.bits.isError := false.B

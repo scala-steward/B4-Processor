@@ -6,17 +6,16 @@ import b4smt.connections.{
   ReservationStation2MulDivExecutor,
   ReservationStation2PExtExecutor,
 }
-import b4smt.modules.{AtomicLSU, B4PExtExecutor}
+import b4smt.modules.AtomicLSU
 import circt.stage.ChiselStage
 import b4smt.modules.branch_output_collector.BranchOutputCollector
 import b4smt.modules.cache.{DataMemoryBuffer, InstructionMemoryCache}
 import b4smt.modules.csr.{CSR, CSRReservationStation}
 import b4smt.modules.decoder.{Decoder, Uncompresser}
-import b4smt.modules.executor.Executor
+import b4smt.modules.executor.{B4PExtExecutor, Executor, MulDivExecutor}
 import b4smt.modules.fetch.{Fetch, FetchBuffer}
 import b4smt.modules.lsq.LoadStoreQueue
 import b4smt.modules.memory.ExternalMemoryInterface
-import b4smt.modules.muldiv.MulDivExecutor
 import b4smt.modules.outputcollector.{OutputCollector, OutputCollector2}
 import b4smt.modules.registerfile.{RegisterFile, RegisterFileMem}
 import b4smt.modules.reorderbuffer.ReorderBuffer
@@ -30,6 +29,7 @@ import b4smt.modules.reservationstation.{
 import b4smt.utils.axi.{ChiselAXI, VerilogAXI}
 import chisel3._
 import chisel3.experimental.dataview.DataViewable
+import chisel3.util.PopCount
 
 class B4SMTCore(implicit params: Parameters) extends Module {
   override val desiredName = "B4SMTCoreInternal"
@@ -262,6 +262,20 @@ class B4SMTCore(implicit params: Parameters) extends Module {
     /** 命令メモリと命令キャッシュを接続 */
     externalMemoryInterface.io.instruction(tid) <>
       instructionCache(tid).io.memory
+
+    csr(tid).io.activeLr := amo.io.statusLr(tid)
+    csr(tid).io.activeSc := amo.io.statusSc(tid)
+    csr(tid).io.activeScFail := amo.io.statusScFail(tid)
+    csr(tid).io.activeAmo := amo.io.statusAmo(tid)
+    csr(tid).io.activeLoad := loadStoreQueue(tid).io.statusLoad
+    csr(tid).io.activeStore := loadStoreQueue(tid).io.statusStore
+    csr(tid).io.activeError := reorderBuffer(tid).io.isError
+    csr(tid).io.activeExecutor := PopCount(executors.map(_.io.status(tid)))
+    if (pextExecutors.isDefined) {
+      csr(tid).io.activePext := PopCount(
+        pextExecutors.get.map(_.io.status(tid)),
+      )
+    }
 
     /** フェッチと分岐予測 TODO */
     fetch(tid).io.prediction <> DontCare
