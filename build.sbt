@@ -18,7 +18,7 @@ scalacOptions ++= Seq(
 Test / logBuffered := false
 Test / parallelExecution := false
 
-scalaVersion := "2.13.12"
+scalaVersion := "2.13.13"
 
 addCompilerPlugin(
   "org.chipsalliance" % "chisel-plugin" % "5.1.0" cross CrossVersion.full,
