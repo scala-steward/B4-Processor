@@ -94,6 +94,11 @@ jobs:
         uses: cachix/cachix-action@v14
         with:
           name: b4smt
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
 
       - name: test all
-        run: make check
+        run: make check-artifacts
+      - name: upload check cache
+        run: |
+          nix path-info ./result -r | cachix push b4smt
+          nix path-info ./result -r --derivation | cachix push b4smt
