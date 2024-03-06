@@ -2,8 +2,6 @@
   description = "riscv test flake";
 
   inputs.nixpkgs.url = "nixpkgs/nixpkgs-unstable";
-  # Blocked by chiseltest until 6.0.0
-  inputs.nixpkgs-circt.url = "github:NixOS/nixpkgs/f4f8e7c13d3e3b33e9a43f1e1ff97d1697ec6240";
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.nix-filter.url = "github:numtide/nix-filter";
   inputs.sbt-derivation = {
@@ -23,9 +21,8 @@
       let
         overlays = final: prev: {
           verilator_4 = final.callPackage ./nix/verilator_4.nix { };
-          inherit (import inputs.nixpkgs-circt { inherit system; }) circt;
           b4smtGen = final.callPackage ./nix { riscv-programs = self.packages.${system}.default; };
-          b4smt = final.b4smtGen { hash = "sha256-t46im42OmLMIGoch1D5fPKnz0C56M8kEOkAFm6G5s/4="; };
+          b4smt = final.b4smtGen { hash = "sha256-D6c1Lh3Z4Er4D4b/O9NyKlwhGjOJkev3BVL7t658Z1c="; };
         };
         pkgs = import nixpkgs {
           inherit system;
@@ -57,30 +54,13 @@
           {
             quick = pkgs.b4smt.sbtTest "quick" ''sbt "testOnly * -- -l org.scalatest.tags.Slow"'';
             format = pkgs.b4smt.sbtTest "format" ''sbt fmtCheck'';
-            #            programs = sbtTest ''sbt "testOnly *ProgramTest*"'';
+            # programs = sbtTest ''sbt "testOnly *ProgramTest*"'';
           };
 
         formatter = pkgs.nixpkgs-fmt;
 
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs;[
-            circt
-            rustfilt
-            pkgsCross.riscv64.stdenv.cc
-            sbt
-            jdk
-            verilog
-            verilator
-#            verilator_4
-            zlib
-            yosys
-            graphviz
-            xdot
-            espresso
-            z3
-            symbiyosys
-            yices
-          ];
+        devShells.default = pkgs.callPackage ./nix/shell.nix {
+          verilator = pkgs.verilator_4;
         };
       });
 }

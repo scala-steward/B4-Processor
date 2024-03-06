@@ -22,12 +22,13 @@ let
       false
     '';
 
-    depsWarmupCommand =''
+    depsWarmupCommand = ''
       sbt compile
       sbt scalafmtCheck || true
     '';
 
-    fixupPhase = "true";
+    fixupPhase = "";
+    CHISEL_FIRTOOL_PATH = "${circt}/bin";
   } // attrs);
 in
 lib.fix (b4smt: mkDerivation {
