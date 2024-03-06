@@ -33,7 +33,7 @@ case class Parameters(
   maxDataMemoryCommitCount: Int = 1,
   fetchWidth: Int = 2,
   branchPredictionWidth: Int = 4,
-  parallelOutput: Int = 2,
+  parallelOutput: Int = 1,
   instructionStart: Long = 0x8010_0000L,
   debug: Boolean = false,
   enablePExt: Boolean = false,

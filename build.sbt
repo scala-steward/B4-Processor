@@ -4,6 +4,9 @@ addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 name := "B4SMT-project"
 scalaVersion := "2.13.12"
 
+val chiselVersion = "6.1.0"
+val chiselTestVersion = "6.0.0"
+
 val commonSettings = Seq(
   scalaVersion := "2.13.12",
   scalacOptions := Seq(
@@ -17,9 +20,10 @@ val commonSettings = Seq(
     "-JXss512m",
     "-JXmx2G",
   ),
-  libraryDependencies := Seq("org.chipsalliance" %% "chisel" % "5.1.0"),
+//  resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
+  libraryDependencies := Seq("org.chipsalliance" %% "chisel" % chiselVersion),
   addCompilerPlugin(
-    "org.chipsalliance" % "chisel-plugin" % "5.1.0" cross CrossVersion.full,
+    "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full,
   ),
   Test / logBuffered := false,
   Test / parallelExecution := false,
@@ -33,13 +37,13 @@ lazy val chiselFormal = (project in file("chisel-formal"))
   .settings(
     commonSettings,
     name := "B4SMT-ChiselFormal",
-    libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "5.0.2",
+    libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % chiselTestVersion,
   )
 
 lazy val b4smt = (project in file("b4smt"))
   .settings(
     commonSettings,
     name := "B4SMT",
-    libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "5.0.2" % "test",
+    libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % chiselTestVersion % "test",
   )
   .dependsOn(pextExecutor, chiselFormal)

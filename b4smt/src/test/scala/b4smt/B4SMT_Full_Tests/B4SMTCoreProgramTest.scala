@@ -644,11 +644,12 @@ class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )(
         defaultParams.copy(
           threads = 4,
-          decoderPerThread = 2,
+          decoderPerThread = 1,
           executors = 4,
-          maxRegisterFileCommitCount = 2,
-          loadStoreQueueIndexWidth = 3,
+          maxRegisterFileCommitCount = 1,
+          loadStoreQueueIndexWidth = 2,
           enablePExt = true,
+          parallelOutput = 1,
         ),
       ),
     )
@@ -661,8 +662,8 @@ class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       ) { c =>
         c.initialize("test")
         c.io.simulationIO.output.ready.poke(true)
-        for (i <- 0 until 10000)
-          c.checkForOutputAny(1000000, print_value = true)
+        c.checkForOutputString("START", 3000, print_value = true)
+        c.checkForOutputString("END", 100000000, print_value = true)
       }
   }
 }

@@ -25,7 +25,7 @@ class CSR(implicit params: Parameters) extends Module with FormalTools {
 
     // ---------------------- status inputs------------------------
     // executors
-    val activeExecutor = Input(UInt(log2Up(params.executors).W))
+    val activeExecutor = Input(UInt(log2Ceil(params.executors + 1).W))
     // load store
     val activeLoad = Input(Bool())
     val activeStore = Input(Bool())
@@ -37,7 +37,7 @@ class CSR(implicit params: Parameters) extends Module with FormalTools {
     // error
     val activeError = Input(Bool())
     // P ext
-    val activePext = Input(UInt(log2Up(params.pextExecutors).W))
+    val activePext = Input(UInt(log2Ceil(params.pextExecutors + 1).W))
     // ------------------------------------------------------------
   })
 

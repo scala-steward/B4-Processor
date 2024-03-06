@@ -145,6 +145,22 @@ class B4SMTCoreWithMemory()(implicit params: Parameters) extends Module {
     this.io.simulationIO.output.ready.poke(false)
   }
 
+  def checkForOutputString(
+    str: String,
+    char_timeout: Int = 500,
+    print_value: Boolean = false,
+  ): Unit = {
+    var idx = 0
+    while (idx < str.length) {
+      val c = getOutput(timeout = char_timeout, print_value = print_value);
+      if (c == str(idx)) {
+        idx += 1
+      } else {
+        idx = 0
+      }
+    }
+  }
+
   def getOutput(timeout: Int = 500, print_value: Boolean = false): Char = {
     this.clock.setTimeout(timeout)
     while (!this.io.simulationIO.output.valid.peekBoolean())

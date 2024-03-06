@@ -2,7 +2,6 @@ package chiselformal
 
 import chisel3._
 import chiseltest.ChiselScalatestTester
-import chiseltest.experimental.sanitizeFileName
 import circt.stage.ChiselStage
 
 import java.io.PrintWriter
@@ -76,7 +75,7 @@ trait SymbiYosysFormal {
         s"${m.group(1)}__$normalized_comment: ${m.group(2)} // ${m.group(3)}"
       },
     )
-    val name = sanitizeFileName(getTestName)
+    val name = "placeholder_test_name"
     Directory("formal").createDirectory()
     Directory(s"formal/$name").createDirectory()
     val file = new PrintWriter(s"formal/$name/out.sv")

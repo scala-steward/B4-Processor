@@ -48,7 +48,7 @@ object PassthroughBuffer extends App {
     }.otherwise {
       output.valid := true.B
       output.bits := buf
-      when(!input.valid && output.ready) {
+      when(output.ready) {
         buf := 0.U.asTypeOf(t)
         bufSet := false.B
       }

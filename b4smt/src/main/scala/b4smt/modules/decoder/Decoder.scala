@@ -165,11 +165,19 @@ class Decoder(implicit params: Parameters) extends Module with FormalTools {
     io.amo.bits.operationWidth := operations.amoWidth
     io.amo.bits.ordering := operations.amoOrdering
 
-    io.amo.bits.addressReg := sourceTags(0).bits
+    io.amo.bits.addressReg := Mux(
+      sourceTags(0).valid,
+      sourceTags(0).bits,
+      Tag(io.threadId, 0.U),
+    )
     io.amo.bits.addressValue := values(0).bits
     io.amo.bits.addressValid := values(0).valid
 
-    io.amo.bits.srcReg := sourceTags(1).bits
+    io.amo.bits.srcReg := Mux(
+      sourceTags(1).valid,
+      sourceTags(1).bits,
+      Tag(io.threadId, 0.U),
+    )
     io.amo.bits.srcValue := values(1).bits
     io.amo.bits.srcValid := values(1).valid
 

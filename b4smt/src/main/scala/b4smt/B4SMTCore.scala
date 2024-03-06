@@ -275,6 +275,8 @@ class B4SMTCore(implicit params: Parameters) extends Module {
       csr(tid).io.activePext := PopCount(
         pextExecutors.get.map(_.io.status(tid)),
       )
+    } else {
+      csr(tid).io.activePext := 0.U
     }
 
     /** フェッチと分岐予測 TODO */
