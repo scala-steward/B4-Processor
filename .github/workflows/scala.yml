@@ -63,19 +63,19 @@ jobs:
           name: processor
           path: processor/
 
-      - name: upload processor to cache
-        run: |
-          nix path-info -r ./processor | cachix push b4smt
-
       - name: make all
         run: make
       - name: make develop environment
         run: nix develop --profile develop-profile -c true
 
-      - name: upload other artifacts to cache
+      - name: upload artifacts to cache
         run: |
+          nix path-info -r ./processor | cachix push b4smt
+          nix path-info -r --derivation ./processor | cachix push b4smt
           nix path-info -r ./programs | cachix push b4smt
+          nix path-info -r --derivation ./programs | cachix push b4smt
           nix path-info -r ./develop-profile | cachix push b4smt
+          nix path-info -r --derivation ./develop-profile | cachix push b4smt
 
   test-all:
     name: B4プロセッサのテスト
