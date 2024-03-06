@@ -2,7 +2,7 @@ name: scala-CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
 
 permissions:
@@ -20,12 +20,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up JDK 20
         uses: actions/setup-java@v3
         with:
-          java-version: '20'
-          distribution: 'temurin'
+          java-version: "20"
+          distribution: "temurin"
 
       - name: Cache SBT
         uses: actions/cache@v3
@@ -38,26 +38,22 @@ jobs:
       - name: Check formatting
         run: sbt scalafmtCheckAll
 
-  test-all:
-    name: B4プロセッサのテスト
-    timeout-minutes: 60
-
+  cache-nix:
+    name: nix依存関係のキャッシュ
+    timeout-minutes: 30
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: setup nix
-        uses: cachix/install-nix-action@v23
+        uses: cachix/install-nix-action@v25
 
       - name: setup cachix
-        uses: cachix/cachix-action@v12
+        uses: cachix/cachix-action@v14
         with:
-          name: pineapplehunter
-
-      - name: test all
-        run: make check
-
+          name: b4smt
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+      
       - name: generate processor
         run: make processor
 
@@ -66,3 +62,35 @@ jobs:
         with:
           name: processor
           path: processor/
+
+      - name: make all
+        run: make
+      - name: make develop environment
+        run: nix develop --profile develop-profile -c true
+
+      - name: upload artifacts
+        run: |
+          nix path-info -r ./processor | cachix push b4smt
+          nix path-info -r ./programs | cachix push b4smt
+          nix path-info -r ./develop-profile | cachix push b4smt
+
+  test-all:
+    name: B4プロセッサのテスト
+    timeout-minutes: 60
+    needs: [cache-nix]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup nix
+        uses: cachix/install-nix-action@v25
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v14
+        with:
+          name: b4smt
+
+      - name: test all
+        run: make check
