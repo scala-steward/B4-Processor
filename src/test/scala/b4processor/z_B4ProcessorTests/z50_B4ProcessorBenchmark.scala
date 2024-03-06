@@ -5,10 +5,11 @@ import b4processor.utils.B4ProcessorWithMemory
 import chiseltest._
 import chiseltest.internal.CachingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.tagobjects.Slow
 
 class z50_B4ProcessorBenchmark extends AnyFlatSpec with ChiselScalatestTester {
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
-  implicit val defaultParams = {
+  implicit val defaultParams: b4processor.Parameters = {
     Parameters(
       debug = true,
       threads = 1,
@@ -24,7 +25,7 @@ class z50_B4ProcessorBenchmark extends AnyFlatSpec with ChiselScalatestTester {
 
   behavior of s"RISC-V benchmark"
 
-  ignore should "run dhrystore" in {
+  ignore should "run dhrystore" taggedAs Slow in {
     test(new B4ProcessorWithMemory).withAnnotations(
       Seq(
         WriteWaveformAnnotation,
@@ -63,7 +64,7 @@ class z50_B4ProcessorBenchmark extends AnyFlatSpec with ChiselScalatestTester {
       "median-p-mt-byte",
     )
   ) {
-    it should s"run $filename" in {
+    it should s"run $filename" taggedAs Slow in {
       test(
         new B4ProcessorWithMemory()(
           defaultParams.copy(

@@ -14,7 +14,7 @@ class DecodingModTest
     with SymbiYosysFormal {
   behavior of "Decodign Module"
 
-  implicit val params = Parameters()
+  implicit val params: b4processor.Parameters = Parameters()
 
   it should "check formal with pext" in {
     symbiYosysCheck(

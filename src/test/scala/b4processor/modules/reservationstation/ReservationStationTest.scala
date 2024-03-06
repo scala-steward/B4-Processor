@@ -71,7 +71,7 @@ class ReservationStationWrapper(implicit params: Parameters)
 
 class ReservationStationTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Reservation Station"
-  implicit val params =
+  implicit val params: b4processor.Parameters =
     Parameters(threads = 1, decoderPerThread = 1, tagWidth = 4)
 
   // エントリを追加してALUから値をうけとり、実行ユニットに回す

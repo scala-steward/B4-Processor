@@ -16,7 +16,7 @@ class z40_B4ProcessorParameterTest
     extends AnyFlatSpec
     with ChiselScalatestTester {
   behavior of "B4Processor with many parameters"
-  implicit val defaultParams = Parameters(debug = true)
+  implicit val defaultParams: b4processor.Parameters = Parameters(debug = true)
 
   for (threads <- Seq(1, 2, 5, 6, 7, 8)) {
     for (executors <- Seq(1, 8))

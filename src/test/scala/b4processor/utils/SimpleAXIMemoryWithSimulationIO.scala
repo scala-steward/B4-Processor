@@ -202,6 +202,6 @@ class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 16)(
 }
 
 object SimpleAXIMemoryWithSimulationIO extends App {
-  implicit val params = Parameters()
+  implicit val params: b4processor.Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(new SimpleAXIMemoryWithSimulationIO())
 }

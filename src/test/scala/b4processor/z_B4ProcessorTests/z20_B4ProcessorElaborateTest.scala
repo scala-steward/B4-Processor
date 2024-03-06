@@ -11,7 +11,7 @@ class z20_B4ProcessorElaborateTest
     with ChiselScalatestTester {
 
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
-  implicit val defaultParams = Parameters(debug = true)
+  implicit val defaultParams: b4processor.Parameters = Parameters(debug = true)
 
   behavior of "B4Processor elaborate"
   // コンパイルが通ることを確認（信号をつなぎきれていないとエラーになる）

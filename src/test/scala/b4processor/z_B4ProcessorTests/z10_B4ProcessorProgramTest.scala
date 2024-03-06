@@ -11,7 +11,7 @@ class z10_B4ProcessorProgramTest
     with ChiselScalatestTester {
   behavior of "B4Processor test programs"
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
-  implicit val defaultParams =
+  implicit val defaultParams: b4processor.Parameters =
     Parameters(
       debug = true,
       tagWidth = 4,

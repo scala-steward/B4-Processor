@@ -89,7 +89,7 @@ class LoadStoreQueueTest
     with ChiselScalatestTester
     with SymbiYosysFormal {
   behavior of "Load Store Queue"
-  implicit val defaultParams = Parameters(
+  implicit val defaultParams: b4processor.Parameters = Parameters(
     tagWidth = 4,
     threads = 1,
     decoderPerThread = 2,

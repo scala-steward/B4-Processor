@@ -174,7 +174,7 @@ class B4ProcessorWithMemory()(implicit params: Parameters) extends Module {
 }
 
 object B4ProcessorWithMemory extends App {
-  implicit val params = Parameters(
+  implicit val params: b4processor.Parameters = Parameters(
 //    debug = true,
     threads = 1,
     decoderPerThread = 2,

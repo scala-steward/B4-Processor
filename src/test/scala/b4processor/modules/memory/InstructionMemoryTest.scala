@@ -8,7 +8,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 class InstructionMemoryTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Instruction Memory"
 
-  implicit val defaultParams = Parameters()
+  implicit val defaultParams: b4processor.Parameters = Parameters()
 
   /** 要求されたアドレスの値を返す */
   it should "pass values at address" in {

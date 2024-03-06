@@ -75,7 +75,7 @@ class ReorderBufferTest
     with ChiselScalatestTester
     with SymbiYosysFormal {
   behavior of "Reorder Buffer"
-  implicit val defaultParams = Parameters(
+  implicit val defaultParams: b4processor.Parameters = Parameters(
     tagWidth = 4,
     decoderPerThread = 1,
     maxRegisterFileCommitCount = 1,

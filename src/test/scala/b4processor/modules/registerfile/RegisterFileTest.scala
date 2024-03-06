@@ -9,7 +9,7 @@ import chisel3._
 class RegisterFileTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "register file"
 
-  implicit val detfaultParams =
+  implicit val detfaultParams: b4processor.Parameters =
     Parameters(
       threads = 1,
       decoderPerThread = 1,

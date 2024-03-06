@@ -174,7 +174,7 @@ class DecoderTest
     with ChiselScalatestTester
     with SymbiYosysFormal {
   behavior of "decoder"
-  implicit val testParams =
+  implicit val testParams: b4processor.Parameters =
     Parameters(threads = 1, decoderPerThread = 1)
 
   // rs1 rs2 rdが正しくリオーダバッファに渡されているか

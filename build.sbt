@@ -13,6 +13,7 @@ scalacOptions ++= Seq(
   "-Ymacro-annotations",
   "-JXss512m",
   "-JXmx2G",
+//  "-quickfix:any"
 )
 
 Test / logBuffered := false

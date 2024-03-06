@@ -39,7 +39,7 @@ class CSRTest
     with SymbiYosysFormal {
   behavior of "CSR"
 
-  implicit val params = Parameters()
+  implicit val params: b4processor.Parameters = Parameters()
 
   it should "return clock cycles" in {
     test(new CSRWrapper) { c =>
