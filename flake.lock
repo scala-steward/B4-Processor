@@ -5,11 +5,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1701680307,
-        "narHash": "sha256-kAuep2h5ajznlPMD9rnQyffWG8EM/C73lejGofXvdM8=",
+        "lastModified": 1709126324,
+        "narHash": "sha256-q6EQdSeUZOG26WelxqkmR7kArjgWCdw5sfJVHPH/7j8=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "4022d587cbbfd70fe950c1e2083a02621806a725",
+        "rev": "d465f4819400de7c8d874d50b982301f28a84605",
         "type": "github"
       },
       "original": {
@@ -20,11 +20,11 @@
     },
     "nix-filter": {
       "locked": {
-        "lastModified": 1701697642,
-        "narHash": "sha256-L217WytWZHSY8GW9Gx1A64OnNctbuDbfslaTEofXXRw=",
+        "lastModified": 1705332318,
+        "narHash": "sha256-kcw1yFeJe9N4PjQji9ZeX47jg0p9A0DuU4djKvg1a7I=",
         "owner": "numtide",
         "repo": "nix-filter",
-        "rev": "c843418ecfd0344ecb85844b082ff5675e02c443",
+        "rev": "3449dc925982ad46246cfc36469baf66e1b64f17",
         "type": "github"
       },
       "original": {
@@ -34,6 +34,22 @@
       }
     },
     "nixpkgs": {
+      "locked": {
+        "lastModified": 1709641832,
+        "narHash": "sha256-bzzRc3DiV8Cm/67HDa39pyBymqF45ISgUbXqjrMk2UE=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "bfa8b30043892dc2b660d403faa159bab7b65898",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs-old-circt": {
       "locked": {
         "lastModified": 1700457727,
         "narHash": "sha256-5QykWTqMdJ9BAKEOG6HF58hh38LvFk4jlhDR4cPOKL0=",
@@ -46,22 +62,6 @@
         "owner": "NixOS",
         "repo": "nixpkgs",
         "rev": "f4f8e7c13d3e3b33e9a43f1e1ff97d1697ec6240",
-        "type": "github"
-      }
-    },
-    "nixpkgs-pineapplehunter2": {
-      "locked": {
-        "lastModified": 1701922557,
-        "narHash": "sha256-YbOrIxmJfx5frpkyxGpXCMAU7ve9gObkFUJIHfnicJk=",
-        "owner": "pineapplehunter",
-        "repo": "nixpkgs",
-        "rev": "fe00295720d138dde7a40e72138ed874da2d89bc",
-        "type": "github"
-      },
-      "original": {
-        "owner": "pineapplehunter",
-        "ref": "espresso",
-        "repo": "nixpkgs",
         "type": "github"
       }
     },
@@ -88,7 +88,7 @@
         "flake-utils": "flake-utils",
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
-        "nixpkgs-pineapplehunter2": "nixpkgs-pineapplehunter2",
+        "nixpkgs-old-circt": "nixpkgs-old-circt",
         "riscv-test-src": "riscv-test-src",
         "sbt-derivation": "sbt-derivation"
       }

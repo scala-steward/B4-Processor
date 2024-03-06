@@ -1,8 +1,14 @@
 [![Scala CI](https://github.com/NakajoLab/B4-Processor/actions/workflows/scala.yml/badge.svg)](https://github.com/NakajoLab/B4-Processor/actions/workflows/scala.yml)
 
-# B4-Processor
+# B4SMT
 
-OoOのプロセッサ
+RISC-V OoO SMTプロセッサ
+
+Chiselで実装されています
+
+## 作者
+- @pineapplehunter
+- @michiya-kato
 
 ## 準備
 これらのソフトウェアをインストールしておく必要があります。
@@ -77,7 +83,7 @@ index 726feaa..478b09e 100644
            };
            buildInputs = with pkgs; [ circt ];
 ---        depsSha256 = "sha256-W1Kgoc58kruhLW0CDzvuUgAjuRZbT4QqStJLAAnPuhc=";
-+++        depsSha256 = "sha256-0000000000000000000000000000000000000000000=";
++++        depsSha256 = "";
            buildPhase = ''
              sbt "runMain b4processor.B4Processor"
            '';
@@ -85,7 +91,7 @@ index 726feaa..478b09e 100644
 また一度makeすると次のエラーメッセージが出てきます。
 ```text
 error: hash mismatch in fixed-output derivation '/nix/store/01ghymlaf8f1r9ssqvdhn4j5kz3gk153-B4Processor-sbt-dependencies.tar.zst.drv':
-         specified: sha256-0000000000000000000000000000000000000000000=
+         specified: sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
             got:    sha256-W1Kgoc58kruhLW0CDzvuUgAjuRZbT4QqStJLAAnPuhc=
 ```
-ここで出てきたハッシュに置き換えてmakeするとうまくビルドされると思います。
+ここで出てきたハッシュ(例:`sha256-W1Kgoc58kruhLW0CDzvuUgAjuRZbT4QqStJLAAnPuhc=`)に置き換えてmakeするとうまくビルドされると思います。
