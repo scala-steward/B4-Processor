@@ -9,7 +9,11 @@ import b4smt.connections.{
 import b4smt.modules.AtomicLSU
 import circt.stage.ChiselStage
 import b4smt.modules.branch_output_collector.BranchOutputCollector
-import b4smt.modules.cache.{DataMemoryBuffer, InstructionMemoryCache}
+import b4smt.modules.cache.{
+  CacheFetchInterface,
+  DataMemoryBuffer,
+  InstructionMemoryCache,
+}
 import b4smt.modules.csr.{CSR, CSRReservationStation}
 import b4smt.modules.decoder.{Decoder, Uncompresser}
 import b4smt.modules.executor.{B4PExtExecutor, Executor, MulDivExecutor}
@@ -47,6 +51,8 @@ class B4SMTCore(implicit params: Parameters) extends Module {
     "レジスタファイルへのコミット数は1以上である必要があります。",
   )
 
+  private val cacheFetchInterface =
+    Seq.fill(params.threads)(Module(new CacheFetchInterface()))
   private val instructionCache =
     Seq.fill(params.threads)(Module(new InstructionMemoryCache))
   private val fetch = Seq.fill(params.threads)(Module(new Fetch))
@@ -161,7 +167,8 @@ class B4SMTCore(implicit params: Parameters) extends Module {
     registerFile(tid).io.threadId := tid.U
 
     /** 命令キャッシュとフェッチを接続 */
-    instructionCache(tid).io.fetch <> fetch(tid).io.cache
+    instructionCache(tid).io.fetch <> cacheFetchInterface(tid).io.cache
+    cacheFetchInterface(tid).io.fetch <> fetch(tid).io.cache
 
     /** フェッチとフェッチバッファの接続 */
     fetch(tid).io.fetchBuffer <> fetchBuffer(tid).io.input

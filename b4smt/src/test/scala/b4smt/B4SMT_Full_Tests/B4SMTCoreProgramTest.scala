@@ -644,10 +644,10 @@ class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       )(
         defaultParams.copy(
           threads = 4,
-          decoderPerThread = 1,
+          decoderPerThread = 2,
           executors = 4,
-          maxRegisterFileCommitCount = 1,
-          loadStoreQueueIndexWidth = 2,
+          maxRegisterFileCommitCount = 2,
+          loadStoreQueueIndexWidth = 3,
           enablePExt = true,
           parallelOutput = 1,
         ),

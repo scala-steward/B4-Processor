@@ -1,16 +1,10 @@
 package b4smt.modules.cache
 
-import circt.stage.ChiselStage
 import b4smt.Parameters
-import b4smt.connections.{InstructionCache2Fetch, InstructionMemory2Cache}
-import b4smt.modules.memory.{
-  InstructionResponse,
-  MemoryReadChannel,
-  MemoryReadRequest,
-}
-import b4smt.utils.Tag
+import b4smt.connections.InstructionCache2Fetch
+import b4smt.modules.memory.MemoryReadChannel
+import circt.stage.ChiselStage
 import chisel3._
-import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.util._
 
 import scala.math.pow
@@ -37,7 +31,7 @@ class InstructionCache2WaySetAssosiative(cacheTagWidth: Int, offsetWidth: Int)(
 }
 
 object InstructionCache2WaySetAssosiative extends App {
-  implicit val params: b4smt.Parameters = Parameters()
+  implicit val params = Parameters()
   ChiselStage.emitSystemVerilogFile(new InstructionMemoryCache())
 }
 

@@ -1,15 +1,11 @@
 package b4smt.modules.cache
 
 import b4smt.Parameters
-import b4smt.connections.InstructionCache2Fetch
-import b4smt.modules.memory.{
-  InstructionResponse,
-  MemoryReadChannel,
-  MemoryReadRequest,
-}
+import b4smt.modules.memory.MemoryReadChannel
+import b4smt.structures.memoryAccess.MemoryAccessWidth
+import circt.stage.ChiselStage
 import chisel3._
 import chisel3.util._
-import _root_.circt.stage.ChiselStage
 
 /** 命令キャッシュモジュール
   *
@@ -19,122 +15,240 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
 
     /** フェッチ */
-    val fetch = Vec(params.decoderPerThread, new InstructionCache2Fetch)
+    val fetch = new Bundle {
+      val request = Flipped(Decoupled(UInt(64.W)))
+      val response = Decoupled(UInt(128.W))
+    }
 
     val memory = new MemoryReadChannel()
 
     val threadId = Input(UInt(log2Up(params.threads).W))
   })
 
-  private class CacheBufferEntry extends Bundle {
-    val valid = Bool()
-    val upper = UInt(60.W)
-    val data = Vec(8, UInt(16.W))
-  }
-  private object CacheBufferEntry {
-    def default: CacheBufferEntry = {
-      val w = Wire(new CacheBufferEntry)
-      w.valid := false.B
-      w.upper := DontCare
-      w.data.foreach(p => p := DontCare)
-      w
-    }
-  }
-  private val buf = RegInit(VecInit(Seq.fill(4)(CacheBufferEntry.default)))
-
-  io.memory.response.ready := false.B
-
-  private val request = WireDefault(0.U(60.W))
-  private var didRequest = false.B
-  for (f <- io.fetch) {
-    val lowerAddress = f.address.bits(63, 1)
-    val upperAddress = lowerAddress + 1.U
-    val lowerData = WireDefault(0.U(16.W))
-    val upperData = WireDefault(0.U(16.W))
-    f.output.valid := false.B
-    f.output.bits := 0.U
-    var foundData = false.B
-    for (b <- buf) {
-      when(!foundData && b.valid && lowerAddress(62, 3) === b.upper) {
-        lowerData := b.data(lowerAddress(2, 0))
-      }
-      foundData = foundData || (b.valid && lowerAddress(62, 3) === b.upper)
-    }
-
-    var foundData2 = false.B
-    for (b <- buf) {
-      when(!foundData2 && b.valid && upperAddress(62, 3) === b.upper) {
-        upperData := b.data(upperAddress(2, 0))
-      }
-      foundData2 = foundData2 || (b.valid && upperAddress(62, 3) === b.upper)
-    }
-
-    f.output.valid := foundData && foundData2
-    f.output.bits := upperData ## lowerData
-
-    when(f.address.valid) {
-      when(!foundData && !didRequest) {
-        request := lowerAddress(62, 3)
-      }.elsewhen(!foundData2 && !didRequest) {
-        request := upperAddress(62, 3)
-      }
-    }
-    didRequest = didRequest || (!foundData || !foundData2) && f.address.valid
-  }
-
-  private val waiting :: requesting :: Nil = Enum(2)
-  private val state = RegInit(waiting)
-  private val readIndex = Reg(UInt(1.W))
-  private val requested = RegInit(0.U(60.W))
-  private val transaction = Reg(new MemoryReadRequest)
-  private val requestDone = Reg(Bool())
-
-  when(didRequest && state === waiting) {
-    state := requesting
-    requested := false.B
-    readIndex := 0.U
-    requested := request
-
-    val tmp_transaction =
-      MemoryReadRequest.ReadInstruction(Cat(request, 0.U(4.W)), 2, io.threadId)
-    transaction := tmp_transaction
-    io.memory.request.valid := true.B
-    io.memory.request.bits := tmp_transaction
-    requestDone := false.B
-  }
+  io.fetch.request.ready := false.B
+  io.fetch.response.bits := DontCare
+  io.fetch.response.valid := false.B
 
   io.memory.request.valid := false.B
   io.memory.request.bits := DontCare
-  private val head = RegInit(0.U(2.W))
-  when(state === requesting) {
+  io.memory.request.bits.address := 0.U
+  io.memory.response.ready := false.B
+
+  io.memory.request.bits.size := MemoryAccessWidth.DoubleWord
+  io.memory.request.bits.burstLength := (params.MemoryBurstLength - 1).U
+
+  // アドレスを格納
+  val addr = WireInit(UInt(64.W), 0.U)
+  addr := io.fetch.request.bits
+
+  // タグ・インデックス・オフセットの抽出
+  val IgnoreBits = log2Up(16)
+  val OffsetBits = log2Up(params.ICacheDataNum)
+  val IndexBits = log2Up(params.ICacheSet)
+  val TagBits = 64 - IndexBits - OffsetBits - IgnoreBits
+  val AddrOffset = addr(IgnoreBits + OffsetBits - 1, IgnoreBits)
+  val AddrOffsetReg = RegInit(0.U(OffsetBits.W))
+  val AddrIndex = RegPassthrough(
+    io.fetch.request.valid,
+    addr(IgnoreBits + OffsetBits + IndexBits - 1, IgnoreBits + OffsetBits),
+    0.U,
+  )
+  val AddrIndexReg = RegInit(0.U(IndexBits.W))
+  val AddrTag = addr(63, IgnoreBits + OffsetBits + IndexBits)
+  val AddrTagReg = RegInit(0.U(TagBits.W))
+  val AddrRequest = addr(63, 6) ## 0.U(6.W)
+  val AddrRequestReg = RegInit(0.U(64.W))
+
+  // 有効ビット・タグ・インデックス
+  val ICacheValidBit = RegInit(
+    VecInit(
+      Seq.fill(params.ICacheWay)(VecInit(Seq.fill(params.ICacheSet)(false.B))),
+    ),
+  )
+  val ICacheTag =
+    Seq.fill(params.ICacheWay)(SyncReadMem(params.ICacheSet, UInt(TagBits.W)))
+  val ICacheDataBlock = Seq.fill(params.ICacheWay)(
+    SyncReadMem(params.ICacheSet, UInt(params.ICacheBlockWidth.W)),
+  )
+
+  // バースト転送のバッファー
+  val ReadDataBuf = RegInit(
+    VecInit(Seq.fill(params.MemoryBurstLength)(0.U(64.W))),
+  )
+
+  // バースト転送のカウンター
+  val count = RegInit(0.U(8.W))
+
+  // ウェイのカウンター(各セットごとにカウンターを用意)
+  val SelectWay = RegInit(VecInit(Seq.fill(params.ICacheSet)(0.U(1.W))))
+
+  when(io.fetch.request.valid) {
+    AddrOffsetReg := AddrOffset
+    AddrIndexReg := AddrIndex
+    AddrTagReg := AddrTag
+    AddrRequestReg := AddrRequest
+  }
+  io.fetch.request.ready := RegNext(io.fetch.request.valid)
+
+  // ヒットするか判定
+  val hitVec = WireInit(VecInit(Seq.fill(params.ICacheWay)(false.B)))
+  val hitVecReg = RegInit(VecInit(Seq.fill(params.ICacheWay)(false.B)))
+  val hitWayNum = WireInit(0.U(log2Up(params.ICacheWay).W))
+  for (i <- 0 until params.ICacheWay) {
+    hitVec(i) := ICacheValidBit(i)(AddrIndexReg) &&
+      ICacheTag(i).read(AddrIndex) === AddrTagReg
+    hitVecReg(i) := hitVec(i)
+  }
+  hitWayNum := MuxCase(0.U, hitVec.zipWithIndex.map { case (h, i) => h -> i.U })
+
+  // BRAMからRead
+  val ReadData = MuxLookup(hitWayNum, 0.U)(
+    (0 until params.ICacheWay).map(i =>
+      i.U -> ICacheDataBlock(i).read(AddrIndex),
+    ),
+  )
+
+  val hit = hitVec.reduce(_ || _)
+
+  private val idle :: requesting :: waitingResponse :: writeReadDataBuf :: Nil =
+    Enum(4)
+  private val memory_state = RegInit(idle)
+
+  when(memory_state === idle) {
+    // nothing
+  }.elsewhen(memory_state === requesting) {
+    io.memory.request.valid := true.B
+    io.memory.request.bits.address := AddrRequestReg
+    when(io.memory.request.ready) {
+      memory_state := waitingResponse
+    }
+  }.elsewhen(memory_state === waitingResponse) {
     io.memory.response.ready := true.B
-    when(!requestDone) {
-      io.memory.request.valid := true.B
-      io.memory.request.bits := transaction
-      when(io.memory.request.ready) {
-        requestDone := true.B
+    when(io.memory.response.valid) {
+      // メモリからのデータ(64bit)をReadDataBufに格納
+      ReadDataBuf(
+        io.memory.response.bits.burstIndex(log2Up(ReadDataBuf.size) - 1, 0),
+      ) :=
+        io.memory.response.bits.value
+
+      when(io.memory.response.bits.burstIndex === 7.U) {
+        memory_state := writeReadDataBuf
       }
+    }
+  }.elsewhen(memory_state === writeReadDataBuf) {
+    val ReadDataCom = Cat(ReadDataBuf.reverse)
+    SelectWay(AddrIndexReg) := SelectWay(AddrIndexReg) + 1.U
+    when(SelectWay(AddrIndexReg) === 0.U) {
+      ICacheDataBlock(0).write(AddrIndexReg, ReadDataCom)
+      ICacheTag(0).write(AddrIndexReg, AddrTagReg)
+      ICacheValidBit(0)(AddrIndexReg) := true.B
     }
 
-    when(io.memory.response.valid) {
-      buf(head).valid := false.B
-      for (i <- 0 until 4) {
-        buf(head).data(readIndex ## i.U(2.W)) := io.memory.response.bits
-          .value(i * 16 + 15, i * 16)
-      }
-      readIndex := readIndex + 1.U
-      when(readIndex === 1.U) {
-        state := waiting
-        buf(head).valid := true.B
-        buf(head).upper := requested
-        head := head + 1.U
-      }
+    when(SelectWay(AddrIndexReg) === 1.U) {
+      ICacheDataBlock(1).write(AddrIndexReg, ReadDataCom)
+      ICacheTag(1).write(AddrIndexReg, AddrTagReg)
+      ICacheValidBit(1)(AddrIndexReg) := true.B
     }
+    memory_state := idle
+  }.otherwise {
+    assert(false.B)
   }
 
+  when(hit) {
+    // ヒットした場合
+    val DataHitOut = MuxLookup(AddrOffsetReg, 0.U)(
+      (0 until params.ICacheDataNum).map(i =>
+        i.U -> ReadData(
+          (params.ICacheBlockWidth / params.ICacheDataNum) * (i + 1) - 1,
+          (params.ICacheBlockWidth / params.ICacheDataNum) * i,
+        ),
+      ),
+    )
+
+    io.fetch.response.valid :=
+      io.fetch.request.bits === RegNext(io.fetch.request.bits, 0.U)
+    io.fetch.response.bits := DataHitOut
+  }.otherwise {
+    // ミスした場合
+    when(RegNext(io.fetch.request.valid) && memory_state === idle) {
+      memory_state := requesting
+    }
+  }
+}
+
+object RegPassthrough {
+  def apply[T <: Data](valid: Bool, value: T, init: T): T = {
+    val r = RegInit(init)
+    val w = WireDefault(r)
+    when(valid) {
+      w := value
+      r := value
+    }
+    w
+  }
 }
 
 object InstructionMemoryCache extends App {
-  implicit val params: Parameters = Parameters()
+  implicit val params = Parameters()
   ChiselStage.emitSystemVerilogFile(new InstructionMemoryCache)
 }
+
+/*
+  === Test Result : 2024/01/16 02:00 ===
+  ~z10~
+  Total Test : 31
+  Succeeded  : 30
+  Failed     : 1
+
+  ~z20~
+  Total Test : 192
+  Succeeded  : 192
+  Failed     : 0
+
+  ~z30~
+  Total Test : 70
+  Succeeded  : 68
+  Failed     : 2
+    "fence_i"
+    "rvc"
+
+  ~z40~
+  Total Test : 12
+  Succeeded  : 12
+  Failed     : 0
+
+  ~z50~
+  Total Test : 7
+  Succeeded  : 0
+  Failed     : 6
+  Ignored    : 1
+
+  ~z60~
+  Total Test : 0
+  Succeeded  : 0
+  Failed     : 0
+
+  ~sbt test~
+  Total Test : 387
+  Succeeded  : 366
+  Failed     : 21
+  Ignored    : 1
+ */
+
+/*
+  |   [Requset]     |     |   [Requset]     |
+  |   Valid         |     |   Valid         |
+  |  ------------>  |     |  ------------>  |
+  |   Address       |     |   Address       |
+  |  ------------>  |     |  ------------>  |
+F |   Ready         |  I  |   Ready         | M
+e |  <------------  |  C  |  <------------  | e
+t |=================|  a  |=================| m
+c |   Valid         |  c  |   Valid         | o
+h |  <------------  |  h  |  <------------  | r
+  |   Data          |  e  |   Data          | y
+  |  <------------  |     |  <------------  |
+  |   Ready         |     |   Ready         |
+  |  ------------>  |     |  ------------>  |
+  |   [Response]    |     |   [Response]    |
+ */
