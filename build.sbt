@@ -2,13 +2,13 @@ addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 
 name := "B4SMT-project"
-scalaVersion := "2.13.12"
+scalaVersion := "2.13.13"
 
-val chiselVersion = "6.1.0"
+val chiselVersion = "6.2.0"
 val chiselTestVersion = "6.0.0"
 
 val commonSettings = Seq(
-  scalaVersion := "2.13.12",
+  scalaVersion := "2.13.13",
   scalacOptions := Seq(
     "-deprecation",
     "-encoding",

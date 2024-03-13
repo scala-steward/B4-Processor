@@ -17,6 +17,9 @@ check-slow:
 processor:
 	nix -L build '.#processor' -o $@
 
+check-format:
+	nix -L build '.#format'
+
 clean:
 	rm -rf programs processor result
 	rm -rf *.sv *.anno.json

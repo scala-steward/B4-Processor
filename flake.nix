@@ -22,7 +22,7 @@
         overlays = final: prev: {
           verilator_4 = final.callPackage ./nix/verilator_4.nix { };
           b4smtGen = final.callPackage ./nix { riscv-programs = self.packages.${system}.default; };
-          b4smt = final.b4smtGen { hash = "sha256-D6c1Lh3Z4Er4D4b/O9NyKlwhGjOJkev3BVL7t658Z1c="; };
+          b4smt = final.b4smtGen { hash = "sha256-sCGcFNc73rGvmbUWai6CvdPrXBJMLqdvgUbzoi7g4eA="; };
         };
         pkgs = import nixpkgs {
           inherit system;
@@ -48,12 +48,12 @@
           ];
           slowChecks = pkgs.b4smt.sbtTest "slow" ''sbt "testOnly * -- -n org.scalatest.tags.Slow"'';
           verilator = pkgs.verilator_4;
+          format = pkgs.b4smt.sbtTest "format" ''sbt fmtCheck'';
         };
 
         checks =
           {
             quick = pkgs.b4smt.sbtTest "quick" ''sbt "testOnly * -- -l org.scalatest.tags.Slow"'';
-            format = pkgs.b4smt.sbtTest "format" ''sbt fmtCheck'';
             # programs = sbtTest ''sbt "testOnly *ProgramTest*"'';
           };
 
