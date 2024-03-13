@@ -33,6 +33,8 @@ let
       cp B4Processor.* $out
     '';
 
+    CHISEL_FIRTOOL_PATH="${circt}/bin";
+
     passthru = {
       inherit riscv-programs mkDerivation;
       sbtTest = callPackage ./b4smt_sbt_test.nix {
