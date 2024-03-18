@@ -61,6 +61,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
     val tail = if (params.debug) Some(Output(UInt(tagWidth.W))) else None
     val bufferIndex0 =
       if (params.debug) Some(Output(new ReorderBufferEntry)) else None
+    val full = Output(Bool())
   })
 
   val head = RegInit(0.U(tagWidth.W))
@@ -252,6 +253,7 @@ class ReorderBuffer(implicit params: Parameters) extends Module {
   tail := Mux(io.isError, insertIndex, tail + tailDelta)
   io.csr.retireCount := Mux(io.isError, 0.U, tailDelta)
   io.isEmpty := head === tail
+  io.full := head + 1.U === tail
 
   // 出力の読み込み
   private val output = io.collectedOutputs.outputs

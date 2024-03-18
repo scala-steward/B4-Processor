@@ -25,9 +25,10 @@ class ReservationStation2(implicit params: Parameters)
     val pextIssue = Irrevocable(new ReservationStation2PExtExecutor())
     val decoder = Flipped(new Decoder2ReservationStation)
     val threadId = Input(UInt(log2Up(params.threads).W))
+    val full = Output(Bool())
   })
 
-  val rsWidth = 3
+  val rsWidth = params.reservationStationWidth
 
   val reservation = RegInit(
     VecInit(
@@ -117,6 +118,7 @@ class ReservationStation2(implicit params: Parameters)
   val decoder = io.decoder
   val resNext = reservation(head)
   decoder.ready := false.B
+  io.full := resNext.valid
   when(!resNext.valid) {
     decoder.ready := true.B
     when(decoder.entry.valid) {

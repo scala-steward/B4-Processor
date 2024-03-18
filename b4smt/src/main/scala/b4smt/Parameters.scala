@@ -38,6 +38,7 @@ case class Parameters(
   debug: Boolean = false,
   enablePExt: Boolean = false,
   pextExecutors: Int = 1,
+  reservationStationWidth: Int = 4,
   //命令キャッシュ用パラメータ
   ICacheWay: Int = 2,
   ICacheSet: Int = 128,

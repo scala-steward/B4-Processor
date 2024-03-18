@@ -219,6 +219,6 @@ class Fetch(wfiWaitWidth: Int = 10)(implicit params: Parameters)
 }
 
 object Fetch extends App {
-  implicit val params = Parameters()
+  implicit val params: Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(new Fetch)
 }

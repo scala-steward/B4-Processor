@@ -62,6 +62,7 @@ class AtomicLSU(implicit params: Parameters) extends Module {
     val statusLr = Output(UInt(params.threads.W))
     val statusSc = Output(UInt(params.threads.W))
     val statusScFail = Output(UInt(params.threads.W))
+    val statusFull = Output(Vec(params.threads, Bool()))
   })
 
   io.output.valid := false.B
@@ -79,6 +80,7 @@ class AtomicLSU(implicit params: Parameters) extends Module {
   io.statusSc := 0.U
   io.statusLr := 0.U
   io.statusAmo := 0.U
+  io.statusFull.foreach(_ := false.B)
 
   private val bufferLength = pow(2, 3).toInt
   private val heads = RegInit(
@@ -140,6 +142,7 @@ class AtomicLSU(implicit params: Parameters) extends Module {
         Mux(nextHead + 1.U =/= tails(t) && dec.valid, nextHead + 1.U, nextHead)
     }
     heads(t) := nextHead
+    io.statusFull(t) := heads(t) + 1.U === tails(t)
   }
 
   class AMOIssue extends Bundle {

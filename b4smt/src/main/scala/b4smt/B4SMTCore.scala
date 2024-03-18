@@ -285,6 +285,10 @@ class B4SMTCore(implicit params: Parameters) extends Module {
     } else {
       csr(tid).io.activePext := 0.U
     }
+    csr(tid).io.fullReorderBuffer := reorderBuffer(tid).io.full
+    csr(tid).io.fullLoadStore := loadStoreQueue(tid).io.full
+    csr(tid).io.fullAmo := amo.io.statusFull(tid)
+    csr(tid).io.fullReservationStation := PopCount(reservationStation(tid).map(_.io.full))
 
     /** フェッチと分岐予測 TODO */
     fetch(tid).io.prediction <> DontCare

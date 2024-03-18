@@ -640,14 +640,15 @@ class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "run testhex" in {
     test(
-      new B4SMTCoreWithMemory(
-      )(
+      new B4SMTCoreWithMemory()(
         defaultParams.copy(
-          threads = 4,
+          threads = 16,
+          tagWidth = 6,
+          reservationStationWidth = 5,
           decoderPerThread = 2,
-          executors = 4,
+          executors = 8,
           maxRegisterFileCommitCount = 2,
-          loadStoreQueueIndexWidth = 3,
+          loadStoreQueueIndexWidth = 4,
           enablePExt = true,
           parallelOutput = 1,
         ),
@@ -655,7 +656,7 @@ class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
     )
       .withAnnotations(
         Seq(
-          WriteWaveformAnnotation,
+//          WriteWaveformAnnotation,
           VerilatorBackendAnnotation,
           CachingAnnotation,
         ),

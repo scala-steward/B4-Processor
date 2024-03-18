@@ -29,15 +29,22 @@ class CSR(implicit params: Parameters) extends Module with FormalTools {
     // load store
     val activeLoad = Input(Bool())
     val activeStore = Input(Bool())
+    val fullLoadStore = Input(Bool())
     // A ext
     val activeAmo = Input(Bool())
     val activeLr = Input(Bool())
     val activeSc = Input(Bool())
     val activeScFail = Input(Bool())
+    val fullAmo = Input(Bool())
     // error
     val activeError = Input(Bool())
     // P ext
     val activePext = Input(UInt(log2Ceil(params.pextExecutors + 1).W))
+    // reorder buffer
+    val fullReorderBuffer = Input(Bool())
+    // reservation station
+    val fullReservationStation =
+      Input(UInt(log2Ceil(params.decoderPerThread + 1).W))
     // ------------------------------------------------------------
   })
 
@@ -82,6 +89,14 @@ class CSR(implicit params: Parameters) extends Module with FormalTools {
   errorCount := errorCount + io.activeError
   val pextCount = RegInit(0.U(64.W))
   pextCount := pextCount + io.activePext
+  val loadStoreFullCount = RegInit(0.U(64.W))
+  loadStoreFullCount := loadStoreFullCount + io.fullLoadStore
+  val atomicFullCount = RegInit(0.U(64.W))
+  atomicFullCount := atomicFullCount + io.fullAmo
+  val reorderBufferFullCount = RegInit(0.U(64.W))
+  reorderBufferFullCount := reorderBufferFullCount + io.fullReorderBuffer
+  val reservationStationFullCount = RegInit(0.U(64.W))
+  reservationStationFullCount := reservationStationFullCount + io.fullReservationStation
 
   def setCSROutput(reg: UInt): Unit = {
     io.CSROutput.bits.value := reg
@@ -137,6 +152,14 @@ class CSR(implicit params: Parameters) extends Module with FormalTools {
       io.CSROutput.bits.value := errorCount
     }.elsewhen(address === CSRs.hpmcounter11.U) {
       io.CSROutput.bits.value := pextCount
+    }.elsewhen(address === CSRs.hpmcounter12.U) {
+      io.CSROutput.bits.value := reorderBufferFullCount
+    }.elsewhen(address === CSRs.hpmcounter13.U) {
+      io.CSROutput.bits.value := loadStoreFullCount
+    }.elsewhen(address === CSRs.hpmcounter14.U) {
+      io.CSROutput.bits.value := atomicFullCount
+    }.elsewhen(address === CSRs.hpmcounter15.U) {
+      io.CSROutput.bits.value := reservationStationFullCount
     }.elsewhen(address === CSRCustom.coreCount.U) {
       io.CSROutput.bits.value := params.threads.U
     }.elsewhen(address === CSRCustom.customInt.U) {

@@ -189,7 +189,7 @@ object RegPassthrough {
 }
 
 object InstructionMemoryCache extends App {
-  implicit val params = Parameters()
+  implicit val params: Parameters = Parameters()
   ChiselStage.emitSystemVerilogFile(new InstructionMemoryCache)
 }
 
