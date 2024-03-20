@@ -21,8 +21,10 @@
       let
         overlays = final: prev: {
           verilator_4 = final.callPackage ./nix/verilator_4.nix { };
-          b4smtGen = final.callPackage ./nix { riscv-programs = self.packages.${system}.default; };
-          b4smt = final.b4smtGen { hash = "sha256-sCGcFNc73rGvmbUWai6CvdPrXBJMLqdvgUbzoi7g4eA="; };
+          b4smtGen = final.callPackage ./nix/b4smtgen.nix {
+            riscv-programs = self.packages.${system}.default;
+          };
+          b4smt = final.b4smtGen { hash = "sha256-FWNVtPxzSDOJzF4V+zMTFQ3tgyZCiOCzWATgQ66dq9Q="; };
         };
         pkgs = import nixpkgs {
           inherit system;

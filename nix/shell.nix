@@ -3,7 +3,6 @@
 , rustfilt
 , pkgsCross
 , sbt
-, jdk
 , verilog
 , verilator
 , zlib
@@ -23,7 +22,6 @@ mkShell {
     rustfilt
     pkgsCross.riscv64.stdenv.cc
     sbt
-    jdk
     verilog
     verilator
     zlib
