@@ -24,7 +24,7 @@
           b4smtGen = final.callPackage ./nix/b4smtgen.nix {
             riscv-programs = self.packages.${system}.default;
           };
-          b4smt = final.b4smtGen { hash = "sha256-FWNVtPxzSDOJzF4V+zMTFQ3tgyZCiOCzWATgQ66dq9Q="; };
+          b4smt = final.b4smtGen { hash = "sha256-aAk0OvDg92FM/xy6rJbWFLY17proCSfNcjX0r+BOxyo="; };
         };
         pkgs = import nixpkgs {
           inherit system;
@@ -37,7 +37,7 @@
             "espresso"
           ];
         };
-
+        inherit (nixpkgs) lib;
       in
       {
         packages = rec {
@@ -63,6 +63,24 @@
 
         devShells.default = pkgs.callPackage ./nix/shell.nix {
           verilator = pkgs.verilator_4;
+        };
+
+        apps.update-hash = {
+          type = "app";
+          program = let
+            script = pkgs.writeShellScript "update-hash" ''
+              echo updating-hash
+              set -xe
+              export hash=$(nix eval ".#processor.dependencies.outputHash" --json | ${lib.getExe pkgs.jq} -r)
+              sed -i "s|$hash|${lib.fakeHash}|" flake.nix
+              echo this is a temporary file for updating the hash > update-tmp
+              nix build ".#processor.dependencies" -L |& tee -a update-tmp
+              export new_hash=$(grep "got:" update-tmp | tail -n1 | awk '{print $2}')
+              sed -i "s|${lib.fakeHash}|$new_hash|" flake.nix
+              rm update-tmp
+              echo "changed hash from:$hash to:$new_hash"
+            '';
+          in "${script}";
         };
       });
 }

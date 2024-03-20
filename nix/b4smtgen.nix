@@ -23,8 +23,7 @@ let
     '';
 
     depsWarmupCommand = ''
-      sbt compile
-      sbt scalafmtCheck || true
+      sbt "compile;scalafmtCheck" || true
     '';
 
     fixupPhase = "";
