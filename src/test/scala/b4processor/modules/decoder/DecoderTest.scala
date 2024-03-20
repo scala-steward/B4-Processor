@@ -1,27 +1,11 @@
 package b4processor.modules.decoder
 
 import b4processor.Parameters
-import b4processor.utils.RVRegister.{AddRegConstructor, AddUIntRegConstructor}
+import b4processor.utils.RVRegister.AddRegConstructor
 import b4processor.utils.{ExecutorValue, RVRegister, SymbiYosysFormal, Tag}
 import chisel3._
 import chiseltest._
-import chiseltest.experimental.sanitizeFileName
-import chiseltest.internal.TestEnvInterface
-import circt.stage.ChiselStage
-import org.scalatest.{
-  Assertions,
-  Outcome,
-  Suite,
-  TestData,
-  TestSuite,
-  TestSuiteMixin,
-}
 import org.scalatest.flatspec.AnyFlatSpec
-
-import java.io.PrintWriter
-import scala.reflect.io.{Directory, File}
-import scala.util.DynamicVariable
-import sys.process._
 
 /** デコーダをテストしやすくするためにラップしたもの
   */

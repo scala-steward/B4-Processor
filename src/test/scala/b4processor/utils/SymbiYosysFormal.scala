@@ -2,7 +2,7 @@ package b4processor.utils
 
 import chisel3.RawModule
 import circt.stage.ChiselStage
-import org.scalatest._
+import org.scalatest.{Outcome, TestSuite, TestSuiteMixin}
 
 import java.io.PrintWriter
 import java.util.regex.Matcher
