@@ -58,7 +58,10 @@ class CacheFetchInterface(implicit params: Parameters) extends Module {
   when(requestingAddressValid && fetchNewNow) {
 
     when(isEdge) {
-      when(fetchedAddress(63, 4) === requestingAddress(63, 4) && fetchedAddressValid) {
+      when(
+        fetchedAddress(63, 4) === requestingAddress(63, 4)
+          && fetchedAddressValid,
+      ) {
         // 　端のアドレスかつ、現在のアドレスのデータの取得が完了している。
 
         io.cache.request.valid := true.B

@@ -7,7 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 /** メモリをキャッシュを含んだラッパー */
 class InstructionMemoryCacheWrapper()(implicit params: Parameters)
-  extends InstructionMemoryCache {
+    extends InstructionMemoryCache {
   def initialize() = {}
 
   def responseStep(data: UInt) = {
@@ -38,7 +38,7 @@ class InstructionMemoryCacheWrapper()(implicit params: Parameters)
 }
 
 class InstructionMemoryCacheTest
-  extends AnyFlatSpec
+    extends AnyFlatSpec
     with ChiselScalatestTester {
   behavior of "Instruction Cache"
   implicit val defaultParams = Parameters(fetchWidth = 2)
@@ -68,21 +68,21 @@ class InstructionMemoryCacheTest
         c.io.memory.request.ready.poke(true)
         c.clock.step()
 
-        c.responseStep("x1010101000000000".U) //00
+        c.responseStep("x1010101000000000".U) // 00
         c.clock.step(2)
-        c.responseStep("x2020202010101010".U) //10
+        c.responseStep("x2020202010101010".U) // 10
         c.clock.step(2)
-        c.responseStep("x3030303020202020".U) //20
+        c.responseStep("x3030303020202020".U) // 20
         c.clock.step(2)
-        c.responseStep("x4040404030303030".U) //30
+        c.responseStep("x4040404030303030".U) // 30
         c.clock.step(2)
-        c.responseStep("x5050505040404040".U) //40
+        c.responseStep("x5050505040404040".U) // 40
         c.clock.step(2)
-        c.responseStep("x6060606050505050".U) //50
+        c.responseStep("x6060606050505050".U) // 50
         c.clock.step(2)
-        c.responseStep("x7070707060606060".U) //60
+        c.responseStep("x7070707060606060".U) // 60
         c.clock.step(2)
-        c.responseStep("x8080808070707070".U) //70
+        c.responseStep("x8080808070707070".U) // 70
         c.clock.step(2)
 
         c.expectData("x20202020101010101010101000000000".U)

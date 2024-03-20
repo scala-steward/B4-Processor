@@ -1,6 +1,5 @@
 package b4smt.connections
 
-
 import b4smt.Parameters
 import chisel3._
 import chisel3.util._

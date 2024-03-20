@@ -39,7 +39,7 @@ case class Parameters(
   enablePExt: Boolean = false,
   pextExecutors: Int = 1,
   reservationStationWidth: Int = 4,
-  //命令キャッシュ用パラメータ
+  // 命令キャッシュ用パラメータ
   ICacheWay: Int = 2,
   ICacheSet: Int = 128,
   ICacheBlockWidth: Int = 512,

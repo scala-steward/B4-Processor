@@ -1,6 +1,5 @@
 package b4processor.modules.fetch
 
-
 import b4smt.Parameters
 import b4smt.connections.{Fetch2BranchPrediction, Fetch2FetchBuffer}
 import b4smt.modules.branch_output_collector.CollectedBranchAddresses
@@ -17,9 +16,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 import scala.math
 
 /** フェッチのラッパー
- *
- * フェッチ、キャッシュ、命令メモリを含む
- */
+  *
+  * フェッチ、キャッシュ、命令メモリを含む
+  */
 class FetchWrapper()(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
 
@@ -151,7 +150,7 @@ class FetchWrapper()(implicit params: Parameters) extends Module {
 }
 
 class FetchTest
-  extends AnyFlatSpec
+    extends AnyFlatSpec
     with ChiselScalatestTester
     with SymbiYosysFormal {
   behavior of "Fetch"
