@@ -19,6 +19,8 @@ let
       false
     '';
 
+    CHISEL_FIRTOOL_PATH = "${circt}/bin";
+
     fixupPhase = "true";
   } // attrs);
   b4smt = mkDerivation {
@@ -32,8 +34,6 @@ let
       mkdir $out
       cp B4Processor.* $out
     '';
-
-    CHISEL_FIRTOOL_PATH="${circt}/bin";
 
     passthru = {
       inherit riscv-programs mkDerivation;
