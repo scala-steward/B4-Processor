@@ -37,7 +37,7 @@ lazy val chiselFormal = (project in file("chisel-formal"))
   .settings(
     commonSettings,
     name := "B4SMT-ChiselFormal",
-    libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % chiselTestVersion,
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.18"
   )
 
 lazy val b4smt = (project in file("b4smt"))

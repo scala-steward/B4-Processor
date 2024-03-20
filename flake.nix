@@ -1,7 +1,7 @@
 {
   description = "riscv test flake";
 
-  inputs.nixpkgs.url = "nixpkgs/nixpkgs-unstable";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs?ref=nixpkgs-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.nix-filter.url = "github:numtide/nix-filter";
   inputs.sbt-derivation = {
@@ -17,7 +17,7 @@
   };
 
   outputs = { self, nixpkgs, ... }@inputs:
-    inputs.flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
+    inputs.flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = final: prev: {
           verilator_4 = final.callPackage ./nix/verilator_4.nix { };

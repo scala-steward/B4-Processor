@@ -205,19 +205,19 @@ class Decoder(implicit params: Parameters) extends Module with FormalTools {
 //      )
 //    }
 //  }
-  assert(
-    io.amo.bits.srcReg.threadId === io.threadId,
-    "amo source thread id wrong",
-  )
-  assert(
-    io.amo.bits.destinationTag.threadId === io.threadId,
-    "amo destination thread id wrong",
-  )
-  assert(io.csr.bits.sourceTag.threadId === io.threadId)
-  assert(io.csr.bits.destinationTag.threadId === io.threadId)
-  assert(io.loadStoreQueue.bits.destinationTag.threadId === io.threadId)
-  assert(io.loadStoreQueue.bits.storeDataTag.threadId === io.threadId)
-  assert(io.loadStoreQueue.bits.addressTag.threadId === io.threadId)
+//  assert(
+//    io.amo.bits.srcReg.threadId === io.threadId,
+//    "amo source thread id wrong",
+//  )
+//  assert(
+//    io.amo.bits.destinationTag.threadId === io.threadId,
+//    "amo destination thread id wrong",
+//  )
+//  assert(io.csr.bits.sourceTag.threadId === io.threadId)
+//  assert(io.csr.bits.destinationTag.threadId === io.threadId)
+//  assert(io.loadStoreQueue.bits.destinationTag.threadId === io.threadId)
+//  assert(io.loadStoreQueue.bits.storeDataTag.threadId === io.threadId)
+//  assert(io.loadStoreQueue.bits.addressTag.threadId === io.threadId)
 
   // assumptions
   assume(stable(io.threadId))

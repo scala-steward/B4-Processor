@@ -4,14 +4,19 @@ import chisel3._
 import chisel3.util._
 import _root_.circt.stage.ChiselStage
 import b4smt.Parameters
-import b4smt.connections.{CSR2Fetch, Fetch2BranchPrediction, Fetch2FetchBuffer, InstructionCache2Fetch}
+import b4smt.connections.{
+  CSR2Fetch,
+  Fetch2BranchPrediction,
+  Fetch2FetchBuffer,
+  InstructionCache2Fetch,
+}
 import b4smt.modules.branch_output_collector.CollectedBranchAddresses
 import b4smt.modules.fetch.{BranchType, CheckBranch, WaitingReason}
 import chiselformal.FormalTools
 
 /** 命令フェッチ用モジュール */
 class Fetch(wfiWaitWidth: Int = 10)(implicit params: Parameters)
-  extends Module
+    extends Module
     with FormalTools {
   val io = IO(new Bundle {
 
@@ -41,6 +46,7 @@ class Fetch(wfiWaitWidth: Int = 10)(implicit params: Parameters)
 
     val isError = Input(Bool())
     val interrupt = Input(Bool())
+    val icache_flush = Output(Bool())
 
     val threadId = Input(UInt(log2Up(params.threads).W))
 
@@ -52,6 +58,8 @@ class Fetch(wfiWaitWidth: Int = 10)(implicit params: Parameters)
         Some(Output(Vec(params.decoderPerThread, new BranchType.Type)))
       else None
   })
+
+  io.icache_flush := false.B
 
   val checkBranches = Seq.fill(params.decoderPerThread)(Module(new CheckBranch))
 
@@ -147,6 +155,9 @@ class Fetch(wfiWaitWidth: Int = 10)(implicit params: Parameters)
 
     }
     when(waiting === WaitingReason.Fence || waiting === WaitingReason.FenceI) {
+      when(waiting === WaitingReason.FenceI) {
+        io.icache_flush := true.B
+      }
       when(
         io.reorderBufferEmpty && io.loadStoreQueueEmpty && io.fetchBuffer.empty,
       ) {

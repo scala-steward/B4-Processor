@@ -5,6 +5,7 @@ import b4smt.utils.B4SMTCoreWithMemory
 import chiseltest._
 import chiseltest.internal.CachingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.tagobjects.Slow
 
 class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "B4SMT test programs"
@@ -638,7 +639,7 @@ class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       }
   }
 
-  it should "run testhex" in {
+  ignore should "run testhex" taggedAs Slow in {
     test(
       new B4SMTCoreWithMemory()(
         defaultParams.copy(

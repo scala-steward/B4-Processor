@@ -1,16 +1,32 @@
 package chiselformal
 
 import chisel3._
-import chiseltest.ChiselScalatestTester
 import circt.stage.ChiselStage
+import org.scalatest._
 
 import java.io.PrintWriter
 import java.util.regex.Matcher
 import scala.reflect.io.Directory
 import scala.sys.process._
+import scala.util.DynamicVariable
 
-trait SymbiYosysFormal {
-  this: ChiselScalatestTester =>
+trait SymbiYosysFormal extends TestSuiteMixin {
+  this: TestSuite =>
+  protected def getTestNameFormalInternal: String =
+    scalaTestContextFormalInternal.value.get.name
+      .replaceAll(" ", "_")
+      .replaceAll("\\W+", "")
+
+  // Provide test fixture data as part of 'global' context during test runs
+  protected var scalaTestContextFormalInternal =
+    new DynamicVariable[Option[NoArgTest]](None)
+
+  abstract override def withFixture(test: NoArgTest): Outcome = {
+    require(scalaTestContextFormalInternal.value.isEmpty)
+    scalaTestContextFormalInternal.withValue(Some(test)) {
+      super.withFixture(test)
+    }
+  }
 
   def symbiYosysCheck(
     gen: => RawModule,
@@ -75,7 +91,7 @@ trait SymbiYosysFormal {
         s"${m.group(1)}__$normalized_comment: ${m.group(2)} // ${m.group(3)}"
       },
     )
-    val name = "placeholder_test_name"
+    val name = getTestNameFormalInternal
     Directory("formal").createDirectory()
     Directory(s"formal/$name").createDirectory()
     val file = new PrintWriter(s"formal/$name/out.sv")

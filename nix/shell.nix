@@ -17,6 +17,7 @@
 }:
 
 mkShell {
+  name = "b4smt-dev";
   packages = [
     circt
     rustfilt

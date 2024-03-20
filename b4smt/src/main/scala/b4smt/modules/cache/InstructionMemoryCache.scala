@@ -23,6 +23,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     val memory = new MemoryReadChannel()
 
     val threadId = Input(UInt(log2Up(params.threads).W))
+    val flush = Input(Bool())
   })
 
   io.fetch.request.ready := false.B
@@ -173,6 +174,10 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     when(RegNext(io.fetch.request.valid) && memory_state === idle) {
       memory_state := requesting
     }
+  }
+
+  when(io.flush) {
+    ICacheValidBit.foreach(way => way.foreach(bit => bit := false.B))
   }
 }
 

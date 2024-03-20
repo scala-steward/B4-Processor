@@ -7,5 +7,6 @@ verilator.overrideAttrs (old: rec {
     rev = "v${version}";
     sha256 = "sha256-ToYad8cvBF3Mio5fuT4Ce4zXbWxFxd6smqB1TxvlHao=";
   };
+  patches = [ ];
   doCheck = false;
 })

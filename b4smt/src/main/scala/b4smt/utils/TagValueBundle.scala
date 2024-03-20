@@ -25,8 +25,8 @@ class TagValueBundle(implicit params: Parameters) extends Bundle {
     val w = Wire(new TagValueBundle)
     w := DontCare
     w.isTag := isTag
-    w.tag := tagFn(tag)
-    w.value := valueFn(value).value
+    w.tag := tag
+    w.value := value
     w
   }
 }

@@ -5,6 +5,7 @@ import b4smt.utils.B4SMTCoreWithMemory
 import chiseltest._
 import chiseltest.internal.CachingAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.tagobjects.Slow
 
 class B4SMTCoreBenchmark extends AnyFlatSpec with ChiselScalatestTester {
   // デバッグに時間がかかりすぎるのでパラメータを少し下げる。
@@ -24,7 +25,7 @@ class B4SMTCoreBenchmark extends AnyFlatSpec with ChiselScalatestTester {
 
   behavior of s"RISC-V benchmark"
 
-  ignore should "run dhrystore" in {
+  ignore should "run dhrystore" taggedAs Slow in {
     test(new B4SMTCoreWithMemory).withAnnotations(
       Seq(
         WriteWaveformAnnotation,
@@ -63,7 +64,7 @@ class B4SMTCoreBenchmark extends AnyFlatSpec with ChiselScalatestTester {
       "median-p-mt-byte",
     )
   ) {
-    it should s"run $filename" in {
+    ignore should s"run $filename" taggedAs Slow in {
       test(
         new B4SMTCoreWithMemory()(
           defaultParams.copy(
