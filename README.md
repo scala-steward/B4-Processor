@@ -1,4 +1,4 @@
-[![Scala CI](https://github.com/NakajoLab/B4-Processor/actions/workflows/scala.yml/badge.svg)](https://github.com/NakajoLab/B4-Processor/actions/workflows/scala.yml)
+[![scala-CI](https://github.com/NakajoLab/B4SMT/actions/workflows/scala.yml/badge.svg?branch=main)](https://github.com/NakajoLab/B4SMT/actions/workflows/scala.yml)
 
 # B4SMT
 
