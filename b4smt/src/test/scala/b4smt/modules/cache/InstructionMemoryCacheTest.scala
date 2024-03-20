@@ -41,7 +41,7 @@ class InstructionMemoryCacheTest
     extends AnyFlatSpec
     with ChiselScalatestTester {
   behavior of "Instruction Cache"
-  implicit val defaultParams = Parameters(fetchWidth = 2)
+  implicit val defaultParams: Parameters = Parameters(fetchWidth = 2)
 
   it should "elaborate" in {
     test(new InstructionMemoryCacheWrapper) { c => }
