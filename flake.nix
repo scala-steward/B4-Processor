@@ -25,6 +25,7 @@
             riscv-programs = self.packages.${system}.default;
           };
           b4smt = final.b4smtGen { hash = "sha256-aAk0OvDg92FM/xy6rJbWFLY17proCSfNcjX0r+BOxyo="; };
+          sbt = prev.sbt.override { jre = final.jre_headless; };
         };
         pkgs = import nixpkgs {
           inherit system;
@@ -74,7 +75,7 @@
               export hash=$(nix eval ".#processor.dependencies.outputHash" --json | ${lib.getExe pkgs.jq} -r)
               sed -i "s|$hash|${lib.fakeHash}|" flake.nix
               echo this is a temporary file for updating the hash > update-tmp
-              nix build ".#processor.dependencies" -L |& tee -a update-tmp
+              nix build ".#processor.dependencies" --no-link -L |& tee -a update-tmp
               export new_hash=$(grep "got:" update-tmp | tail -n1 | awk '{print $2}')
               sed -i "s|${lib.fakeHash}|$new_hash|" flake.nix
               rm update-tmp

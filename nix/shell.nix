@@ -26,8 +26,8 @@ mkShell {
     verilator
     zlib
     yosys
-    graphviz
-    xdot
+    # graphviz
+    # xdot
     espresso
     z3
     symbiyosys
