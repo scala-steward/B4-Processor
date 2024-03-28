@@ -5,7 +5,7 @@ import PExtensionOperation._
 import UIntSectionHelper._
 
 object PExtSigned16MulWith64AddSub {
-  def pextSigned16MulWith32AddSub(rs1: UInt, rs2: UInt, rd: UInt) = {
+  def pextSigned16MulWith64AddSub(rs1: UInt, rs2: UInt, rd: UInt) = {
     def SMALXX(fst: Boolean, snd: Boolean) = {
       val m0 = rs1.W(0).H(if (fst) 1 else 0).asSInt * rs2
         .W(0)

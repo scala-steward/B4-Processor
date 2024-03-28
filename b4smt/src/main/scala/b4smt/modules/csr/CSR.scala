@@ -160,6 +160,14 @@ class CSR(implicit params: Parameters) extends Module with FormalTools {
       io.CSROutput.bits.value := atomicFullCount
     }.elsewhen(address === CSRs.hpmcounter15.U) {
       io.CSROutput.bits.value := reservationStationFullCount
+    }.elsewhen(address === CSRs.misa.U) {
+      io.CSROutput.bits.value := MisaGen()
+    }.elsewhen(address === CSRs.mvendorid.U) {
+      io.CSROutput.bits.value := 0.U
+    }.elsewhen(address === CSRs.marchid.U) {
+      io.CSROutput.bits.value := 0.U
+    }.elsewhen(address === CSRs.mimpid.U) {
+      io.CSROutput.bits.value := 0.U
     }.elsewhen(address === CSRCustom.coreCount.U) {
       io.CSROutput.bits.value := params.threads.U
     }.elsewhen(address === CSRCustom.customInt.U) {

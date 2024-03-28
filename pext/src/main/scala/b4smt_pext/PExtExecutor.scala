@@ -32,6 +32,7 @@ import PExtMisc2.pextMisc2
 import PExtQ16Saturate.pextQ16Saturate
 import PExtQ32Saturate.pextQ32Saturate
 import PExtSigned16MulWith32AddSub.pextSigned16MulWith32AddSub
+import PExtSigned16MulWith64AddSub.pextSigned16MulWith64AddSub
 import chisel3._
 import chisel3.util._
 
@@ -73,7 +74,7 @@ class PExtExecutor extends Module {
       pextMsw32x32(io.input.rs1, io.input.rs2, io.input.rd) ++
       pextMsw32x16(io.input.rs1, io.input.rs2, io.input.rd) ++
       pextSigned16MulWith32AddSub(io.input.rs1, io.input.rs2, io.input.rd) ++
-//    pextSigned16MulWith64AddSub(io.input.rs1,io.input.rs2) ++
+      pextSigned16MulWith64AddSub(io.input.rs1, io.input.rs2, io.input.rd) ++
       pextMisc(io.input.rs1, io.input.rs2, io.input.rd, io.input.imm) ++
       pext8MulWith32Add(
         io.input.rs1,

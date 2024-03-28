@@ -639,7 +639,7 @@ class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       }
   }
 
-  ignore should "run testhex" taggedAs Slow in {
+  it should "run testhex" taggedAs Slow in {
     test(
       new B4SMTCoreWithMemory()(
         defaultParams.copy(
@@ -657,7 +657,7 @@ class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
     )
       .withAnnotations(
         Seq(
-//          WriteWaveformAnnotation,
+          WriteWaveformAnnotation,
           VerilatorBackendAnnotation,
           CachingAnnotation,
         ),

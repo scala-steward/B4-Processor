@@ -5,6 +5,25 @@ import chisel3.util._
 import _root_.circt.stage.ChiselStage
 import b4smt.Parameters
 import b4smt.connections.InstructionCache2Fetch
+import b4smt.utils.ShiftRegister
+
+// strategy memo
+// a,f,edge
+//
+//cases of return
+//!edge a=f
+//edge a'=f a=f+1
+//
+//fetching
+//!edge
+//    a != f
+//		fetch a <- f
+//edge
+//    !(a'=f & a=f+1)
+//		a = f
+//			fetch a <- f + 1
+//		otherwise
+//			fetch a <- f
 
 class CacheFetchInterface(implicit params: Parameters) extends Module {
   val io = IO(new Bundle {
@@ -26,18 +45,14 @@ class CacheFetchInterface(implicit params: Parameters) extends Module {
     io.fetch.requestNext.ready := true.B
   }
 
-  val fetchedAddressValid = RegInit(false.B)
-  val fetchedAddress = RegInit("xFFFFFFFF_FFFFFFFF".U)
-  val fetchedAddressNow = WireDefault(fetchedAddress)
+  val fetchedAddressValid = RegInit(true.B)
+  val fetchedAddressSR = ShiftRegister(UInt(64.W), 2, "xFFFFFFFF_FFFFFFFF".U)
   val fetchedData = Reg(UInt(128.W))
   val prevFetchedDataTop16 = Reg(UInt(16.W))
-  val nextBlock = RegInit(false.B)
 
   val requestingAddress = io.fetch.perDecoder(0).request.bits
   val requestingAddressValid = io.fetch.perDecoder(0).request.valid
 
-  val fetchNew = RegInit(true.B)
-  val fetchNewNow = WireDefault(fetchNew)
   val isEdge = requestingAddress(3, 0) === BitPat("b111?")
   val isRequesting = RegInit(false.B)
 
@@ -47,54 +62,45 @@ class CacheFetchInterface(implicit params: Parameters) extends Module {
     isRequesting := false.B
   }
 
-  when(
-    requestingAddressValid &&
-      (fetchedAddress(63, 4) =/=
-        requestingAddress(63, 4) || isEdge),
-  ) {
-    fetchNewNow := true.B
-  }
+  when(requestingAddressValid && fetchedAddressValid) {
 
-  when(requestingAddressValid && fetchNewNow) {
-
-    when(isEdge) {
-      when(
-        fetchedAddress(63, 4) === requestingAddress(63, 4)
-          && fetchedAddressValid,
-      ) {
-        // 　端のアドレスかつ、現在のアドレスのデータの取得が完了している。
-
+    when(!isEdge) {
+      when(fetchedAddressSR.output(0)(63, 4) =/= requestingAddress(63, 4)) {
         io.cache.request.valid := true.B
         io.cache.request.bits :=
-          (requestingAddress(63, 4) + 1.U) ## 0.U(4.W)
+          requestingAddress(63, 4) ## 0.U(4.W)
         when(io.cache.request.ready) {
-          fetchedAddress := (requestingAddress(63, 4) + 1.U) ## 0.U(4.W)
+          fetchedAddressSR.shift(requestingAddress(63, 4) ## 0.U(4.W))
           fetchedAddressValid := false.B
-          fetchNew := false.B
-          nextBlock := true.B
           prevFetchedDataTop16 := fetchedData(127, 112) // top 16 bits
-        }
-      }.elsewhen(fetchedAddress(63, 4) === requestingAddress(63, 4) + 1.U) {
-        // 何もしない
-      }.otherwise {
-        // 端のアドレスででだが直前に取得したアドレスが現在以外
-        io.cache.request.valid := true.B
-        io.cache.request.bits := requestingAddress(63, 4) ## 0.U(4.W)
-        when(io.cache.request.ready) {
-          fetchedAddress := requestingAddress(63, 4) ## 0.U(4.W)
-          fetchedAddressValid := false.B
-          fetchNew := isEdge
-          nextBlock := false.B
         }
       }
     }.otherwise {
-      io.cache.request.valid := true.B
-      io.cache.request.bits := requestingAddress(63, 4) ## 0.U(4.W)
-      when(io.cache.request.ready) {
-        fetchedAddress := requestingAddress(63, 4) ## 0.U(4.W)
-        fetchedAddressValid := false.B
-        fetchNew := isEdge
-        nextBlock := (requestingAddress(63, 4) - fetchedAddress) === 1.U
+      when(
+        !(fetchedAddressSR.output(1)(63, 4) ===
+          requestingAddress(63, 4) &&
+          fetchedAddressSR.output(0)(63, 4) ===
+          (requestingAddress(63, 4) + 1.U)),
+      ) {
+        when(fetchedAddressSR.output(0)(63, 4) === requestingAddress(63, 4)) {
+          io.cache.request.valid := true.B
+          io.cache.request.bits :=
+            (requestingAddress(63, 4) + 1.U) ## 0.U(4.W)
+          when(io.cache.request.ready) {
+            fetchedAddressSR.shift((requestingAddress(63, 4) + 1.U) ## 0.U(4.W))
+            fetchedAddressValid := false.B
+            prevFetchedDataTop16 := fetchedData(127, 112) // top 16 bits
+          }
+        }.otherwise {
+          io.cache.request.valid := true.B
+          io.cache.request.bits :=
+            requestingAddress(63, 4) ## 0.U(4.W)
+          when(io.cache.request.ready) {
+            fetchedAddressSR.shift(requestingAddress(63, 4) ## 0.U(4.W))
+            fetchedAddressValid := false.B
+            prevFetchedDataTop16 := fetchedData(127, 112) // top 16 bits
+          }
+        }
       }
     }
   }
@@ -113,23 +119,25 @@ class CacheFetchInterface(implicit params: Parameters) extends Module {
   // fetch response
   when(fetchedAddressValidNow) {
     io.fetch.perDecoder foreach { f =>
-      f.response.bits := MuxLookup(f.request.bits(3, 1), 0.U)(
-        (0 until 8 - 1).map(i => i.U -> fetchedDataNow(16 * i + 32 - 1, 16 * i)),
-      )
       when(f.request.valid) {
-        when((f.request.bits(63, 4) + 1.U) === fetchedAddressNow(63, 4)) {
-          when(f.request.bits(3, 0) === BitPat("b111?") && nextBlock) {
+        when(f.request.bits(3, 0) === BitPat("b111?")) {
+          when(
+            f.request.bits(63, 4) ===
+              fetchedAddressSR.output(1)(63, 4) &&
+              (f.request.bits(63, 4) + 1.U) ===
+              fetchedAddressSR.output(0)(63, 4),
+          ) {
             f.response.valid := true.B
             f.response.bits := fetchedDataNow(15, 0) ## prevFetchedDataTop16
-          }.otherwise {
-            f.response.valid := false.B
           }
-        }
-        when(f.request.bits(63, 4) === fetchedAddressNow(63, 4)) {
-          when(f.request.bits(3, 0) === BitPat("b111?")) {
-            f.response.valid := false.B
-          }.otherwise {
+        }.otherwise {
+          when(f.request.bits(63, 4) === fetchedAddressSR.output(0)(63, 4)) {
             f.response.valid := true.B
+            f.response.bits := MuxLookup(f.request.bits(3, 1), 0.U)(
+              (0 until 8 - 1).map(i =>
+                i.U -> fetchedDataNow(16 * i + 32 - 1, 16 * i),
+              ),
+            )
           }
         }
       }
