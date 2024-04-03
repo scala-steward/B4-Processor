@@ -24,7 +24,7 @@
           b4smtGen = final.callPackage ./nix/b4smtgen.nix {
             riscv-programs = self.packages.${system}.default;
           };
-          b4smt = final.b4smtGen { hash = "sha256-aAk0OvDg92FM/xy6rJbWFLY17proCSfNcjX0r+BOxyo="; };
+          b4smt = final.b4smtGen { hash = "sha256-9AOjT7Y9G88PJ+Lg9hp2uVSX4Na4cnzGY2hNTMwbZlQ="; };
           sbt = prev.sbt.override { jre = final.jre_headless; };
         };
         pkgs = import nixpkgs {
