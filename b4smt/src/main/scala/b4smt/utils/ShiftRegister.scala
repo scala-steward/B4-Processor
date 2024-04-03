@@ -34,6 +34,7 @@ object ShiftRegister extends App {
     m.input.bits := 0.U.asTypeOf(t)
     m
   }
-  def apply[T <: Data](t: T, width: Int):ShiftRegister[T] = ShiftRegister(t, width, 0.U.asTypeOf(t))
+  def apply[T <: Data](t: T, width: Int): ShiftRegister[T] =
+    ShiftRegister(t, width, 0.U.asTypeOf(t))
 
 }
