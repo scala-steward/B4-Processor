@@ -77,16 +77,16 @@ class ExternalMemoryInterface(implicit params: Parameters) extends Module {
     i.response.bits := 0.U.asTypeOf(new MemoryReadResponse())
   })
 
-  val priorityArb = Module(
+  val readPriorityArb = Module(
     new PriorityArbiterWithIndex(
       new MemoryReadRequest,
       all_inputs.length,
-      Seq.fill(io.instruction.length)(0) ++ Seq(1) ++ Seq(2),
+      Seq.fill(io.instruction.length)(0) ++ Seq(1) ++ Seq(1),
     ),
   )
-  priorityArb.in zip all_inputs foreach { case (a, i) => a <> i.request }
+  readPriorityArb.in zip all_inputs foreach { case (a, i) => a <> i.request }
 
-  val transactionQueue = Queue(priorityArb.out, 8, useSyncReadMem = true)
+  val transactionQueue = Queue(readPriorityArb.out, 8, useSyncReadMem = true)
   transactionQueue.ready := false.B
 
   val readQueue = Module(new FIFO(3)(new Bundle {

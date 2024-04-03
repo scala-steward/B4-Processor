@@ -6,7 +6,7 @@ import b4smt.utils.axi.{ChiselAXI, Response}
 import chisel3._
 import chisel3.util._
 
-class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 16)(
+class SimpleAXIMemoryWithSimulationIO(sizeBytes: Long = 1024 * 1024 * 16)(
   implicit params: Parameters,
 ) extends Module {
   val axi = IO(Flipped(new ChiselAXI(64, 64)))
@@ -18,9 +18,8 @@ class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 16)(
     val output = Decoupled(UInt(8.W))
   })
 
-  private val memAddrMask = BitPat(
-    "b00000000_00000000_00000000_00000000_1???????_????????_????????_????????",
-  )
+  private val memAddrRangeLow = params.instructionStart.U
+  private val memAddrRangeHigh = (params.instructionStart + sizeBytes).U
   private val ioAddrMask = BitPat(
     "b00000000_00000000_00000000_00000000_0001????_????????_????????_????????",
   )
@@ -101,7 +100,10 @@ class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 16)(
       }
     }
     when(!writeState.empty) {
-      when(writeState.output.bits.address === memAddrMask) {
+      when(
+        memAddrRangeLow <= writeState.output.bits.address &&
+          writeState.output.bits.address < memAddrRangeHigh,
+      ) {
         axi.write.ready := true.B
         when(axi.write.valid) {
           mem.write(
@@ -168,7 +170,10 @@ class SimpleAXIMemoryWithSimulationIO(sizeBytes: Int = 1024 * 1024 * 16)(
       }
     }
     when(!readState.empty) {
-      when(readState.output.bits.address === memAddrMask) {
+      when(
+        memAddrRangeLow <= readState.output.bits.address &&
+          readState.output.bits.address < memAddrRangeHigh,
+      ) {
         readAddr := readState.output.bits
           .address(63, 3) + readBurstLen + (axi.read.ready && readDone).asUInt
 

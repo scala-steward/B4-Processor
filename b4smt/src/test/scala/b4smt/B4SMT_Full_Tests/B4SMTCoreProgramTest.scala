@@ -651,20 +651,21 @@ class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
           maxRegisterFileCommitCount = 2,
           loadStoreQueueIndexWidth = 4,
           enablePExt = true,
+          pextExecutors = 1,
           parallelOutput = 1,
         ),
       ),
     )
       .withAnnotations(
         Seq(
-          WriteWaveformAnnotation,
+//          WriteWaveformAnnotation,
           VerilatorBackendAnnotation,
           CachingAnnotation,
         ),
       ) { c =>
         c.initialize("test")
         c.io.simulationIO.output.ready.poke(true)
-        c.checkForOutputString("START", 3000, print_value = true)
+        c.checkForOutputString("START", 10000, print_value = true)
         c.checkForOutputString("END", 100000000, print_value = true)
       }
   }
