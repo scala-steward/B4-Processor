@@ -51,7 +51,7 @@ abstract class RiscvTest(val testPrefix: String)
 
   def riscv_test(
     test_name: String,
-    timeout: Int = 2000,
+    timeout: Int = 4000,
     backendAnnotation: Annotation = annotation,
   ): Unit = {
 

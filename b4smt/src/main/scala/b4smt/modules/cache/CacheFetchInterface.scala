@@ -48,7 +48,7 @@ class CacheFetchInterface(implicit params: Parameters) extends Module {
   val fetchedAddressValid = RegInit(true.B)
   val fetchedAddressSR = ShiftRegister(UInt(64.W), 2, "xFFFFFFFF_FFFFFFFF".U)
   val fetchedData = Reg(UInt(128.W))
-  val prevFetchedDataTop16 = Reg(UInt(16.W))
+  val prevFetchedDataTop16 = RegInit(0.U(16.W))
 
   val requestingAddress = io.fetch.perDecoder(0).request.bits
   val requestingAddressValid = io.fetch.perDecoder(0).request.valid

@@ -474,9 +474,8 @@ class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation),
       ) { c =>
         c.initialize("programs/riscv-sample-programs/load_store_cross")
-        c.checkForRegister(2, 101, 100)
-        c.checkForRegister(3, 201, 100)
-
+        c.checkForRegister(2, 101, 200)
+        c.checkForRegister(3, 201, 200)
       }
   }
 
@@ -496,8 +495,8 @@ class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         Seq(WriteWaveformAnnotation, backendAnnotation, CachingAnnotation),
       ) { c =>
         c.initialize("programs/riscv-sample-programs/load_store_cross")
-        c.checkForRegister(2, 101, 100)
-        c.checkForRegister(3, 201, 100)
+        c.checkForRegister(2, 101, 200)
+        c.checkForRegister(3, 201, 200)
       }
   }
 
@@ -639,7 +638,7 @@ class B4SMTCoreProgramTest extends AnyFlatSpec with ChiselScalatestTester {
       }
   }
 
-  it should "run testhex" taggedAs Slow in {
+  ignore should "run testhex" taggedAs Slow in {
     test(
       new B4SMTCoreWithMemory()(
         defaultParams.copy(

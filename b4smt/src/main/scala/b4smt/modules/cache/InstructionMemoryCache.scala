@@ -89,7 +89,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     AddrTagReg := AddrTag
     AddrRequestReg := AddrRequest
   }
-  io.fetch.request.ready := RegNext(io.fetch.request.valid)
+  io.fetch.request.ready := RegNext(io.fetch.request.valid, false.B)
 
   // ヒットするか判定
   val hitVec = WireInit(VecInit(Seq.fill(params.ICacheWay)(false.B)))
