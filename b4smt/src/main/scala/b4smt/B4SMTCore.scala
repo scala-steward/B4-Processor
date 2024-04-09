@@ -320,8 +320,8 @@ class B4SMTCoreFixedPorts(implicit params: Parameters) extends RawModule {
 
 object B4SMTCore extends App {
   implicit val params: b4smt.Parameters = Parameters(
-    threads = 1,
-    executors = 1,
+    threads = 4,
+    executors = 2,
     decoderPerThread = 1,
     maxRegisterFileCommitCount = 1,
     tagWidth = 4,

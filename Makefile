@@ -26,3 +26,6 @@ clean:
 
 clean-chisel:
 	rm -rf target test_run_dir
+
+update-hash:
+	nix run ".#update-hash"
