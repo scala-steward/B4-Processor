@@ -12,6 +12,12 @@ OoOのプロセッサ
 
 Nixについては[Nix]の公式サイトや[Zero to Nix]を参考にしてみてください。
 
+次のコマンドでこのプロジェクトのキャッシュを有効にしておくと多くのパッケージのビルドを省略できます。
+
+```shell
+$ nix shell "nixpkgs#cachix" -c cachix use b4smt
+```
+
 [Nix download]: https://zero-to-nix.com/start/install
 [Nix]: https://nixos.org/
 [Zero to Nix]: https://zero-to-nix.com/
