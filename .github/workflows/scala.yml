@@ -36,12 +36,9 @@ jobs:
 
       - name: upload artifacts to cache
         run: |
-          nix path-info -r ./processor | cachix push b4smt
-          nix path-info -r --derivation ./processor | cachix push b4smt
-          nix path-info -r ./programs | cachix push b4smt
-          nix path-info -r --derivation ./programs | cachix push b4smt
-          nix path-info -r ./develop-profile | cachix push b4smt
-          nix path-info -r --derivation ./develop-profile | cachix push b4smt
+          nix derivation show -r ./processor | jq '.[].outputs.[].path' -r | cachix push b4smt
+          nix derivation show -r ./programs | jq '.[].outputs.[].path' -r | cachix push b4smt
+          nix derivation show -r ./develop-profile | jq '.[].outputs.[].path' -r | cachix push b4smt
 
       - name: upload processor source as artifact
         uses: actions/upload-artifact@v4
@@ -74,8 +71,7 @@ jobs:
       
       - name: upload check cache
         run: |
-          nix path-info ./result -r | cachix push b4smt
-          nix path-info ./result -r --derivation | cachix push b4smt
+          nix derivation show -r ./result | jq '.[].outputs.[].path' -r | cachix push b4smt
 
   test-all:
     name: B4プロセッサのテスト
@@ -101,5 +97,4 @@ jobs:
       
       - name: upload check cache
         run: |
-          nix path-info ./result -r | cachix push b4smt
-          nix path-info ./result -r --derivation | cachix push b4smt
+          nix derivation show -r ./result | jq '.[].outputs.[].path' -r | cachix push b4smt
