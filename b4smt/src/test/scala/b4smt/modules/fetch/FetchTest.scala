@@ -160,7 +160,7 @@ class FetchTest
     with ChiselScalatestTester
     with SymbiYosysFormal {
   behavior of "Fetch"
-  implicit val defaultParams: b4processor.Parameters =
+  implicit val defaultParams: b4smt.Parameters =
     Parameters(
       debug = true,
       threads = 1,
