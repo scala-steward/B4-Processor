@@ -12,6 +12,10 @@ project/plugins/project/
 
 /.idea
 /.bsp
+.bloop
+/.vscode
+/.metals
+project/project
 
 /test_run_dir
 /formal
