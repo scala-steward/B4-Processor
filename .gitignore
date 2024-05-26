@@ -10,6 +10,7 @@ project/plugins/project/
 .lib/
 .direnv
 
+/out
 /.idea
 /.bsp
 .bloop

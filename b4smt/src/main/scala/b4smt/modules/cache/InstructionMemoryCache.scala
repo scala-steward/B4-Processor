@@ -62,9 +62,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
 
   // 有効ビット・タグ・インデックス
   val ICacheValidBit = RegInit(
-    VecInit(
-      Seq.fill(params.ICacheWay)(VecInit(Seq.fill(params.ICacheSet)(false.B))),
-    ),
+    VecInit(Seq.fill(params.ICacheWay)(0.U(params.ICacheSet.W))),
   )
   val ICacheTag =
     Seq.fill(params.ICacheWay)(SyncReadMem(params.ICacheSet, UInt(TagBits.W)))
@@ -81,7 +79,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
   val count = RegInit(0.U(8.W))
 
   // ウェイのカウンター(各セットごとにカウンターを用意)
-  val SelectWay = RegInit(VecInit(Seq.fill(params.ICacheSet)(0.U(1.W))))
+  val SelectWay = RegInit(0.U(params.ICacheSet.W))
 
   when(io.fetch.request.valid) {
     AddrOffsetReg := AddrOffset
@@ -138,17 +136,17 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
     }
   }.elsewhen(memory_state === writeReadDataBuf) {
     val ReadDataCom = Cat(ReadDataBuf.reverse)
-    SelectWay(AddrIndexReg) := SelectWay(AddrIndexReg) + 1.U
+    SelectWay := SelectWay ^ (1.U << AddrIndexReg)
     when(SelectWay(AddrIndexReg) === 0.U) {
       ICacheDataBlock(0).write(AddrIndexReg, ReadDataCom)
       ICacheTag(0).write(AddrIndexReg, AddrTagReg)
-      ICacheValidBit(0)(AddrIndexReg) := true.B
+      ICacheValidBit(0) := ICacheValidBit(0) | 1.U << AddrIndexReg
     }
 
     when(SelectWay(AddrIndexReg) === 1.U) {
       ICacheDataBlock(1).write(AddrIndexReg, ReadDataCom)
       ICacheTag(1).write(AddrIndexReg, AddrTagReg)
-      ICacheValidBit(1)(AddrIndexReg) := true.B
+      ICacheValidBit(1) := ICacheValidBit(1) | 1.U << AddrIndexReg
     }
     memory_state := idle
   }.otherwise {
@@ -177,7 +175,7 @@ class InstructionMemoryCache(implicit params: Parameters) extends Module {
   }
 
   when(io.flush) {
-    ICacheValidBit.foreach(way => way.foreach(bit => bit := false.B))
+    ICacheValidBit.foreach(way => way := 0.U)
   }
 }
 
